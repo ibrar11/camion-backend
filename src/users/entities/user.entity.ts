@@ -1,22 +1,65 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
+import {
+	Column,
+	CreateDateColumn,
+	Entity,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
+} from "typeorm";
+
+import { Exclude } from "class-transformer";
+
+import { UserRole } from "../enums/UserRole";
 
 @Entity()
 export class User {
+	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
+
+	@Column({ type: "uuid", unique: true, })
+	uuid: string;
 
 	@Column({ type: "varchar", length: 64, })
 	fullName: string;
 
+	@Exclude()
 	@Column({ type: "varchar", length: 256, unique: true, })
 	emailAddress: string;
 
-	@Column({ type: "varchar", length: 16, unique: true, })
-	phoneNumber: string;
-
+	@Exclude()
 	@Column({ type: "varchar", length: 64, })
 	password: string;
 
+	@Exclude()
+	@Column({ type: "varchar", length: 64, default: "", })
+	secret: string;
+
+	@Column({
+		type: "enum",
+		enum: UserRole,
+		default: UserRole.User,
+	})
+	role: UserRole;
+
+	@Exclude()
+	@Column({ type: "boolean", default: false, })
+	isEmailAddressVerified: boolean;
+
+	@Exclude()
 	@Column({ type: "boolean", default: true, })
 	isActive: boolean;
+
+	@Exclude()
+	@UpdateDateColumn({
+		name: "updated_at",
+		type: "timestamptz",
+	})
+	updatedAt: Date;
+
+	@Exclude()
+	@CreateDateColumn({
+		name: "created_at",
+		type: "timestamptz",
+	})
+	createdAt: Date;
 }
