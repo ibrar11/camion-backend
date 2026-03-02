@@ -16,18 +16,18 @@ export class User {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	@Column({ type: "uuid", unique: true, })
+	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
 	@Column({ type: "varchar", length: 64, })
 	fullName: string;
 
 	@Exclude()
-	@Column({ type: "varchar", length: 256, unique: true, })
+	@Column({ type: "varchar", length: 256, nullable: false, unique: true, })
 	emailAddress: string;
 
 	@Exclude()
-	@Column({ type: "varchar", length: 64, })
+	@Column({ type: "varchar", nullable: false, length: 64, })
 	password: string;
 
 	@Exclude()
@@ -45,8 +45,7 @@ export class User {
 	@Column({ type: "boolean", default: false, })
 	isEmailAddressVerified: boolean;
 
-	@Exclude()
-	@Column({ type: "boolean", default: true, })
+	@Column({ type: "boolean", default: false, })
 	isActive: boolean;
 
 	@Exclude()
