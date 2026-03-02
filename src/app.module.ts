@@ -4,7 +4,11 @@ import {
 	ConfigModule,
 	ConfigService,
 } from "@nestjs/config";
+
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { CacheModule } from "@nestjs/cache-manager";
+
+import KeyvRedis from "@keyv/redis";
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -16,6 +20,18 @@ import { UsersModule } from './users/users.module';
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
+		}),
+		CacheModule.registerAsync({
+			isGlobal: true,
+			imports: [ConfigModule],
+			inject: [ConfigService],
+			useFactory: (configService: ConfigService) => {
+				return {
+					stores: [
+						new KeyvRedis(configService.get<string>('REDIS_URI')),
+					],
+				};
+			},
 		}),
 		TypeOrmModule.forRootAsync({
 			imports: [ConfigModule],
