@@ -24,6 +24,10 @@ import { CountryCode, parsePhoneNumberFromString } from "libphonenumber-js";
 import { RegisterUserDto } from './dtos/RegisterUserDto';
 import { LoginUserDto } from './dtos/LoginUserDto';
 
+import { UpdateUserDto } from "./dtos/UpdateUserDto";
+import { UpdateUserEmailAddressDto } from "./dtos/UpdateUserEmailAddressDto";
+import { UpdateUserPasswordDto } from "./dtos/UpdateUserPasswordDto";
+
 import { RegisterCustomerByEmailAddressDto } from "./dtos/RegisterCustomerByEmailAddressDto";
 import { RegisterCustomerByPhoneNumberDto } from "./dtos/RegisterCustomerByPhoneNumberDto";
 import { VerifyCustomerDto } from "./dtos/VerifyCustomerDto";
@@ -163,15 +167,119 @@ export class AuthService {
 	 * Remove the session token for a user from the cache to log them out
 	 *
 	 * @param jti
-	 * @param user
+	 * @param auth
 	 */
-	async logoutUser(jti: string, user: User): Promise<void> {
+	async logoutUser(jti: string, auth: User): Promise<void> {
 		try {
-			this.logger.log(`Attempting to log out user: ${user.uuid} with jti: ${jti}`);
+			this.logger.log(`Attempting to log out user: ${auth.uuid} with jti: ${jti}`);
 			await this.cacheManager.del(`auth:user-session:${jti}`);
 		} catch (err) {
 			this.logger.error(err);
 		}
+	}
+
+	/**
+	 * Updates the current user
+	 *
+	 * @param body
+	 */
+	async updateUser(auth: User, body: UpdateUserDto): Promise<User> {
+		this.logger.log(`Updating user: ${auth.uuid}`);
+
+		// Find the user
+		const user = await this.userRepository.findOneBy({ uuid: auth.uuid, });
+		if (user === null) {
+			throw new BadRequestException({
+				errors: {
+					error: "Faild to find the user.",
+				},
+			});
+		}
+
+		user.fullName = body.fullName.trim();
+		return this.userRepository.save(user);
+	}
+
+	/**
+	 * Updates the current user's email address
+	 *
+	 * @param auth
+	 * @param body
+	 */
+	async updateUserEmailAddress(auth: User, body: UpdateUserEmailAddressDto) {
+		this.logger.log(`Updating user email address: ${auth.uuid}`);
+
+		// Check if another user exists by the same email address
+		const userByEmailAddress = await this.userRepository.findOneBy({
+			emailAddress: body.emailAddress.trim().toLowerCase(),
+		});
+
+		// Make sure we don't assign the same email address to more than 1 users
+		if (userByEmailAddress !== null && userByEmailAddress.uuid !== auth.uuid) {
+			throw new BadRequestException({
+				errors: {
+					emailAddress: "Email address already exists. Please use a different email address.",
+				},
+			});
+		}
+
+		// Find the user
+		const user = await this.userRepository.findOneBy({ uuid: auth.uuid, });
+		if (user === null) {
+			throw new BadRequestException({
+				errors: {
+					error: "Faild to find the user.",
+				},
+			});
+		}
+
+		user.emailAddress = body.emailAddress.trim().toLowerCase();
+		return this.userRepository.save(user);
+	}
+
+	/**
+	 * Updates the password of the current user
+	 *
+	 * @param auth
+	 * @param body
+	 * @returns
+	 */
+	async updateUserPassword(auth: User, body: UpdateUserPasswordDto): Promise<User> {
+		this.logger.log(`Update user password: ${auth.uuid}`);
+
+		// Make sure new and confirmed passwords match
+		if (body.passwordNew.trim() !== body.passwordConfirm.trim()) {
+			throw new BadRequestException({
+				status: "fail",
+				errors: {
+					passwordConfirm: "Your confirmed password don't match your new password. Please check and try again.",
+				},
+			});
+		}
+
+		// Find the user
+		const user = await this.userRepository.findOneBy({ uuid: auth.uuid, });
+		if (user === null) {
+			throw new BadRequestException({
+				status: "fail",
+				errors: {
+					error: "Failed to find the user by the provided id. Please check and try again.",
+				},
+			});
+		}
+
+		// Make sure the old password matches
+		if (!bcrypt.compareSync(body.passwordOld, user.password)) {
+			throw new BadRequestException({
+				status: "fail",
+				errors: {
+					passwordOld: "Failed to match the password. Please check and try again.",
+				},
+			});
+		}
+
+		user.password = await bcrypt.hash(body.passwordNew.trim(), 10);
+		return this.userRepository.save(user);
 	}
 
 	/**

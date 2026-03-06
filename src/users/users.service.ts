@@ -140,7 +140,7 @@ export class UsersService {
 	async updateEmailAddress(uuid: string, body: UpdateEmailAddressDto): Promise<User> {
 		this.logger.log(`Updating email address of the user: ${uuid}`);
 
-		// Check if the user exists by email address
+		// Check if another user exists by the same email address
 		const userByEmailAddress = await this.userRepository.findOneBy({
 			emailAddress: body.emailAddress.trim().toLowerCase(),
 		});
@@ -150,7 +150,7 @@ export class UsersService {
 			throw new BadRequestException({
 				status: "fail",
 				errors: {
-					error: "Email address already exists. Please use a different email address.",
+					emailAddress: "Email address already exists. Please use a different email address.",
 				},
 			});
 		}
