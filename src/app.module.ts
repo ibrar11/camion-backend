@@ -13,10 +13,15 @@ import KeyvRedis from "@keyv/redis";
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+import { AuthModule } from './auth/auth.module';
+
 import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
 
-import { AuthModule } from './auth/auth.module';
+import { Customer } from "./customers/entities/customer.entity";
+import { CustomersModule } from './customers/customers.module';
+
+import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
 @Module({
 	imports: [
@@ -47,6 +52,8 @@ import { AuthModule } from './auth/auth.module';
 				database: configService.get<string>("DB_DATABASE"),
 				entities: [
 					User,
+					Customer,
+					RegistrationRequest,
 				],
 				synchronize: true,
 			}),
@@ -60,7 +67,7 @@ import { AuthModule } from './auth/auth.module';
 				publicKey: fs.readFileSync(path.join(process.cwd(), "certs/public.pem"), "utf-8"),
 				signOptions: {
 					algorithm: "RS256",
-					expiresIn: parseInt(configService.get<string>('JWT_EXPIRES_IN') ?? "2592000"),
+					expiresIn: configService.get<number>('JWT_EXPIRES_IN') ?? 2592000,
 					issuer: configService.get<string>('JWT_ISSUER'),
 				},
 				verifyOptions: {
@@ -68,8 +75,9 @@ import { AuthModule } from './auth/auth.module';
 				},
 			}),
 		}),
-		UsersModule,
 		AuthModule,
+		UsersModule,
+		CustomersModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

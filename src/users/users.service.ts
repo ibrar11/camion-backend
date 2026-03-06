@@ -21,9 +21,7 @@ import { UserRole } from './enums/UserRole';
 
 @Injectable()
 export class UsersService {
-	constructor(
-		@InjectRepository(User) private readonly userRepository: Repository<User>,
-	) {
+	constructor(@InjectRepository(User) private readonly userRepository: Repository<User>) {
 	}
 
 	/**
@@ -115,7 +113,7 @@ export class UsersService {
 			throw new BadRequestException({
 				status: "fail",
 				errors: {
-					error: "Failed to find the user by the provided id. Please check and try again.",
+					error: "Failed to find the user by the provided uuid. Please check and try again.",
 				},
 			});
 		}
@@ -139,7 +137,6 @@ export class UsersService {
 
 		// Make sure we don't create another user using the same email address
 		if (userByEmailAddress !== null && userByEmailAddress.uuid !== uuid) {
-			console.log(userByEmailAddress.id, uuid);
 			throw new BadRequestException({
 				status: "fail",
 				errors: {
@@ -192,6 +189,8 @@ export class UsersService {
 	 * @param uuid
 	 */
 	async delete(uuid: string): Promise<void> {
-		await this.userRepository.delete(uuid);
+		await this.userRepository.delete({
+			uuid: uuid,
+		});
 	}
 }
