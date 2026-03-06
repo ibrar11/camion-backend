@@ -5,6 +5,7 @@ import {
 	HttpStatus,
 	Inject,
 	Post,
+	Put,
 	Req,
 	UseGuards,
 } from '@nestjs/common';
@@ -14,11 +15,15 @@ import { Request } from 'express';
 import { RegisterUserDto } from './dtos/RegisterUserDto';
 import { LoginUserDto } from './dtos/LoginUserDto';
 
+import { UpdateUserDto } from './dtos/UpdateUserDto';
+import { UpdateUserEmailAddressDto } from './dtos/UpdateUserEmailAddressDto';
+import { UpdateUserPasswordDto } from './dtos/UpdateUserPasswordDto';
+
 import { RegisterCustomerByEmailAddressDto } from './dtos/RegisterCustomerByEmailAddressDto';
 import { RegisterCustomerByPhoneNumberDto } from './dtos/RegisterCustomerByPhoneNumberDto';
 import { VerifyCustomerDto } from './dtos/VerifyCustomerDto';
-
 import { RegisterCustomerDto } from './dtos/RegisterCustomerDto';
+
 import { LoginCustomerByEmailAddressDto } from './dtos/LoginCustomerByEmailAddressDto';
 import { LoginCustomerByPhoneNumberDto } from './dtos/LoginCustomerByPhoneNumberDto';
 
@@ -27,11 +32,11 @@ import { UserAuthResponse } from './response/UserAuthResponse';
 import { CustomerAuthResponse } from './response/CustomerAuthResponse';
 
 import { User } from 'src/users/entities/user.entity';
+import { Customer } from 'src/customers/entities/customer.entity';
 
 import { AuthService } from './auth.service';
 
 import { AuthGuard } from './auth.guard';
-import { Customer } from 'src/customers/entities/customer.entity';
 
 @Controller('v1/auth')
 export class AuthController {
@@ -60,6 +65,48 @@ export class AuthController {
 		}
 	): Promise<void> {
 		return this.authService.logoutUser(req.jti, req.user);
+	}
+
+	@UseGuards(AuthGuard)
+	@HttpCode(HttpStatus.OK)
+	@Put('user/self')
+	actionUpdateUser(
+		@Req()
+		req: Request & {
+			user: User,
+		},
+		@Body()
+		body: UpdateUserDto,
+	) {
+		return this.authService.updateUser(req.user, body);
+	}
+
+	@UseGuards(AuthGuard)
+	@HttpCode(HttpStatus.OK)
+	@Put('user/self/email-address')
+	actionUpdateUserEmailAddress(
+		@Req()
+		req: Request & {
+			user: User,
+		},
+		@Body()
+		body: UpdateUserEmailAddressDto,
+	) {
+		return this.authService.updateUserEmailAddress(req.user, body);
+	}
+
+	@UseGuards(AuthGuard)
+	@HttpCode(HttpStatus.OK)
+	@Put('user/self/password')
+	action(
+		@Req()
+		req: Request & {
+			user: User,
+		},
+		@Body()
+		body: UpdateUserPasswordDto,
+	) {
+		return this.authService.updateUserPassword(req.user, body);
 	}
 
 	@HttpCode(HttpStatus.CREATED)
