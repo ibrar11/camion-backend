@@ -17,63 +17,66 @@ import { UpdateUserDto } from './dtos/UpdateUserDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
 import { UpdatePasswordDto } from './dtos/UpdatePasswordDto';
 
+import { UserRole } from './enums/UserRole';
+
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
 
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
 
-@Controller('users')
+import { Roles } from '../auth/roles.decorator';
+
+@UseGuards(AuthGuard, RolesGuard)
+@Controller('v1/users')
 export class UsersController {
 	constructor(@Inject(UsersService) private readonly usersService: UsersService) { }
 
-	@UseGuards(AuthGuard)
-	@HttpCode(HttpStatus.CREATED)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Post()
+	@HttpCode(HttpStatus.CREATED)
 	actionCreateUser(@Body() body: CreateUserDto): Promise<User> {
 		return this.usersService.createUser(body);
 	}
 
-	@UseGuards(AuthGuard)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@HttpCode(HttpStatus.OK)
 	@Get()
 	actionFindAll(): Promise<Array<User>> {
 		return this.usersService.findAll();
 	}
 
-	@UseGuards(AuthGuard)
-	@HttpCode(HttpStatus.OK)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@Get(':uuid')
-	async actionFindOne(@Param('uuid') uuid: string): Promise<{ status: "fail" | "success", data: User, }> {
-		return {
-			status: "success",
-			data: await this.usersService.findOne(uuid),
-		};
+	@HttpCode(HttpStatus.OK)
+	async actionFindOne(@Param('uuid') uuid: string): Promise<User> {
+		return this.usersService.findOne(uuid);
 	}
 
-	@UseGuards(AuthGuard)
-	@HttpCode(HttpStatus.OK)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid')
+	@HttpCode(HttpStatus.OK)
 	actionUpdateOne(@Param('uuid') uuid: string, @Body() body: UpdateUserDto): Promise<User> {
 		return this.usersService.updateUser(uuid, body);
 	}
 
-	@UseGuards(AuthGuard)
-	@HttpCode(HttpStatus.OK)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid/email-address')
+	@HttpCode(HttpStatus.OK)
 	actionUpdateEmailAddress(@Param('uuid') uuid: string, @Body() body: UpdateEmailAddressDto): Promise<User> {
 		return this.usersService.updateEmailAddress(uuid, body);
 	}
 
-	@UseGuards(AuthGuard)
-	@HttpCode(HttpStatus.OK)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid/password')
+	@HttpCode(HttpStatus.OK)
 	actionUpdatePassword(@Param('uuid') uuid: string, @Body() body: UpdatePasswordDto): Promise<User> {
 		return this.usersService.updatePassword(uuid, body);
 	}
 
-	@UseGuards(AuthGuard)
-	@HttpCode(HttpStatus.OK)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Delete(':uuid')
+	@HttpCode(HttpStatus.OK)
 	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
 		return this.usersService.delete(uuid);
 	}
