@@ -5,6 +5,7 @@ import * as bcrypt from "bcrypt";
 import {
 	BadRequestException,
 	Injectable,
+	Logger,
 	NotFoundException,
 } from '@nestjs/common';
 
@@ -21,8 +22,9 @@ import { UserRole } from './enums/UserRole';
 
 @Injectable()
 export class UsersService {
-	constructor(@InjectRepository(User) private readonly userRepository: Repository<User>) {
-	}
+	private readonly logger = new Logger(UsersService.name);
+
+	constructor(@InjectRepository(User) private readonly userRepository: Repository<User>) { }
 
 	/**
 	 * Creates a user
@@ -31,6 +33,8 @@ export class UsersService {
 	 * @returns
 	 */
 	async createUser(body: CreateUserDto): Promise<User> {
+		this.logger.log(`Attempting to create user: ${body.emailAddress}`);
+
 		// Check if the user exists by email address
 		const userByEmailAddress = await this.userRepository.findOneBy({
 			emailAddress: body.emailAddress.trim().toLowerCase(),
@@ -80,6 +84,7 @@ export class UsersService {
 	 * @returns
 	 */
 	findAll(): Promise<User[]> {
+		this.logger.log(`Retrieving users`);
 		return this.userRepository.find();
 	}
 
@@ -90,6 +95,7 @@ export class UsersService {
 	 * @returns
 	 */
 	async findOne(uuid: string): Promise<User> {
+		this.logger.log(`Retrieving user: ${uuid}`);
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
 		if (user === null) {
 			throw new NotFoundException({
@@ -107,6 +113,8 @@ export class UsersService {
 	 * @returns
 	 */
 	async updateUser(uuid: string, body: UpdateUserDto): Promise<User> {
+		this.logger.log(`Updating user: ${uuid}`);
+
 		// Find the user
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
 		if (user === null) {
@@ -130,6 +138,8 @@ export class UsersService {
 	 * @returns
 	 */
 	async updateEmailAddress(uuid: string, body: UpdateEmailAddressDto): Promise<User> {
+		this.logger.log(`Updating email address of the user: ${uuid}`);
+
 		// Check if the user exists by email address
 		const userByEmailAddress = await this.userRepository.findOneBy({
 			emailAddress: body.emailAddress.trim().toLowerCase(),
@@ -168,6 +178,8 @@ export class UsersService {
 	 * @returns
 	 */
 	async updatePassword(uuid: string, body: UpdatePasswordDto): Promise<User> {
+		this.logger.log(`Updating password of the user: ${uuid}`);
+
 		// Find the user
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
 		if (user === null) {
@@ -189,6 +201,8 @@ export class UsersService {
 	 * @param uuid
 	 */
 	async delete(uuid: string): Promise<void> {
+		this.logger.log(`Deleting user: ${uuid}`);
+
 		await this.userRepository.delete({
 			uuid: uuid,
 		});
