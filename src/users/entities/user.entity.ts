@@ -46,6 +46,9 @@ export class User {
 	isEmailAddressVerified: boolean;
 
 	@Column({ type: "boolean", default: false, })
+	isMfaEnabled: boolean;
+
+	@Column({ type: "boolean", default: false, })
 	isActive: boolean;
 
 	@Exclude()

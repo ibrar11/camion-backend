@@ -2,6 +2,8 @@ import * as crypto from "node:crypto";
 
 import * as bcrypt from "bcrypt";
 
+import speakeasy from "speakeasy";
+
 import {
 	BadRequestException,
 	Inject,
@@ -28,12 +30,18 @@ import { UpdateUserDto } from "./dtos/UpdateUserDto";
 import { UpdateUserEmailAddressDto } from "./dtos/UpdateUserEmailAddressDto";
 import { UpdateUserPasswordDto } from "./dtos/UpdateUserPasswordDto";
 
+import { EnableUserMfaDto } from "./dtos/EnableUserMfaDto";
+
 import { RegisterCustomerByEmailAddressDto } from "./dtos/RegisterCustomerByEmailAddressDto";
 import { RegisterCustomerByPhoneNumberDto } from "./dtos/RegisterCustomerByPhoneNumberDto";
 import { VerifyCustomerDto } from "./dtos/VerifyCustomerDto";
 import { RegisterCustomerDto } from "./dtos/RegisterCustomerDto";
 import { LoginCustomerByEmailAddressDto } from "./dtos/LoginCustomerByEmailAddressDto";
 import { LoginCustomerByPhoneNumberDto } from "./dtos/LoginCustomerByPhoneNumberDto";
+
+import { UpdateCustomerEmailAddressDto } from "./dtos/UpdateCustomerEmailAddressDto";
+import { UpdateCustomerDto } from "./dtos/UpdateCustomerDto";
+import { UpdateCustomerPasswordDto } from "./dtos/UpdateCustomerPasswordDto";
 
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/enums/UserRole';
@@ -45,6 +53,7 @@ import { RegistrationRequest } from "./entities/registration-request.entity";
 import { UserAuthResponse } from './response/UserAuthResponse';
 import { CustomerAuthVerificationResponse } from "./response/CustomerAuthVerificationResponse";
 import { CustomerAuthResponse } from "./response/CustomerAuthResponse";
+import { UserMfaSetupResponse } from "./response/UserMfaSetupResponse";
 
 @Injectable()
 export class AuthService {
@@ -179,16 +188,17 @@ export class AuthService {
 	}
 
 	/**
-	 * Updates the current user
+	 * Sets up the mfa on the user account
 	 *
-	 * @param body
+	 * @param principal
+	 * @returns
 	 */
-	async updateUser(auth: User, body: UpdateUserDto): Promise<User> {
-		this.logger.log(`Updating user: ${auth.uuid}`);
+	async setupMfa(principal: User): Promise<UserMfaSetupResponse> {
+		this.logger.log(`Setting up mfa for user: ${principal.uuid}`);
 
 		// Find the user
-		const user = await this.userRepository.findOneBy({ uuid: auth.uuid, });
-		if (user === null) {
+		const self = await this.userRepository.findOneBy({ id: principal.id, });
+		if (self === null) {
 			throw new BadRequestException({
 				errors: {
 					error: "Faild to find the user.",
@@ -196,18 +206,115 @@ export class AuthService {
 			});
 		}
 
-		user.fullName = body.fullName.trim();
-		return this.userRepository.save(user);
+		// Make sure mfa isn't already enabled.
+		if (self.isMfaEnabled) {
+			throw new BadRequestException({
+				errors: {
+					error: "MFA is already been enabled.",
+				},
+			});
+		}
+
+		// Generate a secret for the MFA
+		const secret = speakeasy.generateSecret({
+			otpauth_url: true,
+			name: `${self.emailAddress} (Camion)`,
+		});
+
+		// Setup MFA for the user account
+		self.secret = secret.base32;
+		this.userRepository.save(self);
+
+		return {
+			otpauth_url: secret.otpauth_url as string,
+		};
+	}
+
+	/**
+	 * Enable MFA on a user account
+	 *
+	 * @param principal
+	 * @param body
+	 */
+	async enableMfa(principal: User, body: EnableUserMfaDto): Promise<void> {
+		this.logger.log(`Enabling mfa for user: ${principal.uuid}`);
+
+		// Find the user
+		const self = await this.userRepository.findOneBy({ id: principal.id, });
+		if (self === null) {
+			throw new BadRequestException({
+				errors: {
+					error: "Faild to find the user.",
+				},
+			});
+		}
+
+		// Make sure mfa isn't already enabled.
+		if (self.isMfaEnabled) {
+			throw new BadRequestException({
+				errors: {
+					error: "MFA is already been enabled.",
+				},
+			});
+		}
+
+		// Verify user password before enabling mfa
+		if (!bcrypt.compareSync(body.password, self.password)) {
+			throw new BadRequestException({
+				status: "fail",
+				errors: {
+					error: "We weren't able to verify your password. Please check your password and try again.",
+				},
+			});
+		}
+
+		// Verify the verification code against the secret stored.
+		if (!speakeasy.totp.verify({ secret: self.secret, encoding: "base32", token: body.verificationCode, window: 1 })) {
+			throw new BadRequestException({
+				errors: {
+					error: "Failed to verify your token. Please check and try again.",
+				},
+			});
+		}
+
+		// Enable mfa on user accounts
+		self.isMfaEnabled = true;
+		this.userRepository.save(self);
+	}
+
+	/**
+	 * Updates the current user
+	 *
+	 * @param principal
+	 * @param body
+	 * @returns
+	 */
+	async updateUser(principal: User, body: UpdateUserDto): Promise<User> {
+		this.logger.log(`Updating user: ${principal.uuid}`);
+
+		// Find the user
+		const self = await this.userRepository.findOneBy({ id: principal.id, });
+		if (self === null) {
+			throw new BadRequestException({
+				errors: {
+					error: "Faild to find the user.",
+				},
+			});
+		}
+
+		self.fullName = body.fullName.trim();
+		return this.userRepository.save(self);
 	}
 
 	/**
 	 * Updates the current user's email address
 	 *
-	 * @param auth
+	 * @param principal
 	 * @param body
+	 * @returns
 	 */
-	async updateUserEmailAddress(auth: User, body: UpdateUserEmailAddressDto) {
-		this.logger.log(`Updating user email address: ${auth.uuid}`);
+	async updateUserEmailAddress(principal: User, body: UpdateUserEmailAddressDto) {
+		this.logger.log(`Updating user email address: ${principal.uuid}`);
 
 		// Check if another user exists by the same email address
 		const userByEmailAddress = await this.userRepository.findOneBy({
@@ -215,7 +322,7 @@ export class AuthService {
 		});
 
 		// Make sure we don't assign the same email address to more than 1 users
-		if (userByEmailAddress !== null && userByEmailAddress.uuid !== auth.uuid) {
+		if (userByEmailAddress !== null && userByEmailAddress.uuid !== principal.uuid) {
 			throw new BadRequestException({
 				errors: {
 					emailAddress: "Email address already exists. Please use a different email address.",
@@ -224,8 +331,8 @@ export class AuthService {
 		}
 
 		// Find the user
-		const user = await this.userRepository.findOneBy({ uuid: auth.uuid, });
-		if (user === null) {
+		const self = await this.userRepository.findOneBy({ id: principal.id, });
+		if (self === null) {
 			throw new BadRequestException({
 				errors: {
 					error: "Faild to find the user.",
@@ -233,19 +340,19 @@ export class AuthService {
 			});
 		}
 
-		user.emailAddress = body.emailAddress.trim().toLowerCase();
-		return this.userRepository.save(user);
+		self.emailAddress = body.emailAddress.trim().toLowerCase();
+		return this.userRepository.save(self);
 	}
 
 	/**
 	 * Updates the password of the current user
 	 *
-	 * @param auth
+	 * @param principal
 	 * @param body
 	 * @returns
 	 */
-	async updateUserPassword(auth: User, body: UpdateUserPasswordDto): Promise<User> {
-		this.logger.log(`Update user password: ${auth.uuid}`);
+	async updateUserPassword(principal: User, body: UpdateUserPasswordDto): Promise<User> {
+		this.logger.log(`Updating user password: ${principal.uuid}`);
 
 		// Make sure new and confirmed passwords match
 		if (body.passwordNew.trim() !== body.passwordConfirm.trim()) {
@@ -258,8 +365,8 @@ export class AuthService {
 		}
 
 		// Find the user
-		const user = await this.userRepository.findOneBy({ uuid: auth.uuid, });
-		if (user === null) {
+		const self = await this.userRepository.findOneBy({ id: principal.id, });
+		if (self === null) {
 			throw new BadRequestException({
 				status: "fail",
 				errors: {
@@ -269,7 +376,7 @@ export class AuthService {
 		}
 
 		// Make sure the old password matches
-		if (!bcrypt.compareSync(body.passwordOld, user.password)) {
+		if (!bcrypt.compareSync(body.passwordOld, self.password)) {
 			throw new BadRequestException({
 				status: "fail",
 				errors: {
@@ -278,8 +385,8 @@ export class AuthService {
 			});
 		}
 
-		user.password = await bcrypt.hash(body.passwordNew.trim(), 10);
-		return this.userRepository.save(user);
+		self.password = await bcrypt.hash(body.passwordNew.trim(), 10);
+		return this.userRepository.save(self);
 	}
 
 	/**
@@ -683,5 +790,109 @@ export class AuthService {
 		} catch (err) {
 			this.logger.error(err);
 		}
+	}
+
+	/***
+	 * Updates the current customer
+	 *
+	 * @param principal
+	 * @param body
+	 * @returns
+	 */
+	async updateCustomer(principal: Customer, body: UpdateCustomerDto): Promise<Customer> {
+		this.logger.log(`Updating user: ${principal.uuid}`);
+
+		// Find the customer
+		const self = await this.customerRepository.findOneBy({ id: principal.id, });
+		if (self === null) {
+			throw new BadRequestException({
+				errors: {
+					error: "Failed to find the customer.",
+				},
+			});
+		}
+
+		self.fullName = body.fullName.trim();
+		return this.customerRepository.save(self);
+	}
+
+	/**
+	 * Updates the current customer's email address
+	 *
+	 * @param principal
+	 * @param body
+	 */
+	async updateCustomerEmailAddress(principal: Customer, body: UpdateCustomerEmailAddressDto): Promise<Customer> {
+		this.logger.log(`Updating customer email address: ${principal.uuid}`);
+
+		// Check if another customer exists by the same email address
+		const customerByEmailAddress = await this.customerRepository.findOneBy({
+			emailAddress: body.emailAddress.trim().toLowerCase(),
+		});
+
+		// Make sure we don't assign the same email address to more than 1 customers
+		if (customerByEmailAddress !== null && customerByEmailAddress.uuid !== principal.uuid) {
+			throw new BadRequestException({
+				emailAddress: "Email address already exists. Please use a different email address.",
+			});
+		}
+
+		// Find the customer
+		const customer = await this.customerRepository.findOneBy({ id: principal.id, });
+		if (customer === null) {
+			throw new BadRequestException({
+				errors: {
+					error: "Faild to find the customer.",
+				},
+			});
+		}
+
+		customer.emailAddress = body.emailAddress.trim().toLowerCase();
+		return this.customerRepository.save(customer);
+	}
+
+	/**
+	 * Updates the password of the current customer
+	 *
+	 * @param principal
+	 * @param body
+	 * @returns
+	 */
+	async updateCustomerPassword(principal: Customer, body: UpdateCustomerPasswordDto): Promise<Customer> {
+		this.logger.log(`Updating customer password: ${principal.uuid}`);
+
+		// Make sure new and confirmed passwords match
+		if (body.passwordNew.trim() !== body.passwordConfirm.trim()) {
+			throw new BadRequestException({
+				status: "fail",
+				errors: {
+					passwordConfirm: "Your confirmed password don't match your new password. Please check and try again.",
+				},
+			});
+		}
+
+		// Find the customer
+		const customer = await this.customerRepository.findOneBy({ id: principal.id, });
+		if (customer === null) {
+			throw new BadRequestException({
+				status: "fail",
+				errors: {
+					error: "Failed to find the customer by the provided id. Please check and try again.",
+				},
+			});
+		}
+
+		// Make sure the old password matches
+		if (bcrypt.compareSync(body.passwordOld, customer.password)) {
+			throw new BadRequestException({
+				status: "fail",
+				errors: {
+					passwordOld: "Failed to match the password. Please check and try again.",
+				},
+			});
+		}
+
+		customer.password = bcrypt.hashSync(body.passwordNew.trim(), 10);
+		return this.customerRepository.save(customer);
 	}
 }
