@@ -23,6 +23,15 @@ import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
+import { Product } from "./products/entities/product.entity";
+import { ProductOption } from "./products/entities/product-option.entity";
+import { ProductOptionValue } from "./products/entities/product-option-value.entity";
+import { ProductVariant } from "./products/entities/product-variant.entity";
+import { ProductVariantImage } from "./products/entities/product-variant-image.entity";
+import { ProductVariantInventoryItem } from "./products/entities/product-variant-inventory-item.entity";
+import { ProductVariantOptionValue } from "./products/entities/product-variant-option-value.entity";
+import { ProductsModule } from './products/products.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -54,6 +63,14 @@ import { RegistrationRequest } from "./auth/entities/registration-request.entity
 					User,
 					Customer,
 					RegistrationRequest,
+
+					Product,
+					ProductOption,
+					ProductOptionValue,
+					ProductVariant,
+					ProductVariantImage,
+					ProductVariantInventoryItem,
+					ProductVariantOptionValue,
 				],
 				synchronize: true,
 			}),
@@ -78,6 +95,7 @@ import { RegistrationRequest } from "./auth/entities/registration-request.entity
 		AuthModule,
 		UsersModule,
 		CustomersModule,
+		ProductsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
