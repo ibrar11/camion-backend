@@ -9,16 +9,20 @@ import {
   Param,
   Post,
   Put,
+  Patch,
   UseGuards,
 } from '@nestjs/common';
 
-import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
+import { UpdateClientStatusDto } from './dto/update-client-status.dto';
+
+import { UserRole } from '../users/enums/UserRole';
+import { ClientsService } from './clients.service';
 
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { UserRole } from '../users/enums/UserRole';
 
 @Controller('v1/clients')
 @UseGuards(AuthGuard, RolesGuard)
@@ -29,40 +33,56 @@ export class ClientsController {
   ) {}
 
   @Post()
-  @Roles(UserRole.SuperAdmin)
+  @Roles(UserRole.SuperAdmin, UserRole.Admin)
   @HttpCode(HttpStatus.CREATED)
-  async createClient(@Body() body: CreateClientDto) {
+  async actionCreateClient(
+    @Body() body: CreateClientDto,
+  ): Promise<any> {
     return this.clientsService.createClient(body);
   }
 
   @Get()
   @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
   @HttpCode(HttpStatus.OK)
-  async getAllClients() {
+  async actionGetAllClients(): Promise<any[]> {
     return this.clientsService.findAll();
   }
 
   @Get(':uuid')
   @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
   @HttpCode(HttpStatus.OK)
-  async getClientByUuid(@Param('uuid') uuid: string) {
+  async actionGetClientByUuid(
+    @Param('uuid') uuid: string,
+  ): Promise<any> {
     return this.clientsService.findOne(uuid);
   }
 
   @Put(':uuid')
   @Roles(UserRole.SuperAdmin, UserRole.Admin)
   @HttpCode(HttpStatus.OK)
-  async updateClient(
+  async actionUpdateClient(
     @Param('uuid') uuid: string,
-    @Body() body: CreateClientDto,
-  ) {
+    @Body() body: UpdateClientDto,
+  ): Promise<any> {
     return this.clientsService.update(uuid, body);
+  }
+
+  @Patch(':uuid/status')
+  @Roles(UserRole.SuperAdmin, UserRole.Admin)
+  @HttpCode(HttpStatus.OK)
+  async actionUpdateClientStatus(
+    @Param('uuid') uuid: string,
+    @Body() body: UpdateClientStatusDto,
+  ): Promise<any> {
+    return this.clientsService.updateStatus(uuid, body.status);
   }
 
   @Delete(':uuid')
   @Roles(UserRole.SuperAdmin)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteClient(@Param('uuid') uuid: string) {
-    return this.clientsService.delete(uuid);
+  @HttpCode(HttpStatus.OK)
+  async actionDeleteClient(
+    @Param('uuid') uuid: string,
+  ): Promise<void> {
+    await this.clientsService.delete(uuid);
   }
 }

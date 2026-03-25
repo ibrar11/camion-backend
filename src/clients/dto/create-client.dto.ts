@@ -1,10 +1,15 @@
-import { IsOptional, IsString, IsUrl, MaxLength, IsIn } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateClientDto {
   @IsOptional()
   @IsString()
   @MaxLength(128)
-  name?: string;
+  name: string;
 
   @IsOptional()
   @IsString()
@@ -14,9 +19,4 @@ export class CreateClientDto {
   @IsOptional()
   @IsUrl()
   homepage?: string;
-
-  @IsOptional()
-  @IsString()
-  @IsIn(['Active', 'Inactive', 'Banned'])
-  status?: 'Active' | 'Inactive' | 'Banned';
 }

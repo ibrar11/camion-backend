@@ -22,8 +22,9 @@ import { Customer } from "./customers/entities/customer.entity";
 import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
-import { ClientsModule } from "./clients/clients.module";
+
 import { Client } from './clients/entities/client.entity';
+import { ClientsModule } from "./clients/clients.module";
 
 @Module({
 	imports: [

@@ -1,75 +1,125 @@
+import { randomBytes } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { randomUUID, randomBytes } from 'crypto';
+
+import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 
 import { Client } from './entities/client.entity';
-import { CreateClientDto } from './dto/create-client.dto';
+import { ClientStatus } from './enums/client-status';
 
 @Injectable()
 export class ClientsService {
   constructor(
     @InjectRepository(Client)
-    private readonly clientRepo: Repository<Client>,
+    private readonly clientRepository: Repository<Client>,
   ) {}
 
-  /** Create a client */
-  async createClient(body: CreateClientDto) {
-    const uuid = randomUUID();
+  /**
+   * Creates a new client with a generated secret.
+   *
+   * @param body - Data to create the client
+   * @returns An object containing the client's UUID, name, and plaintext secret
+   */
+  async createClient(body: CreateClientDto): Promise<{ uuid: string; name?: string; secret: string }> {
     const plainSecret = randomBytes(48).toString('hex');
     const hashedSecret = await bcrypt.hash(plainSecret, 10);
 
-    const client = this.clientRepo.create({
-      uuid,
+    const client = this.clientRepository.create({
+      uuid: crypto.randomUUID(),
       name: body.name,
       description: body.description,
       homepage: body.homepage,
       secret: hashedSecret,
-      status: 'Active',
     });
 
-    await this.clientRepo.save(client);
+    await this.clientRepository.save(client);
 
     return {
       uuid: client.uuid,
-      name: client.name,
       secret: plainSecret,
     };
   }
 
-  /** Get all clients */
+  /**
+   * Retrieves all clients.
+   *
+   * @returns Array of clients with selected fields
+   */
   async findAll(): Promise<Client[]> {
-    return this.clientRepo.find({
+    return this.clientRepository.find({
       select: ['uuid', 'name', 'description', 'homepage', 'status'],
       order: { createdAt: 'DESC' },
     });
   }
 
-  /** Get one client by UUID */
+  /**
+   * Retrieves a client by UUID.
+   *
+   * @param uuid - The UUID of the client to retrieve
+   * @returns The client entity
+   * @throws NotFoundException if client does not exist
+   */
   async findOne(uuid: string): Promise<Client> {
-    const client = await this.clientRepo.findOne({
-      where: { uuid },
+    const client = await this.clientRepository.findOne({
+      where: { uuid: uuid },
       select: ['uuid', 'name', 'description', 'homepage', 'status'],
     });
     if (!client) throw new NotFoundException(`Client ${uuid} not found`);
     return client;
   }
 
-  /** Update a client */
-  async update(uuid: string, body: CreateClientDto): Promise<Client> {
-    const client = await this.clientRepo.findOne({ where: { uuid } });
+  /**
+   * Updates a client with the given fields.
+   *
+   * @param uuid - The UUID of the client to update
+   * @param dto - The fields to update
+   * @returns The updated client entity
+   */
+  async update(uuid: string, dto: UpdateClientDto): Promise<Client> {
+    const client = await this.clientRepository.findOne({
+      where: { uuid: uuid },
+    });
+
     if (!client) throw new NotFoundException(`Client ${uuid} not found`);
 
-    Object.assign(client, body);
-    return this.clientRepo.save(client);
+    if (dto.name !== undefined) client.name = dto.name;
+    if (dto.description !== undefined) client.description = dto.description;
+    if (dto.homepage !== undefined) client.homepage = dto.homepage;
+
+    return this.clientRepository.save(client);
   }
 
-  /** Delete a client */
-  async delete(uuid: string): Promise<void> {
-    const result = await this.clientRepo.delete({ uuid });
-    if (result.affected === 0) {
+  /**
+   * Updates the status of a client.
+   *
+   * @param uuid - The UUID of the client
+   * @param status - The new status to assign
+   * @returns The updated client entity
+   */
+  async updateStatus(uuid: string, status: ClientStatus): Promise<Client> {
+    const client = await this.clientRepository.findOne({
+      where: { uuid: uuid },
+    });
+
+    if (!client) {
       throw new NotFoundException(`Client ${uuid} not found`);
     }
+
+    client.status = status;
+
+    return this.clientRepository.save(client);
+  }
+
+  /**
+   * Deletes a client by UUID. 
+   * DELETE operations are idempotent; no error is thrown if the client does not exist.
+   *
+   * @param uuid - The UUID of the client to delete
+   */
+  async delete(uuid: string): Promise<void> {
+    await this.clientRepository.delete({ uuid: uuid });
   }
 }
