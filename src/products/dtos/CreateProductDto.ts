@@ -1,0 +1,61 @@
+import {
+	IsString,
+	MaxLength,
+	ValidateNested,
+} from "class-validator";
+
+export class TitleField {
+	@IsString()
+	@MaxLength(128)
+	ar: string;
+
+	@IsString()
+	@MaxLength(128)
+	en: string;
+}
+
+export class BriefField {
+	@IsString()
+	@MaxLength(256)
+	ar: string;
+
+	@IsString()
+	@MaxLength(256)
+	en: string;
+}
+
+export class DescriptionField {
+	@IsString()
+	@MaxLength(1024)
+	ar: string;
+
+	@IsString()
+	@MaxLength(1024)
+	en: string;
+}
+
+export class DescriptionHtmlField {
+	@IsString()
+	ar: string;
+
+	@IsString()
+	en: string;
+}
+
+export class CreateProductDto {
+	@IsString()
+	@MaxLength(64)
+	slug: string;
+
+	@ValidateNested()
+	title: TitleField;
+
+	@ValidateNested()
+	brief: BriefField;
+
+	@ValidateNested()
+	description: DescriptionField;
+
+	@ValidateNested()
+	descriptionHtml: DescriptionHtmlField;
+}
