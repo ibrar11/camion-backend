@@ -18,10 +18,12 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { UpdateClientStatusDto } from './dto/update-client-status.dto';
 
 import { UserRole } from '../users/enums/UserRole';
+
 import { ClientsService } from './clients.service';
 
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
+
 import { Roles } from '../auth/roles.decorator';
 
 @Controller('v1/clients')
