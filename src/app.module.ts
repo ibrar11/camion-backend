@@ -32,6 +32,8 @@ import { ProductVariantInventoryItem } from "./products/entities/product-variant
 import { ProductVariantOptionValue } from "./products/entities/product-variant-option-value.entity";
 import { ProductsModule } from './products/products.module';
 
+import { PaymentsModule } from './payments/payments.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -96,6 +98,7 @@ import { ProductsModule } from './products/products.module';
 		UsersModule,
 		CustomersModule,
 		ProductsModule,
+		PaymentsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
