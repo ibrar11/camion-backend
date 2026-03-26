@@ -32,6 +32,9 @@ import { ProductVariantInventoryItem } from "./products/entities/product-variant
 import { ProductVariantOptionValue } from "./products/entities/product-variant-option-value.entity";
 import { ProductsModule } from './products/products.module';
 
+import { CartItem } from "./cart/entities/cart-items.entity";
+import { CartModule } from './cart/cart.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -71,6 +74,8 @@ import { ProductsModule } from './products/products.module';
 					ProductVariantImage,
 					ProductVariantInventoryItem,
 					ProductVariantOptionValue,
+					
+					CartItem,
 				],
 				synchronize: true,
 			}),
@@ -96,6 +101,7 @@ import { ProductsModule } from './products/products.module';
 		UsersModule,
 		CustomersModule,
 		ProductsModule,
+		CartModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
