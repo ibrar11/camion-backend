@@ -18,9 +18,6 @@ export class ProductVariantOptionValue {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	@Column({ type: "uuid", nullable: false, unique: true, })
-	uuid: string;
-
 	@ManyToOne(() => ProductVariant, (variant) => variant.optionValues, { onDelete: "CASCADE", })
 	variant: ProductVariant;
 

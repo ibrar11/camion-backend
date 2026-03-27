@@ -23,7 +23,10 @@ import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
+import { Category } from "./inventory/entities/category.entity";
+
 import { Product } from "./inventory/entities/product.entity";
+import { ProductCategory } from "./inventory/entities/product-category.entity";
 import { ProductOption } from "./inventory/entities/product-option.entity";
 import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
 import { ProductVariant } from "./inventory/entities/product-variant.entity";
@@ -33,6 +36,7 @@ import { ProductVariantOptionValue } from "./inventory/entities/product-variant-
 
 import { InventoryItem } from "./inventory/entities/inventory-item.entity";
 import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
+
 import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
@@ -69,7 +73,10 @@ import { InventoryModule } from './inventory/inventory.module';
 					Customer,
 					RegistrationRequest,
 
+					Category,
+
 					Product,
+					ProductCategory,
 					ProductOption,
 					ProductOptionValue,
 					ProductVariant,
@@ -79,6 +86,7 @@ import { InventoryModule } from './inventory/inventory.module';
 
 					InventoryItem,
 					InventoryLevel,
+
 					Warehouse,
 				],
 				synchronize: true,

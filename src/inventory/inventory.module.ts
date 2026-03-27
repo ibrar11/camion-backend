@@ -8,9 +8,15 @@ import { UsersService } from 'src/users/users.service';
 import { Customer } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
 
+import { Category } from './entities/category.entity';
+import { CategoryService } from './category.service';
+import { CategoryController } from './category.controller';
+
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
+
+import { ProductCategory } from './entities/product-category.entity';
 
 import { ProductVariant } from './entities/product-variant.entity';
 import { ProductVariantService } from './product-variant.service';
@@ -43,7 +49,9 @@ import { WarehouseController } from './warehouse.controller';
 		TypeOrmModule.forFeature([
 			User,
 			Customer,
+			Category,
 			Product,
+			ProductCategory,
 			ProductOption,
 			ProductOptionValue,
 			ProductVariant,
@@ -58,6 +66,7 @@ import { WarehouseController } from './warehouse.controller';
 	providers: [
 		UsersService,
 		CustomersService,
+		CategoryService,
 		ProductsService,
 		ProductVariantService,
 		ProductOptionService,
@@ -66,6 +75,7 @@ import { WarehouseController } from './warehouse.controller';
 		WarehouseService,
 	],
 	controllers: [
+		CategoryController,
 		ProductsController,
 		ProductVariantController,
 		ProductOptionController,
