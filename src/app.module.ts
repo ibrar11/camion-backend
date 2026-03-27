@@ -36,6 +36,7 @@ import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
 import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
+import { ProcurementModule } from './procurement/procurement.module';
 
 @Module({
 	imports: [
@@ -105,6 +106,7 @@ import { InventoryModule } from './inventory/inventory.module';
 		UsersModule,
 		CustomersModule,
 		InventoryModule,
+		ProcurementModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
