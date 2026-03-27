@@ -63,7 +63,7 @@ export class ProductVariantImageService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAll(variantUUID: string, filters: string, sort: string, pageNumber: number, itemsPerPage: number): Promise<Array<ProductVariantImage>> {
+	async findAll(variantUUID: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ProductVariantImage>> {
 		this.logger.log(`Retrieving product variant images of product variant: ${variantUUID}`);
 
 		// Find the variant

@@ -78,7 +78,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAll(filters: string, sort: string, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products`);
 
 		// Get pagination params

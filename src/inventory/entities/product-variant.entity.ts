@@ -2,6 +2,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	JoinColumn,
 	ManyToOne,
 	OneToMany,
 	OneToOne,
@@ -18,6 +19,7 @@ import { Product } from "./product.entity";
 import { ProductVariantImage } from "./product-variant-image.entity";
 import { ProductVariantOptionValue } from "./product-variant-option-value.entity";
 import { ProductVariantInventoryItem } from "./product-variant-inventory-item.entity";
+import { InventoryItem } from "./inventory-item.entity";
 
 export class Money {
 	@Column({ type: "numeric", })
@@ -87,8 +89,12 @@ export class ProductVariant {
 	@ManyToOne(() => Product, (product) => product.variants, { onDelete: "CASCADE", })
 	product: Product;
 
-	@OneToOne(() => ProductVariantInventoryItem, (inventoryItem) => inventoryItem.variant, { onDelete: "CASCADE", })
-	inventoryItem: ProductVariantInventoryItem;
+	@OneToOne(() => InventoryItem, (item) => item.variant)
+	@JoinColumn()
+	inventoryItem: InventoryItem;
+
+	// @OneToOne(() => ProductVariantInventoryItem, (inventoryItem) => inventoryItem.variant, { onDelete: "CASCADE", })
+	// inventoryItem: ProductVariantInventoryItem;
 
 	@OneToMany(() => ProductVariantOptionValue, (productVariantOptionValue) => productVariantOptionValue.variant, { cascade: true, })
 	optionValues: Array<ProductVariantOptionValue>;

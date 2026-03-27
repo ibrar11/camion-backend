@@ -18,6 +18,9 @@ import { Product } from "./entities/product.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantOptionValue } from "./entities/product-variant-option-value.entity";
+import { InventoryItem } from "./entities/inventory-item.entity";
+import { InventoryLevel } from "./entities/inventory-level.entity";
+import { Warehouse } from "./entities/warehouse.entity";
 
 @Injectable()
 export class ProductVariantService {
@@ -28,6 +31,9 @@ export class ProductVariantService {
 		@InjectRepository(ProductOptionValue) private readonly productOptionValueRepository: Repository<ProductOptionValue>,
 		@InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantOptionValue) private readonly productVariantOptionValueRepository: Repository<ProductVariantOptionValue>,
+		@InjectRepository(InventoryItem) private readonly inventoryItemRepository: Repository<InventoryItem>,
+		@InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
+		@InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
 	) { }
 
 	/**
@@ -44,7 +50,15 @@ export class ProductVariantService {
 		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Find the warehouse
+		const warehouse = await this.warehouseRepository.findOneBy({ uuid: body.warehouse, });
+		if (warehouse === null) {
+			throw new NotFoundException({
+				error: "Failed to find the warehouse. Please check and try again.",
 			});
 		}
 
@@ -61,20 +75,37 @@ export class ProductVariantService {
 		variant.dimensions = body.dimensions;
 		await this.variantRepository.save(variant);
 
+		// Create the inventory item for the variant
+		const inventoryItem = new InventoryItem();
+		inventoryItem.uuid = crypto.randomUUID();
+		inventoryItem.sku = body.sku.trim();
+		inventoryItem.variant = variant;
+		await this.inventoryItemRepository.save(inventoryItem);
+
+		// Create the inventory level in the warehouse
+		const inventoryLevel = new InventoryLevel();
+		inventoryLevel.uuid = crypto.randomUUID();
+		inventoryLevel.quantity = body.quantity;
+		inventoryLevel.inventoryItem = inventoryItem;
+		inventoryLevel.warehouse = warehouse;
+		await this.inventoryLevelRepository.save(inventoryLevel);
+
 		// Find the product option values and create product variant option values
 		// This is the join the product option values to its associated product variant.
-		body.optionValues.forEach(async optionValueUUID => {
-			const optionValue = await this.productOptionValueRepository.findOneBy({ uuid: optionValueUUID, });
-			if (optionValue === null) {
-				return;
-			}
+		if (body.optionValues !== null && body.optionValues.length !== 0) {
+			body.optionValues.forEach(async optionValueUUID => {
+				const optionValue = await this.productOptionValueRepository.findOneBy({ uuid: optionValueUUID, });
+				if (optionValue === null) {
+					return;
+				}
 
-			const productVariantOptionValue = new ProductVariantOptionValue();
-			productVariantOptionValue.uuid = crypto.randomUUID();
-			productVariantOptionValue.variant = variant;
-			productVariantOptionValue.optionValue = optionValue;
-			await this.productVariantOptionValueRepository.save(productVariantOptionValue);
-		});
+				const productVariantOptionValue = new ProductVariantOptionValue();
+				productVariantOptionValue.uuid = crypto.randomUUID();
+				productVariantOptionValue.variant = variant;
+				productVariantOptionValue.optionValue = optionValue;
+				await this.productVariantOptionValueRepository.save(productVariantOptionValue);
+			});
+		}
 
 		return variant;
 	}
@@ -89,14 +120,14 @@ export class ProductVariantService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAll(productUUID: string, filters: string, sort: string, pageNumber: number, itemsPerPage: number): Promise<Array<ProductVariant>> {
+	async findAll(productUUID: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ProductVariant>> {
 		this.logger.log(`Retrieving variants of product: ${productUUID}`);
 
 		// Find the product
 		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
 			});
 		}
 
@@ -127,7 +158,7 @@ export class ProductVariantService {
 		const variant = await this.variantRepository.findOneBy({ uuid: uuid, });
 		if (variant === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the variant. Please check and try again.",
 			});
 		}
 		return variant;
@@ -147,7 +178,7 @@ export class ProductVariantService {
 		const variant = await this.variantRepository.findOneBy({ uuid: uuid, });
 		if (variant === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the variant. Please check and try again.",
 			});
 		}
 
