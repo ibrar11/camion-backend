@@ -15,4 +15,4 @@ import { UsersModule } from 'src/users/users.module';
   providers: [ClientsService],
   exports: [ClientsService],
 })
-export class ClientsModule {}
+export class ClientsModule { }

@@ -1,5 +1,5 @@
 export enum ClientStatus {
-  ACTIVE = 'Active',
-  INACTIVE = 'Inactive',
-  BANNED = 'Banned',
+    ACTIVE = 'Active',
+    INACTIVE = 'Inactive',
+    BANNED = 'Banned',
 }
