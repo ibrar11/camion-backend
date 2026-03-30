@@ -26,14 +26,19 @@ import { RegistrationRequest } from "./auth/entities/registration-request.entity
 import { Client } from './clients/entities/client.entity';
 import { ClientsModule } from "./clients/clients.module";
 
-import { Product } from "./products/entities/product.entity";
-import { ProductOption } from "./products/entities/product-option.entity";
-import { ProductOptionValue } from "./products/entities/product-option-value.entity";
-import { ProductVariant } from "./products/entities/product-variant.entity";
-import { ProductVariantImage } from "./products/entities/product-variant-image.entity";
-import { ProductVariantInventoryItem } from "./products/entities/product-variant-inventory-item.entity";
-import { ProductVariantOptionValue } from "./products/entities/product-variant-option-value.entity";
-import { ProductsModule } from './products/products.module';
+import { Product } from "./inventory/entities/product.entity";
+import { ProductOption } from "./inventory/entities/product-option.entity";
+import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
+import { ProductVariant } from "./inventory/entities/product-variant.entity";
+import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
+import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
+import { ProductVariantOptionValue } from "./inventory/entities/product-variant-option-value.entity";
+
+import { InventoryItem } from "./inventory/entities/inventory-item.entity";
+import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
+import { Warehouse } from "./inventory/entities/warehouse.entity";
+
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
 	imports: [
@@ -66,7 +71,9 @@ import { ProductsModule } from './products/products.module';
 					User,
 					Customer,
 					RegistrationRequest,
+          
 					Client,
+          
 					Product,
 					ProductOption,
 					ProductOptionValue,
@@ -74,6 +81,10 @@ import { ProductsModule } from './products/products.module';
 					ProductVariantImage,
 					ProductVariantInventoryItem,
 					ProductVariantOptionValue,
+
+					InventoryItem,
+					InventoryLevel,
+					Warehouse,
 				],
 				synchronize: true,
 			}),
@@ -99,7 +110,7 @@ import { ProductsModule } from './products/products.module';
 		UsersModule,
 		CustomersModule,
 		ClientsModule,
-		ProductsModule,
+		InventoryModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

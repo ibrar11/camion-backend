@@ -1,5 +1,4 @@
 import {
-	ArrayNotEmpty,
 	IsArray,
 	IsDefined,
 	IsEnum,
@@ -58,11 +57,17 @@ export class Dimensions {
 }
 
 export class CreateProductVariantDto {
+	@IsUUID('4')
+	warehouse: string;
+
 	@ValidateNested()
 	title: TitleField;
 
 	@IsString()
 	sku: string;
+
+	@IsNumber()
+	quantity: number;
 
 	@IsString()
 	barcode: string;
