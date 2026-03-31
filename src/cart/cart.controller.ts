@@ -30,14 +30,6 @@ export class CartController {
         private readonly cartService: CartService,
     ) {}
 
-    private getIdentifier(UserUuid?: string, guestId?: string): string {
-        if (UserUuid) return UserUuid;
-        if (guestId) return guestId;
-        throw new BadRequestException(
-            'Either UserUuid or guestId must be provided.',
-        );
-    }
-
     @Post()
     @HttpCode(HttpStatus.CREATED)
     addToCart(
@@ -45,9 +37,7 @@ export class CartController {
         @OptionalUserId() userId: string | undefined,
         @Headers('x-guest-id') guestId?: string,
     ) {
-        const identifier = this.getIdentifier(userId, guestId);
-        const isGuest = !userId;
-        return this.cartService.create(identifier, dto, isGuest);
+        return this.cartService.create(dto, userId, guestId);
     }
 
     @Get()
@@ -56,38 +46,27 @@ export class CartController {
         @OptionalUserId() userId: string | undefined,
         @Headers('x-guest-id') guestId?: string,
     ) {
-        const identifier = this.getIdentifier(userId, guestId);
-        return this.cartService.findCart(identifier, !userId);
+        return this.cartService.findCart(userId, guestId);
     }
 
-    @Patch('update/:cartUuid')
+    @Patch('update')
     @HttpCode(HttpStatus.OK)
     updateCart(
         @Body() dto: UpdateCartItemDto,
-        @Param('cartUuid') cartUuid: string,
         @OptionalUserId() userId: string | undefined,
         @Headers('x-guest-id') guestId?: string,
     ) {
-        const identifier = this.getIdentifier(userId, guestId);
-        const isGuest = !userId;
-        return this.cartService.update(identifier, cartUuid, dto, isGuest);
+        return this.cartService.update(dto, userId, guestId);
     }
 
     @Delete('remove')
     @HttpCode(HttpStatus.OK)
     async removeFromCart(
-        @Body('uuid') uuid: string,
+        @Body('productUuid') productUuid: string,
         @OptionalUserId() userId: string | undefined,
         @Headers('x-guest-id') guestId?: string,
     ) {
-        if (!uuid) {
-            throw new BadRequestException('uuid is required');
-        }
-
-        const identifier = this.getIdentifier(userId, guestId);
-        const isGuest = !userId;
-
-        return this.cartService.removeItem(identifier, uuid, isGuest);
+        return this.cartService.removeItem(productUuid, userId, guestId);
     }
 
     @Delete('clear')
@@ -96,7 +75,6 @@ export class CartController {
         @OptionalUserId() userId: string | undefined,
         @Headers('x-guest-id') guestId?: string,
     ) {
-        const identifier = this.getIdentifier(userId, guestId);
-        return this.cartService.clearCart(identifier);
+        return this.cartService.clearCart(userId, guestId);
     } 
 }

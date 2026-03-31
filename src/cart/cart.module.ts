@@ -12,8 +12,9 @@ import { CartItem } from './entities/cart-items.entity';
 import { CartService } from './cart.service';
 import { CartController } from './cart.controller';
 
-import { Product } from 'src/products/entities/product.entity';
-import { ProductsService } from 'src/products/products.service';
+import { Product } from 'src/inventory/entities/product.entity';
+
+import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
 
 @Module({
   imports: [
@@ -21,14 +22,14 @@ import { ProductsService } from 'src/products/products.service';
         User, 
         Customer , 
         CartItem, 
-        Product
+        Product,
+        ProductVariant,
       ]),
   ],
   providers: [
     CartService, 
     UsersService, 
-    CustomersService, 
-    ProductsService
+    CustomersService
   ],
   controllers: [CartController]
 })
