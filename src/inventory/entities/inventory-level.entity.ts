@@ -1,4 +1,10 @@
 import {
+	Field,
+	Int,
+	ObjectType,
+} from "@nestjs/graphql";
+
+import {
 	Column,
 	CreateDateColumn,
 	Entity,
@@ -12,23 +18,26 @@ import { Exclude } from "class-transformer";
 import { InventoryItem } from "./inventory-item.entity";
 import { Warehouse } from "./warehouse.entity";
 
+@ObjectType()
 @Entity({ name: "inventory_levels" })
 export class InventoryLevel {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
-
-	@Column({ type: "numeric", default: 0, })
-	quantity: number;
 
 	@ManyToOne(() => InventoryItem, (item) => item.levels)
 	inventoryItem: InventoryItem;
 
 	@ManyToOne(() => Warehouse, (warehouse) => warehouse.levels)
 	warehouse: Warehouse;
+
+	@Field(() => Int)
+	@Column({ type: "numeric", default: 0, })
+	quantity: number;
 
 	@Exclude()
 	@UpdateDateColumn({

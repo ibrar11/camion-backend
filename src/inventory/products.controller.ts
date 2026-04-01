@@ -56,7 +56,7 @@ export class ProductsController {
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProduct(@Param('uuid') uuid: string): Promise<Product> {
-		return this.productsService.findOne(uuid);
+		return this.productsService.findOneByUUID(uuid);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)

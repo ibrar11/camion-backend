@@ -19,8 +19,8 @@ import { UpdateCategoryDto } from "./dtos/UpdateCategoryDto";
 import { Category } from "./entities/category.entity";
 
 @Injectable()
-export class CategoryService {
-	private readonly logger = new Logger(CategoryService.name);
+export class CategoriesService {
+	private readonly logger = new Logger(CategoriesService.name);
 
 	constructor(@InjectRepository(Category) private readonly categoryRepository: Repository<Category>) { }
 
@@ -65,7 +65,7 @@ export class CategoryService {
 		const category = new Category();
 		category.uuid = crypto.randomUUID();
 		category.slug = generateSlug(body.slug);
-		category.name = body.name.en.trim().toLowerCase();
+		category.nameEn = body.name.en.trim().toLowerCase();
 		category.nameAr = body.name.ar.trim().toLowerCase();
 		category.pricingFactor = body.pricingFactor;
 		category.parent = parentCategory;
@@ -156,7 +156,7 @@ export class CategoryService {
 
 		// Update the category
 		category.slug = generateSlug(body.slug);
-		category.name = body.name.en.trim().toLowerCase();
+		category.nameEn = body.name.en.trim().toLowerCase();
 		category.nameAr = body.name.ar.trim().toLowerCase();
 		category.pricingFactor = body.pricingFactor;
 		return this.categoryRepository.save(category);

@@ -66,7 +66,7 @@ export class ProductVariantService {
 		const variant = new ProductVariant();
 		variant.uuid = crypto.randomUUID();
 		variant.product = product;
-		variant.title = body.title.en.trim();
+		variant.titleEn = body.title.en.trim();
 		variant.titleAr = body.title.ar.trim();
 		variant.sku = body.sku.trim();
 		variant.barcode = body.barcode.trim();
@@ -184,7 +184,7 @@ export class ProductVariantService {
 		}
 
 		// Update the variant
-		variant.title = body.title.en.trim();
+		variant.titleEn = body.title.en.trim();
 		variant.titleAr = body.title.ar.trim();
 		variant.sku = body.sku.trim();
 		variant.barcode = body.barcode.trim();

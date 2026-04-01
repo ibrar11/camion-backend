@@ -1,5 +1,9 @@
 import {
-	Column,
+	Field,
+	ObjectType,
+} from "@nestjs/graphql";
+
+import {
 	CreateDateColumn,
 	Entity,
 	ManyToOne,
@@ -12,6 +16,7 @@ import { Exclude } from "class-transformer";
 import { ProductVariant } from "./product-variant.entity";
 import { ProductOptionValue } from "./product-option-value.entity";
 
+@ObjectType()
 @Entity({ name: "product_variant_option_values" })
 export class ProductVariantOptionValue {
 	@Exclude()
@@ -21,6 +26,7 @@ export class ProductVariantOptionValue {
 	@ManyToOne(() => ProductVariant, (variant) => variant.optionValues, { onDelete: "CASCADE", })
 	variant: ProductVariant;
 
+	@Field(() => ProductOptionValue)
 	@ManyToOne(() => ProductOptionValue, (productOptionValue) => productOptionValue.variantLinks)
 	optionValue: ProductOptionValue;
 

@@ -1,0 +1,172 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Banner {
+  imageUrl: String!
+  isActive: Boolean!
+  linkUrl: String!
+  placement: String!
+  title(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  titleAr: String!
+  titleEn: String!
+  uuid: String!
+}
+
+type Category {
+  children: [Category!]!
+  name(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  nameAr: String!
+  nameEn: String!
+  slug: String!
+  uuid: String!
+}
+
+type Dimensions {
+  height: Int!
+  length: Int!
+  unit: String!
+  width: Int!
+}
+
+type EmojiElement {
+  content: String!
+}
+
+type LinkElement {
+  content: String!
+}
+
+type Money {
+  amount: Int!
+  currencyCode: String!
+}
+
+type PollElement {
+  options: PollOptionElement!
+  question: String!
+  questionAr: String!
+}
+
+type PollOptionElement {
+  ar: String!
+  en: String!
+}
+
+type Product {
+  brief(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  briefAr: String!
+  briefEn: String!
+  description(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  descriptionAr: String!
+  descriptionEn: String!
+  descriptionHtml(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  descriptionHtmlAr: String!
+  descriptionHtmlEn: String!
+  options: [ProductOption!]!
+  slug: String!
+  status: String!
+  title(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  titleAr: String!
+  titleEn: String!
+  uuid: String!
+  variants: [ProductVariant!]!
+}
+
+type ProductOption {
+  name(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  nameAr: String!
+  nameEn: String!
+  position: Int!
+  uuid: String!
+  values: [ProductOptionValue!]!
+}
+
+type ProductOptionValue {
+  position: Int!
+  uuid: String!
+  value(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  valueAr: String!
+  valueEn: String!
+}
+
+type ProductVariant {
+  barcode: String!
+  dimensions: Dimensions!
+  images: [ProductVariantImage!]!
+  optionValues: [ProductVariantOptionValue!]!
+  price: Money!
+  sku: String!
+  title(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  titleAr: String!
+  titleEn: String!
+  uuid: String!
+  weight: Weight!
+}
+
+type ProductVariantImage {
+  alt: String!
+  dimensions: ProductVariantImageDimensions!
+  position: Int!
+  uri: String!
+  uuid: String!
+}
+
+type ProductVariantImageDimensions {
+  height: Int!
+  width: Int!
+}
+
+type ProductVariantOptionValue {
+  optionValue: ProductOptionValue!
+}
+
+type Query {
+  getBanners(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Banner!]!
+  getCategories(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Category!]!
+  getProduct(slug: String! = ""): Product
+  getProducts(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Product!]!
+  getStories(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Story!]!
+}
+
+type Story {
+  caption(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  captionAr: String!
+  captionEn: String!
+  frames: [StoryFrame!]!
+  isHighlighted: Boolean!
+  uuid: String!
+  viewsCount: Int!
+}
+
+type StoryFrame {
+  duration: Int!
+  mediaType: String!
+  mediaUrl: String!
+  order: Int!
+  stickers: [StorySticker!]!
+  thumbnailUrl: String!
+  uuid: String!
+}
+
+type StorySticker {
+  emoji: EmojiElement!
+  link: LinkElement!
+  poll: PollElement!
+  rotation: Int!
+  scale: Int!
+  text: TextElement!
+  type: String!
+  x: Int!
+  y: Int!
+}
+
+type TextElement {
+  ar: String!
+  en: String!
+}
+
+type Weight {
+  amount: Int!
+  unit: String!
+}

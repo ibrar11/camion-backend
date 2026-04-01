@@ -9,11 +9,11 @@ import {
 export class NameField {
 	@IsString()
 	@MaxLength(32)
-	ar: string;
+	en: string;
 
 	@IsString()
 	@MaxLength(32)
-	en: string;
+	ar: string;
 }
 
 export class UpdateCategoryDto {

@@ -1,4 +1,10 @@
 import {
+	Field,
+	Int,
+	ObjectType,
+} from "@nestjs/graphql";
+
+import {
 	Column,
 	CreateDateColumn,
 	Entity,
@@ -14,19 +20,23 @@ import { Exclude } from "class-transformer";
 
 import { CurrencyCode } from "../enums/CurrencyCode";
 import { WeightUnit } from "../enums/WeightUnit";
+import { DimensionsUnit } from "../enums/DimensionsUnit";
 
 import { Product } from "./product.entity";
 import { ProductVariantImage } from "./product-variant-image.entity";
 import { ProductVariantOptionValue } from "./product-variant-option-value.entity";
-import { ProductVariantInventoryItem } from "./product-variant-inventory-item.entity";
+
 import { InventoryItem } from "./inventory-item.entity";
 
 import { CartItem } from "src/cart/entities/cart-items.entity";
 
+@ObjectType()
 export class Money {
+	@Field(() => Int)
 	@Column({ type: "numeric", })
 	amount: number;
 
+	@Field()
 	@Column({
 		type: "enum",
 		enum: CurrencyCode,
@@ -35,58 +45,54 @@ export class Money {
 	currencyCode: CurrencyCode;
 }
 
+@ObjectType()
 export class Weight {
+	@Field(() => Int)
 	@Column({ type: "numeric", })
 	amount: number;
 
+	@Field()
 	@Column({
 		type: "enum",
 		enum: WeightUnit,
-		default: WeightUnit.KILOGRAMS,
+		default: WeightUnit.Kilograms,
 	})
 	unit: WeightUnit;
 }
 
+@ObjectType()
 export class Dimensions {
+	@Field(() => Int)
 	@Column({ type: "numeric", })
 	width: number;
 
+	@Field(() => Int)
 	@Column({ type: "numeric", })
 	height: number;
 
+	@Field(() => Int)
 	@Column({ type: "numeric", })
 	length: number;
+
+	@Field()
+	@Column({
+		type: "enum",
+		enum: DimensionsUnit,
+		default: DimensionsUnit.Millimeter,
+	})
+	unit: DimensionsUnit;
 }
 
+@ObjectType()
 @Entity({ name: "product_variants", })
 export class ProductVariant {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
-
-	@Column({ type: "varchar", length: 128, })
-	title: string;
-
-	@Column({ type: "varchar", length: 128, })
-	titleAr: string;
-
-	@Column({ type: "varchar", length: 64, })
-	sku: string;
-
-	@Column({ type: "varchar", length: 32, })
-	barcode: string;
-
-	@Column(() => Money)
-	price: Money;
-
-	@Column(() => Weight)
-	weight: Weight;
-
-	@Column(() => Dimensions)
-	dimensions: Dimensions;
 
 	@ManyToOne(() => Product, (product) => product.variants, { onDelete: "CASCADE", })
 	product: Product;
@@ -95,12 +101,42 @@ export class ProductVariant {
 	@JoinColumn()
 	inventoryItem: InventoryItem;
 
-	// @OneToOne(() => ProductVariantInventoryItem, (inventoryItem) => inventoryItem.variant, { onDelete: "CASCADE", })
-	// inventoryItem: ProductVariantInventoryItem;
+	@Field(() => String, { name: "title" })
+	title: string;
 
+	@Field()
+	@Column({ type: "varchar", length: 128, })
+	titleEn: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 128, })
+	titleAr: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 64, })
+	sku: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 32, })
+	barcode: string;
+
+	@Field(() => Money)
+	@Column(() => Money)
+	price: Money;
+
+	@Field(() => Weight)
+	@Column(() => Weight)
+	weight: Weight;
+
+	@Field(() => Dimensions)
+	@Column(() => Dimensions)
+	dimensions: Dimensions;
+
+	@Field(() => [ProductVariantOptionValue])
 	@OneToMany(() => ProductVariantOptionValue, (productVariantOptionValue) => productVariantOptionValue.variant, { cascade: true, })
 	optionValues: Array<ProductVariantOptionValue>;
 
+	@Field(() => [ProductVariantImage])
 	@OneToMany(() => ProductVariantImage, (image) => image.variant, { cascade: true, })
 	images: Array<ProductVariantImage>;
 

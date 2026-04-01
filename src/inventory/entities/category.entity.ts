@@ -1,4 +1,9 @@
 import {
+	Field,
+	ObjectType,
+} from "@nestjs/graphql";
+
+import {
 	Column,
 	CreateDateColumn,
 	Entity,
@@ -12,21 +17,32 @@ import { Exclude } from "class-transformer";
 
 import { ProductCategory } from "./product-category.entity";
 
+@ObjectType()
 @Entity({ name: "categories", })
 export class Category {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
+	@ManyToOne(() => Category, (category) => category.children, { onDelete: "SET NULL", })
+	parent: Category | null;
+
+	@Field()
 	@Column({ type: "varchar", length: 64, nullable: false, unique: true, })
 	slug: string;
 
-	@Column({ type: "varchar", length: 32, })
+	@Field(() => String, { name: "name", })
 	name: string;
 
+	@Field()
+	@Column({ type: "varchar", length: 32, })
+	nameEn: string;
+
+	@Field()
 	@Column({ type: "varchar", length: 32, })
 	nameAr: string;
 
@@ -37,9 +53,7 @@ export class Category {
 	@Column({ nullable: true, })
 	parentId: number | null;
 
-	@ManyToOne(() => Category, (category) => category.children, { onDelete: "SET NULL", })
-	parent: Category | null;
-
+	@Field(() => [Category])
 	@OneToMany(() => Category, (category) => category.parent)
 	children: Array<Category>;
 

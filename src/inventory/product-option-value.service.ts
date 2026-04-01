@@ -48,7 +48,8 @@ export class ProductOptionValueService {
 		const productOptionValue = new ProductOptionValue();
 		productOptionValue.uuid = crypto.randomUUID();
 		productOptionValue.option = productOption;
-		productOptionValue.value = body.value;
+		productOptionValue.valueEn = body.value.en.trim();
+		productOptionValue.valueAr = body.value.ar.trim();
 		productOptionValue.position = body.position;
 		return this.productOptionValueRepository.save(productOptionValue);
 	}
@@ -124,7 +125,8 @@ export class ProductOptionValueService {
 		}
 
 		// Update the product option value
-		productOptionValue.value = body.value.trim();
+		productOptionValue.valueEn = body.value.en.trim();
+		productOptionValue.valueAr = body.value.ar.trim();
 		productOptionValue.position = body.position;
 		return this.productOptionValueRepository.save(productOptionValue);
 	}
