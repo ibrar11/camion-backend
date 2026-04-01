@@ -23,6 +23,20 @@ import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
+import { Product } from "./inventory/entities/product.entity";
+import { ProductOption } from "./inventory/entities/product-option.entity";
+import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
+import { ProductVariant } from "./inventory/entities/product-variant.entity";
+import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
+import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
+import { ProductVariantOptionValue } from "./inventory/entities/product-variant-option-value.entity";
+
+import { InventoryItem } from "./inventory/entities/inventory-item.entity";
+import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
+import { Warehouse } from "./inventory/entities/warehouse.entity";
+
+import { InventoryModule } from './inventory/inventory.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -54,6 +68,18 @@ import { RegistrationRequest } from "./auth/entities/registration-request.entity
 					User,
 					Customer,
 					RegistrationRequest,
+
+					Product,
+					ProductOption,
+					ProductOptionValue,
+					ProductVariant,
+					ProductVariantImage,
+					ProductVariantInventoryItem,
+					ProductVariantOptionValue,
+
+					InventoryItem,
+					InventoryLevel,
+					Warehouse,
 				],
 				synchronize: true,
 			}),
@@ -78,6 +104,7 @@ import { RegistrationRequest } from "./auth/entities/registration-request.entity
 		AuthModule,
 		UsersModule,
 		CustomersModule,
+		InventoryModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
