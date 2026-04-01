@@ -63,7 +63,7 @@ export class ProductOptionService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAll(productUUID: string, filters: string, sort: string, pageNumber: number, itemsPerPage: number): Promise<Array<ProductOption>> {
+	async findAll(productUUID: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ProductOption>> {
 		this.logger.log(`Retrieving product options of product: ${productUUID}`);
 
 		// Find the product

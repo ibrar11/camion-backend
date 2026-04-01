@@ -31,6 +31,13 @@ import { ProductVariantImageController } from './product-variant-image.controlle
 import { ProductVariantInventoryItem } from './entities/product-variant-inventory-item.entity';
 import { ProductVariantOptionValue } from './entities/product-variant-option-value.entity';
 
+import { InventoryItem } from './entities/inventory-item.entity';
+import { InventoryLevel } from './entities/inventory-level.entity';
+
+import { Warehouse } from './entities/warehouse.entity';
+import { WarehouseService } from './warehouse.service';
+import { WarehouseController } from './warehouse.controller';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -43,6 +50,9 @@ import { ProductVariantOptionValue } from './entities/product-variant-option-val
 			ProductVariantImage,
 			ProductVariantInventoryItem,
 			ProductVariantOptionValue,
+			InventoryItem,
+			InventoryLevel,
+			Warehouse,
 		]),
 	],
 	providers: [
@@ -53,6 +63,7 @@ import { ProductVariantOptionValue } from './entities/product-variant-option-val
 		ProductOptionService,
 		ProductOptionValueService,
 		ProductVariantImageService,
+		WarehouseService,
 	],
 	controllers: [
 		ProductsController,
@@ -60,6 +71,7 @@ import { ProductVariantOptionValue } from './entities/product-variant-option-val
 		ProductOptionController,
 		ProductOptionValueController,
 		ProductVariantImageController,
+		WarehouseController,
 	],
 })
-export class ProductsModule { }
+export class InventoryModule { }
