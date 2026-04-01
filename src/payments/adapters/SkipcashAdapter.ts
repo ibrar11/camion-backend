@@ -1,4 +1,4 @@
-import * as crypto from "crypto";
+import crypto from "node:crypto";
 
 import { 
     Injectable,
@@ -6,65 +6,77 @@ import {
     NotFoundException,
 } from "@nestjs/common";
 
-import { v4 as uuidv4 } from "uuid";
-import axios from "axios";
+import { generateSignature } from "src/common/skipcash";
 
 import { CreatePaymentDto } from "../dtos/CreatePaymentDto";
+
+import { InitiatePaymentResponse } from "../types";
 
 @Injectable()
 export class SkipCashAdapter {
     private readonly logger = new Logger(SkipCashAdapter.name);
-    private baseUrl = process.env.SKIPCASH_BASE_URL;
 
-    // create payment method needs to be updated after order implementation
+    // note: create payment method needs to be updated after order implementation
 
-    async createPayment(data: CreatePaymentDto) {
+    /**
+	 * Creates new payment
+	 *
+	 * @param dto
+	 * @returns
+	 */
+    async createPayment(dto: CreatePaymentDto): Promise<InitiatePaymentResponse> {
         try{
 
-            // reference id should be replaced with order id
-            const referenceId = data.referenceId || `temp_${uuidv4()}`;
+            // note: reference id should be replaced with order id
+            const referenceId = dto.referenceId || '';
+            console.log("referenceIdreferenceIdreferenceId",referenceId)
 
 
-            // payment logic needs to be reviewed once payment integration starts
+            // note: payment logic needs to be reviewed once payment integration starts
 
             const payload = {
-                Uid: uuidv4(),
+                Uid: crypto.randomUUID(),
                 KeyId: process.env.SKIPCASH_KEY_ID,
-                Amount: data.amount.toFixed(2),
-                FirstName: data.firstName,
-                LastName: data.lastName,
-                Phone: data.phone,
-                Email: data.email,
-                Street: data.street,
-                City: data.city,
-                State: data.state,
-                Country: data.country,
-                PostalCode: data.postalCode,
+                Amount: dto.amount.toFixed(2),
+                FirstName: dto.firstName,
+                LastName: dto.lastName,
+                Phone: dto.phone,
+                Email: dto.email,
+                Street: dto.street,
+                City: dto.city,
+                State: dto.state,
+                Country: dto.country,
+                PostalCode: dto.postalCode,
                 TransactionId: referenceId,
                 Custom1: "",
             };
 
-            const signature = this.generateSignature(payload);
+            const signature = generateSignature(payload);
 
-            const res = await axios.post(
-                `${this.baseUrl}/api/v1/payments`,
-                payload,
-                {
-                    headers: {
+            // create skipcash payment
+            const res = await fetch(`${process.env.SKIPCASH_BASE_URL}/api/v1/payments`, {
+                method: "POST",
+                headers: {
                     Authorization: signature,
                     "Content-Type": "application/json",
-                    },
-                }
-            );
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                throw new Error(`Request failed with status ${res.status}`);
+            }
+
+            const data = await res.json();
 
             return {
                 provider: "skipcash",
-                transactionId: res.data.resultObj.transactionId,
-                paymentUrl: res.data.resultObj.payUrl,
+                transactionId: data.resultObj.transactionId,
+                paymentUrl: data.resultObj.payUrl,
                 referenceId,
-                raw: res.data,
+                raw: data,
             };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`SkipCash payment failed: ${error.message}`);
 
             let customMessage = 'Please check your information and try again';
@@ -85,23 +97,5 @@ export class SkipCashAdapter {
 
             throw new NotFoundException(customMessage);
         }
-    }
-
-    private generateSignature(payload: any): string {
-        const orderedFields = [
-            'Uid','KeyId','Amount','FirstName','LastName',
-            'Phone','Email','Street','City','State',
-            'Country','PostalCode','TransactionId','Custom1'
-        ];
-
-        const baseString = orderedFields
-            .filter(key => payload[key])
-            .map(key => `${key}=${String(payload[key]).trim()}`)
-            .join(",");
-
-        return crypto
-            .createHmac("sha256", process.env.SKIPCASH_KEY_SECRET || "")
-            .update(baseString)
-            .digest("base64");
     }
 }

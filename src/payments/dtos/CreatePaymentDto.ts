@@ -1,4 +1,10 @@
-import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
+import { 
+    IsEnum, 
+    IsNumber, 
+    IsOptional, 
+    IsString 
+} from "class-validator";
+
 import { PaymentProvider } from "../enums/PaymentProvider";
 
 export class CreatePaymentDto {
