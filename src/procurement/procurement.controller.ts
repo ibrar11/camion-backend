@@ -1,14 +1,12 @@
 import { 
-    Body, 
     Controller, 
-    Post, 
+    Get, 
     UseGuards ,
-    Headers,
-    Query
+    Query,
+    Param
 } from '@nestjs/common';
 
 import { SearchProductsDto } from './dtos/SearchProductsDto';
-import { ProductDetailDto } from './dtos/ProductDetailDto';
 
 import { UserRole } from 'src/users/enums/UserRole';
 
@@ -24,27 +22,19 @@ import { Roles } from 'src/auth/roles.decorator';
 export class ProcurementController {
     constructor(private readonly procurementService: ProcurementService) {}
 
-    @Post('search')
+    @Get()
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
     search(
-        @Body() dto: SearchProductsDto,
-        @Headers('accept-language') acceptLanguage?: string,
-        @Query('lang') langQuery?: string,
-        @Query('currencyCode') currencyQuery?: string
+        @Query() dto: SearchProductsDto,
     ) {
-        const language = langQuery || (acceptLanguage?.split('-')[0]) || 'en';
-        return this.procurementService.searchProducts(dto, language, currencyQuery);
+        return this.procurementService.searchProducts(dto);
     }
 
-    @Post('detail')
+    @Get(':productId')
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
     detail(
-        @Body() dto: ProductDetailDto,
-        @Headers('accept-language') acceptLanguage?: string,
-        @Query('lang') langQuery?: string,
-        @Query('currencyCode') currencyQuery?: string
+        @Param('productId') productId: string,
     ) {
-        const language = langQuery || (acceptLanguage?.split('-')[0]) || 'en';
-        return this.procurementService.getProductDetail(dto, language, currencyQuery);
+        return this.procurementService.getProductDetail(productId);
     }
 }

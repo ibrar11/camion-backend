@@ -1,4 +1,8 @@
-import { IsOptional, IsString, IsNumberString } from 'class-validator';
+import { 
+    IsOptional, 
+    IsString, 
+    IsNumberString 
+} from 'class-validator';
 
 export class SearchProductsDto {
     @IsString()
@@ -10,7 +14,7 @@ export class SearchProductsDto {
 
     @IsOptional()
     @IsNumberString()
-    pageSize?: string = '4';
+    pageSize?: string = '10';
 
     @IsOptional()
     @IsString()

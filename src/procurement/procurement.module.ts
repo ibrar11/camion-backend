@@ -12,17 +12,17 @@ import { ProcurementService } from './procurement.service';
 import { ProcurementController } from './procurement.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      User,
-      Customer
-    ]),
-  ],
-  providers: [
-    UsersService,
-    CustomersService,
-    ProcurementService
-  ],
-  controllers: [ProcurementController]
+	imports: [
+		TypeOrmModule.forFeature([
+			User,
+			Customer
+		]),
+	],
+	providers: [
+		UsersService,
+		CustomersService,
+		ProcurementService
+	],
+	controllers: [ProcurementController]
 })
 export class ProcurementModule {}

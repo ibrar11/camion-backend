@@ -1,65 +1,69 @@
 import { 
-    HttpException, 
-    HttpStatus, 
     Injectable,
-    Logger
+    Logger,
+    BadRequestException,
+    InternalServerErrorException,
 } from '@nestjs/common';
 
-import axios from 'axios';
-
 import { SearchProductsDto } from './dtos/SearchProductsDto';
-import { ProductDetailDto } from './dtos/ProductDetailDto';
+
+import { 
+    ProductAttribute, 
+    ProductDetail, 
+    ProductSku, 
+    SearchProductItem, 
+    SearchProducts, 
+    SkuAttribute 
+} from './types';
 
 @Injectable()
 export class ProcurementService {
     private readonly logger = new Logger(ProcurementService.name);
-    private baseUrl = process.env.GULLTRANS_BASE_URL;
-    private uuid = process.env.GULLTRANS_UUID;
-    private secret = process.env.GULLTRANS_AUTHORIZATION;
 
-    private filterDescription (description: string) {
-        return description
-            .replace(/<img[^>]*>/g, '')
-            .replace(/<[^>]+>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    async searchProducts(dto: SearchProductsDto, language?: string, currency?: string) {
+    /**
+	 * Finds a list of products with specific keyword
+	 *
+	 * @param dto
+	 * @returns
+	 */
+    async searchProducts(dto: SearchProductsDto): Promise<SearchProducts> {
         try {
-            const response = await axios.post(
-                `${this.baseUrl}/api/client/third-purchase/search`,
+            // Get the product list from 1688
+            const response = await fetch(
+                `${process.env.GULLTRANS_BASE_URL}/api/client/third-purchase/search`,
                 {
-                    keyword: dto.keyword,
-                    platform: '1688',
-                    use_platform: "1",
-                    page: dto.page,
-                    page_size: dto.pageSize,
-                    sort: dto.sort,
-                    priceStart: dto.priceStart,
-                    priceEnd: dto.priceEnd,
-                },
-                {
+                    method: 'POST',
                     headers: {
-                        Authorization: this.secret,
-                        'X-Uuid': this.uuid,
+                        Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
+                        'X-Uuid': process.env.GULLTRANS_UUID || '',
                         'Content-Type': 'application/json',
                         Language: 'en',
                     },
+                    body: JSON.stringify({
+                        keyword: dto.keyword,
+                        platform: '1688',
+                        use_platform: "1",
+                        page: dto.page,
+                        page_size: dto.pageSize,
+                        sort: dto.sort,
+                        priceStart: dto.priceStart,
+                        priceEnd: dto.priceEnd,
+                    }),
                 },
             );
 
-            if (response.data.ret !== 1) {
-                throw new HttpException(
-                    response.data.msg,
-                    HttpStatus.BAD_REQUEST,
-                );
+            const data = await response.json();
+
+            if (data.ret !== 1) {
+                throw new BadRequestException({
+                    error: data.msg,
+                });
             }
 
-            const products = response.data?.data?.data || [];
+            const products: SearchProductItem[] = data?.data?.data || [];
 
-            const formattedProducts = products?.map((item: any) => ({
+            // Format the products
+            const formattedProducts = products?.map((item) => ({
                 externalId: item.offerId,
                 title: item.subjectTrans || item.subject,
                 price: parseFloat(
@@ -82,124 +86,134 @@ export class ProcurementService {
                 },
                 createdAt: item.createDate,
                 updatedAt: item.modifyDate,
-                source: '1688',
             }));
 
-            const total = response.data.data.totalRecords;
-            const page = response.data.data.currentPage;
-            const pageSize = response.data.data.pageSize;
-            const totalPages = (total % pageSize === 0) ? response.data.data.totalPage - 1 : response.data.data.totalPage;
+            // Pagination Details
+            const totalRecords = data.data.totalRecords;
+            const page = data.currentPage;
+            const pageSize = data.pageSize;
+            const totalPages = (totalRecords % pageSize === 0) ? data.totalPage - 1 : data.totalPage;
             const has_next = page < totalPages;
 
             return {
                 success: true,
-                message: 'Done',
                 data: formattedProducts,
                 meta: {
-                    total: total,
+                    totalRecords: totalRecords,
                     totalPages: totalPages,
                     page: page,
                     pageSize: pageSize,
                     has_next: has_next,
                 },
             };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Error fetching products: ${error?.message}`);
-            throw new HttpException(
-                {
+            throw new InternalServerErrorException({
                 error: 'Failed to fetch products',
                 details: error.response?.data || error.message,
-                },
-                HttpStatus.INTERNAL_SERVER_ERROR,
-            );
+            });
         }
     }
 
-    async getProductDetail(dto: ProductDetailDto, language?: string, currency?: string,) {
+    /**
+	 * Finds a product details
+	 *
+	 * @param productId
+	 * @returns
+	 */
+    async getProductDetail(productId: string): Promise<ProductDetail> {
         try {
-            const response = await axios.post(
-                `${this.baseUrl}/api/client/third-purchase/info`,
+            // Get the product details from 1688
+            const response = await fetch(
+                `${process.env.GULLTRANS_BASE_URL}/api/client/third-purchase/info`,
                 {
-                    keyword: dto.productId,
-                    platform: '1688',
-                    'use_platform': '1'
-                },
-                {
-                headers: {
-                    Authorization: this.secret,
-                    'X-Uuid': this.uuid,
-                    'Content-Type': 'application/json',
-                    Language: 'en',
-                },
+                    method: 'POST',
+                    headers: {
+                        Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
+                        'X-Uuid': process.env.GULLTRANS_UUID || '',
+                        'Content-Type': 'application/json',
+                        Language: 'en',
+                    },
+                    body: JSON.stringify({
+                        keyword: productId,
+                        platform: '1688',
+                        use_platform: '1'
+                    }),
                 },
             );
 
-            if (response.data.ret !== 1) {
-                throw new HttpException(
-                    response.data.msg,
-                    HttpStatus.BAD_REQUEST,
-                );
+            const data = await response.json();
+
+            if (data.ret !== 1) {
+                throw new BadRequestException({
+                    error: data.msg,
+                });
             }
 
-            const product = response.data?.data?.result || {};
+            const product = data?.data?.result || {};
 
             if (!product) {
-                throw new HttpException(
-                    "Product not found",
-                    HttpStatus.BAD_REQUEST,
-                );
+                throw new BadRequestException({
+                    error: "Product not found",
+                });
             }
 
-            const description = this.filterDescription(product.description);
+            const description = product.description;
 
-            const descriptionTrans = this.filterDescription(product.descriptionTrans ?? '');
+            const descriptionTrans = product.descriptionTrans ?? '';
+
+            const skus = product.productSkuInfos ?? [];
+
+            const getName = (attr: SkuAttribute | ProductAttribute) => {
+                return attr.attributeNameTrans || attr.attributeName;
+            }
+
+            const getValue = (attr: SkuAttribute | ProductAttribute) => {
+                return attr.valueTrans || attr.value;
+            }
 
             const optionsMap = new Map<string, Set<string>>();
 
-            (product.productSkuInfos || []).forEach((sku: any) => {
-                sku.skuAttributes?.forEach((attr: any) => {
-                    const name = attr.attributeNameTrans || attr.attributeName;
+            //Extract the options and variants
+            const variants = skus.map((sku: ProductSku) => {
+                const attributes = sku.skuAttributes?.map((attr: SkuAttribute) => {
+                    const name = getName(attr);
+                    const value = getValue(attr);
 
                     if (!optionsMap.has(name)) {
                         optionsMap.set(name, new Set());
                     }
+                    optionsMap.get(name)!.add(value);
 
-                    optionsMap.get(name)?.add(attr.valueTrans || attr.value);
-                });
+                    return { name, value };
+                }) ?? [];
+
+                return {
+                    skuId: sku.skuId,
+                    price: parseFloat(
+                        sku.price ||
+                        sku.consignPrice ||
+                        sku.fenxiaoPriceInfo?.offerPrice ||
+                        '0'
+                    ),
+                    stock: sku.amountOnSale,
+                    attributes,
+                    image:
+                        sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? null,
+                };
             });
 
-            const options = Array.from(optionsMap.entries()).map(
-                ([name, valuesSet]) => ({
-                    name,
-                    values: Array.from(valuesSet),
-                }),
-            );
-
-            const variants = (product.productSkuInfos || []).map((sku: any) => ({
-                skuId: sku.skuId,
-
-                price: parseFloat(
-                    sku.price ||
-                    sku.consignPrice ||
-                    sku.fenxiaoPriceInfo?.offerPrice ||
-                    '0'
-                ),
-
-                stock: sku.amountOnSale,
-
-                attributes: sku.skuAttributes?.map((attr: any) => ({
-                    name: attr.attributeNameTrans || attr.attributeName,
-                    value: attr.valueTrans || attr.value,
-                })),
-
-                image: sku.skuAttributes?.find((a: any) => a.skuImageUrl)?.skuImageUrl || null,
+            const options = Array.from(optionsMap, ([name, values]) => ({
+                name,
+                values: Array.from(values),
             }));
 
-            const attributes = (product.productAttribute || []).map((attr: any) => ({
-                name: attr.attributeNameTrans || attr.attributeName,
-                value: attr.valueTrans || attr.value,
+            const attributes = (product.productAttribute ?? []).map((attr: ProductAttribute) => ({
+                name: getName(attr),
+                value: getValue(attr),
             }));
 
+            // Format the Product
             const formattedProduct = {
                 externalId: product.offerId,
                 title: product.subjectTrans || product.subject,
@@ -238,23 +252,18 @@ export class ProcurementService {
                     (t: any) => t.key === 'isOnePsale'
                     )?.value || false,
                 },
-                source: '1688',
             };
 
             return {
                 success: true,
-                message: 'Done',
                 data: formattedProduct
             };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Error fetching products: ${error?.message}`);
-            throw new HttpException(
-                {
-                error: 'Failed to fetch products',
+            throw new InternalServerErrorException({
+                error: 'Failed to fetch product',
                 details: error.response?.data || error.message,
-                },
-                HttpStatus.INTERNAL_SERVER_ERROR,
-            );
+            });
         }
     }
 }
