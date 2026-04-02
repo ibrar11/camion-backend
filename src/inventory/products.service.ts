@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { getSkipAndTake } from "../common/pagination";
+import { generateSlug } from "src/common/slug";
 
 import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
@@ -20,12 +21,18 @@ import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 import { Product } from './entities/product.entity';
 
 import { ProductStatus } from './enums/ProductStatus';
+import { ProductCategory } from "./entities/product-category.entity";
+import { Category } from "./entities/category.entity";
 
 @Injectable()
 export class ProductsService {
 	private readonly logger = new Logger(ProductsService.name);
 
-	constructor(@InjectRepository(Product) private readonly productRepository: Repository<Product>) { }
+	constructor(
+		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
+		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
+		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
+	) { }
 
 	/**
 	 * Creates a new product
@@ -55,7 +62,7 @@ export class ProductsService {
 
 		const product = new Product();
 		product.uuid = crypto.randomUUID();
-		product.slug = body.slug.trim().toLowerCase();
+		product.slug = generateSlug(body.slug);
 		product.title = body.title.en.trim();
 		product.titleAr = body.title.ar.trim();
 		product.brief = body.brief.en.trim();
@@ -66,7 +73,25 @@ export class ProductsService {
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
 		product.status = ProductStatus.DRAFT;
 		product.publishedAt = new Date();
-		return this.productRepository.save(product);
+		await this.productRepository.save(product);
+
+		// Find the categories and create product categories.
+		// This is to join the categories to its associated product.
+		if (body.categories !== null && body.categories.length !== 0) {
+			body.categories.forEach(async categoryUUID => {
+				const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
+				if (category === null) {
+					return;
+				}
+
+				const productCategory = new ProductCategory();
+				productCategory.product = product;
+				productCategory.category = category;
+				await this.productCategoryRepository.save(productCategory);
+			});
+		}
+
+		return product;
 	}
 
 	/**
@@ -84,6 +109,19 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
+		// Parse the filters
+		let filtersObject: { slug?: string } = {};
+		try {
+			filtersObject = JSON.parse(filters);
+		} catch {
+			this.logger.warn("Unable to parse filters. Please check the documentation and try again.");
+		}
+
+		// Returns products by category
+		if (filtersObject.slug !== undefined) {
+			return this.findAllByCategorySlug(filtersObject.slug, sort, skip, take);
+		}
+
 		return this.productRepository.find({
 			relations: {
 				options: {
@@ -98,6 +136,28 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+	}
+
+	/**
+	 * Finds products by a category slug
+	 *
+	 * @param slug
+	 * @param sort
+	 * @param skip
+	 * @param take
+	 * @returns
+	 */
+	async findAllByCategorySlug(slug: string, sort: string, skip: number, take: number): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products by category slug: ${slug}`);
+
+		return this.productRepository
+			.createQueryBuilder("product")
+			.innerJoin("product.productCategories", "pc")
+			.innerJoin("pc.category", "category")
+			.where("category.slug = :slug", { slug: slug, })
+			.skip(skip)
+			.take(take)
+			.getMany();
 	}
 
 	/**
@@ -159,7 +219,34 @@ export class ProductsService {
 		product.descriptionAr = body.description.ar.trim();
 		product.descriptionHtml = body.descriptionHtml.en.trim();
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
-		return this.productRepository.save(product);
+		await this.productRepository.save(product);
+
+		// Delete existing product categories to make sure new ones don't duplicate
+		await this.productCategoryRepository.delete({
+			product: {
+				id: product.id,
+			},
+		});
+
+		// Find the categories and create product categories.
+		// This is to join the categories to its associated product.
+		if (body.categories !== null && body.categories.length !== 0) {
+			body.categories
+				.filter((categoryUUID, index) => body.categories.indexOf(categoryUUID) === index)
+				.forEach(async categoryUUID => {
+					const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
+					if (category === null) {
+						return;
+					}
+
+					const productCategory = new ProductCategory();
+					productCategory.product = product;
+					productCategory.category = category;
+					await this.productCategoryRepository.save(productCategory);
+				});
+		}
+
+		return product;
 	}
 
 	/**
@@ -198,7 +285,7 @@ export class ProductsService {
 		}
 
 		// Update the product
-		product.slug = body.slug.trim().toLowerCase();
+		product.slug = generateSlug(body.slug);
 		return this.productRepository.save(product);
 	}
 

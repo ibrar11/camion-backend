@@ -1,5 +1,7 @@
 import {
+	IsArray,
 	IsString,
+	IsUUID,
 	MaxLength,
 	ValidateNested,
 } from "class-validator";
@@ -54,4 +56,8 @@ export class UpdateProductDto {
 
 	@ValidateNested()
 	descriptionHtml: DescriptionHtmlField;
+
+	@IsArray()
+	@IsUUID('4', { each: true, })
+	categories: Array<string>;
 }
