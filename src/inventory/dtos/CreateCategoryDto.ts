@@ -1,0 +1,36 @@
+import {
+	IsNumber,
+	IsOptional,
+	IsString,
+	IsUUID,
+	MaxLength,
+	Min,
+	ValidateNested,
+} from "class-validator";
+
+export class NameField {
+	@IsString()
+	@MaxLength(32)
+	ar: string;
+
+	@IsString()
+	@MaxLength(32)
+	en: string;
+}
+
+export class CreateCategoryDto {
+	@IsOptional()
+	@IsUUID('4')
+	parentUUID: string | null;
+
+	@IsString()
+	@MaxLength(64)
+	slug: string;
+
+	@ValidateNested()
+	name: NameField;
+
+	@IsNumber()
+	@Min(0)
+	pricingFactor: number;
+}
