@@ -1,6 +1,6 @@
-import { 
-  Module, 
-  OnModuleInit 
+import {
+    Module,
+    OnModuleInit
 } from '@nestjs/common';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -13,8 +13,12 @@ import { CustomersService } from 'src/customers/customers.service';
 
 import { PaymentProvider } from './enums/PaymentProvider';
 
+import { PaymentTransaction } from './entities/payment-transaction.entity';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
+
+import { PaymentsWebhookService } from './payments-webhook.service';
+import { PaymentsWebhookController } from './payments-webhook.controller';
 
 import { PaymentStrategyFactory } from './factories/PaymentStrategyFactory';
 
@@ -22,30 +26,35 @@ import { SkipCashStrategy } from './strategies/SkipcashStrategy';
 import { SkipCashAdapter } from './adapters/SkipcashAdapter';
 
 @Module({
-  imports: [
-      TypeOrmModule.forFeature([
-        User,
-        Customer,
-      ]),
+    imports: [
+        TypeOrmModule.forFeature([
+            User,
+            Customer,
+            PaymentTransaction
+        ]),
     ],
-  providers: [
-    PaymentsService,
-    PaymentStrategyFactory,
-    SkipCashStrategy,
-    SkipCashAdapter,
-    UsersService,
-    CustomersService
-  ],
-  controllers: [PaymentsController],
-  exports: [PaymentStrategyFactory],
+    providers: [
+        PaymentsService,
+        PaymentsWebhookService,
+        PaymentStrategyFactory,
+        SkipCashStrategy,
+        SkipCashAdapter,
+        UsersService,
+        CustomersService,
+    ],
+    controllers: [
+        PaymentsController,
+        PaymentsWebhookController
+    ],
+    exports: [PaymentStrategyFactory],
 })
 export class PaymentsModule implements OnModuleInit {
-  constructor(
-    private factory: PaymentStrategyFactory,
-    private skipCashStrategy: SkipCashStrategy,
-  ) {}
+    constructor(
+        private factory: PaymentStrategyFactory,
+        private skipCashStrategy: SkipCashStrategy,
+    ) { }
 
-  onModuleInit() {
-    this.factory.register(PaymentProvider.SKIPCASH, this.skipCashStrategy);
-  }
+    onModuleInit() {
+        this.factory.register(PaymentProvider.SKIPCASH, this.skipCashStrategy);
+    }
 }

@@ -14,10 +14,13 @@ export class CreatePaymentDto {
     @IsNumber()
     amount: number;
 
+    @IsString()
+    currency: string;
+
     // Temporary reference (later → orderId)
     @IsOptional()
     @IsString()
-    referenceId?: string;
+    orderId?: string;
 
     // Customer info (needed by SkipCash)
     @IsString()

@@ -4,9 +4,16 @@ import {
     Logger
 } from "@nestjs/common";
 
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+
 import { CreatePaymentDto } from "./dtos/CreatePaymentDto";
 
+import { PaymentTransaction } from "./entities/payment-transaction.entity";
+
 import { PaymentStrategyFactory } from "./factories/PaymentStrategyFactory";
+
+import { PaymentStatus } from "./enums/PaymentStatus";
 
 import { CreatePaymentResponse } from "./types";
 
@@ -14,7 +21,10 @@ import { CreatePaymentResponse } from "./types";
 export class PaymentsService {
     private readonly logger = new Logger(PaymentsService.name);
     
-    constructor(private strategyfactory: PaymentStrategyFactory) {}
+    constructor(
+        @InjectRepository(PaymentTransaction) private paymentRepo: Repository<PaymentTransaction>,
+        private strategyfactory: PaymentStrategyFactory,
+    ) {}
     
     /**
 	 * Creates new payment
@@ -24,11 +34,26 @@ export class PaymentsService {
 	 */
     async createPayment(dto: CreatePaymentDto): Promise<CreatePaymentResponse> {
         try {
+            // Create payment transaction
+            const transaction = this.paymentRepo.create({
+                provider: dto.provider,
+                orderId: dto.orderId,
+                amount: dto.amount,
+                currency: dto.currency,
+                status: PaymentStatus.PENDING
+            })
+            await this.paymentRepo.save(transaction);
+            
             // fetch the strategy for specified provider
             const strategy = this.strategyfactory.getStrategy(dto.provider);
             
             // intialize the payment creation for specifed provider
             const result = await strategy.InitiatePayment(dto);
+
+            transaction.transactionId = result.transactionId;
+            transaction.rawResponse = result.raw;
+
+            await this.paymentRepo.save(transaction);
 
             return {
                 success: true,

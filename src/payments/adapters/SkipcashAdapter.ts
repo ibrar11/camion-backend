@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-import { 
+import {
     Injectable,
     Logger,
     NotFoundException,
@@ -19,17 +19,16 @@ export class SkipCashAdapter {
     // note: create payment method needs to be updated after order implementation
 
     /**
-	 * Creates new payment
-	 *
-	 * @param dto
-	 * @returns
-	 */
+     * Creates new payment
+     *
+     * @param dto
+     * @returns
+     */
     async createPayment(dto: CreatePaymentDto): Promise<InitiatePaymentResponse> {
-        try{
+        try {
 
             // note: reference id should be replaced with order id
-            const referenceId = dto.referenceId || '';
-            console.log("referenceIdreferenceIdreferenceId",referenceId)
+            const orderId = dto.orderId || '';
 
 
             // note: payment logic needs to be reviewed once payment integration starts
@@ -47,7 +46,7 @@ export class SkipCashAdapter {
                 State: dto.state,
                 Country: dto.country,
                 PostalCode: dto.postalCode,
-                TransactionId: referenceId,
+                TransactionId: orderId,
                 Custom1: "",
             };
 
@@ -62,18 +61,27 @@ export class SkipCashAdapter {
                 },
                 body: JSON.stringify(payload),
             });
-
-            if (!res.ok) {
-                throw new Error(`Request failed with status ${res.status}`);
-            }
-
             const data = await res.json();
+
+            if (!res.ok || data.hasError) {
+                let message = "Payment creation failed";
+
+                if (data?.error?.message) {
+                    message = `SkipCash error: ${data.error.message}`;
+                } else if (data?.errorMessage) {
+                    message = `SkipCash error: ${data.errorMessage}`;
+                } else if (res.status === 403) {
+                    message = "Forbidden: Signature does not match or invalid credentials";
+                }
+
+                throw new NotFoundException(message);
+            }
 
             return {
                 provider: "skipcash",
                 transactionId: data.resultObj.transactionId,
                 paymentUrl: data.resultObj.payUrl,
-                referenceId,
+                orderId: orderId,
                 raw: data,
             };
         } catch (error: any) {
@@ -83,9 +91,9 @@ export class SkipCashAdapter {
 
             if (error.response?.status === 400) {
                 if (error.response?.data?.errorMessage?.includes('Signature')) {
-                customMessage = 'Payment verification failed. Please review your details and try again';
+                    customMessage = 'Payment verification failed. Please review your details and try again';
                 } else {
-                customMessage = 'Invalid payment details. Please check your information and try again';
+                    customMessage = 'Invalid payment details. Please check your information and try again';
                 }
             } else if (error.response?.status === 401) {
                 customMessage = 'Payment authentication failed. Please try again';

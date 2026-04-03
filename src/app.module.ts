@@ -37,6 +37,8 @@ import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
 
+import { PaymentTransaction } from "./payments/entities/payment-transaction.entity";
+
 import { PaymentsModule } from './payments/payments.module';
 
 @Module({
@@ -82,6 +84,8 @@ import { PaymentsModule } from './payments/payments.module';
 					InventoryItem,
 					InventoryLevel,
 					Warehouse,
+
+					PaymentTransaction
 				],
 				synchronize: true,
 			}),
