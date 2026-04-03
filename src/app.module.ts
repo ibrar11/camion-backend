@@ -41,6 +41,9 @@ import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
 
+import { Post } from 'src/posts/entities/post.entity';
+import { PostsModule } from './posts/posts.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -88,6 +91,8 @@ import { InventoryModule } from './inventory/inventory.module';
 					InventoryLevel,
 
 					Warehouse,
+                    
+                    Post,
 				],
 				synchronize: true,
 			}),
@@ -113,6 +118,7 @@ import { InventoryModule } from './inventory/inventory.module';
 		UsersModule,
 		CustomersModule,
 		InventoryModule,
+        PostsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
