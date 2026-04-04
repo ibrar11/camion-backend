@@ -40,6 +40,7 @@ import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
 import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
 	imports: [
@@ -63,6 +64,12 @@ import { InventoryModule } from './inventory/inventory.module';
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
 				type: "postgres",
+				ssl: configService.get<string>("NODE_ENV") === "local"
+					? false
+					: {
+						rejectUnauthorized: false,
+						ca: fs.readFileSync(path.join(process.cwd(), "ca/global-bundle.pem"), "utf-8"),
+					},
 				host: configService.get<string>("DB_HOST"),
 				port: configService.get<number>("DB_PORT"),
 				username: configService.get<string>("DB_USERNAME"),
@@ -113,6 +120,7 @@ import { InventoryModule } from './inventory/inventory.module';
 		UsersModule,
 		CustomersModule,
 		InventoryModule,
+		HealthModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
