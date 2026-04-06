@@ -23,12 +23,9 @@ import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
-<<<<<<< feature/client-application-api
 import { Client } from './clients/entities/client.entity';
 import { ClientsModule } from "./clients/clients.module";
-=======
 import { Category } from "./inventory/entities/category.entity";
->>>>>>> dev
 
 import { Product } from "./inventory/entities/product.entity";
 import { ProductCategory } from "./inventory/entities/product-category.entity";
@@ -77,15 +74,12 @@ import { InventoryModule } from './inventory/inventory.module';
 					User,
 					Customer,
 					RegistrationRequest,
-<<<<<<< feature/client-application-api
           
 					Client,
           
-=======
 
 					Category,
 
->>>>>>> dev
 					Product,
 					ProductCategory,
 					ProductOption,

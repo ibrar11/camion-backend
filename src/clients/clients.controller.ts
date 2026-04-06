@@ -17,6 +17,8 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { UpdateClientStatusDto } from './dto/update-client-status.dto';
 
+import { Client } from './entities/client.entity';
+
 import { UserRole } from '../users/enums/UserRole';
 
 import { ClientsService } from './clients.service';
@@ -39,14 +41,14 @@ export class ClientsController {
 	@HttpCode(HttpStatus.CREATED)
 	async actionCreateClient(
 		@Body() body: CreateClientDto,
-	): Promise<any> {
+	): Promise<Partial<Client>> {
 		return this.clientsService.createClient(body);
 	}
 
 	@Get()
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@HttpCode(HttpStatus.OK)
-	async actionGetAllClients(): Promise<any[]> {
+	async actionGetAllClients(): Promise<Client[]> {
 		return this.clientsService.findAll();
 	}
 
@@ -55,7 +57,7 @@ export class ClientsController {
 	@HttpCode(HttpStatus.OK)
 	async actionGetClientByUuid(
 		@Param('uuid') uuid: string,
-	): Promise<any> {
+	): Promise<Client> {
 		return this.clientsService.findOne(uuid);
 	}
 
@@ -65,7 +67,7 @@ export class ClientsController {
 	async actionUpdateClient(
 		@Param('uuid') uuid: string,
 		@Body() body: UpdateClientDto,
-	): Promise<any> {
+	): Promise<Client> {
 		return this.clientsService.update(uuid, body);
 	}
 
@@ -75,7 +77,7 @@ export class ClientsController {
 	async actionUpdateClientStatus(
 		@Param('uuid') uuid: string,
 		@Body() body: UpdateClientStatusDto,
-	): Promise<any> {
+	): Promise<Client> {
 		return this.clientsService.updateStatus(uuid, body.status);
 	}
 
