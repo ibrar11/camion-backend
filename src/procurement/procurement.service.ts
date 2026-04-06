@@ -1,19 +1,17 @@
-import { 
+import {
     Injectable,
     Logger,
     BadRequestException,
     InternalServerErrorException,
 } from '@nestjs/common';
 
-import { SearchProductsDto } from './dtos/SearchProductsDto';
-
-import { 
-    ProductAttribute, 
-    ProductDetail, 
-    ProductSku, 
-    SearchProductItem, 
-    SearchProducts, 
-    SkuAttribute 
+import {
+    ProductAttribute,
+    ProductDetail,
+    ProductSku,
+    SearchProductItem,
+    SearchProducts,
+    SkuAttribute
 } from './types';
 
 @Injectable()
@@ -21,13 +19,25 @@ export class ProcurementService {
     private readonly logger = new Logger(ProcurementService.name);
 
     /**
-	 * Finds a list of products with specific keyword
-	 *
-	 * @param dto
-	 * @returns
-	 */
-    async searchProducts(dto: SearchProductsDto): Promise<SearchProducts> {
+     * Finds a list of products with specific keyword
+     *
+     * @param dto
+     * @returns
+     */
+    async searchProducts(
+        keyword: string, 
+        page: string = '1', 
+        pageSize: string = '20', 
+        sort: string, 
+        priceStart: string = '', 
+        priceEnd: string = ''
+    ): Promise<Array<SearchProducts>> {
         try {
+            if (Number(pageSize) > 50) {
+                throw new BadRequestException({
+                    message: "Page size should not be greater than 50"
+                });
+            }
             // Get the product list from 1688
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/third-purchase/search`,
@@ -40,14 +50,14 @@ export class ProcurementService {
                         Language: 'en',
                     },
                     body: JSON.stringify({
-                        keyword: dto.keyword,
+                        keyword: keyword,
                         platform: '1688',
                         use_platform: "1",
-                        page: dto.page,
-                        page_size: dto.pageSize,
-                        sort: dto.sort,
-                        priceStart: dto.priceStart,
-                        priceEnd: dto.priceEnd,
+                        page: page,
+                        page_size: pageSize,
+                        sort: sort,
+                        priceStart: priceStart,
+                        priceEnd: priceEnd,
                     }),
                 },
             );
@@ -88,24 +98,7 @@ export class ProcurementService {
                 updatedAt: item.modifyDate,
             }));
 
-            // Pagination Details
-            const totalRecords = data.data.totalRecords;
-            const page = data.currentPage;
-            const pageSize = data.pageSize;
-            const totalPages = (totalRecords % pageSize === 0) ? data.totalPage - 1 : data.totalPage;
-            const has_next = page < totalPages;
-
-            return {
-                success: true,
-                data: formattedProducts,
-                meta: {
-                    totalRecords: totalRecords,
-                    totalPages: totalPages,
-                    page: page,
-                    pageSize: pageSize,
-                    has_next: has_next,
-                },
-            };
+            return formattedProducts;
         } catch (error: any) {
             this.logger.error(`Error fetching products: ${error?.message}`);
             throw new InternalServerErrorException({
@@ -116,13 +109,18 @@ export class ProcurementService {
     }
 
     /**
-	 * Finds a product details
-	 *
-	 * @param productId
-	 * @returns
-	 */
+     * Finds a product details
+     *
+     * @param productId
+     * @returns
+     */
     async getProductDetail(productId: string): Promise<ProductDetail> {
         try {
+            if (!productId) {
+                throw new BadRequestException({
+                    message: "Product id cannot be empty"
+                });
+            }
             // Get the product details from 1688
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/third-purchase/info`,
@@ -249,15 +247,12 @@ export class ProcurementService {
                     rating: parseFloat(product.tradeScore || '0'),
                     sold: product.productSaleInfo?.amountOnSale,
                     isDropshipping: product.tagInfoList?.find(
-                    (t: any) => t.key === 'isOnePsale'
+                        (t: any) => t.key === 'isOnePsale'
                     )?.value || false,
                 },
             };
 
-            return {
-                success: true,
-                data: formattedProduct
-            };
+            return formattedProduct;
         } catch (error: any) {
             this.logger.error(`Error fetching products: ${error?.message}`);
             throw new InternalServerErrorException({

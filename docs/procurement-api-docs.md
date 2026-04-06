@@ -38,38 +38,28 @@ priceEnd | No | String | Maximum price filter
 
 ### Response Body
 ```json
-{
-    "success": true,
-    "data": [
-        {
-            "externalId": "123456",
-            "title": "Running Shoes",
-            "price": 25.5,
-            "originalPrice": 30,
-            "image": "https://example.com/image.jpg",
-            "productUrl": "https://example.com/product",
-            "monthlySales": 120,
-            "rating": 4.5,
-            "minOrderQuantity": 2,
-            "isDropshipping": true,
-            "supplierType": "manufacturer",
-            "category": {
-                "level1": "1",
-                "level2": "2",
-                "level3": "3"
-            },
-            "createdAt": "2024-01-01",
-            "updatedAt": "2024-01-02"
-        }
-    ],
-    "meta": {
-        "totalRecords": 1000,
-        "totalPages": 50,
-        "page": 1,
-        "pageSize": 20,
-        "has_next": true
+[
+    {
+        "externalId": "123456",
+        "title": "Running Shoes",
+        "price": 25.5,
+        "originalPrice": 30,
+        "image": "https://example.com/image.jpg",
+        "productUrl": "https://example.com/product",
+        "monthlySales": 120,
+        "rating": 4.5,
+        "minOrderQuantity": 2,
+        "isDropshipping": true,
+        "supplierType": "manufacturer",
+        "category": {
+            "level1": "1",
+            "level2": "2",
+            "level3": "3"
+        },
+        "createdAt": "2024-01-01",
+        "updatedAt": "2024-01-02"
     }
-}
+]
 ```
 
 Retrieve Product Detail
@@ -85,75 +75,72 @@ GET /v1/procurement/<product-id> HTTP/1.1
 ### Response Body
 ```json
 {
-    "success": true,
-    "data": {
-        "externalId": "123456",
-        "title": "Running Shoes",
-        "description": "Original product description",
-        "descriptionTrans": "Translated description",
-        "images": [
-            "https://example.com/image1.jpg",
-            "https://example.com/image2.jpg"
-        ],
-        "mainImage": "https://example.com/image1.jpg",
-        "video": "https://example.com/video.mp4",
-        "price": 25.5,
-        "minOrderQuantity": 2,
-        "variants": [
-            {
-                "skuId": "sku-1",
-                "price": 25.5,
-                "stock": 100,
-                "attributes": [
-                    {
-                        "name": "Color",
-                        "value": "Red"
-                    },
-                    {
-                        "name": "Size",
-                        "value": "42"
-                    }
-                ],
-                "image": "https://example.com/variant.jpg"
-            }
-        ],
-        "options": [
-            {
-                "name": "Color",
-                "values": ["Red", "Blue"]
-            },
-            {
-                "name": "Size",
-                "values": ["40", "41", "42"]
-            }
-        ],
-        "attributes": [
-            {
-                "name": "Material",
-                "value": "Leather"
-            }
-        ],
-        "supplier": {
-            "name": "ABC Supplier",
-            "id": "supplier-123"
-        },
-        "category": {
-            "level1": "1",
-            "level2": "2",
-            "level3": "3"
-        },
-        "shipping": {
-            "weight": 1.2,
-            "length": 30,
-            "width": 20,
-            "height": 10,
-            "origin": "China"
-        },
-        "meta": {
-            "rating": 4.5,
-            "sold": 500,
-            "isDropshipping": true
+    "externalId": "123456",
+    "title": "Running Shoes",
+    "description": "Original product description",
+    "descriptionTrans": "Translated description",
+    "images": [
+        "https://example.com/image1.jpg",
+        "https://example.com/image2.jpg"
+    ],
+    "mainImage": "https://example.com/image1.jpg",
+    "video": "https://example.com/video.mp4",
+    "price": 25.5,
+    "minOrderQuantity": 2,
+    "variants": [
+        {
+            "skuId": "sku-1",
+            "price": 25.5,
+            "stock": 100,
+            "attributes": [
+                {
+                    "name": "Color",
+                    "value": "Red"
+                },
+                {
+                    "name": "Size",
+                    "value": "42"
+                }
+            ],
+            "image": "https://example.com/variant.jpg"
         }
+    ],
+    "options": [
+        {
+            "name": "Color",
+            "values": ["Red", "Blue"]
+        },
+        {
+            "name": "Size",
+            "values": ["40", "41", "42"]
+        }
+    ],
+    "attributes": [
+        {
+            "name": "Material",
+            "value": "Leather"
+        }
+    ],
+    "supplier": {
+        "name": "ABC Supplier",
+        "id": "supplier-123"
+    },
+    "category": {
+        "level1": "1",
+        "level2": "2",
+        "level3": "3"
+    },
+    "shipping": {
+        "weight": 1.2,
+        "length": 30,
+        "width": 20,
+        "height": 10,
+        "origin": "China"
+    },
+    "meta": {
+        "rating": 4.5,
+        "sold": 500,
+        "isDropshipping": true
     }
 }
 ```

@@ -55,20 +55,7 @@ export interface SkuAttribute {
     skuImageUrl?: string;
 }
 
-export interface ServiceResponse<T> {
-    success: boolean;
-    data: T;
-}
-
-export interface PaginationMeta {
-    totalRecords: number;
-    totalPages: number;
-    page: number;
-    pageSize: number;
-    has_next: boolean;
-}
-
-export interface FormattedProduct {
+export interface SearchProducts {
     externalId: number;
     title: string;
     price: number;
@@ -87,11 +74,6 @@ export interface FormattedProduct {
     };
     createdAt: string;
     updatedAt: string;
-}
-
-export interface SearchProducts
-    extends ServiceResponse<FormattedProduct[]> {
-    meta: PaginationMeta;
 }
 
 export interface ProductVariant {
@@ -115,7 +97,7 @@ export interface ProductAttributeFormatted {
     value: string;
 }
 
-export interface FormattedProductDetail {
+export interface ProductDetail {
     externalId: number;
     title: string;
     description: string;
@@ -156,5 +138,3 @@ export interface FormattedProductDetail {
         isDropshipping: boolean;
     };
 }
-
-export type ProductDetail = ServiceResponse<FormattedProductDetail>;

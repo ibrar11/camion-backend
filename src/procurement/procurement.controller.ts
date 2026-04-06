@@ -1,12 +1,10 @@
-import { 
-    Controller, 
-    Get, 
-    UseGuards ,
+import {
+    Controller,
+    Get,
+    UseGuards,
     Query,
     Param
 } from '@nestjs/common';
-
-import { SearchProductsDto } from './dtos/SearchProductsDto';
 
 import { UserRole } from 'src/users/enums/UserRole';
 
@@ -17,24 +15,34 @@ import { RolesGuard } from 'src/auth/roles.guard';
 
 import { Roles } from 'src/auth/roles.decorator';
 
+import {
+    SearchProducts,
+    ProductDetail
+} from './types';
+
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/procurement')
 export class ProcurementController {
-    constructor(private readonly procurementService: ProcurementService) {}
+    constructor(private readonly procurementService: ProcurementService) { }
 
     @Get()
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
     search(
-        @Query() dto: SearchProductsDto,
-    ) {
-        return this.procurementService.searchProducts(dto);
+        @Query("keyword") keyword: string,
+        @Query("pageNumber") pageNumber: string,
+        @Query("itemsPerPage") itemsPerPage: string,
+        @Query("sort") sort: string,
+        @Query("priceStart") priceStart: string,
+        @Query("priceEnd") priceEnd: string,
+    ): Promise<Array<SearchProducts>> {
+        return this.procurementService.searchProducts(keyword, pageNumber, itemsPerPage, sort, priceStart, priceEnd);
     }
 
     @Get(':productId')
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
     detail(
         @Param('productId') productId: string,
-    ) {
+    ): Promise<ProductDetail> {
         return this.procurementService.getProductDetail(productId);
     }
 }
