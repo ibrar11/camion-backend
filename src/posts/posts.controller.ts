@@ -22,9 +22,12 @@ import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 
+import { User } from 'src/users/entities/user.entity';
 import { UserRole } from '../users/enums/UserRole';
 
-@UseGuards(AuthGuard, RolesGuard) // ✅ applied globally
+import { Post as PostEntity } from './entities/post.entity';
+
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/posts')
 export class PostsController {
     constructor(private readonly postsService: PostsService) {}
@@ -37,9 +40,9 @@ export class PostsController {
     @HttpCode(HttpStatus.CREATED)
     async actionCreatePost(
         @Body() body: CreatePostDto,
-        @Req() request: Request & { user: any },
-    ) {
-        return this.postsService.create(body, request.user);
+        @Req() request: Request & { user: unknown },
+    ): Promise<PostEntity> {
+        return this.postsService.create(body, request.user as User);
     }
 
     /**
@@ -48,7 +51,7 @@ export class PostsController {
     @Get()
     @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
     @HttpCode(HttpStatus.OK)
-    async actionGetPosts() {
+    async actionGetPosts(): Promise<PostEntity[]> {
         return this.postsService.findAll();
     }
 
@@ -58,7 +61,7 @@ export class PostsController {
     @Get(':uuid')
     @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
     @HttpCode(HttpStatus.OK)
-    async actionGetPost(@Param('uuid') uuid: string) {
+    async actionGetPost(@Param('uuid') uuid: string): Promise<PostEntity> {
         return this.postsService.findOne(uuid);
     }
 
@@ -71,7 +74,7 @@ export class PostsController {
     async actionUpdatePost(
         @Param('uuid') uuid: string,
         @Body() body: UpdatePostDto,
-    ) {
+    ): Promise<PostEntity> {
         return this.postsService.update(uuid, body);
     }
 
@@ -81,7 +84,7 @@ export class PostsController {
     @Delete(':uuid')
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @HttpCode(HttpStatus.OK)
-    async actionDeletePost(@Param('uuid') uuid: string) {
+    async actionDeletePost(@Param('uuid') uuid: string): Promise<void> {
         return this.postsService.delete(uuid);
     }
 }

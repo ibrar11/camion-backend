@@ -1,5 +1,4 @@
 import {
-    IsArray,
     IsBoolean,
     IsOptional,
     IsString,
@@ -9,24 +8,20 @@ import {
 export class CreatePostDto {
     @IsString()
     @MaxLength(255)
-    slug!: string;
+    slug: string;
 
     @IsString()
     @MaxLength(255)
-    title!: string;
+    title: string;
 
     @IsOptional()
     @IsString()
     brief?: string;
 
     @IsString()
-    content!: string;
+    content: string;
 
     @IsOptional()
     @IsBoolean()
     enabled?: boolean;
-
-    @IsOptional()
-    @IsArray()
-    images?: string[];
 }

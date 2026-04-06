@@ -31,7 +31,6 @@ export class PostsService {
             brief: body.brief,
             content: body.content,
             enabled: body.enabled ?? true,
-            images: body.images,
             author: author,
         });
 
@@ -57,7 +56,7 @@ export class PostsService {
      * @returns The post entity
      */
     async findOne(uuid: string): Promise<Post> {
-        const post: Post | null = await this.postRepository.findOne({
+        const post = await this.postRepository.findOne({
             where: { uuid: uuid },
             relations: ['author'],
         });
@@ -81,30 +80,6 @@ export class PostsService {
     async update(uuid: string, body: UpdatePostDto): Promise<Post> {
         const post: Post = await this.findOne(uuid);
 
-        if (body.slug !== undefined) {
-            post.slug = body.slug;
-        }
-
-        if (body.title !== undefined) {
-            post.title = body.title;
-        }
-
-        if (body.brief !== undefined) {
-            post.brief = body.brief;
-        }
-
-        if (body.content !== undefined) {
-            post.content = body.content;
-        }
-
-        if (body.enabled !== undefined) {
-            post.enabled = body.enabled;
-        }
-
-        if (body.images !== undefined) {
-            post.images = body.images;
-        }
-
         return this.postRepository.save(post);
     }
 
@@ -115,12 +90,6 @@ export class PostsService {
      * @returns void
      */
     async delete(uuid: string): Promise<void> {
-        const result = await this.postRepository.delete({ uuid: uuid });
-
-        if (result.affected === 0) {
-            throw new NotFoundException({
-                error: 'Failed to delete the post. Please check and try again.',
-            });
-        }
+        await this.postRepository.delete({ uuid: uuid });
     }
 }
