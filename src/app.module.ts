@@ -23,7 +23,12 @@ import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
+import { Client } from './clients/entities/client.entity';
+import { ClientsModule } from "./clients/clients.module";
+import { Category } from "./inventory/entities/category.entity";
+
 import { Product } from "./inventory/entities/product.entity";
+import { ProductCategory } from "./inventory/entities/product-category.entity";
 import { ProductOption } from "./inventory/entities/product-option.entity";
 import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
 import { ProductVariant } from "./inventory/entities/product-variant.entity";
@@ -33,9 +38,11 @@ import { ProductVariantOptionValue } from "./inventory/entities/product-variant-
 
 import { InventoryItem } from "./inventory/entities/inventory-item.entity";
 import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
+
 import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
+import { HealthModule } from './health/health.module';
 
 import { CartItem } from "./cart/entities/cart-items.entity";
 import { CartModule } from './cart/cart.module';
@@ -62,6 +69,12 @@ import { CartModule } from './cart/cart.module';
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
 				type: "postgres",
+				ssl: configService.get<string>("NODE_ENV") === "local"
+					? false
+					: {
+						rejectUnauthorized: false,
+						ca: fs.readFileSync(path.join(process.cwd(), "ca/global-bundle.pem"), "utf-8"),
+					},
 				host: configService.get<string>("DB_HOST"),
 				port: configService.get<number>("DB_PORT"),
 				username: configService.get<string>("DB_USERNAME"),
@@ -71,8 +84,14 @@ import { CartModule } from './cart/cart.module';
 					User,
 					Customer,
 					RegistrationRequest,
+          
+					Client,
+          
+
+					Category,
 
 					Product,
+					ProductCategory,
 					ProductOption,
 					ProductOptionValue,
 					ProductVariant,
@@ -82,6 +101,7 @@ import { CartModule } from './cart/cart.module';
 
 					InventoryItem,
 					InventoryLevel,
+
 					Warehouse,
 					
 					CartItem,
@@ -109,7 +129,9 @@ import { CartModule } from './cart/cart.module';
 		AuthModule,
 		UsersModule,
 		CustomersModule,
+		ClientsModule,
 		InventoryModule,
+		HealthModule,
 		CartModule,
 	],
 	controllers: [AppController],

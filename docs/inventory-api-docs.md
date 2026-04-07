@@ -186,6 +186,167 @@ Delete Warehouse
 DELETE /v1/warehouses/<warehouse-uuid> HTTP/1.1
 ```
 
+Categories API
+==============
+Categories are a way to organize products into logical groups so both your system and your users can understand what product belongs where.
+
+> [!IMPORTANT]
+> You must include your access token as a `Bearer` token in the Authorization header. Your account must be active while making these requests.
+
+Create a Category
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+POST /v1/categories HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+parentUUID | Yes | String | The UUID of the parent category. Must be null for root categories
+slug | Yes | String | A unique string that identifies the category
+name.en | Yes | String | The name of the category in English
+name.ar | Yes | String | The name of the category in Arabic
+pricingFactor | Yes | Number | The pricing factor of the category
+
+### Request Body
+```json
+{
+    "parentUUID": null,
+    "slug": "sneakers",
+    "name": {
+        "en": "Sneakers",
+        "ar": "أحذية رياضية"
+    },
+    "pricingFactor": 1.2
+}
+```
+
+### Response Body
+```json
+{
+    "uuid": "5d32adfe-cdaa-4d19-9a3b-c2374b2a0aab",
+    "slug": "sneakers",
+    "name": "sneakers",
+    "nameAr": "أحذية رياضية",
+    "pricingFactor": 1.2,
+    "parent": null
+}
+```
+
+Retrieve Categories
+-------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`, `User`
+
+```http
+GET /v1/categories HTTP/1.1
+```
+
+### Query Parameters
+Name | Description | Default
+-----|-------------|--------
+filters | A JSON string containing your search term, or any advanced search parameters. | `{}`
+sort | The order in which we need to sort results |
+pageNumber | The current page number | 1
+itemsPerPage | The number of results to retrieve in the response | 100
+
+### Response Body
+```json
+[
+    {
+        "uuid": "5d32adfe-cdaa-4d19-9a3b-c2374b2a0aab",
+        "slug": "sneakers",
+        "name": "sneakers",
+        "nameAr": "أحذية رياضية",
+        "pricingFactor": "1.2",
+        "children": [
+            {
+                "uuid": "f5d519fa-9b21-435c-97ab-8c06e1fb782c",
+                "slug": "sneakers-shoes",
+                "name": "sneakers-shoes",
+                "nameAr": "أحذية رياضية",
+                "pricingFactor": "1.2",
+                "children": []
+            }
+        ]
+    }
+]
+```
+
+Retrieve a category
+-------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`, `User`
+
+```http
+GET /v1/categories/<category-uuid> HTTP/1.1
+```
+
+### Response Body
+```json
+{
+    "uuid": "e45cc8ed-72ec-4780-885c-5a378d85822a",
+    "slug": "sneakers",
+    "name": "sneakers",
+    "nameAr": "sneakers",
+    "pricingFactor": 1.4
+}
+```
+
+Update a category
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+PUT /v1/categories/<category-uuid> HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+slug | Yes | String | A unique string that identifies the category
+name.en | Yes | String | The name of the category in English
+name.ar | Yes | String | The name of the category in Arabic
+
+### Request Body
+```json
+{
+    "slug": "sneakers",
+    "name": {
+        "en": "Sneakers",
+        "ar": "أحذية رياضية"
+    },
+    "pricingFactor": 1.4
+}
+```
+
+### Response Body
+```json
+{
+    "uuid": "fbb6e9d6-60e3-4d45-8dba-8cd01e6f6e52",
+    "slug": "sneakers",
+    "name": "Sneakers",
+    "nameAr": "أحذية رياضية",
+    "pricingFactor": 1.4
+}
+```
+
+Delete a category
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+DELETE /v1/categories/<category-uuid> HTTP/1.1
+```
+
 Products API
 ============
 
@@ -326,6 +487,7 @@ description.en | Yes | String | Description of the product in English
 description.ar | Yes | String | Description of the product in Arabic
 descriptionHtml.en | Yes | String | HTML Description of the product in English
 descriptionHtml.ar | Yes | String | HTML Description of the product in Arabic
+categories | No | List[UUID] | A list of UUIDs of categories
 
 ### Request Body
 ```json
@@ -346,7 +508,10 @@ descriptionHtml.ar | Yes | String | HTML Description of the product in Arabic
     "descriptionHtml": {
         "en": "<b>Your new iPhone awaits. Make it yours</b>",
         "ar": "<b>Your new iPhone awaits. Make it yours</b>"
-    }
+    },
+    "categories": [
+        "e45cc8ed-72ec-4780-885c-5a378d85822a"
+    ]
 }
 ```
 
@@ -384,6 +549,11 @@ filters | A JSON string containing your search term, or any advanced search para
 sort | The order in which we need to sort results |
 pageNumber | The current page number | 1
 itemsPerPage | The number of results to retrieve in the response | 100
+
+### Filters
+Filter | Syntax
+-------|-------
+Get products by a category | `filters={"slug":"sneakers"}`
 
 ### Response Body
 ```json

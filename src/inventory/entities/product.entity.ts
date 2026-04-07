@@ -13,6 +13,7 @@ import { ProductStatus } from "../enums/ProductStatus";
 
 import { ProductOption } from "./product-option.entity";
 import { ProductVariant } from "./product-variant.entity";
+import { ProductCategory } from "./product-category.entity";
 
 import { CartItem } from "src/cart/entities/cart-items.entity";
 
@@ -64,6 +65,9 @@ export class Product {
 
 	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, })
 	variants: Array<ProductVariant>;
+
+	@OneToMany(() => ProductCategory, (category) => category.product, { cascade: true, })
+	productCategories: Array<ProductCategory>;
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;
