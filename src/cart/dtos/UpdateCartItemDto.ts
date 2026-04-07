@@ -7,10 +7,10 @@ export class UpdateCartItemDto {
 
     @IsOptional()
     @IsUUID()
-    variantUuid?: string;
+    variantUuid: string;
 
     @IsOptional()
     @IsNumber()
     @Min(1)
-    quantity?: number;
+    quantity: number;
 }

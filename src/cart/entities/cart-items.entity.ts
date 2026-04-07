@@ -2,10 +2,18 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from "typeorm";
+
 import { Exclude } from "class-transformer";
+
+import { Product } from "src/inventory/entities/product.entity";
+
+import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+
+import { Customer } from "src/customers/entities/customer.entity";
 
 @Entity({ name: "cart_items" })
 export class CartItem {
@@ -14,25 +22,22 @@ export class CartItem {
     id: number;
 
     @Column({ type: "uuid", nullable: false, unique: true, })
-	uuid: string;
+    uuid: string;
 
-    @Column({ type: "uuid", nullable: true })
-    customerUuid?: string;
+    @ManyToOne(() => Customer, (customer) => customer.cartItems, { onDelete: "CASCADE" })
+    customer: Customer;
 
-    @Column({ type: "varchar", nullable: true })
-    guestId?: string;
+    @ManyToOne(() => Product, (product) => product.cartItems, { onDelete: "CASCADE", })
+    product: Product;
 
-    @Column({ type: "uuid" })
-    productUuid: string;
-
-    @Column({ type: "uuid" })
-    variantUuid: string;
+    @ManyToOne(() => ProductVariant, (variant) => variant.cartItems, { onDelete: "CASCADE" })
+    variant: ProductVariant;
 
     @Column({ type: "int", default: 1 })
     quantity: number;
 
     @Column({ type: "decimal", precision: 10, scale: 2 })
-    price: number;
+    subTotal: number;
 
     @Exclude()
     @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })

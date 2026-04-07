@@ -29,7 +29,7 @@ Add to Cart
 
 
 ```http
-POST /v1/cart HTTP/1.1
+POST /v1/cart-items HTTP/1.1
 ```
 
 Parameter Name | Required | Type | Description
@@ -40,21 +40,55 @@ quantity | Yes | Number | Quantity to add (minimum 1
 
 ### Request Body
 ```json
-{ 
-    "productUuid": "c023bd4c-e8ce-453e-b41b-07b42c7f0d6d", 
-    "variantUuid": "45078e0a-7637-48e5-a7d5-a8645b1ae66f", 
-    "quantity": 2 
+{
+	"productUuid": "c023bd4c-e8ce-453e-b41b-07b42c7f0d6d",
+	"variantUuid": "45078e0a-7637-48e5-a7d5-a8645b1ae66f",
+	"quantity": 2
 }
 ```
 
 ### Response Body
 ```json
 {
-  "success": true,
-  "message": "Added to cart",
-  "data": {
-    "cartCount": 3
-  }
+	"uuid": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
+	"userId": "a023bd4c-e8ce-453e-b41b-07b42c7f0d7d",
+	"product": {
+		"uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
+		"slug": "iphone-17",
+		"title": "iPhone 17",
+		"titleAr": "آيفون 17",
+		"brief": "From $799 or $33.29/mo. per month for 24 months",
+		"briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+		"description": "Your new iPhone awaits. Make it yours.",
+		"descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+		"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+		"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+		"status": "DRAFT",
+		"options": [],
+		"variants": []
+	},
+	"variant": {
+		"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
+		"title": "iPhone 17 Lavender 256 GB",
+		"titleAr": "iPhone 17 Lavender 256 GB",
+		"sku": "iphone-17-lavender-256",
+		"barcode": "10000",
+		"price": {
+			"amount": "1000",
+			"currencyCode": "QAR"
+		},
+		"weight": {
+			"amount": "1",
+			"unit": "KILOGRAMS"
+		},
+		"dimensions": {
+			"width": "1000",
+			"height": "1000",
+			"length": "1000"
+		}
+	},
+	"quantity": "2",
+	"subTotal": "240"
 }
 ```
 
@@ -62,87 +96,123 @@ Retrieve Cart
 -------------------
 
 ```http
-GET /v1/cart HTTP/1.1
+GET /v1/cart-items HTTP/1.1
 ```
 
 ### Response Body
 ```json
-{
-  "success": true,
-  "message": "Cart fetched",
-  "data": {
-    "cartItems": [
-        {
-            "uuid": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
-            "userId": "c023bd4c-e8ce-453e-b41b-07b42c7f0d6d",
-            "productId": "45078e0a-7637-48e5-a7d5-a8645b1ae66f",
-            "quantity": "2",
-            "variation": {
-                "uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-                "title": "iPhone 17 Lavender 256 GB",
-                "titleAr": "iPhone 17 Lavender 256 GB",
-                "sku": "iphone-17-lavender-256",
-                "barcode": "10000",
-                "price": {
-                    "amount": "1000",
-                    "currencyCode": "QAR"
-                },
-                "weight": {
-                    "amount": "1",
-                    "unit": "KILOGRAMS"
-                },
-                "dimensions": {
-                    "width": "1000",
-                    "height": "1000",
-                    "length": "1000"
-                }
-            },
-            "title": "iPhone 17",
-            "image": "ProductVariantImage"[],
-            "totalPrice": "345",
-            "availableStock": "5",
-            "isAvailable": "true",
-            "createdAt": "2026-03-24 15:19:50.303381+05",
-            "updatedAt": "2026-03-24 15:19:50.303381+05"
-        }
-     ],
-    "cartTotal": 1234
-  }
-}
+[
+	{
+		"uuid": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
+		"customerUuid": "c023bd4c-e8ce-453e-b41b-07b42c7f0d6d",
+		"product": {
+			"uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
+			"slug": "iphone-17",
+			"title": "iPhone 17",
+			"titleAr": "آيفون 17",
+			"brief": "From $799 or $33.29/mo. per month for 24 months",
+			"briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+			"description": "Your new iPhone awaits. Make it yours.",
+			"descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+			"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+			"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+			"status": "DRAFT",
+			"options": [],
+			"variants": []
+		},
+		"quantity": "2",
+		"variation": {
+			"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
+			"title": "iPhone 17 Lavender 256 GB",
+			"titleAr": "iPhone 17 Lavender 256 GB",
+			"sku": "iphone-17-lavender-256",
+			"barcode": "10000",
+			"price": {
+				"amount": "1000",
+				"currencyCode": "QAR"
+			},
+			"weight": {
+				"amount": "1",
+				"unit": "KILOGRAMS"
+			},
+			"dimensions": {
+				"width": "1000",
+				"height": "1000",
+				"length": "1000"
+			}
+		},
+		"title": "iPhone 17",
+		"image": "ProductVariantImage"[],
+		"totalPrice": "345",
+		"availableStock": "5",
+		"isAvailable": "true"
+	}
+]
 ```
 
 Update Cart Item
 ----------------
 
 ```http
-PATCH /v1/cart/update/<cart-uuid> HTTP/1.1
+PATCH /v1/cart-items/update/<cart-item-uuid> HTTP/1.1
 ```
 
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 productUuid | Yes | UUID | UUID of the product
-variantUuid | No | UUID | New variant UUID
-quantity | No | Number | Updated quantity (min 1)
+variantUuid | Yes | UUID | New variant UUID
+quantity | Yes | Number | Updated quantity (min 1)
 
 ### Request Body
 ```json
-{ 
-    "productUuId": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
-    "quantity": 3 
+{
+	"productUuId": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
+	"variantUuId": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
+	"quantity": 3
 }
 ```
 
 ### Response Body
 ```json
 {
-  "success": true,
-  "message": "Cart updated",
-  "data": {
-    "uuid": "a993e4c3-76d2-482d-adc3-e55945ebc8b4",
-    "productUuId": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
-    "quantity": 3,
-    "totalPrice": 597
-  }
+	"uuid": "a993e4c3-76d2-482d-adc3-e55945ebc8b4",
+	"product": {
+		"uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
+		"slug": "iphone-17",
+		"title": "iPhone 17",
+		"titleAr": "آيفون 17",
+		"brief": "From $799 or $33.29/mo. per month for 24 months",
+		"briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+		"description": "Your new iPhone awaits. Make it yours.",
+		"descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+		"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+		"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+		"status": "DRAFT",
+		"options": [],
+		"variants": []
+	},
+	"variant": {
+		"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
+		"title": "iPhone 17 Lavender 256 GB",
+		"titleAr": "iPhone 17 Lavender 256 GB",
+		"sku": "iphone-17-lavender-256",
+		"barcode": "10000",
+		"price": {
+			"amount": "1000",
+			"currencyCode": "QAR"
+		},
+		"weight": {
+			"amount": "1",
+			"unit": "KILOGRAMS"
+		},
+		"dimensions": {
+			"width": "1000",
+			"height": "1000",
+			"length": "1000"
+		}
+	},
+	"quantity": 3,
+	"subTotal": 597
 }
 ```
 
@@ -150,40 +220,12 @@ Remove Item from Cart
 ----------------
 
 ```http
-DELETE /v1/cart/remove HTTP/1.1
+DELETE /v1/cart-items/remove/<cart-item-uuid> HTTP/1.1
 ```
 
-Parameter Name | Required | Type | Description
----------------|----------|------|------------
-productUuid | Yes | UUID | UUID of the product
-
-### Request Body
-```json
-{ 
-    "productUuid": "a123bd4c-e8ce-453e-b41b-07b42c7f0d6d"
-}
-```
-
-### Response Body
-```json
-{
-  "success": true,
-  "message": "Item removed",
-  "data": { "removed": true }
-}
-```
-
-Clear Cart
+Remove Item from Cart
 ----------------
 
 ```http
-DELETE /v1/cart/clear HTTP/1.1
-```
-
-### Response Body
-```json
-{
-  "success": true,
-  "message": "Item removed"
-}
+DELETE /v1/cart HTTP/1.1
 ```

@@ -14,6 +14,8 @@ import { ProductStatus } from "../enums/ProductStatus";
 import { ProductOption } from "./product-option.entity";
 import { ProductVariant } from "./product-variant.entity";
 
+import { CartItem } from "src/cart/entities/cart-items.entity";
+
 @Entity({ name: "products", })
 export class Product {
 	@Exclude()
@@ -62,6 +64,9 @@ export class Product {
 
 	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, })
 	variants: Array<ProductVariant>;
+
+	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
+	cartItems: Array<CartItem>;
 
 	@Exclude()
 	@Column({

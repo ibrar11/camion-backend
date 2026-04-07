@@ -1,5 +1,4 @@
 import {
-    BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -8,22 +7,29 @@ import {
 	HttpStatus,
 	Inject,
 	Post,
-    Headers,
     Patch,
     UseGuards,
     Param
 } from '@nestjs/common';
 
+import { AuthGuard } from 'src/auth/auth.guard';
+
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
 
+import { CartItem } from './entities/cart-items.entity';
 import { CartService } from './cart.service';
 
-import { OptionalAuthGuard } from 'src/auth/optional-auth.guard';
-import { OptionalUserId } from 'src/auth/optional-user-id.decorator';
+import { Customer } from 'src/customers/entities/customer.entity';
+import { GetCustomer } from 'src/customers/customer.decorator';
 
-@UseGuards(OptionalAuthGuard)
-@Controller('v1/cart')
+import { 
+    FindCartResponse, 
+    UpdateCartResponse 
+} from './types';
+
+@UseGuards(AuthGuard)
+@Controller('v1/cart-items')
 export class CartController {
     constructor(
         @Inject(CartService)
@@ -34,47 +40,42 @@ export class CartController {
     @HttpCode(HttpStatus.CREATED)
     addToCart(
         @Body() dto: CreateCartItemDto,
-        @OptionalUserId() userId: string | undefined,
-        @Headers('x-guest-id') guestId?: string,
-    ) {
-        return this.cartService.create(dto, userId, guestId);
+        @GetCustomer() customer: Customer,
+    ): Promise<CartItem> {
+        return this.cartService.create(dto, customer);
     }
 
     @Get()
     @HttpCode(HttpStatus.OK)
     getCart(
-        @OptionalUserId() userId: string | undefined,
-        @Headers('x-guest-id') guestId?: string,
-    ) {
-        return this.cartService.findCart(userId, guestId);
+        @GetCustomer() customer: Customer,
+    ): Promise<FindCartResponse> {
+        return this.cartService.findCart(customer);
     }
 
-    @Patch('update')
+    @Patch('update/:uuid')
     @HttpCode(HttpStatus.OK)
     updateCart(
+        @Param('uuid') uuid: string,
         @Body() dto: UpdateCartItemDto,
-        @OptionalUserId() userId: string | undefined,
-        @Headers('x-guest-id') guestId?: string,
-    ) {
-        return this.cartService.update(dto, userId, guestId);
+        @GetCustomer() customer: Customer,
+    ): Promise<UpdateCartResponse> {
+        return this.cartService.update(uuid, dto, customer);
     }
 
-    @Delete('remove')
+    @Delete('remove/:uuid')
     @HttpCode(HttpStatus.OK)
     async removeFromCart(
-        @Body('productUuid') productUuid: string,
-        @OptionalUserId() userId: string | undefined,
-        @Headers('x-guest-id') guestId?: string,
-    ) {
-        return this.cartService.removeItem(productUuid, userId, guestId);
+        @Param('uuid') uuid: string,
+    ): Promise<void> {
+        return this.cartService.removeItem(uuid);
     }
 
-    @Delete('clear')
+    @Delete()
     @HttpCode(HttpStatus.OK)
     clearCart(
-        @OptionalUserId() userId: string | undefined,
-        @Headers('x-guest-id') guestId?: string,
-    ) {
-        return this.cartService.clearCart(userId, guestId);
+        @GetCustomer() customer: Customer,
+    ): Promise<void> {
+        return this.cartService.clearCart(customer);
     } 
 }

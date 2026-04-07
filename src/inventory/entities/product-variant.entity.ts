@@ -21,6 +21,8 @@ import { ProductVariantOptionValue } from "./product-variant-option-value.entity
 import { ProductVariantInventoryItem } from "./product-variant-inventory-item.entity";
 import { InventoryItem } from "./inventory-item.entity";
 
+import { CartItem } from "src/cart/entities/cart-items.entity";
+
 export class Money {
 	@Column({ type: "numeric", })
 	amount: number;
@@ -101,6 +103,9 @@ export class ProductVariant {
 
 	@OneToMany(() => ProductVariantImage, (image) => image.variant, { cascade: true, })
 	images: Array<ProductVariantImage>;
+
+	@OneToMany(() => CartItem, (cartItem) => cartItem.variant, { cascade: true, })
+	cartItems: Array<CartItem>;
 
 	@Exclude()
 	@UpdateDateColumn({
