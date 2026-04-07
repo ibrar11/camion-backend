@@ -23,6 +23,8 @@ import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
+import { Client } from './clients/entities/client.entity';
+import { ClientsModule } from "./clients/clients.module";
 import { Category } from "./inventory/entities/category.entity";
 
 import { Product } from "./inventory/entities/product.entity";
@@ -79,6 +81,9 @@ import { HealthModule } from './health/health.module';
 					User,
 					Customer,
 					RegistrationRequest,
+          
+					Client,
+          
 
 					Category,
 
@@ -119,6 +124,7 @@ import { HealthModule } from './health/health.module';
 		AuthModule,
 		UsersModule,
 		CustomersModule,
+		ClientsModule,
 		InventoryModule,
 		HealthModule,
 	],
