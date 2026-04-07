@@ -46,7 +46,7 @@ import { HealthModule } from './health/health.module';
 
 import { OauthModule } from './oauth/oauth.module';
 
-import { RefreshToken } from './oauth/entities/refresh-token.entity';
+import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity';
 
 @Module({
 	imports: [
@@ -104,7 +104,7 @@ import { RefreshToken } from './oauth/entities/refresh-token.entity';
 
 					Warehouse,
 
-                    RefreshToken,
+                    ClientRefreshToken,
 				],
 				synchronize: true,
 			}),

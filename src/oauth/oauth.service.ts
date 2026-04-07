@@ -19,7 +19,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { TokenDto } from './dto/token.dto';
 import { ClientsService } from '../clients/clients.service';
-import { RefreshToken } from './entities/refresh-token.entity';
+import { ClientRefreshToken } from './entities/oauth-refresh-token.entity';
 
 @Injectable()
 export class OauthService {
@@ -29,8 +29,8 @@ export class OauthService {
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
 
-        @InjectRepository(RefreshToken)
-        private readonly refreshTokenRepository: Repository<RefreshToken>,
+        @InjectRepository(ClientRefreshToken)
+        private readonly refreshTokenRepository: Repository<ClientRefreshToken>,
     ) {}
 
     /**

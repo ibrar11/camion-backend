@@ -6,11 +6,11 @@ import { OauthService } from './oauth.service';
 import { OauthController } from './oauth.controller';
 
 import { ClientsModule } from '../clients/clients.module';
-import { RefreshToken } from './entities/refresh-token.entity';
+import { ClientRefreshToken } from './entities/oauth-refresh-token.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([RefreshToken]),
+        TypeOrmModule.forFeature([ClientRefreshToken]),
         ConfigModule,
         forwardRef(() => ClientsModule),
     ],
