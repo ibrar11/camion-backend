@@ -23,6 +23,8 @@ import { CustomersModule } from './customers/customers.module';
 
 import { RegistrationRequest } from "./auth/entities/registration-request.entity";
 
+import { Client } from './clients/entities/client.entity';
+import { ClientsModule } from "./clients/clients.module";
 import { Category } from "./inventory/entities/category.entity";
 
 import { Product } from "./inventory/entities/product.entity";
@@ -40,6 +42,8 @@ import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
 import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
+import { HealthModule } from './health/health.module';
+
 import { ProcurementModule } from './procurement/procurement.module';
 
 @Module({
@@ -64,6 +68,12 @@ import { ProcurementModule } from './procurement/procurement.module';
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
 				type: "postgres",
+				ssl: configService.get<string>("NODE_ENV") === "local"
+					? false
+					: {
+						rejectUnauthorized: false,
+						ca: fs.readFileSync(path.join(process.cwd(), "ca/global-bundle.pem"), "utf-8"),
+					},
 				host: configService.get<string>("DB_HOST"),
 				port: configService.get<number>("DB_PORT"),
 				username: configService.get<string>("DB_USERNAME"),
@@ -73,6 +83,9 @@ import { ProcurementModule } from './procurement/procurement.module';
 					User,
 					Customer,
 					RegistrationRequest,
+          
+					Client,
+          
 
 					Category,
 
@@ -113,7 +126,9 @@ import { ProcurementModule } from './procurement/procurement.module';
 		AuthModule,
 		UsersModule,
 		CustomersModule,
+		ClientsModule,
 		InventoryModule,
+		HealthModule,
 		ProcurementModule,
 	],
 	controllers: [AppController],
