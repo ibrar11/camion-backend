@@ -12,6 +12,8 @@ import { ROLES_KEY } from "./roles.decorator";
 
 import { User } from "../users/entities/user.entity";
 
+import { Client } from "src/clients/entities/client.entity";
+
 @Injectable()
 export class RolesGuard implements CanActivate {
 	constructor(private reflector: Reflector) { }
@@ -26,11 +28,24 @@ export class RolesGuard implements CanActivate {
 			return true;
 		}
 
-		const request: Request & { user: User, } = context.switchToHttp().getRequest();
+		const request: Request & {
+			user?: User;
+			client?: Client;
+		} = context.switchToHttp().getRequest();
+
 		if (request === null) {
 			return false;
 		}
 
-		return requiredRoles.includes(request.user.role);
+		if (request.user) {
+			return requiredRoles.includes(request.user.role);
+		}
+
+		// clients do not have roles → deny if roles are required
+		if (request.client) {
+			return false;
+		}
+
+		return false;
 	}
 }

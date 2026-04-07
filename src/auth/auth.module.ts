@@ -10,8 +10,14 @@ import { CustomersService } from 'src/customers/customers.service';
 
 import { RegistrationRequest } from './entities/registration-request.entity';
 
+import { UsersModule } from 'src/users/users.module';
+import { ClientsModule } from '../clients/clients.module';
+
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+
+import { AuthGuard } from './auth.guard';
+import { RolesGuard } from './roles.guard';
 
 @Module({
 	imports: [
@@ -20,8 +26,20 @@ import { AuthController } from './auth.controller';
 			Customer,
 			RegistrationRequest,
 		]),
-	],
-	providers: [AuthService, UsersService, CustomersService],
-	controllers: [AuthController]
+        UsersModule,
+        ClientsModule,
+    ],
+    providers: [
+        AuthService,
+        UsersService,
+        CustomersService,
+        AuthGuard,
+        RolesGuard,
+    ],
+    controllers: [AuthController],
+    exports: [
+        AuthGuard,
+        RolesGuard,
+    ],
 })
 export class AuthModule { }
