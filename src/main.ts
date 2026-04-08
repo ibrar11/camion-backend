@@ -51,7 +51,10 @@ async function bootstrap() {
 		allowedHeaders: ["Content-Type", "Authorization"],
 	});
 
-	app.useGlobalPipes(new ValidationPipe());
+	app.useGlobalPipes(new ValidationPipe({
+		transform: true,
+		whitelist: true,
+	}));
 	app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)),);
 
 	await app.listen(process.env.PORT ?? 3000);

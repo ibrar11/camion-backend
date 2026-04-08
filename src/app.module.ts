@@ -51,6 +51,8 @@ import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity'
 import { CartItem } from "./cart/entities/cart-items.entity";
 import { CartModule } from './cart/cart.module';
 
+import { ProcurementModule } from './procurement/procurement.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -140,6 +142,7 @@ import { CartModule } from './cart/cart.module';
 		HealthModule,
 		OauthModule,
 		CartModule,
+		ProcurementModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
