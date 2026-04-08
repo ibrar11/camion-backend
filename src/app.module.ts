@@ -21,7 +21,7 @@ import { UsersModule } from './users/users.module';
 import { Customer } from "./customers/entities/customer.entity";
 import { CustomersModule } from './customers/customers.module';
 
-import { RegistrationRequest } from "./auth/entities/registration-request.entity";
+import { LoginRequest } from "./auth/entities/login-request.entity";
 
 import { Client } from './clients/entities/client.entity';
 import { ClientsModule } from "./clients/clients.module";
@@ -83,10 +83,10 @@ import { CartModule } from './cart/cart.module';
 				entities: [
 					User,
 					Customer,
-					RegistrationRequest,
-          
+
 					Client,
-          
+
+					LoginRequest,
 
 					Category,
 
@@ -103,7 +103,7 @@ import { CartModule } from './cart/cart.module';
 					InventoryLevel,
 
 					Warehouse,
-					
+
 					CartItem,
 				],
 				synchronize: true,

@@ -9,9 +9,12 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
+import { CustomerRole } from "../enums/CustomerRole";
 
-@Entity()
+import { CartItem } from "src/cart/entities/cart-items.entity";
+import { LoginRequest } from "src/auth/entities/login-request.entity";
+
+@Entity({ name: "customers" })
 export class Customer {
 	@Exclude()
 	@PrimaryGeneratedColumn()
@@ -23,11 +26,9 @@ export class Customer {
 	@Column({ type: "varchar", length: 64, })
 	fullName: string;
 
-	@Exclude()
 	@Column({ type: "varchar", length: 256, nullable: true, unique: true, })
 	emailAddress: string | null;
 
-	@Exclude()
 	@Column({ type: "varchar", length: 16, nullable: true, unique: true, })
 	phoneNumber: string | null;
 
@@ -39,6 +40,13 @@ export class Customer {
 	@Column({ type: "varchar", length: 64, default: "", })
 	secret: string;
 
+	@Column({
+		type: "enum",
+		enum: CustomerRole,
+		default: CustomerRole.Customer,
+	})
+	role: CustomerRole;
+
 	@Exclude()
 	@Column({ type: "boolean", default: false, })
 	isEmailAddressVerified: boolean;
@@ -47,11 +55,16 @@ export class Customer {
 	@Column({ type: "boolean", default: false, })
 	isPhoneNumberVerified: boolean;
 
+	@Exclude()
 	@Column({ type: "boolean", default: true, })
 	isActive: boolean;
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.customer, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@Exclude()
+	@OneToMany(() => LoginRequest, (loginRequest) => loginRequest.customer, { cascade: true, })
+	loginRequests: Array<LoginRequest>;
 
 	@Exclude()
 	@UpdateDateColumn({
