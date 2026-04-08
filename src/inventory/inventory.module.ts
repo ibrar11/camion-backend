@@ -46,6 +46,8 @@ import { WarehouseController } from './warehouse.controller';
 
 import { ClientsModule } from '../clients/clients.module';
 
+import { CartItem } from 'src/cart/entities/cart-items.entity';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -63,6 +65,7 @@ import { ClientsModule } from '../clients/clients.module';
 			InventoryItem,
 			InventoryLevel,
 			Warehouse,
+			CartItem
 		]),
         ClientsModule,
 	],

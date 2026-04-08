@@ -38,7 +38,10 @@ COPY .env.development .env
 COPY --from=builder /app/dist ./dist
 
 # Expose Port
-EXPOSE 3000
+EXPOSE 8000
+
+# Set the environmental variables
+ENV PORT=8000
 
 # Run the app
 CMD ["node", "--env-file=.env", "dist/main.js"]

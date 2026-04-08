@@ -21,7 +21,7 @@ import { UsersModule } from './users/users.module';
 import { Customer } from "./customers/entities/customer.entity";
 import { CustomersModule } from './customers/customers.module';
 
-import { RegistrationRequest } from "./auth/entities/registration-request.entity";
+import { LoginRequest } from "./auth/entities/login-request.entity";
 
 import { Client } from './clients/entities/client.entity';
 import { ClientsModule } from "./clients/clients.module";
@@ -47,6 +47,9 @@ import { HealthModule } from './health/health.module';
 import { OauthModule } from './oauth/oauth.module';
 
 import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity';
+
+import { CartItem } from "./cart/entities/cart-items.entity";
+import { CartModule } from './cart/cart.module';
 
 @Module({
 	imports: [
@@ -84,10 +87,11 @@ import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity'
 				entities: [
 					User,
 					Customer,
-					RegistrationRequest,
-          
+
 					Client,
-          
+
+					LoginRequest,
+
 					Category,
 
 					Product,
@@ -105,6 +109,8 @@ import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity'
 					Warehouse,
 
                     ClientRefreshToken,
+
+					CartItem,
 				],
 				synchronize: true,
 			}),
@@ -133,6 +139,7 @@ import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity'
 		InventoryModule,
 		HealthModule,
 		OauthModule,
+		CartModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

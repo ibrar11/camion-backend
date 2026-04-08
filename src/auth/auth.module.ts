@@ -2,41 +2,47 @@ import { Module } from '@nestjs/common';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
-
 import { Customer } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
+import { CustomerAuthService } from './customer-auth.service';
+import { CustomerAuthController } from './customer-auth.controller';
 
-import { RegistrationRequest } from './entities/registration-request.entity';
+import { User } from 'src/users/entities/user.entity';
 
 import { UsersModule } from 'src/users/users.module';
 import { ClientsModule } from '../clients/clients.module';
 
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import { UsersService } from 'src/users/users.service';
+import { UserAuthService } from './user-auth.service';
+import { UserAuthController } from './user-auth.controller';
+
+import { LoginRequest } from './entities/login-request.entity';
 
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
 
 @Module({
-	imports: [
-		TypeOrmModule.forFeature([
-			User,
-			Customer,
-			RegistrationRequest,
-		]),
+    imports: [
+        TypeOrmModule.forFeature([
+            User,
+            Customer,
+            LoginRequest,
+        ]),
         UsersModule,
         ClientsModule,
     ],
     providers: [
-        AuthService,
-        UsersService,
+        CustomerAuthService,
         CustomersService,
+        UserAuthService,
+        UsersService,
         AuthGuard,
         RolesGuard,
     ],
-    controllers: [AuthController],
+    controllers: [
+        CustomerAuthController,
+        UserAuthController,
+    ],
     exports: [
         AuthGuard,
         RolesGuard,
