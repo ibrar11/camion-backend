@@ -19,6 +19,7 @@ import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
 
 import { Customer } from "./customers/entities/customer.entity";
+import { CustomerAddress } from "./customers/entities/customer-address.entity";
 import { CustomersModule } from './customers/customers.module';
 
 import { LoginRequest } from "./auth/entities/login-request.entity";
@@ -88,7 +89,9 @@ import { ProcurementModule } from './procurement/procurement.module';
 				database: configService.get<string>("DB_DATABASE"),
 				entities: [
 					User,
+
 					Customer,
+					CustomerAddress,
 
 					Client,
 

@@ -11,6 +11,7 @@ import { Request } from "express";
 import { ROLES_KEY } from "./roles.decorator";
 
 import { User } from "../users/entities/user.entity";
+import { Customer } from "src/customers/entities/customer.entity";
 
 import { Client } from "src/clients/entities/client.entity";
 
@@ -28,22 +29,17 @@ export class RolesGuard implements CanActivate {
 			return true;
 		}
 
-		const request: Request & {
-			user?: User;
-			client?: Client;
-		} = context.switchToHttp().getRequest();
-
+		const request: Request & { user: User, customer: Customer, client: Client, } = context.switchToHttp().getRequest();
 		if (request === null) {
 			return false;
 		}
 
-		if (request.user) {
-			return requiredRoles.includes(request.user.role);
+		if (request.customer !== null) {
+			return requiredRoles.includes(request.customer.role);
 		}
 
-		// clients do not have roles → deny if roles are required
-		if (request.client) {
-			return false;
+		if (request.user !== null) {
+			return requiredRoles.includes(request.user.role);
 		}
 
 		return false;
