@@ -2,11 +2,14 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
 
 import { Exclude } from "class-transformer";
+
+import { CartItem } from "src/cart/entities/cart-items.entity";
 
 @Entity()
 export class Customer {
@@ -46,6 +49,9 @@ export class Customer {
 
 	@Column({ type: "boolean", default: true, })
 	isActive: boolean;
+
+	@OneToMany(() => CartItem, (cartItem) => cartItem.customer, { cascade: true, })
+	cartItems: Array<CartItem>;
 
 	@Exclude()
 	@UpdateDateColumn({

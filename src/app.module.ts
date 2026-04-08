@@ -44,6 +44,9 @@ import { Warehouse } from "./inventory/entities/warehouse.entity";
 import { InventoryModule } from './inventory/inventory.module';
 import { HealthModule } from './health/health.module';
 
+import { CartItem } from "./cart/entities/cart-items.entity";
+import { CartModule } from './cart/cart.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -100,6 +103,8 @@ import { HealthModule } from './health/health.module';
 					InventoryLevel,
 
 					Warehouse,
+					
+					CartItem,
 				],
 				synchronize: true,
 			}),
@@ -127,6 +132,7 @@ import { HealthModule } from './health/health.module';
 		ClientsModule,
 		InventoryModule,
 		HealthModule,
+		CartModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
