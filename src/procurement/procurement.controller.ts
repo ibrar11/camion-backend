@@ -35,7 +35,7 @@ export class ProcurementController {
         @Query("priceStart") priceStart: string,
         @Query("priceEnd") priceEnd: string,
     ): Promise<Array<SearchProducts>> {
-        return this.procurementService.searchProducts(keyword, pageNumber, itemsPerPage, sort, priceStart, priceEnd);
+        return this.procurementService.searchProduct(keyword, pageNumber, itemsPerPage, sort, priceStart, priceEnd);
     }
 
     @Get(':productId')

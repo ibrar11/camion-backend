@@ -24,7 +24,7 @@ export class ProcurementService {
      * @param dto
      * @returns
      */
-    async searchProducts(
+    async searchProduct(
         keyword: string, 
         page: string = '1', 
         pageSize: string = '20', 
