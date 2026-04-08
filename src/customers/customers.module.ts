@@ -8,10 +8,12 @@ import { UsersService } from 'src/users/users.service';
 import { Customer } from './entities/customer.entity';
 import { CustomersService } from './customers.service';
 import { CustomersController } from './customers.controller';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([User, Customer]),
+        ClientsModule,
 	],
 	providers: [UsersService, CustomersService],
 	controllers: [CustomersController]

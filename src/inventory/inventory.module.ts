@@ -44,6 +44,8 @@ import { Warehouse } from './entities/warehouse.entity';
 import { WarehouseService } from './warehouse.service';
 import { WarehouseController } from './warehouse.controller';
 
+import { ClientsModule } from '../clients/clients.module';
+
 import { CartItem } from 'src/cart/entities/cart-items.entity';
 
 @Module({
@@ -65,6 +67,7 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 			Warehouse,
 			CartItem
 		]),
+        ClientsModule,
 	],
 	providers: [
 		UsersService,

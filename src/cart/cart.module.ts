@@ -16,6 +16,8 @@ import { Product } from 'src/inventory/entities/product.entity';
 
 import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
 
+import { ClientsModule } from '../clients/clients.module';
+
 @Module({
   imports: [
       TypeOrmModule.forFeature([
@@ -25,6 +27,7 @@ import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
         Product,
         ProductVariant,
       ]),
+      ClientsModule,
   ],
   providers: [
     CartService, 

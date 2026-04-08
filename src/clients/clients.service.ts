@@ -10,12 +10,14 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { Client } from './entities/client.entity';
 
 import { ClientStatus } from './enums/client-status';
+import { OauthService } from 'src/oauth/oauth.service';
 
 @Injectable()
 export class ClientsService {
     constructor(
         @InjectRepository(Client)
         private readonly clientRepository: Repository<Client>,
+        private readonly oauthService: OauthService,
     ) { }
 
     /**
@@ -93,6 +95,7 @@ export class ClientsService {
                 error: "Failed to find the client. Please check and try again.",
             });
 	    }
+        Object.assign(client, dto);
 
         return this.clientRepository.save(client);
     }
@@ -114,6 +117,48 @@ export class ClientsService {
         }
 
         client.status = status;
+
+        // invalidate refresh token if client is not active
+        if (status !== ClientStatus.ACTIVE) {
+            await this.oauthService.revokeAllTokensForClient(uuid);
+        }
+
+        return this.clientRepository.save(client);
+    }
+
+    /**
+     * Retrieves a client by UUID including its secret.
+     *
+     * ⚠️ This method returns sensitive data (client secret) and should ONLY be used
+     * internally for authentication purposes (e.g., OAuth validation).
+     * Do NOT expose the returned entity directly in API responses.
+     *
+     * @param uuid - The UUID of the client
+     * @returns The client entity including secret, or null if not found
+     */
+    async findByUuidWithSecret(uuid: string): Promise<Client | null> {
+        return this.clientRepository.findOne({
+            where: { uuid },
+        });
+    }
+
+    /**
+     * Updates a client by UUID (used for token handling).
+     *
+     * @param uuid - The UUID of the client
+     * @param data - Partial data to update
+     * @returns The updated client entity
+     */
+    async updateByUuid(uuid: string, data: Partial<Client>): Promise<Client> {
+        const client = await this.clientRepository.findOne({
+            where: { uuid },
+        });
+
+        if (!client) {
+            throw new NotFoundException(`Client ${uuid} not found`);
+        }
+
+        Object.assign(client, data);
 
         return this.clientRepository.save(client);
     }

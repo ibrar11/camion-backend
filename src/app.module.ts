@@ -44,6 +44,10 @@ import { Warehouse } from "./inventory/entities/warehouse.entity";
 import { InventoryModule } from './inventory/inventory.module';
 import { HealthModule } from './health/health.module';
 
+import { OauthModule } from './oauth/oauth.module';
+
+import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity';
+
 import { CartItem } from "./cart/entities/cart-items.entity";
 import { CartModule } from './cart/cart.module';
 
@@ -104,6 +108,8 @@ import { CartModule } from './cart/cart.module';
 
 					Warehouse,
 
+                    ClientRefreshToken,
+
 					CartItem,
 				],
 				synchronize: true,
@@ -132,6 +138,7 @@ import { CartModule } from './cart/cart.module';
 		ClientsModule,
 		InventoryModule,
 		HealthModule,
+		OauthModule,
 		CartModule,
 	],
 	controllers: [AppController],

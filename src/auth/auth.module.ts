@@ -8,29 +8,44 @@ import { CustomerAuthService } from './customer-auth.service';
 import { CustomerAuthController } from './customer-auth.controller';
 
 import { User } from 'src/users/entities/user.entity';
+
+import { UsersModule } from 'src/users/users.module';
+import { ClientsModule } from '../clients/clients.module';
+
 import { UsersService } from 'src/users/users.service';
 import { UserAuthService } from './user-auth.service';
 import { UserAuthController } from './user-auth.controller';
 
 import { LoginRequest } from './entities/login-request.entity';
 
+import { AuthGuard } from './auth.guard';
+import { RolesGuard } from './roles.guard';
+
 @Module({
-	imports: [
-		TypeOrmModule.forFeature([
-			User,
-			Customer,
-			LoginRequest,
-		]),
-	],
-	providers: [
-		CustomerAuthService,
-		CustomersService,
-		UserAuthService,
-		UsersService,
-	],
-	controllers: [
-		CustomerAuthController,
-		UserAuthController,
-	],
+    imports: [
+        TypeOrmModule.forFeature([
+            User,
+            Customer,
+            LoginRequest,
+        ]),
+        UsersModule,
+        ClientsModule,
+    ],
+    providers: [
+        CustomerAuthService,
+        CustomersService,
+        UserAuthService,
+        UsersService,
+        AuthGuard,
+        RolesGuard,
+    ],
+    controllers: [
+        CustomerAuthController,
+        UserAuthController,
+    ],
+    exports: [
+        AuthGuard,
+        RolesGuard,
+    ],
 })
 export class AuthModule { }
