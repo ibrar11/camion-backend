@@ -19,10 +19,13 @@ import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
 
 import { Customer } from "./customers/entities/customer.entity";
+import { CustomerAddress } from "./customers/entities/customer-address.entity";
 import { CustomersModule } from './customers/customers.module';
 
-import { RegistrationRequest } from "./auth/entities/registration-request.entity";
+import { LoginRequest } from "./auth/entities/login-request.entity";
 
+import { Client } from './clients/entities/client.entity';
+import { ClientsModule } from "./clients/clients.module";
 import { Category } from "./inventory/entities/category.entity";
 
 import { Product } from "./inventory/entities/product.entity";
@@ -43,6 +46,17 @@ import { InventoryModule } from './inventory/inventory.module';
 
 import { Post } from 'src/posts/entities/post.entity';
 import { PostsModule } from './posts/posts.module';
+
+import { HealthModule } from './health/health.module';
+
+import { OauthModule } from './oauth/oauth.module';
+
+import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity';
+
+import { CartItem } from "./cart/entities/cart-items.entity";
+import { CartModule } from './cart/cart.module';
+
+import { ProcurementModule } from './procurement/procurement.module';
 
 @Module({
 	imports: [
@@ -66,6 +80,12 @@ import { PostsModule } from './posts/posts.module';
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
 				type: "postgres",
+				ssl: configService.get<string>("NODE_ENV") === "local"
+					? false
+					: {
+						rejectUnauthorized: false,
+						ca: fs.readFileSync(path.join(process.cwd(), "ca/global-bundle.pem"), "utf-8"),
+					},
 				host: configService.get<string>("DB_HOST"),
 				port: configService.get<number>("DB_PORT"),
 				username: configService.get<string>("DB_USERNAME"),
@@ -73,8 +93,13 @@ import { PostsModule } from './posts/posts.module';
 				database: configService.get<string>("DB_DATABASE"),
 				entities: [
 					User,
+
 					Customer,
-					RegistrationRequest,
+					CustomerAddress,
+
+					Client,
+
+					LoginRequest,
 
 					Category,
 
@@ -93,6 +118,10 @@ import { PostsModule } from './posts/posts.module';
 					Warehouse,
                     
                     Post,
+
+                    ClientRefreshToken,
+
+					CartItem,
 				],
 				synchronize: true,
 			}),
@@ -117,8 +146,13 @@ import { PostsModule } from './posts/posts.module';
 		AuthModule,
 		UsersModule,
 		CustomersModule,
+		ClientsModule,
 		InventoryModule,
         PostsModule,
+		HealthModule,
+		OauthModule,
+		CartModule,
+		ProcurementModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

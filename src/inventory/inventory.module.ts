@@ -44,6 +44,10 @@ import { Warehouse } from './entities/warehouse.entity';
 import { WarehouseService } from './warehouse.service';
 import { WarehouseController } from './warehouse.controller';
 
+import { ClientsModule } from '../clients/clients.module';
+
+import { CartItem } from 'src/cart/entities/cart-items.entity';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -61,7 +65,9 @@ import { WarehouseController } from './warehouse.controller';
 			InventoryItem,
 			InventoryLevel,
 			Warehouse,
+			CartItem
 		]),
+        ClientsModule,
 	],
 	providers: [
 		UsersService,
