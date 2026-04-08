@@ -13,6 +13,7 @@ import { CustomerRole } from "../enums/CustomerRole";
 
 import { CartItem } from "src/cart/entities/cart-items.entity";
 import { LoginRequest } from "src/auth/entities/login-request.entity";
+import { CustomerAddress } from "./customer-address.entity";
 
 @Entity({ name: "customers" })
 export class Customer {
@@ -61,6 +62,9 @@ export class Customer {
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.customer, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@OneToMany(() => CustomerAddress, (customerAddress) => customerAddress.customer, { cascade: true, })
+	addresses: Array<CustomerAddress>;
 
 	@Exclude()
 	@OneToMany(() => LoginRequest, (loginRequest) => loginRequest.customer, { cascade: true, })
