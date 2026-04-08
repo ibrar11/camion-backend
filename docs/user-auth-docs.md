@@ -1,5 +1,5 @@
-Camion REST API
-===============
+Camion User Auth API
+====================
 
 User Authentication
 ===================
@@ -156,8 +156,3 @@ POST /v1/auth/user/self/password HTTP/1.1
     "isActive": true
 }
 ```
-
-Customer Authentication
-=======================
-
-TODO:
