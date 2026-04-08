@@ -20,31 +20,31 @@ export class Post {
     uuid: string;
 
     @Column({ type: 'varchar', length: 255, nullable: false })
-    slug!: string;
+    slug: string;
 
     @Column({ type: 'varchar', length: 255, nullable: false })
-    title!: string;
+    title: string;
 
     @Column({ type: 'text', nullable: true })
-    brief?: string;
+    brief: string;
 
     @Column({ type: 'text', nullable: false })
-    content!: string;
+    content: string;
 
     @Column({ type: 'boolean', default: true, nullable: false })
-    enabled!: boolean;
+    enabled: boolean;
 
     @Column({ type: 'json', nullable: true })
-    images?: string[];
+    images: string[];
 
     @ManyToOne(() => User, { nullable: false })
-    author!: User;
+    author: User;
 
     @Exclude()
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz', nullable: false })
-    createdAt!: Date;
+    createdAt: Date;
 
     @Exclude()
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz', nullable: false })
-    updatedAt!: Date;
+    updatedAt: Date;
 }

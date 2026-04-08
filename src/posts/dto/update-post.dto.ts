@@ -1,5 +1,4 @@
 import {
-    IsArray,
     IsBoolean,
     IsOptional,
     IsString,
@@ -7,15 +6,13 @@ import {
 } from 'class-validator';
 
 export class UpdatePostDto {
-    @IsOptional()
     @IsString()
     @MaxLength(255)
-    slug?: string;
+    slug: string;
 
-    @IsOptional()
     @IsString()
     @MaxLength(255)
-    title?: string;
+    title: string;
 
     @IsOptional()
     @IsString()
@@ -28,8 +25,4 @@ export class UpdatePostDto {
     @IsOptional()
     @IsBoolean()
     enabled?: boolean;
-
-    @IsOptional()
-    @IsArray()
-    images?: string[];
 }
