@@ -8,6 +8,8 @@ import { UsersService } from 'src/users/users.service';
 import { Customer } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
 
+import { ClientsModule } from 'src/clients/clients.module';
+
 import { ProcurementService } from './procurement.service';
 import { ProcurementController } from './procurement.controller';
 
@@ -17,6 +19,7 @@ import { ProcurementController } from './procurement.controller';
 			User,
 			Customer
 		]),
+		ClientsModule,
 	],
 	providers: [
 		UsersService,
