@@ -36,7 +36,7 @@ jobs:
 
       # ── 2. Resolve environment ───────────────────────────────────────────────
       # Sets DEPLOY_ENV and SHORT_SHA in GITHUB_ENV (available in all subsequent
-      # steps). Sets role_arn as a step output consumed by configure-aws-credentials.
+      # steps). Sets deploy_env as a step output for downstream consumers.
       #
       # On push:              DEPLOY_ENV = github.ref_name  (dev or prod)
       # On workflow_dispatch: DEPLOY_ENV = inputs.environment (explicit priority)
@@ -45,6 +45,16 @@ jobs:
       # The OIDC sub-claim reflects the triggering branch, not the input value.
       # Dispatching from main or a feature branch will cause sts:AssumeRoleWithWebIdentity
       # to fail with AccessDenied.
+      - name: Validate dispatch branch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.ref_name }}" != "dev" ] && [ "${{ github.ref_name }}" != "prod" ]; then
+            echo "❌ Manual dispatch must be triggered from the 'dev' or 'prod' branch."
+            echo "   Current branch: ${{ github.ref_name }}"
+            echo "   The OIDC trust policy only allows these branches to assume the deployment role."
+            exit 1
+          fi
+
       - name: Resolve environment
         id: resolve
         run: |
@@ -55,23 +65,18 @@ jobs:
           echo "SHORT_SHA=$SHORT_SHA"   >> "$GITHUB_ENV"
           echo "deploy_env=$DEPLOY_ENV" >> "$GITHUB_OUTPUT"
 
-          if [ "$DEPLOY_ENV" = "prod" ]; then
-            echo "role_arn=${{ secrets.AWS_ROLE_ARN_PROD }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "role_arn=${{ secrets.AWS_ROLE_ARN_DEV }}"  >> "$GITHUB_OUTPUT"
-          fi
-
       # ── 3. Environment file ──────────────────────────────────────────────────
-      # The Dockerfile contains `COPY .env.development .env`, so the env file
-      # must exist at this exact path in the build context.
+      # The Dockerfile contains `COPY .env.development .env`, which bakes the env
+      # file into the image layer. This means anyone who can pull the image from
+      # ECR can extract the secrets with `docker run <image> cat .env`.
       #
-      # Both dev and prod secrets are written to `.env.development` — this is
-      # the filename the Dockerfile requires, regardless of which environment is
-      # being built. ENV_FILE_DEV contains dev values; ENV_FILE_PROD contains
-      # prod values; both land in the same filename at build time.
+      # ⚠️  KNOWN RISK: secrets are embedded in the image layer. This is a
+      # temporary approach. A future task should move to runtime injection via
+      # AWS Secrets Manager or Parameter Store (ECS task definition secrets[]).
       #
-      # printf '%s\n' preserves the trailing newline that most env file parsers
-      # and `node --env-file=.env` expect.
+      # Both dev and prod secrets are written to `.env.development` — that is the
+      # filename the Dockerfile's COPY instruction requires at build time.
+      # printf '%s\n' preserves the trailing newline expected by `node --env-file`.
       - name: Write environment file
         run: |
           if [ "$DEPLOY_ENV" = "prod" ]; then
@@ -84,10 +89,18 @@ jobs:
           ENV_FILE_PROD: ${{ secrets.ENV_FILE_PROD }}
 
       # ── 4. AWS auth ──────────────────────────────────────────────────────────
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (dev)
+        if: env.DEPLOY_ENV == 'dev'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ steps.resolve.outputs.role_arn }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region:     ${{ vars.AWS_REGION }}
+
+      - name: Configure AWS credentials (prod)
+        if: env.DEPLOY_ENV == 'prod'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
           aws-region:     ${{ vars.AWS_REGION }}
 
       # ── 5. ECR login ─────────────────────────────────────────────────────────
@@ -121,6 +134,10 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.DEPLOY_ENV }}-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Remove environment file
+        if: always()
+        run: rm -f .env.development
 
       # ── 8. Deploy ────────────────────────────────────────────────────────────
       # --force-new-deployment tells ECS to pull the updated {env}-latest image.
