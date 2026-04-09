@@ -1,12 +1,22 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { ConfigModule, ConfigService, } from "@nestjs/config";
-import { JwtModule } from "@nestjs/jwt";
 import { Module } from '@nestjs/common';
 
+import {
+	ConfigModule,
+	ConfigService,
+} from "@nestjs/config";
+
+import { JwtModule } from "@nestjs/jwt";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { CacheModule } from "@nestjs/cache-manager";
+import { GraphQLModule } from "@nestjs/graphql";
+
+import {
+	ApolloDriver,
+	ApolloDriverConfig,
+} from "@nestjs/apollo";
 
 import KeyvRedis from "@keyv/redis";
 
@@ -53,6 +63,13 @@ import { CartItem } from "./cart/entities/cart-items.entity";
 import { CartModule } from './cart/cart.module';
 
 import { ProcurementModule } from './procurement/procurement.module';
+
+import { Story } from "./stories/entities/story.entity";
+import { StoryFrame } from "./stories/entities/story-frame.entity";
+import { StoriesModule } from './stories/stories.module';
+
+import { Banner } from "./banners/entities/banner.entity";
+import { BannersModule } from './banners/banners.module';
 
 @Module({
 	imports: [
@@ -113,9 +130,14 @@ import { ProcurementModule } from './procurement/procurement.module';
 
 					Warehouse,
 
-                    ClientRefreshToken,
+					ClientRefreshToken,
 
 					CartItem,
+
+					Story,
+					StoryFrame,
+
+					Banner,
 				],
 				synchronize: true,
 			}),
@@ -137,6 +159,13 @@ import { ProcurementModule } from './procurement/procurement.module';
 				},
 			}),
 		}),
+		GraphQLModule.forRoot<ApolloDriverConfig>({
+			driver: ApolloDriver,
+			graphiql: true,
+			autoSchemaFile: path.join(process.cwd(), "src/graphql/schema.gql"),
+			sortSchema: true,
+			context: ({ req }) => ({ req }),
+		}),
 		AuthModule,
 		UsersModule,
 		CustomersModule,
@@ -146,6 +175,8 @@ import { ProcurementModule } from './procurement/procurement.module';
 		OauthModule,
 		CartModule,
 		ProcurementModule,
+		StoriesModule,
+		BannersModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

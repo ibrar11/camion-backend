@@ -1,4 +1,9 @@
 import {
+	Field,
+	ObjectType,
+} from "@nestjs/graphql";
+
+import {
 	Column,
 	CreateDateColumn,
 	Entity,
@@ -13,15 +18,18 @@ import { Exclude } from "class-transformer";
 import { InventoryLevel } from "./inventory-level.entity";
 import { ProductVariant } from "./product-variant.entity";
 
+@ObjectType()
 @Entity({ name: "inventory_items" })
 export class InventoryItem {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
+	@Field()
 	@Column()
 	sku: string;
 

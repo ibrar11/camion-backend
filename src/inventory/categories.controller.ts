@@ -19,7 +19,7 @@ import { UpdateCategoryDto } from "./dtos/UpdateCategoryDto";
 import { UserRole } from "src/users/enums/UserRole";
 
 import { Category } from "./entities/category.entity";
-import { CategoryService } from "./category.service";
+import { CategoriesService } from "./categories.service";
 
 import { AuthGuard } from "src/auth/auth.guard";
 import { RolesGuard } from "src/auth/roles.guard";
@@ -28,8 +28,8 @@ import { Roles } from "src/auth/roles.decorator";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/categories")
-export class CategoryController {
-	constructor(@Inject(CategoryService) private readonly productCategoryService: CategoryService) { }
+export class CategoriesController {
+	constructor(@Inject(CategoriesService) private readonly productCategoryService: CategoriesService) { }
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post()

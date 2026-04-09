@@ -1,4 +1,10 @@
 import {
+	Field,
+	Int,
+	ObjectType,
+} from "@nestjs/graphql";
+
+import {
 	Column,
 	CreateDateColumn,
 	Entity,
@@ -11,37 +17,46 @@ import { Exclude } from "class-transformer";
 
 import { ProductVariant } from "./product-variant.entity";
 
-export class Dimensions {
+@ObjectType()
+export class ProductVariantImageDimensions {
+	@Field(() => Int)
 	@Column({ type: "numeric", })
 	width: number;
 
+	@Field(() => Int)
 	@Column({ type: "numeric", })
 	height: number;
 }
 
+@ObjectType()
 @Entity({ name: "product_variant_images", })
 export class ProductVariantImage {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
+	@ManyToOne(() => ProductVariant, (variant) => variant.images, { onDelete: "CASCADE", })
+	variant: ProductVariant;
+
+	@Field()
 	@Column({ type: "varchar", length: 64, })
 	uri: string;
 
+	@Field()
 	@Column({ type: "varchar", length: 128, })
 	alt: string;
 
+	@Field(() => Int)
 	@Column({ type: "numeric" })
 	position: number;
 
-	@Column(() => Dimensions)
-	dimensions: Dimensions;
-
-	@ManyToOne(() => ProductVariant, (variant) => variant.images, { onDelete: "CASCADE", })
-	variant: ProductVariant;
+	@Field(() => ProductVariantImageDimensions)
+	@Column(() => ProductVariantImageDimensions)
+	dimensions: ProductVariantImageDimensions;
 
 	@Exclude()
 	@UpdateDateColumn({

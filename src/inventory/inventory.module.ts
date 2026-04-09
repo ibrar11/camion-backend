@@ -9,12 +9,19 @@ import { Customer } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
 
 import { Category } from './entities/category.entity';
-import { CategoryService } from './category.service';
-import { CategoryController } from './category.controller';
+import { CategoriesService } from './categories.service';
+import { CategoriesController } from './categories.controller';
+import { CategoriesResolver } from './categories.resolver';
 
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
+import {
+	ProductsResolver,
+	ProductOptionResolver,
+	ProductOptionValueResolver,
+	ProductVariantResolver,
+} from './products.resolver';
 
 import { ProductCategory } from './entities/product-category.entity';
 
@@ -72,16 +79,21 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 	providers: [
 		UsersService,
 		CustomersService,
-		CategoryService,
+		CategoriesService,
 		ProductsService,
 		ProductVariantService,
 		ProductOptionService,
 		ProductOptionValueService,
 		ProductVariantImageService,
 		WarehouseService,
+		CategoriesResolver,
+		ProductsResolver,
+		ProductOptionResolver,
+		ProductOptionValueResolver,
+		ProductVariantResolver,
 	],
 	controllers: [
-		CategoryController,
+		CategoriesController,
 		ProductsController,
 		ProductVariantController,
 		ProductOptionController,

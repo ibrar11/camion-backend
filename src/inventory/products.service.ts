@@ -63,13 +63,13 @@ export class ProductsService {
 		const product = new Product();
 		product.uuid = crypto.randomUUID();
 		product.slug = generateSlug(body.slug);
-		product.title = body.title.en.trim();
+		product.titleEn = body.title.en.trim();
 		product.titleAr = body.title.ar.trim();
-		product.brief = body.brief.en.trim();
+		product.briefEn = body.brief.en.trim();
 		product.briefAr = body.brief.ar.trim();
-		product.description = body.description.en.trim();
+		product.descriptionEn = body.description.en.trim();
 		product.descriptionAr = body.description.ar.trim();
-		product.descriptionHtml = body.descriptionHtml.en.trim();
+		product.descriptionHtmlEn = body.descriptionHtml.en.trim();
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
 		product.status = ProductStatus.DRAFT;
 		product.publishedAt = new Date();
@@ -161,13 +161,13 @@ export class ProductsService {
 	}
 
 	/**
-	 * Finds a product
+	 * Finds a product by its uuid
 	 *
 	 * @param uuid
 	 * @returns
 	 */
-	async findOne(uuid: string): Promise<Product> {
-		this.logger.log(`Retrieving product: ${uuid}`);
+	async findOneByUUID(uuid: string): Promise<Product> {
+		this.logger.log(`Retrieving product by uuid: ${uuid}`);
 
 		// Find the product
 		const product = await this.productRepository.findOne({
@@ -189,6 +189,40 @@ export class ProductsService {
 				status: "fail",
 			});
 		}
+
+		return product;
+	}
+
+	/**
+	 * Finds a product by its slug
+	 *
+	 * @param slug
+	 * @returns
+	 */
+	async findOneBySlug(slug: string): Promise<Product> {
+		this.logger.log(`Retrieving product by slug: ${slug}`);
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			where: { slug: slug, },
+			relations: {
+				options: {
+					values: true,
+				},
+				variants: {
+					optionValues: {
+						optionValue: true,
+					},
+				},
+			},
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
 		return product;
 	}
 
@@ -211,13 +245,13 @@ export class ProductsService {
 		}
 
 		// Update the product
-		product.title = body.title.en.trim();
+		product.titleEn = body.title.en.trim();
 		product.titleAr = body.title.ar.trim();
-		product.brief = body.brief.en.trim();
+		product.briefEn = body.brief.en.trim();
 		product.briefAr = body.brief.ar.trim();
-		product.description = body.description.en.trim();
+		product.descriptionEn = body.description.en.trim();
 		product.descriptionAr = body.description.ar.trim();
-		product.descriptionHtml = body.descriptionHtml.en.trim();
+		product.descriptionHtmlEn = body.descriptionHtml.en.trim();
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
 		await this.productRepository.save(product);
 
