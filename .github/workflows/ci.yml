@@ -25,6 +25,7 @@ jobs:
   deploy:
     name: Build & Deploy (${{ github.event.inputs.environment || github.ref_name }})
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || github.ref_name }}
     permissions:
       id-token: write   # Required for OIDC token request
       contents: read
@@ -36,10 +37,7 @@ jobs:
 
       # ── 2. Resolve environment ───────────────────────────────────────────────
       # Sets DEPLOY_ENV and SHORT_SHA in GITHUB_ENV (available in all subsequent
-      # steps). Sets deploy_env as a step output for downstream consumers.
-      #
-      # On push:              DEPLOY_ENV = github.ref_name  (dev or prod)
-      # On workflow_dispatch: DEPLOY_ENV = inputs.environment (explicit priority)
+      # steps).
       #
       # NOTE: manual dispatch must be triggered from the dev or prod branch.
       # The OIDC sub-claim reflects the triggering branch, not the input value.
@@ -58,28 +56,16 @@ jobs:
           fi
 
       - name: Resolve environment
-        id: resolve
         run: |
-          DEPLOY_ENV="${{ github.event.inputs.environment || github.ref_name }}"
-          SHORT_SHA="${GITHUB_SHA::7}"
-
-          echo "DEPLOY_ENV=$DEPLOY_ENV" >> "$GITHUB_ENV"
-          echo "SHORT_SHA=$SHORT_SHA"   >> "$GITHUB_ENV"
-          echo "deploy_env=$DEPLOY_ENV" >> "$GITHUB_OUTPUT"
+          echo "DEPLOY_ENV=${{ github.event.inputs.environment || github.ref_name }}" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       # ── 3. AWS auth ──────────────────────────────────────────────────────────
-      - name: Configure AWS credentials (dev)
-        if: env.DEPLOY_ENV == 'dev'
+      # Secrets and vars are loaded from the matching GH environment (dev/prod).
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
-          aws-region:     ${{ vars.AWS_REGION }}
-
-      - name: Configure AWS credentials (prod)
-        if: env.DEPLOY_ENV == 'prod'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region:     ${{ vars.AWS_REGION }}
 
       # ── 4. ECR login ─────────────────────────────────────────────────────────
