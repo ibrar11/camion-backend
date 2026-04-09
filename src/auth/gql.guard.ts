@@ -17,6 +17,7 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { UsersService } from "../users/users.service";
 import { CustomersService } from "src/customers/customers.service";
+import { ClientsService } from "src/clients/clients.service";
 
 @Injectable()
 export class GqlAuthGuard implements CanActivate {
@@ -27,6 +28,7 @@ export class GqlAuthGuard implements CanActivate {
 		private readonly jwtService: JwtService,
 		private readonly usersService: UsersService,
 		private readonly customersService: CustomersService,
+		private readonly clientsService: ClientsService,
 	) { }
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -39,7 +41,7 @@ export class GqlAuthGuard implements CanActivate {
 		}
 
 		try {
-			const payload: { jti: string, type: "user" | "customer", sub: string; } = await this.jwtService.verifyAsync(token);
+			const payload: { jti: string, type: "user" | "customer" | "guest" | "client", sub: string; } = await this.jwtService.verifyAsync(token);
 			if (!payload.sub) {
 				throw new UnauthorizedException();
 			}
@@ -57,6 +59,17 @@ export class GqlAuthGuard implements CanActivate {
 				throw new UnauthorizedException();
 			}
 
+			if (payload.type === "client") {
+				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
+
+				if (!client || client.status !== 'Active') {
+					throw new UnauthorizedException();
+				}
+
+				request["client"] = client;
+				return true;
+			}
+
 			// Fetch the user for the request
 			if (payload.type === "user") {
 				const user = await this.usersService.findOne(payload.sub);
@@ -70,7 +83,7 @@ export class GqlAuthGuard implements CanActivate {
 			}
 
 			// Fetch the customer for the request
-			if (payload.type === "customer") {
+			if (payload.type === "customer" || payload.type === "guest") {
 				const customer = await this.customersService.findOne(payload.sub);
 				if (customer === null || !customer.isActive) {
 					throw new UnauthorizedException();
