@@ -95,4 +95,12 @@ export class Customer {
 		type: "timestamptz",
 	})
 	createdAt: Date;
+
+	@Exclude()
+    @Column({ type: 'timestamptz', nullable: true })
+    markedForDeletionAt: Date | null;
+
+	@Exclude()
+    @Column({ type: 'timestamptz', nullable: true })
+    deletedAt: Date | null;
 }

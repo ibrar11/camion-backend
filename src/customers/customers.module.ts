@@ -14,6 +14,8 @@ import { CustomerAddress } from './entities/customer-address.entity';
 import { CustomerAddressesService } from './customer-addresses.service';
 import { CustomerAddressesController } from './customer-addresses.controller';
 
+import { CustomersScheduler } from './customers.scheduler';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -27,6 +29,7 @@ import { CustomerAddressesController } from './customer-addresses.controller';
 		UsersService,
 		CustomersService,
 		CustomerAddressesService,
+        CustomersScheduler,
 	],
 	controllers: [
 		CustomersController,
