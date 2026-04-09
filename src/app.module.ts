@@ -76,6 +76,10 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { Order } from "./order/entities/order.entity";
+import { OrderItem } from "./order/entities/order-item.entity";
+import { OrderModule } from './order/order.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -146,6 +150,9 @@ import { BannersModule } from './banners/banners.module';
 					StoryFrame,
 
 					Banner,
+
+					Order,
+					OrderItem,
 				],
 				synchronize: true,
 			}),
@@ -186,6 +193,7 @@ import { BannersModule } from './banners/banners.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+		OrderModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

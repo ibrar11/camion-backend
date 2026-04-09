@@ -18,6 +18,8 @@ import { LoginRequest } from "src/auth/entities/login-request.entity";
 import { CustomerAddress } from "./customer-address.entity";
 import { ProductReview } from "src/inventory/entities/product-review.entity";
 
+import { Order } from "src/order/entities/order.entity";
+
 @ObjectType()
 @Entity({ name: "customers" })
 export class Customer {
@@ -71,6 +73,9 @@ export class Customer {
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.customer, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@OneToMany(() => Order, (order) => order.customer)
+	orders: Array<Order>;
 
 	@OneToMany(() => CustomerAddress, (customerAddress) => customerAddress.customer, { cascade: true, })
 	addresses: Array<CustomerAddress>;
