@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
 		private readonly jwtService: JwtService,
 		private readonly usersService: UsersService,
 		private readonly customersService: CustomersService,
-        private readonly clientsService: ClientsService,
+		private readonly clientsService: ClientsService,
 	) { }
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -39,33 +39,33 @@ export class AuthGuard implements CanActivate {
 		}
 
 		try {
-			const payload: { jti: string, type: "user" | "customer" | "client", sub: string; } = await this.jwtService.verifyAsync(token);
+			const payload: { jti: string, type: "user" | "customer" | "guest" | "client", sub: string; } = await this.jwtService.verifyAsync(token);
 			if (!payload.sub) {
 				throw new UnauthorizedException();
 			}
 
-            if (payload.type === "client") {
-                const client = await this.clientsService.findByUuidWithSecret(payload.sub);
+			if (payload.type === "client") {
+				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
 
-                if (!client || client.status !== 'Active') {
-                    throw new UnauthorizedException();
-                }
+				if (!client || client.status !== 'Active') {
+					throw new UnauthorizedException();
+				}
 
-                request["client"] = client;
-                return true;
-            }
-
-            if (payload.type === "user") {
-    			// Make sure the token exists in the cache
-    			const tokenExists = await this.cacheManager.get(
-    			    `auth:user-session:${payload.jti}`
- 			    );
-
-			if (tokenExists === null || tokenExists === undefined) {
-				throw new UnauthorizedException();
+				request["client"] = client;
+				return true;
 			}
 
-			// Fetch the user for the request
+			if (payload.type === "user") {
+				// Make sure the token exists in the cache
+				const tokenExists = await this.cacheManager.get(
+					`auth:user-session:${payload.jti}`
+				);
+
+				if (tokenExists === null || tokenExists === undefined) {
+					throw new UnauthorizedException();
+				}
+
+				// Fetch the user for the request
 				const user = await this.usersService.findOne(payload.sub);
 				if (user === null || !user.isActive) {
 					throw new UnauthorizedException();
@@ -76,15 +76,15 @@ export class AuthGuard implements CanActivate {
 				return true;
 			}
 
-			// Fetch the customer for the request
-			if (payload.type === "customer") {
+			// Fetch the customer/guest for the request
+			if (payload.type === "customer" || payload.type === "guest") {
 				const tokenExists = await this.cacheManager.get(
-                    `auth:customer-session:${payload.jti}`
-                );
+					`auth:customer-session:${payload.jti}`
+				);
 
-                if (!tokenExists) {
-                    throw new UnauthorizedException();
-                }
+				if (!tokenExists) {
+					throw new UnauthorizedException();
+				}
 
 				const customer = await this.customersService.findOne(payload.sub);
 				if (customer === null || !customer.isActive) {

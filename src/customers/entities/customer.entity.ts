@@ -48,6 +48,9 @@ export class Customer {
 	})
 	role: CustomerRole;
 
+	@Column({ nullable: true, unique: true, })
+	deviceId: string;
+
 	@Exclude()
 	@Column({ type: "boolean", default: false, })
 	isEmailAddressVerified: boolean;

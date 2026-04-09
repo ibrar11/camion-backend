@@ -16,6 +16,9 @@ import { UsersService } from 'src/users/users.service';
 import { UserAuthService } from './user-auth.service';
 import { UserAuthController } from './user-auth.controller';
 
+import { GuestAuthService } from './guest-auth.service';
+import { GuestAuthController } from './guest-auth.controller';
+
 import { LoginRequest } from './entities/login-request.entity';
 
 import { AuthGuard } from './auth.guard';
@@ -35,6 +38,7 @@ import { RolesGuard } from './roles.guard';
         CustomerAuthService,
         CustomersService,
         UserAuthService,
+        GuestAuthService,
         UsersService,
         AuthGuard,
         RolesGuard,
@@ -42,6 +46,7 @@ import { RolesGuard } from './roles.guard';
     controllers: [
         CustomerAuthController,
         UserAuthController,
+        GuestAuthController,
     ],
     exports: [
         AuthGuard,
