@@ -54,6 +54,10 @@ import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
 import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 import { InventoryModule } from './inventory/inventory.module';
+
+import { Post } from 'src/posts/entities/post.entity';
+import { PostsModule } from './posts/posts.module';
+
 import { HealthModule } from './health/health.module';
 
 import { OauthModule } from './oauth/oauth.module';
@@ -131,6 +135,8 @@ import { BannersModule } from './banners/banners.module';
 					InventoryLevel,
 
 					Warehouse,
+                    
+                    Post,
 
 					ClientRefreshToken,
 
@@ -173,6 +179,7 @@ import { BannersModule } from './banners/banners.module';
 		CustomersModule,
 		ClientsModule,
 		InventoryModule,
+        PostsModule,
 		HealthModule,
 		OauthModule,
 		CartModule,
