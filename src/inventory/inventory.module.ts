@@ -41,6 +41,10 @@ import { ProductVariantImage } from './entities/product-variant-image.entity';
 import { ProductVariantImageService } from './product-variant-image.service';
 import { ProductVariantImageController } from './product-variant-image.controller';
 
+import { ProductReview } from './entities/product-review.entity';
+import { ProductReviewService } from './product-review.service';
+import { ProductReviewController } from './product-review.controller';
+
 import { ProductVariantInventoryItem } from './entities/product-variant-inventory-item.entity';
 import { ProductVariantOptionValue } from './entities/product-variant-option-value.entity';
 
@@ -65,6 +69,7 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 			ProductCategory,
 			ProductOption,
 			ProductOptionValue,
+			ProductReview,
 			ProductVariant,
 			ProductVariantImage,
 			ProductVariantInventoryItem,
@@ -74,7 +79,7 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 			Warehouse,
 			CartItem
 		]),
-        ClientsModule,
+		ClientsModule,
 	],
 	providers: [
 		UsersService,
@@ -84,7 +89,10 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 		ProductVariantService,
 		ProductOptionService,
 		ProductOptionValueService,
+		ProductReviewService,
+		ProductsService,
 		ProductVariantImageService,
+		ProductVariantService,
 		WarehouseService,
 		CategoriesResolver,
 		ProductsResolver,
@@ -98,6 +106,9 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 		ProductVariantController,
 		ProductOptionController,
 		ProductOptionValueController,
+		ProductReviewController,
+		ProductsController,
+		ProductVariantController,
 		ProductVariantImageController,
 		WarehouseController,
 	],

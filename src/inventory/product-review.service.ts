@@ -1,0 +1,160 @@
+import crypto from "node:crypto";
+
+import {
+	Injectable,
+	Logger,
+	NotFoundException,
+} from "@nestjs/common";
+
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+
+import { getSkipAndTake } from "src/common/pagination";
+
+import { CreateReviewDto } from "./dtos/CreateReviewDto";
+import { UpdateReviewDto } from "./dtos/UpdateReviewDto";
+
+import { Customer } from "src/customers/entities/customer.entity";
+
+import { Product } from "./entities/product.entity";
+import { ProductReview } from "./entities/product-review.entity";
+
+@Injectable()
+export class ProductReviewService {
+	private readonly logger = new Logger(ProductReviewService.name);
+
+	constructor(
+		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
+		@InjectRepository(ProductReview) private readonly reviewRepository: Repository<ProductReview>,
+	) { }
+
+	/**
+	 * Creates a review on a product
+	 *
+	 * @param customer
+	 * @param productUUID
+	 * @param body
+	 * @returns
+	 */
+	async createProductReview(customer: Customer, productUUID: string, body: CreateReviewDto): Promise<ProductReview> {
+		this.logger.log(`Attempting to create product variant for product: ${productUUID}`);
+
+		// Find the product
+		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Create the product review
+		const productReview = new ProductReview();
+		productReview.uuid = crypto.randomUUID();
+		productReview.customer = customer;
+		productReview.product = product;
+		productReview.rating = body.rating;
+		productReview.comment = body.comment.trim();
+		return this.reviewRepository.save(productReview);
+	}
+
+	/**
+	 * Finds the reviews of a product
+	 *
+	 * @param productUUID
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAll(productUUID: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ProductReview>> {
+		this.logger.log(`Retrieving reviews of product: ${productUUID}`);
+
+		// Find the product
+		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.reviewRepository.find({
+			where: {
+				product: {
+					id: product.id,
+				},
+			},
+			relations: {
+				customer: true,
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Finds a review
+	 *
+	 * @param uuid
+	 * @returns
+	 */
+	async findOne(uuid: string): Promise<ProductReview> {
+		this.logger.log(`Retrieving review: ${uuid}`);
+
+		// Find the review
+		const review = await this.reviewRepository.findOne({
+			where: {
+				uuid: uuid,
+			},
+			relations: {
+				customer: true,
+			},
+		});
+
+		if (review === null) {
+			throw new NotFoundException({
+				error: "Failed to find the review. Please check and try again.",
+			});
+		}
+		return review;
+	}
+
+	/**
+	 * Updates a review
+	 *
+	 * @param uuid
+	 * @param body
+	 * @returns
+	 */
+	async updateProductReview(uuid: string, body: UpdateReviewDto): Promise<ProductReview> {
+		this.logger.log(`Updating review: ${uuid}`);
+
+		// Find the review
+		const productReview = await this.reviewRepository.findOneBy({ uuid: uuid, });
+		if (productReview === null) {
+			throw new NotFoundException({
+				error: "Failed to find the review. Please check and try again.",
+			});
+		}
+
+		// Update the review
+		productReview.rating = body.rating;
+		productReview.comment = body.comment.trim();
+		productReview.isEdited = true;
+		return this.reviewRepository.save(productReview);
+	}
+
+	/**
+	 * Deletes a review
+	 *
+	 * @param uuid
+	 */
+	async delete(uuid: string): Promise<void> {
+		await this.reviewRepository.delete({
+			uuid: uuid,
+		});
+	}
+}

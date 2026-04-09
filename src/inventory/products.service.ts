@@ -41,7 +41,9 @@ export class ProductsService {
 	 * @returns
 	 */
 	async createProduct(body: CreateProductDto): Promise<Product> {
-		this.logger.log(`Attempting to create product: ${body.title}`);
+		this.logger.log(`Attempting to create product: ${body.title.en}`);
+
+		console.log(body);
 
 		// Check if a product already exists by the same slug
 		if (body.slug !== null) {
