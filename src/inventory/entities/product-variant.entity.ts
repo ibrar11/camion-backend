@@ -33,7 +33,7 @@ import { CartItem } from "src/cart/entities/cart-items.entity";
 @ObjectType()
 export class Money {
 	@Field(() => Int)
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	amount: number;
 
 	@Field()
@@ -48,7 +48,7 @@ export class Money {
 @ObjectType()
 export class Weight {
 	@Field(() => Int)
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	amount: number;
 
 	@Field()
@@ -63,15 +63,15 @@ export class Weight {
 @ObjectType()
 export class Dimensions {
 	@Field(() => Int)
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	width: number;
 
 	@Field(() => Int)
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	height: number;
 
 	@Field(() => Int)
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	length: number;
 
 	@Field()

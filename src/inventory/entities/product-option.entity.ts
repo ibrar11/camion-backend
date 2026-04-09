@@ -45,7 +45,7 @@ export class ProductOption {
 	nameAr: string;
 
 	@Field(() => Int)
-	@Column({ type: "numeric" })
+	@Column({ type: "integer" })
 	position: number;
 
 	@Field(() => [ProductOptionValue])

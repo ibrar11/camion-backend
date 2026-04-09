@@ -44,7 +44,7 @@ export class Story {
 	isHighlighted: boolean;
 
 	@Field(() => Int)
-	@Column({ type: "numeric", default: 0, })
+	@Column({ type: "integer", default: 0, })
 	viewsCount: number;
 
 	@Field(() => [StoryFrame])
