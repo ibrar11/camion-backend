@@ -1,0 +1,147 @@
+name: CI — Build, Push, Deploy
+
+on:
+  push:
+    branches:
+      - dev
+      - prod
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+# One concurrent deployment per environment.
+# A newer commit cancels the in-flight run for the same environment.
+concurrency:
+  group: ci-${{ github.event.inputs.environment || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & Deploy (${{ github.event.inputs.environment || github.ref_name }})
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for OIDC token request
+      contents: read
+
+    steps:
+      # ── 1. Source ────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Resolve environment ───────────────────────────────────────────────
+      # Sets DEPLOY_ENV and SHORT_SHA in GITHUB_ENV (available in all subsequent
+      # steps). Sets role_arn as a step output consumed by configure-aws-credentials.
+      #
+      # On push:              DEPLOY_ENV = github.ref_name  (dev or prod)
+      # On workflow_dispatch: DEPLOY_ENV = inputs.environment (explicit priority)
+      #
+      # NOTE: manual dispatch must be triggered from the dev or prod branch.
+      # The OIDC sub-claim reflects the triggering branch, not the input value.
+      # Dispatching from main or a feature branch will cause sts:AssumeRoleWithWebIdentity
+      # to fail with AccessDenied.
+      - name: Resolve environment
+        id: resolve
+        run: |
+          DEPLOY_ENV="${{ github.event.inputs.environment || github.ref_name }}"
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          echo "DEPLOY_ENV=$DEPLOY_ENV" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=$SHORT_SHA"   >> "$GITHUB_ENV"
+          echo "deploy_env=$DEPLOY_ENV" >> "$GITHUB_OUTPUT"
+
+          if [ "$DEPLOY_ENV" = "prod" ]; then
+            echo "role_arn=${{ secrets.AWS_ROLE_ARN_PROD }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "role_arn=${{ secrets.AWS_ROLE_ARN_DEV }}"  >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 3. Environment file ──────────────────────────────────────────────────
+      # The Dockerfile contains `COPY .env.development .env`, so the env file
+      # must exist at this exact path in the build context.
+      #
+      # Both dev and prod secrets are written to `.env.development` — this is
+      # the filename the Dockerfile requires, regardless of which environment is
+      # being built. ENV_FILE_DEV contains dev values; ENV_FILE_PROD contains
+      # prod values; both land in the same filename at build time.
+      #
+      # printf '%s\n' preserves the trailing newline that most env file parsers
+      # and `node --env-file=.env` expect.
+      - name: Write environment file
+        run: |
+          if [ "$DEPLOY_ENV" = "prod" ]; then
+            printf '%s\n' "$ENV_FILE_PROD" > .env.development
+          else
+            printf '%s\n' "$ENV_FILE_DEV"  > .env.development
+          fi
+        env:
+          ENV_FILE_DEV:  ${{ secrets.ENV_FILE_DEV }}
+          ENV_FILE_PROD: ${{ secrets.ENV_FILE_PROD }}
+
+      # ── 4. AWS auth ──────────────────────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.resolve.outputs.role_arn }}
+          aws-region:     ${{ vars.AWS_REGION }}
+
+      # ── 5. ECR login ─────────────────────────────────────────────────────────
+      # Outputs `registry` = <account>.dkr.ecr.<region>.amazonaws.com
+      # This is the base URL prepended to all image URIs in the build step.
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── 6. Buildx ────────────────────────────────────────────────────────────
+      # Required by docker/build-push-action (uses BuildKit).
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 7. Build & push ──────────────────────────────────────────────────────
+      # Tags pushed per build:
+      #   {env}-{short-sha}  e.g. dev-abc1234  — rollback-friendly, immutable ref
+      #   {env}-latest       e.g. dev-latest   — what the ECS task definition uses
+      #
+      # context: . is correct — camion-backend-v2 is a standalone repo and the
+      # Dockerfile sits at the repository root.
+      #
+      # GHA cache (type=gha) reuses Docker layer cache across runs for faster builds.
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.DEPLOY_ENV }}-${{ env.SHORT_SHA }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.DEPLOY_ENV }}-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── 8. Deploy ────────────────────────────────────────────────────────────
+      # --force-new-deployment tells ECS to pull the updated {env}-latest image.
+      # No task definition re-registration needed — the task def already
+      # references {env}-latest (mutable ECR tag).
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --service "${{ vars.ECS_SERVICE }}" \
+            --force-new-deployment \
+            --region  "${{ vars.AWS_REGION }}" \
+            --no-cli-pager
+
+      # ── 9. Wait ──────────────────────────────────────────────────────────────
+      # Polls every 15 s, times out after 40 polls (600 s / 10 min).
+      # Fails visibly if the new task never passes its ALB health check.
+      - name: Wait for ECS stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster  "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE }}" \
+            --region   "${{ vars.AWS_REGION }}" \
+            --no-cli-pager
