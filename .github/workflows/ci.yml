@@ -47,10 +47,12 @@ jobs:
       # to fail with AccessDenied.
       - name: Validate dispatch branch
         if: github.event_name == 'workflow_dispatch'
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "${{ github.ref_name }}" != "dev" ] && [ "${{ github.ref_name }}" != "prod" ]; then
+          if [ "$REF_NAME" != "dev" ] && [ "$REF_NAME" != "prod" ]; then
             echo "❌ Manual dispatch must be triggered from the 'dev' or 'prod' branch."
-            echo "   Current branch: ${{ github.ref_name }}"
+            echo "   Current branch: $REF_NAME"
             echo "   The OIDC trust policy only allows these branches to assume the deployment role."
             exit 1
           fi
