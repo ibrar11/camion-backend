@@ -53,7 +53,6 @@ async function bootstrap() {
 
 	app.useGlobalPipes(new ValidationPipe({
 		transform: true,
-		whitelist: true,
 	}));
 	app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)),);
 

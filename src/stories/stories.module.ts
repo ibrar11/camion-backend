@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { S3Service } from 'src/common/s3.service';
+import { S3Service } from '../common/s3.service';
 
 import { Story } from './entities/story.entity';
 import { StoryFrame } from './entities/story-frame.entity';
@@ -10,11 +10,13 @@ import { StoriesService } from './stories.service';
 import { StoriesController } from './stories.controller';
 import { StoriesResolver } from './stories.resolver';
 
-import { Customer } from 'src/customers/entities/customer.entity';
-import { CustomersService } from 'src/customers/customers.service';
+import { Customer } from '../customers/entities/customer.entity';
+import { CustomersService } from '../customers/customers.service';
 
-import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
+import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
+
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
 	imports: [
@@ -24,6 +26,7 @@ import { UsersService } from 'src/users/users.service';
 			User,
 			Customer,
 		]),
+		ClientsModule,
 	],
 	providers: [
 		S3Service,

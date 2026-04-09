@@ -7,13 +7,15 @@ import { S3Service } from 'src/common/s3.service';
 import { Banner } from './entities/banner.entity';
 import { BannersService } from './banners.service';
 import { BannersController } from './banners.controller';
-
-import { Customer } from 'src/customers/entities/customer.entity';
-import { CustomersService } from 'src/customers/customers.service';
-
-import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
 import { BannersResolver } from './banners.resolver';
+
+import { Customer } from '../customers/entities/customer.entity';
+import { CustomersService } from '../customers/customers.service';
+
+import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
+
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
 	imports: [
@@ -22,6 +24,7 @@ import { BannersResolver } from './banners.resolver';
 			User,
 			Customer,
 		]),
+		ClientsModule,
 	],
 	providers: [
 		S3Service,

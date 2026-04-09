@@ -42,6 +42,7 @@ import { Product } from "./inventory/entities/product.entity";
 import { ProductCategory } from "./inventory/entities/product-category.entity";
 import { ProductOption } from "./inventory/entities/product-option.entity";
 import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
+import { ProductReview } from "./inventory/entities/product-review.entity";
 import { ProductVariant } from "./inventory/entities/product-variant.entity";
 import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
 import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
@@ -120,6 +121,7 @@ import { BannersModule } from './banners/banners.module';
 					ProductCategory,
 					ProductOption,
 					ProductOptionValue,
+					ProductReview,
 					ProductVariant,
 					ProductVariantImage,
 					ProductVariantInventoryItem,

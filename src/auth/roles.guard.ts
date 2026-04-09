@@ -34,11 +34,11 @@ export class RolesGuard implements CanActivate {
 			return false;
 		}
 
-		if (request.customer !== null) {
+		if (request.customer) {
 			return requiredRoles.includes(request.customer.role);
 		}
 
-		if (request.user !== null) {
+		if (request.user) {
 			return requiredRoles.includes(request.user.role);
 		}
 

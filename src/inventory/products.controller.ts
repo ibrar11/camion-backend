@@ -27,6 +27,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 import { Roles } from '../auth/roles.decorator';
+import { CustomerRole } from 'src/customers/enums/CustomerRole';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products')
@@ -40,7 +41,7 @@ export class ProductsController {
 		return this.productsService.createProduct(body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Influencer)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProducts(
