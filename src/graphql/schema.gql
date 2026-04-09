@@ -22,6 +22,11 @@ type Category {
   uuid: String!
 }
 
+type Customer {
+  fullName: String!
+  uuid: String!
+}
+
 type Dimensions {
   height: Int!
   length: Int!
@@ -64,6 +69,7 @@ type Product {
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
   options: [ProductOption!]!
+  reviews: [ProductReview!]!
   slug: String!
   status: String!
   title(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
@@ -88,6 +94,14 @@ type ProductOptionValue {
   value(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
   valueAr: String!
   valueEn: String!
+}
+
+type ProductReview {
+  comment: String!
+  customer: Customer!
+  isEdited: Boolean!
+  rating: Int!
+  uuid: String!
 }
 
 type ProductVariant {

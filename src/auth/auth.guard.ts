@@ -44,6 +44,19 @@ export class AuthGuard implements CanActivate {
 				throw new UnauthorizedException();
 			}
 
+			// Make sure the token exists in the cache
+			const tokenExists = await this.cacheManager.get(
+				payload.type === "user"
+					? `auth:user-session:${payload.jti}`
+					: payload.type === "customer"
+						? `auth:customer-session:${payload.jti}`
+						: ""
+			);
+
+			if (tokenExists === null || tokenExists === undefined) {
+				throw new UnauthorizedException();
+			}
+
 			if (payload.type === "client") {
 				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
 

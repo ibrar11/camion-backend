@@ -45,7 +45,7 @@ export class ProductOptionValue {
 	valueAr: string;
 
 	@Field(() => Int)
-	@Column({ type: "numeric" })
+	@Column({ type: "integer" })
 	position: number;
 
 	@OneToMany(() => ProductVariantOptionValue, (productVariantOptionValue) => productVariantOptionValue.optionValue)

@@ -36,7 +36,7 @@ export class InventoryLevel {
 	warehouse: Warehouse;
 
 	@Field(() => Int)
-	@Column({ type: "numeric", default: 0, })
+	@Column({ type: "integer", default: 0, })
 	quantity: number;
 
 	@Exclude()

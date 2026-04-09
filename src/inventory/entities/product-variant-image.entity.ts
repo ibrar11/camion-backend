@@ -20,11 +20,11 @@ import { ProductVariant } from "./product-variant.entity";
 @ObjectType()
 export class ProductVariantImageDimensions {
 	@Field(() => Int)
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	width: number;
 
 	@Field(() => Int)
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	height: number;
 }
 
@@ -51,7 +51,7 @@ export class ProductVariantImage {
 	alt: string;
 
 	@Field(() => Int)
-	@Column({ type: "numeric" })
+	@Column({ type: "integer" })
 	position: number;
 
 	@Field(() => ProductVariantImageDimensions)

@@ -183,6 +183,9 @@ export class ProductsService {
 						optionValue: true,
 					},
 				},
+				reviews: {
+					customer: true,
+				},
 			},
 		});
 
@@ -215,6 +218,9 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+				},
+				reviews: {
+					customer: true,
 				},
 			},
 		});

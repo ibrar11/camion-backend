@@ -1,3 +1,5 @@
+import { Field, ObjectType } from "@nestjs/graphql";
+
 import {
 	Column,
 	CreateDateColumn,
@@ -16,15 +18,18 @@ import { LoginRequest } from "src/auth/entities/login-request.entity";
 import { CustomerAddress } from "./customer-address.entity";
 import { ProductReview } from "src/inventory/entities/product-review.entity";
 
+@ObjectType()
 @Entity({ name: "customers" })
 export class Customer {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
+	@Field()
 	@Column({ type: "varchar", length: 64, })
 	fullName: string;
 
