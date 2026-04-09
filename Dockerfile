@@ -12,6 +12,7 @@ RUN npm ci
 # Copy source code
 COPY src ./src
 COPY tsconfig.json .
+COPY tsconfig.build.json .
 RUN npm run build
 
 # Start Execution
@@ -31,9 +32,6 @@ COPY certs ./certs
 # Copy the CA files
 COPY ca ./ca
 
-# Copy the environmental settings
-COPY .env.development .env
-
 # Copy build artifacts from the builder stage
 COPY --from=builder /app/dist ./dist
 
@@ -44,4 +42,4 @@ EXPOSE 8000
 ENV PORT=8000
 
 # Run the app
-CMD ["node", "--env-file=.env", "dist/main.js"]
+CMD ["node", "dist/main.js"]

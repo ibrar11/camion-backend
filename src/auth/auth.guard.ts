@@ -100,7 +100,7 @@ export class AuthGuard implements CanActivate {
 				}
 
 				const customer = await this.customersService.findOne(payload.sub);
-				if (customer === null || !customer.isActive) {
+				if (customer === null || !customer.isActive || customer.deletedAt) {
 					throw new UnauthorizedException();
 				}
 

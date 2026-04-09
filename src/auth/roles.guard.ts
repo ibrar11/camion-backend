@@ -42,6 +42,11 @@ export class RolesGuard implements CanActivate {
 			return requiredRoles.includes(request.user.role);
 		}
 
+		// clients do not have roles → deny if roles are required
+		if (request.client) {
+			return false;
+		}
+
 		return false;
 	}
 }

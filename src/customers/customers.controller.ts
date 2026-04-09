@@ -7,8 +7,10 @@ import {
 	HttpStatus,
 	Inject,
 	Param,
+	Patch,
 	Post,
 	Put,
+	Req,
 	UseGuards,
 } from '@nestjs/common';
 
@@ -80,4 +82,28 @@ export class CustomersController {
 	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
 		return this.customersService.delete(uuid);
 	}
+
+    @Delete('me')
+    @UseGuards(AuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async deleteMyAccount(
+        @Req() req: Request & { customer: Customer },
+    ): Promise<{ message: string }> {
+        await this.customersService.requestAccountDeletion(req.customer.uuid);
+
+        return {
+            message: 'Account marked for deletion',
+        };
+    }
+
+    @Patch('me/cancel-deletion')
+    @UseGuards(AuthGuard)
+    async cancelDeletion(@Req() req: Request & { customer: any }) {
+        await this.customersService.cancelDeletion(req.customer.uuid);
+
+        return {
+            message: 'Account deletion cancelled',
+        };
+    }
+
 }

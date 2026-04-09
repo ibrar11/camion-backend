@@ -18,6 +18,8 @@ import {
 	ApolloDriverConfig,
 } from "@nestjs/apollo";
 
+import { ScheduleModule } from '@nestjs/schedule';
+
 import KeyvRedis from "@keyv/redis";
 
 import { AppController } from './app.controller';
@@ -193,6 +195,7 @@ import { OrderModule } from './order/order.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+        ScheduleModule.forRoot(),
 		OrderModule,
 	],
 	controllers: [AppController],
