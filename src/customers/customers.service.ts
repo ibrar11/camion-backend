@@ -218,4 +218,59 @@ export class CustomersService {
 			uuid: uuid,
 		});
 	}
+
+    /**
+     * Marks a customer account for deletion.
+     *
+     * The account is not deleted immediately. Instead, it is flagged for deletion,
+     * and a scheduled job will permanently deactivate it after the configured grace period.
+     *
+     * This operation is idempotent — if the account is already deleted, no action is taken.
+     *
+     * @param customerUuid - The UUID of the customer
+     */
+    async requestAccountDeletion(customerUuid: string): Promise<void> {
+        const customer = await this.customerRepository.findOne({
+            where: { uuid: customerUuid },
+        });
+
+        if (!customer) {
+            throw new NotFoundException('Customer not found');
+        }
+
+        if (customer.deletedAt) {
+            return; // already deleted (idempotent)
+        }
+
+        customer.markedForDeletionAt = new Date();
+
+        await this.customerRepository.save(customer);
+    }
+
+    /**
+     * Cancels a previously requested account deletion.
+     *
+     * This removes the deletion flag (`markedForDeletionAt`) and restores the account
+     * to its normal active state, provided it has not already been permanently deleted.
+     *
+     * @param customerUuid - The UUID of the customer
+     * @throws BadRequestException if the account is already deleted
+     */
+    async cancelDeletion(customerUuid: string): Promise<void> {
+        const customer = await this.customerRepository.findOne({
+            where: { uuid: customerUuid },
+        });
+
+        if (!customer) {
+            throw new NotFoundException('Customer not found');
+        }
+
+        if (customer.deletedAt) {
+            throw new BadRequestException('Account already deleted');
+        }
+
+        customer.markedForDeletionAt = null;
+
+        await this.customerRepository.save(customer);
+    }
 }
