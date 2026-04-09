@@ -35,6 +35,8 @@ import { LoginRequest } from "./entities/login-request.entity";
 import { CustomerAuthVerificationResponse } from "./response/CustomerAuthVerificationResponse";
 import { CustomerAuthResponse } from "./response/CustomerAuthResponse";
 
+import { CustomerRole } from "src/customers/enums/CustomerRole";
+
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
@@ -100,8 +102,7 @@ export class CustomerAuthService {
 		customer.emailAddress = body.emailAddress.toLowerCase().trim();
 		customer.phoneNumber = body.phoneNumber.trim();
 		customer.password = "";
-		customer.isEmailAddressVerified = false;
-		customer.isPhoneNumberVerified = false;
+		customer.role = CustomerRole.Customer;
 		customer.isActive = true;
 		await this.customerRepository.save(customer);
 
@@ -112,7 +113,7 @@ export class CustomerAuthService {
 			sub: customer.uuid,
 		};
 
-		// Create the jwt fro the customer
+		// Create the jwt for the customer
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in the cache so we can invalidate the customer session later.
