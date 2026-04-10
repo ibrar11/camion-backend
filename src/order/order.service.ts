@@ -76,7 +76,11 @@ export class OrderService {
                 // get inventory item of the product variant
                 const inventoryItem = await this.inventoryRepo.findOne({
                     where: { variant: { id: variant.id } },
-                    relations: { levels: true }
+                    relations: { 
+                        levels: {
+                            warehouse: true
+                        } 
+                    }
                 });
 
                 if (!inventoryItem || !inventoryItem.levels.length) {
@@ -98,7 +102,7 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await this.inventoryLevelRepo.save(level);
 
-                const price = Number(variant.price);
+                const price = Number(variant.price.amount);
                 const total = price * cart.quantity;
 
                 subTotal += total;
@@ -116,6 +120,8 @@ export class OrderService {
                 orderItem.total = total;
 
                 await this.orderItemRepo.save(orderItem);
+
+                orderItems.push(orderItem)
             }
 
             // shipping and discount needs to be updated after the implementation of shippping and discounts
@@ -274,10 +280,12 @@ export class OrderService {
             // find the order to cancel
             const order = await this.orderRepo.findOne({
                 where: { uuid },
-                relations: [
-                    'orderItems',
-                    'orderItems.variant',
-                ],
+                relations: {
+                    orderItems: {
+                        variant: true,
+                        warehouse: true
+                    },
+                },
             });
 
             if (!order) {
@@ -291,7 +299,9 @@ export class OrderService {
             // Restore inventory
             for (const item of order.orderItems) {
                 const inventoryItem = await this.inventoryRepo.findOne({
-                    where: { variant: { id: item.variant.id } },
+                    where: { 
+                        variant: { id: item.variant.id } 
+                    }
                 });
 
                 if (!inventoryItem) continue;
@@ -301,7 +311,10 @@ export class OrderService {
                         inventoryItem: { id: inventoryItem.id },
                         warehouse: { id: item.warehouse.id },
                     },
-                    relations: ['inventoryItem', 'warehouse'],
+                    relations: {
+                        inventoryItem: true,
+                        warehouse: true
+                    },
                 });
 
                 if (!level) continue;
