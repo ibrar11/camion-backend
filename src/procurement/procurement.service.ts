@@ -213,8 +213,7 @@ export class ProcurementService {
                 value: getValue(attr),
             }));
 
-            const slug = generateSlug(product.subjectTrans || product.subject).slice(0,63)
-
+            const slug = generateSlug(product.subjectTrans || product.subject);
             // Format the Product
             const formattedProduct = {
                 externalId: product.offerId,
