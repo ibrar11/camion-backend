@@ -19,6 +19,7 @@ type Category {
   nameAr: String!
   nameEn: String!
   slug: String!
+  thumbnailUrl: String
   uuid: String!
 }
 
@@ -59,20 +60,20 @@ type PollOptionElement {
 }
 
 type Product {
-  brief(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  brief(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): String!
   briefAr: String!
   briefEn: String!
-  description(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  description(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): String!
   descriptionAr: String!
   descriptionEn: String!
-  descriptionHtml(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  descriptionHtml(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): String!
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
   options: [ProductOption!]!
   reviews: [ProductReview!]!
   slug: String!
   status: String!
-  title(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  title(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): String!
   titleAr: String!
   titleEn: String!
   uuid: String!
@@ -80,7 +81,7 @@ type Product {
 }
 
 type ProductOption {
-  name(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  name(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): String!
   nameAr: String!
   nameEn: String!
   position: Int!
@@ -91,7 +92,7 @@ type ProductOption {
 type ProductOptionValue {
   position: Int!
   uuid: String!
-  value(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  value(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): String!
   valueAr: String!
   valueEn: String!
 }
@@ -111,7 +112,7 @@ type ProductVariant {
   optionValues: [ProductVariantOptionValue!]!
   price: Money!
   sku: String!
-  title(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
+  title(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): String!
   titleAr: String!
   titleEn: String!
   uuid: String!
@@ -138,9 +139,15 @@ type ProductVariantOptionValue {
 type Query {
   getBanners(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Banner!]!
   getCategories(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Category!]!
+  getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getProduct(slug: String! = ""): Product
-  getProducts(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Product!]!
+  getProducts(filters: String! = "", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = ""): [Product!]!
+  getRecentlyViewedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getRecommendedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
+  getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
   getStories(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Story!]!
+  searchProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
 }
 
 type Story {

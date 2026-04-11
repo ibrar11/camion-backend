@@ -19,7 +19,7 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { ConfigService } from "@nestjs/config";
 
-import { CountryCode, parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { VerifyCustomerDto } from "./dtos/VerifyCustomerDto";
 import { RegisterCustomerDto } from "./dtos/RegisterCustomerDto";
@@ -59,14 +59,20 @@ export class CustomerAuthService {
 	async registerCustomer(body: RegisterCustomerDto): Promise<CustomerAuthResponse> {
 		this.logger.log(`Attempting to register customer: ${body.fullName}`);
 
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
+		}
+
 		// Trim the phone number
 		if (body.phoneNumber !== null) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
 		// Format the phone number if a country code is provided
-		if (body.phoneNumber !== null && body.countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, body.countryCode as CountryCode)?.formatInternational() as string;
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
 		}
 
 		// Make sure we don't have a customer using the same email address
@@ -134,14 +140,20 @@ export class CustomerAuthService {
 	async loginCustomerByPhoneNumber(body: LoginCustomerByPhoneNumberDto): Promise<CustomerAuthVerificationResponse> {
 		this.logger.log(`Attempting to login customer by phone number: ${body.countryCode} ${body.phoneNumber}`);
 
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
+		}
+
 		// Trim the phone number
 		if (body.phoneNumber !== null) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
 		// Format the phone number if a country code is provided
-		if (body.phoneNumber !== null && body.countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, body.countryCode as CountryCode)?.formatInternational() as string;
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
 		}
 
 		// Find the customer using their phone number

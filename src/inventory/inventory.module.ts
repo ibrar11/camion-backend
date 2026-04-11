@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { S3Service } from 'src/common/s3.service';
+
 import { User } from '../users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 
@@ -82,6 +84,7 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 		ClientsModule,
 	],
 	providers: [
+		S3Service,
 		UsersService,
 		CustomersService,
 		CategoriesService,

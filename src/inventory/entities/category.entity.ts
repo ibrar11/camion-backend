@@ -7,6 +7,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	OneToMany,
 	PrimaryGeneratedColumn,
@@ -48,6 +49,10 @@ export class Category {
 
 	@Column({ type: "numeric" })
 	pricingFactor: number;
+
+	@Field({ nullable: true, })
+	@Column({ type: "varchar", length: 256, nullable: true, })
+	thumbnailUrl: string;
 
 	@Exclude()
 	@Column({ nullable: true, })
