@@ -21,14 +21,8 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 
 @ArgsType()
 export class GetStoriesArgs {
-	@Field({ defaultValue: "en-us", })
-	locale: string;
-
-	@Field({ defaultValue: "" })
-	filters: string;
-
-	@Field({ defaultValue: "" })
-	sort: string;
+	@Field({ defaultValue: "en", })
+	language: string;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -44,18 +38,18 @@ export class StoriesResolver {
 
 	@ResolveField("caption", () => String)
 	getCaption(@Parent() story: Story, @Args() args: GetStoriesArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const captionMap = {
-			"en-us": story.captionEn,
-			"ar-qa": story.captionAr,
+			"en": story.captionEn,
+			"ar": story.captionAr,
 		};
 
-		return captionMap[locale] ?? story.captionEn;
+		return captionMap[language] ?? story.captionEn;
 	}
 
 	@Query(() => [Story])
 	getStories(@Args() args: GetStoriesArgs): Promise<Array<Story>> {
-		return this.storiesService.findAll(args.filters, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.storiesService.findAll("", "", args.pageNumber, args.itemsPerPage);
 	}
 }
