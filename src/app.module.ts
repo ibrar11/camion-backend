@@ -78,6 +78,9 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { Language } from "./languages/entities/language.entity";
+import { LanguagesModule } from './languages/languages.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -137,6 +140,8 @@ import { BannersModule } from './banners/banners.module';
 					InventoryLevel,
 
 					Warehouse,
+
+					Language,
                     
                     Post,
 
@@ -188,6 +193,7 @@ import { BannersModule } from './banners/banners.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+		LanguagesModule,
         ScheduleModule.forRoot(),
 	],
 	controllers: [AppController],
