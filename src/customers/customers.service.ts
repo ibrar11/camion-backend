@@ -5,13 +5,14 @@ import * as bcrypt from "bcrypt";
 import {
 	BadRequestException,
 	Injectable,
+	Logger,
 	NotFoundException,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { CountryCode, parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { CreateCustomerDto } from './dtos/CreateCustomerDto';
 import { UpdateCustomerDto } from "./dtos/UpdateCustomerDto";
@@ -22,8 +23,9 @@ import { Customer } from './entities/customer.entity';
 
 @Injectable()
 export class CustomersService {
-	constructor(@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>) {
-	}
+	private readonly logger = new Logger(CustomersService.name);
+
+	constructor(@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>) { }
 
 	/**
 	 * Creates a customer
@@ -32,14 +34,23 @@ export class CustomersService {
 	 * @returns
 	 */
 	async createCustomer(body: CreateCustomerDto) {
+		this.logger.log(`Creating customer: ${body.fullName}`);
+
+
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
+		}
+
 		// Trim the phone number
 		if (body.phoneNumber !== null) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
 		// Format the phone number if a country code is provided
-		if (body.phoneNumber !== null && body.countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, body.countryCode as CountryCode)?.formatInternational() as string;
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, })?.formatInternational() as string;
 		}
 
 		// Check if the customer exists by email address

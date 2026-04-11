@@ -12,5 +12,5 @@ export const generateSlug = (input: string): string => {
 		.replace(/\s+/g, '-')				// Replace spaces with hypens
 		.replace(/-+/g, '-')				// Merge multiple hypens into the same hypen
 		.replace(/^-+|-+$/g, '')			// Remove hyphens on each end of the string
-		.slice(0,63)                        // Remove more character than 63 on each end of the string
+		.substring(0, 63);					// Take the first 64 characters of th es
 };

@@ -9,7 +9,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { CountryCode, parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { getSkipAndTake } from "src/common/pagination";
 
@@ -36,14 +36,20 @@ export class CustomerAddressesService {
 	async createCustomerAddress(customer: Customer, body: CreateCustomerAddressDto): Promise<CustomerAddress> {
 		this.logger.log(`Creating customer address for customer: ${customer.uuid}`);
 
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
+		}
+
 		// Trim the phone number
 		if (body.phoneNumber !== null) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
 		// Format the phone number if a country code is provided
-		if (body.phoneNumber !== null && body.countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, body.countryCode as CountryCode)?.formatInternational() as string;
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
 		}
 
 		// Make sure we have a single default address
