@@ -1,6 +1,13 @@
+import { 
+    Field, 
+    Int, 
+    ObjectType 
+} from "@nestjs/graphql";
+
 import { Product } from "src/inventory/entities/product.entity";
 import { ProductVariantImage } from "src/inventory/entities/product-variant-image.entity";
 import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { CartItem } from "./entities/cart-items.entity";
 
 export interface ApiResponse<T> {
     success: boolean;
@@ -39,3 +46,12 @@ export interface RemoveCartItemResponseData {
     removed: boolean
 }
 export type RemoveCartItemResponse = ApiResponse<RemoveCartItemResponseData>;
+
+@ObjectType()
+export class GqlCartResponse {
+    @Field(() => [CartItem])
+    items: CartItem[];
+
+    @Field(() => Int)
+    cartCount: number;
+}

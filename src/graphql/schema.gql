@@ -13,6 +13,15 @@ type Banner {
   uuid: String!
 }
 
+type CartItem {
+  customer: Customer!
+  product: Product!
+  quantity: Float!
+  subTotal: Float!
+  uuid: String!
+  variant: ProductVariant!
+}
+
 type Category {
   children: [Category!]!
   name(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): String!
@@ -37,6 +46,11 @@ type Dimensions {
 
 type EmojiElement {
   content: String!
+}
+
+type GqlCartResponse {
+  cartCount: Int!
+  items: [CartItem!]!
 }
 
 type LinkElement {
@@ -137,6 +151,7 @@ type ProductVariantOptionValue {
 }
 
 type Query {
+  cart: GqlCartResponse!
   getBanners(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Banner!]!
   getCategories(filters: String! = "", itemsPerPage: Int! = 100, locale: String! = "en-us", pageNumber: Int! = 1, sort: String! = ""): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!

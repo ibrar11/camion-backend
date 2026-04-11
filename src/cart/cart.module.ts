@@ -18,22 +18,25 @@ import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
 
 import { ClientsModule } from '../clients/clients.module';
 
+import { CartResolver } from './cart.resolver';
+
 @Module({
-  imports: [
-      TypeOrmModule.forFeature([
-        User, 
-        Customer , 
-        CartItem, 
-        Product,
-        ProductVariant,
-      ]),
-      ClientsModule,
-  ],
-  providers: [
-    CartService, 
-    UsersService, 
-    CustomersService
-  ],
-  controllers: [CartController]
+    imports: [
+        TypeOrmModule.forFeature([
+            User,
+            Customer,
+            CartItem,
+            Product,
+            ProductVariant,
+        ]),
+        ClientsModule,
+    ],
+    providers: [
+        CartService,
+        UsersService,
+        CustomersService,
+        CartResolver,
+    ],
+    controllers: [CartController]
 })
-export class CartModule {}
+export class CartModule { }
