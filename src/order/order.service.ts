@@ -9,7 +9,10 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+    In,
+    Repository
+} from 'typeorm';
 
 import { OrderStatus } from "./enums/OrderStatus";
 
@@ -49,12 +52,13 @@ export class OrderService {
      * @param dto
      * @returns
      */
-    async create(customer: Customer, dto: CreateOrderDto): Promise<Order>{
+    async create(customer: Customer, dto: CreateOrderDto): Promise<Order> {
         try {
             // get cart items
             const cartItems = await this.cartRepo.find({
                 where: {
-                    customer: { uuid: customer.uuid }
+                    uuid: In(dto.cartItemUuids),
+                    customer: { id: customer.id }
                 },
                 relations: {
                     product: true,
@@ -63,8 +67,8 @@ export class OrderService {
                 }
             });
 
-            if (!cartItems.length) {
-                throw new BadRequestException('Cart is empty');
+            if (cartItems.length !== dto.cartItemUuids.length) {
+                throw new BadRequestException("Invalid cart items");
             }
 
             let subTotal = 0;
@@ -76,10 +80,10 @@ export class OrderService {
                 // get inventory item of the product variant
                 const inventoryItem = await this.inventoryRepo.findOne({
                     where: { variant: { id: variant.id } },
-                    relations: { 
+                    relations: {
                         levels: {
                             warehouse: true
-                        } 
+                        }
                     }
                 });
 
@@ -102,28 +106,33 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await this.inventoryLevelRepo.save(level);
 
-                const price = Number(variant.price.amount);
-                const total = price * cart.quantity;
+                const priceAmount = Number(variant.price.amount);
+                const totalAmount = priceAmount * cart.quantity;
 
-                subTotal += total;
+                subTotal += totalAmount;
 
                 // create order items
                 const orderItem = new OrderItem()
                 orderItem.uuid = crypto.randomUUID();
                 orderItem.product = cart.product;
                 orderItem.variant = variant;
-                orderItem.productName = variant.titleEn;
                 orderItem.warehouse = level.warehouse;
-                orderItem.sku = variant.sku;
-                orderItem.price = price;
+                orderItem.price = {
+                    amount: priceAmount,
+                    currencyCode: variant.price.currencyCode,
+                };
                 orderItem.quantity = cart.quantity;
-                orderItem.total = total;
+                orderItem.total = {
+                    amount: totalAmount,
+                    currencyCode: variant.price.currencyCode,
+                };
 
                 await this.orderItemRepo.save(orderItem);
 
                 orderItems.push(orderItem)
             }
 
+            const currency = cartItems[0].variant.price.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
             const shippingCost = 0;
             const discount = 0;
@@ -135,20 +144,30 @@ export class OrderService {
             const order = new Order();
             order.uuid = crypto.randomUUID();
             order.customer = customer;
-            order.status = OrderStatus.PENDING;
-            order.currency = 'USD'; // needs to make currency dynamic
-            order.subTotal = subTotal;
-            order.shippingCost = shippingCost;
-            order.discount = discount;
-            order.total = total;
+            order.status = OrderStatus.PAYMENT_PENDING;
+            order.subTotal = {
+                amount: subTotal,
+                currencyCode: currency,
+            };
+            order.shippingCost = {
+                amount: shippingCost,
+                currencyCode: currency,
+            };
+            order.discount = {
+                amount: discount,
+                currencyCode: currency,
+            };
+            order.total = {
+                amount: total,
+                currencyCode: currency,
+            };
             order.orderItems = orderItems;
-            order.customerSnapshot = dto.customerData;
 
             await this.orderRepo.save(order);
 
             // clear the cart
             await this.cartRepo.delete({
-                customer: { id: customer.id }
+                uuid: In(dto.cartItemUuids)
             });
 
             return order;
@@ -169,12 +188,9 @@ export class OrderService {
     async findAll(): Promise<Array<Order>> {
         try {
             return this.orderRepo.find({
-                relations: [
-                    'items',
-                    'items.product',
-                    'items.variant',
-                    'customer'
-                ],
+                relations: {
+                    orderItems: true,
+                },
                 order: { createdAt: 'DESC' },
             });
         } catch (error: any) {
@@ -197,12 +213,9 @@ export class OrderService {
                 where: {
                     customer: { uuid: customerUuid }
                 },
-                relations: [
-                    'items',
-                    'items.product',
-                    'items.variant',
-                    'customer'
-                ],
+                relations: {
+                    orderItems: true,
+                },
                 order: { createdAt: 'DESC' },
             });
         } catch (error: any) {
@@ -223,12 +236,9 @@ export class OrderService {
         try {
             const order = await this.orderRepo.findOne({
                 where: { uuid },
-                relations: [
-                    'items',
-                    'items.product',
-                    'items.variant',
-                    'customer'
-                ],
+                relations: {
+                    orderItems: true,
+                },
             });
 
             if (!order) throw new NotFoundException('Order not found');
@@ -254,11 +264,6 @@ export class OrderService {
             const order = await this.findOne(uuid);
 
             order.status = status;
-
-            if (status === 'DELIVERED') {
-                order.isPaid = true;
-                order.paidAt = new Date();
-            }
 
             return this.orderRepo.save(order);
         } catch (error: any) {
@@ -292,15 +297,15 @@ export class OrderService {
                 throw new NotFoundException('Order not found');
             }
 
-            if (order.status === 'CANCELLED') {
+            if (order.status === OrderStatus.CANCELLED) {
                 throw new BadRequestException('Already cancelled');
             }
 
             // Restore inventory
             for (const item of order.orderItems) {
                 const inventoryItem = await this.inventoryRepo.findOne({
-                    where: { 
-                        variant: { id: item.variant.id } 
+                    where: {
+                        variant: { id: item.variant.id }
                     }
                 });
 

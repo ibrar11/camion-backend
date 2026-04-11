@@ -10,12 +10,25 @@ import {
 
 import { Exclude } from "class-transformer";
 
+import { CurrencyCode } from "src/inventory/enums/CurrencyCode";
 import { OrderStatus } from "../enums/OrderStatus";
 
 import { Customer } from "src/customers/entities/customer.entity";
 
 import { OrderItem } from "./order-item.entity";
 
+
+export class Money {
+    @Column({ type: "integer", })
+    amount: number;
+
+    @Column({
+        type: "enum",
+        enum: CurrencyCode,
+        default: CurrencyCode.USD,
+    })
+    currencyCode: CurrencyCode;
+}
 
 @Entity({ name: 'orders', })
 export class Order {
@@ -26,6 +39,7 @@ export class Order {
     @Column({ type: "uuid", nullable: false, unique: true, })
     uuid: string;
 
+    @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.orders)
     customer: Customer;
 
@@ -34,34 +48,22 @@ export class Order {
         enum: OrderStatus,
         default: OrderStatus.PENDING,
     })
-    status: OrderStatus; // PENDING | CONFIRMED | CANCELLED | DELIVERED
+    status: OrderStatus;
 
-    @Column()
-    currency: string;
+    @Column(() => Money)
+    subTotal: Money;
 
-    @Column({ type: 'decimal', default: 0 })
-    subTotal: number;
+    @Column(() => Money)
+    shippingCost: Money;
 
-    @Column({ type: 'decimal', default: 0 })
-    shippingCost: number;
+    @Column(() => Money)
+    discount: Money;
 
-    @Column({ type: 'decimal', default: 0 })
-    discount: number;
-
-    @Column({ type: 'decimal', default: 0 })
-    total: number;
-
-    @Column({ default: false })
-    isPaid: boolean;
-
-    @Column({ type: 'timestamp', nullable: true })
-    paidAt?: Date;
+    @Column(() => Money)
+    total: Money;
 
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
     orderItems: OrderItem[];
-
-    @Column({ type: 'jsonb', nullable: true })
-    customerSnapshot: any;
 
     @Exclude()
     @UpdateDateColumn({
