@@ -28,7 +28,7 @@ export interface ValidatedCartItem {
     customerUuid: string;
     product: Product;
     quantity: number;
-    variation: ProductVariant;
+    variant: ProductVariant;
     title: string;
     image: ProductVariantImage[];
     subTotal: number;
@@ -50,7 +50,7 @@ export type RemoveCartItemResponse = ApiResponse<RemoveCartItemResponseData>;
 @ObjectType()
 export class GqlCartResponse {
     @Field(() => [CartItem])
-    items: CartItem[];
+    cartItems: CartItem[];
 
     @Field(() => Int)
     cartCount: number;

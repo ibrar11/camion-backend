@@ -14,6 +14,14 @@ import {
 
 import { AuthGuard } from 'src/auth/auth.guard';
 
+import { RolesGuard } from 'src/auth/roles.guard';
+
+import { Roles } from 'src/auth/roles.decorator';
+
+import { CustomerRole } from 'src/customers/enums/CustomerRole';
+
+import { UserRole } from 'src/users/enums/UserRole';
+
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
 
@@ -28,7 +36,7 @@ import {
     UpdateCartResponse 
 } from './types';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/cart-items')
 export class CartController {
     constructor(
@@ -36,6 +44,7 @@ export class CartController {
         private readonly cartService: CartService,
     ) {}
 
+    @Roles(UserRole.SuperAdmin,UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     addToCart(
@@ -45,6 +54,7 @@ export class CartController {
         return this.cartService.create(dto, customer);
     }
 
+    @Roles(CustomerRole.Customer, CustomerRole.Guest)
     @Get()
     @HttpCode(HttpStatus.OK)
     getCart(
@@ -53,6 +63,7 @@ export class CartController {
         return this.cartService.findCart(customer);
     }
 
+    @Roles(CustomerRole.Customer, CustomerRole.Guest)
     @Patch('update/:uuid')
     @HttpCode(HttpStatus.OK)
     updateCart(
@@ -63,6 +74,7 @@ export class CartController {
         return this.cartService.update(uuid, dto, customer);
     }
 
+    @Roles(CustomerRole.Customer, CustomerRole.Guest)
     @Delete('remove/:uuid')
     @HttpCode(HttpStatus.OK)
     async removeFromCart(
@@ -71,6 +83,7 @@ export class CartController {
         return this.cartService.removeItem(uuid);
     }
 
+    @Roles(CustomerRole.Customer, CustomerRole.Guest)
     @Delete()
     @HttpCode(HttpStatus.OK)
     clearCart(

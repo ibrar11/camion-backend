@@ -179,7 +179,7 @@ export class CartService {
                         customerUuid: item.customer.uuid,
                         product: item.product,
                         quantity: item.quantity,
-                        variation: variant,
+                        variant: variant,
                         title: product.title,
                         image: variant.images,
                         subTotal: item.subTotal,

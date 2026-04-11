@@ -32,7 +32,7 @@ export class CartResolver {
     @Query(() => GqlCartResponse)
     async cart(
         @Context() context: any,
-    ): Promise<{ cartCount: number, items: FindCartResponse }> {
+    ): Promise<{ cartCount: number, cartItems: FindCartResponse }> {
 
         const customer: Customer = context.req.customer;
 
@@ -45,7 +45,7 @@ export class CartResolver {
         const cart = await this.cartService.findCart(customer);
 
         return {
-            items: cart,
+            cartItems: cart,
             cartCount: cart.length ?? 0
         };
     }

@@ -50,7 +50,7 @@ type EmojiElement {
 
 type GqlCartResponse {
   cartCount: Int!
-  items: [CartItem!]!
+  cartItems: [CartItem!]!
 }
 
 type LinkElement {
