@@ -99,6 +99,7 @@ export interface ProductAttributeFormatted {
 
 export interface ProductDetail {
     externalId: number;
+    slug: string;
     title: string;
     description: string;
     descriptionTrans: string;

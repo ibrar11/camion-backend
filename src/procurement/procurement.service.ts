@@ -5,6 +5,8 @@ import {
     InternalServerErrorException,
 } from '@nestjs/common';
 
+import { generateSlug } from 'src/common/slug';
+
 import {
     ProductAttribute,
     ProductDetail,
@@ -211,9 +213,11 @@ export class ProcurementService {
                 value: getValue(attr),
             }));
 
+            const slug = generateSlug(product.subjectTrans || product.subject);
             // Format the Product
             const formattedProduct = {
                 externalId: product.offerId,
+                slug: slug,
                 title: product.subjectTrans || product.subject,
                 description: description,
                 descriptionTrans: descriptionTrans,
