@@ -39,6 +39,11 @@ type EmojiElement {
   content: String!
 }
 
+type GqlWishlistResponse {
+  wishListCount: Int!
+  wishListItems: [WishlistItem!]!
+}
+
 type LinkElement {
   content: String!
 }
@@ -148,6 +153,7 @@ type Query {
   getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
   getStories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Story!]!
   searchProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
+  wishlist: GqlWishlistResponse!
 }
 
 type Story {
@@ -190,4 +196,10 @@ type TextElement {
 type Weight {
   amount: Int!
   unit: String!
+}
+
+type WishlistItem {
+  customer: Customer!
+  product: Product!
+  uuid: String!
 }

@@ -77,6 +77,8 @@ import { StoriesModule } from './stories/stories.module';
 
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 
 @Module({
 	imports: [
@@ -148,6 +150,8 @@ import { BannersModule } from './banners/banners.module';
 					StoryFrame,
 
 					Banner,
+
+					WishlistItem,
 				],
 				synchronize: true,
 			}),
@@ -189,6 +193,7 @@ import { BannersModule } from './banners/banners.module';
 		StoriesModule,
 		BannersModule,
         ScheduleModule.forRoot(),
+        WishlistModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

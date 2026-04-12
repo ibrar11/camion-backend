@@ -22,6 +22,7 @@ import { ProductCategory } from "./product-category.entity";
 import { ProductReview } from "./product-review.entity";
 
 import { CartItem } from "src/cart/entities/cart-items.entity";
+import { WishlistItem } from "src/wishlist/entities/wishlist.entity";
 
 @ObjectType()
 @Entity({ name: "products", })
@@ -107,6 +108,9 @@ export class Product {
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product)
+	wishlistItems: Array<WishlistItem>;
 
 	@Exclude()
 	@Column({
