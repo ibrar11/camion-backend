@@ -22,6 +22,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import KeyvRedis from "@keyv/redis";
 
+import { Keyv } from "keyv";
+import { Cacheable, CacheableMemory } from "cacheable";
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -77,8 +80,9 @@ import { StoriesModule } from './stories/stories.module';
 
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
-import { WishlistModule } from './wishlist/wishlist.module';
+
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
 	imports: [
@@ -92,7 +96,10 @@ import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 			useFactory: (configService: ConfigService) => {
 				return {
 					stores: [
-						new KeyvRedis(configService.get<string>('REDIS_URI')),
+						new Keyv({
+							store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
+						}),
+						// new KeyvRedis(configService.get<string>('REDIS_URI')),
 					],
 				};
 			},
@@ -139,8 +146,8 @@ import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 					InventoryLevel,
 
 					Warehouse,
-                    
-                    Post,
+
+					Post,
 
 					ClientRefreshToken,
 
@@ -185,14 +192,14 @@ import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 		CustomersModule,
 		ClientsModule,
 		InventoryModule,
-        PostsModule,
+		PostsModule,
 		HealthModule,
 		OauthModule,
 		CartModule,
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
-        ScheduleModule.forRoot(),
+		ScheduleModule.forRoot(),
         WishlistModule,
 	],
 	controllers: [AppController],
