@@ -13,6 +13,7 @@ import { ClientsModule } from '../clients/clients.module';
 import { CustomerAddress } from './entities/customer-address.entity';
 import { CustomerAddressesService } from './customer-addresses.service';
 import { CustomerAddressesController } from './customer-addresses.controller';
+import { CustomerAddressesResolver } from './customer-addresses.resolver';
 
 import { CustomersScheduler } from './customers.scheduler';
 
@@ -29,7 +30,8 @@ import { CustomersScheduler } from './customers.scheduler';
 		UsersService,
 		CustomersService,
 		CustomerAddressesService,
-        CustomersScheduler,
+		CustomerAddressesResolver,
+		CustomersScheduler,
 	],
 	controllers: [
 		CustomersController,

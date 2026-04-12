@@ -128,6 +128,9 @@ export class CategoriesService {
 					children: true,
 				},
 			},
+			order: {
+				id: "DESC",
+			},
 			skip: skip,
 			take: take,
 		});

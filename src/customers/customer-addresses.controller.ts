@@ -41,7 +41,7 @@ export class CustomerAddressesController {
 		@Body()
 		body: CreateCustomerAddressDto,
 	): Promise<CustomerAddress> {
-		return this.customerAddressService.createCustomerAddress(req.customer, body);
+		return this.customerAddressService.createCustomerAddress(req.customer.uuid, body);
 	}
 
 	@Get()
@@ -51,11 +51,10 @@ export class CustomerAddressesController {
 		req: Request & {
 			customer: Customer,
 		},
-		@Query("sort") sort: string,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<CustomerAddress>> {
-		return this.customerAddressService.findAll(req.customer, sort, pageNumber, itemsPerPage);
+		return this.customerAddressService.findAllByCustomer(req.customer.uuid, pageNumber, itemsPerPage);
 	}
 
 	@Get(':uuid')
@@ -67,7 +66,7 @@ export class CustomerAddressesController {
 		},
 		@Param('uuid') customerAddressUUID: string,
 	): Promise<CustomerAddress> {
-		return this.customerAddressService.findOne(req.customer, customerAddressUUID);
+		return this.customerAddressService.findOne(req.customer.uuid, customerAddressUUID);
 	}
 
 	@Patch(':uuid')
@@ -80,7 +79,7 @@ export class CustomerAddressesController {
 		@Param('uuid') customerAddressUUID: string,
 		@Body() body: PatchCustomerAddressDto,
 	): Promise<CustomerAddress> {
-		return this.customerAddressService.patchCustomerAddressAsDefault(req.customer, customerAddressUUID, body);
+		return this.customerAddressService.patchCustomerAddressAsDefault(req.customer.uuid, customerAddressUUID, body);
 	}
 
 	@Put(':uuid')
@@ -93,7 +92,7 @@ export class CustomerAddressesController {
 		@Param('uuid') customerAddressUUID: string,
 		@Body() body: UpdateCustomerAddressDto,
 	): Promise<CustomerAddress> {
-		return this.customerAddressService.updateCustomerAddress(req.customer, customerAddressUUID, body);
+		return this.customerAddressService.updateCustomerAddress(req.customer.uuid, customerAddressUUID, body);
 	}
 
 	@Delete(':uuid')
@@ -105,6 +104,6 @@ export class CustomerAddressesController {
 		},
 		@Param('uuid') customerAddressUUID: string,
 	): Promise<void> {
-		return this.customerAddressService.delete(req.customer, customerAddressUUID);
+		return this.customerAddressService.delete(req.customer.uuid, customerAddressUUID);
 	}
 }
