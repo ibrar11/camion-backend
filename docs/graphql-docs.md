@@ -3693,3 +3693,95 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
     }
 }
 ```
+
+## Get Languages
+
+### Request Body
+
+```graphql
+query GetLanguages {
+  getLanguages {
+    uuid
+    name
+    shortCode
+  }
+}
+```
+
+### Response Body
+
+```json
+{
+  "data": {
+    "getLanguages": [
+      {
+        "uuid": "a1b2c3",
+        "name": "English",
+        "shortCode": "en"
+      },
+      {
+        "uuid": "d4e5f6",
+        "name": "Arabic",
+        "shortCode": "ar"
+      }
+    ]
+  }
+}
+```
+
+> ⚠️ If no languages exist, an empty array will be returned.
+
+---
+
+## Get Currencies
+
+### Request Body
+
+```graphql
+query GetCurrencies {
+  getCurrencies {
+    uuid
+    name
+    alphaCode
+  }
+}
+```
+
+### Response Body
+
+```json
+{
+  "data": {
+    "getCurrencies": [
+      {
+        "uuid": "x1y2z3",
+        "name": "United States Dollar",
+        "alphaCode": "USD"
+      },
+      {
+        "uuid": "p4q5r6",
+        "name": "Saudi Riyal",
+        "alphaCode": "SAR"
+      }
+    ]
+  }
+}
+```
+
+> ⚠️ If no currencies exist, an empty array will be returned.
+
+---
+
+## ⚠️ Notes
+
+---
+
+* Languages and currencies are **admin-managed resources**
+* No default data is guaranteed to exist
+* Frontend must handle empty responses safely
+* `shortCode` (languages) is lowercase
+* `alphaCode` (currencies) is uppercase
+* Both fields are unique and enforced at API level
+
+---
+

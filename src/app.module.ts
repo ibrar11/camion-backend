@@ -147,13 +147,9 @@ import { LanguagesModule } from './languages/languages.module';
 
 					Warehouse,
 
-<<<<<<< feature/languages-crud
 					Language,
                     
                     Post,
-=======
-					Post,
->>>>>>> dev
 
 					ClientRefreshToken,
 
@@ -203,12 +199,8 @@ import { LanguagesModule } from './languages/languages.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
-<<<<<<< feature/languages-crud
 		LanguagesModule,
-        ScheduleModule.forRoot(),
-=======
 		ScheduleModule.forRoot(),
->>>>>>> dev
 	],
 	controllers: [AppController],
 	providers: [AppService],
