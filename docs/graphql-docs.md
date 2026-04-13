@@ -324,6 +324,14 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -333,7 +341,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
 
 ```json
 {
-    "query": "17",
+    "query": "25",
     "language":"en",
     "currency": "qar",
     "sort": "best-match",
@@ -349,46 +357,47 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     "data": {
         "searchProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                        "name": "Color",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
-                            },
-                            {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
                             }
                         ]
                     },
                     {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
+                        "name": "Memory",
+                        "position": 1,
+                        "values": [
+                            {
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
+                                "value": "1 TB",
+                                "position": 1
+                            }
+                        ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 1000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -404,35 +413,39 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                        ],
+                        "images": [
                             {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
                             }
                         ]
                     }
@@ -492,6 +505,14 @@ query SearchProducts($query: String!, $language: String!, $currency: String!, $s
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -501,7 +522,7 @@ query SearchProducts($query: String!, $language: String!, $currency: String!, $s
 
 ```json
 {
-    "query": "iphone",
+    "query": "25",
     "language": "en",
     "currency": "qar",
     "sort": "price:low-to-high",
@@ -517,160 +538,44 @@ query SearchProducts($query: String!, $language: String!, $currency: String!, $s
     "data": {
         "searchProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
                         "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
-                    {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
-                            },
-                            {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
-                            }
-                        ]
-                    }
-                ],
-                "variants": [
-                    {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 1000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
-                                }
                             }
                         ]
                     },
                     {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
-                "slug": "iphone-18",
-                "title": "iPhone 18",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "DRAFT",
-                "options": [
-                    {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
-                    {
-                        "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
                         "name": "Memory",
                         "position": 1,
                         "values": [
                             {
-                                "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d",
-                                "value": "2 TB",
-                                "position": 1
-                            },
-                            {
-                                "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d",
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
                                 "value": "1 TB",
-                                "position": 0
+                                "position": 1
                             }
                         ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 3000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
-                        "title": "iPhone 18 Red 2 TB",
-                        "sku": "iphone-18-red-2tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
                             "amount": 4000,
@@ -689,23 +594,43 @@ query SearchProducts($query: String!, $language: String!, $currency: String!, $s
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
                                 }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            }
+                        ],
+                        "images": [
+                            {
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
                             }
                         ]
                     }
                 ]
-            },
-            {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "DRAFT",
-                "options": [],
-                "variants": []
             }
         ]
     }
@@ -761,6 +686,14 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -770,7 +703,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
 
 ```json
 {
-    "query": "iphone",
+    "query": "25",
     "language":"en",
     "currency": "qar",
     "sort": "price:high-to-low",
@@ -786,81 +719,44 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     "data": {
         "searchProducts": [
             {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "DRAFT",
-                "options": [],
-                "variants": []
-            },
-            {
-                "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
-                "slug": "iphone-18",
-                "title": "iPhone 18",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
                         "name": "Color",
                         "position": 0,
-                        "values": []
+                        "values": [
+                            {
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
+                                "position": 1
+                            }
+                        ]
                     },
                     {
-                        "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
                         "name": "Memory",
                         "position": 1,
                         "values": [
                             {
-                                "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d",
-                                "value": "2 TB",
-                                "position": 1
-                            },
-                            {
-                                "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d",
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
                                 "value": "1 TB",
-                                "position": 0
+                                "position": 1
                             }
                         ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 3000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
-                        "title": "iPhone 18 Red 2 TB",
-                        "sku": "iphone-18-red-2tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
                             "amount": 4000,
@@ -879,98 +775,39 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
                                 }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "DRAFT",
-                "options": [
-                    {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
-                        "position": 0,
-                        "values": [
-                            {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
-                                "position": 1
                             },
                             {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            }
+                        ],
+                        "images": [
+                            {
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
                                 "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    }
-                ],
-                "variants": [
-                    {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 1000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                            },
                             {
-                                "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
                             {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
                             }
                         ]
                     }
@@ -1030,6 +867,14 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -1054,46 +899,47 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
     "data": {
         "getRecommendedProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
+                        "name": "Memory",
+                        "position": 1,
+                        "values": [
+                            {
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
+                                "value": "1 TB",
+                                "position": 1
+                            }
+                        ]
                     },
                     {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                        "name": "Color",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
-                            },
-                            {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
                             }
                         ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 1000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -1109,39 +955,54 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                        ],
+                        "images": [
                             {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
                             }
                         ]
                     }
                 ]
+            },
+            {
+                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
+                "slug": "iphone-16",
+                "title": "iPhone 16",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [],
+                "variants": []
             },
             {
                 "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
@@ -1152,12 +1013,6 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
-                    {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
                     {
                         "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
                         "name": "Memory",
@@ -1174,16 +1029,22 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                                 "position": 0
                             }
                         ]
+                    },
+                    {
+                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
+                        "uuid": "f6bd65d8-e1a5-4911-ac90-1cc8f82dbe93",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 3000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -1199,10 +1060,16 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
                     },
                     {
                         "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
@@ -1229,20 +1096,130 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                                     "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
+                        "title": "iPhone 18 Red 1 TB",
+                        "sku": "iphone-18-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 3000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                }
+                            }
+                        ],
+                        "images": []
                     }
                 ]
             },
             {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
+                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                "slug": "iphone-17",
+                "title": "iPhone 17",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
-                "options": [],
-                "variants": []
+                "options": [
+                    {
+                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                        "name": "Storage",
+                        "position": 0,
+                        "values": [
+                            {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                                "value": "2 TB",
+                                "position": 1
+                            },
+                            {
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                                "value": "1 TB",
+                                "position": 0
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
+                    }
+                ],
+                "variants": [
+                    {
+                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-2tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 2000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                }
+                            }
+                        ],
+                        "images": []
+                    }
+                ]
             }
         ]
     }
@@ -1298,6 +1275,14 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -1321,46 +1306,47 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
     "data": {
         "getFeaturedProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
+                        "name": "Memory",
+                        "position": 1,
+                        "values": [
+                            {
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
+                                "value": "1 TB",
+                                "position": 1
+                            }
+                        ]
                     },
                     {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                        "name": "Color",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
-                            },
-                            {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
                             }
                         ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 1000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -1376,39 +1362,54 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                        ],
+                        "images": [
                             {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
                             }
                         ]
                     }
                 ]
+            },
+            {
+                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
+                "slug": "iphone-16",
+                "title": "iPhone 16",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [],
+                "variants": []
             },
             {
                 "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
@@ -1419,12 +1420,6 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
-                    {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
                     {
                         "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
                         "name": "Memory",
@@ -1441,16 +1436,22 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
                                 "position": 0
                             }
                         ]
+                    },
+                    {
+                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
+                        "uuid": "f6bd65d8-e1a5-4911-ac90-1cc8f82dbe93",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 3000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -1466,10 +1467,16 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
                     },
                     {
                         "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
@@ -1496,20 +1503,130 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
                                     "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
+                        "title": "iPhone 18 Red 1 TB",
+                        "sku": "iphone-18-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 3000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                }
+                            }
+                        ],
+                        "images": []
                     }
                 ]
             },
             {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
+                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                "slug": "iphone-17",
+                "title": "iPhone 17",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
-                "options": [],
-                "variants": []
+                "options": [
+                    {
+                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                        "name": "Storage",
+                        "position": 0,
+                        "values": [
+                            {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                                "value": "2 TB",
+                                "position": 1
+                            },
+                            {
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                                "value": "1 TB",
+                                "position": 0
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
+                    }
+                ],
+                "variants": [
+                    {
+                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-2tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 2000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                }
+                            }
+                        ],
+                        "images": []
+                    }
+                ]
             }
         ]
     }
@@ -1565,6 +1682,14 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -1588,46 +1713,47 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
     "data": {
         "getPopularProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
+                        "name": "Memory",
+                        "position": 1,
+                        "values": [
+                            {
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
+                                "value": "1 TB",
+                                "position": 1
+                            }
+                        ]
                     },
                     {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                        "name": "Color",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
-                            },
-                            {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
                             }
                         ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 1000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -1643,39 +1769,54 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                        ],
+                        "images": [
                             {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
                             }
                         ]
                     }
                 ]
+            },
+            {
+                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
+                "slug": "iphone-16",
+                "title": "iPhone 16",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [],
+                "variants": []
             },
             {
                 "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
@@ -1686,12 +1827,6 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
-                    {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
                     {
                         "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
                         "name": "Memory",
@@ -1708,16 +1843,22 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
                                 "position": 0
                             }
                         ]
+                    },
+                    {
+                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
+                        "uuid": "f6bd65d8-e1a5-4911-ac90-1cc8f82dbe93",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 3000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -1733,10 +1874,16 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
                     },
                     {
                         "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
@@ -1763,20 +1910,130 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
                                     "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
+                        "title": "iPhone 18 Red 1 TB",
+                        "sku": "iphone-18-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 3000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                }
+                            }
+                        ],
+                        "images": []
                     }
                 ]
             },
             {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
+                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                "slug": "iphone-17",
+                "title": "iPhone 17",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
-                "options": [],
-                "variants": []
+                "options": [
+                    {
+                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                        "name": "Storage",
+                        "position": 0,
+                        "values": [
+                            {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                                "value": "2 TB",
+                                "position": 1
+                            },
+                            {
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                                "value": "1 TB",
+                                "position": 0
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
+                    }
+                ],
+                "variants": [
+                    {
+                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-2tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 2000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                }
+                            }
+                        ],
+                        "images": []
+                    }
+                ]
             }
         ]
     }
@@ -1832,6 +2089,14 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -1856,46 +2121,47 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
     "data": {
         "getRelatedProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
+                        "name": "Memory",
+                        "position": 1,
+                        "values": [
+                            {
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
+                                "value": "1 TB",
+                                "position": 1
+                            }
+                        ]
                     },
                     {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                        "name": "Color",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
-                            },
-                            {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
                             }
                         ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 1000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -1911,39 +2177,54 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                        ],
+                        "images": [
                             {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
                             }
                         ]
                     }
                 ]
+            },
+            {
+                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
+                "slug": "iphone-16",
+                "title": "iPhone 16",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [],
+                "variants": []
             },
             {
                 "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
@@ -1954,12 +2235,6 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
-                    {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
                     {
                         "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
                         "name": "Memory",
@@ -1976,16 +2251,22 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                                 "position": 0
                             }
                         ]
+                    },
+                    {
+                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
+                        "uuid": "f6bd65d8-e1a5-4911-ac90-1cc8f82dbe93",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 3000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -2001,10 +2282,16 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
                     },
                     {
                         "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
@@ -2031,20 +2318,130 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                                     "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
+                        "title": "iPhone 18 Red 1 TB",
+                        "sku": "iphone-18-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 3000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                }
+                            }
+                        ],
+                        "images": []
                     }
                 ]
             },
             {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
+                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                "slug": "iphone-17",
+                "title": "iPhone 17",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
-                "options": [],
-                "variants": []
+                "options": [
+                    {
+                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                        "name": "Storage",
+                        "position": 0,
+                        "values": [
+                            {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                                "value": "2 TB",
+                                "position": 1
+                            },
+                            {
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                                "value": "1 TB",
+                                "position": 0
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
+                    }
+                ],
+                "variants": [
+                    {
+                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-2tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 2000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                }
+                            }
+                        ],
+                        "images": []
+                    }
+                ]
             }
         ]
     }
@@ -2100,6 +2497,14 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -2123,46 +2528,47 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
     "data": {
         "getRecentlyViewedProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
+                "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+                "slug": "iphone-25",
+                "title": "iPhone 25",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
+                        "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
+                        "name": "Memory",
+                        "position": 1,
+                        "values": [
+                            {
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
+                                "value": "1 TB",
+                                "position": 1
+                            }
+                        ]
                     },
                     {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                        "name": "Color",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
-                            },
-                            {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
                             }
                         ]
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
+                        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 1000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -2178,39 +2584,54 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
-                        },
-                        "optionValues": [
+                        ],
+                        "images": [
                             {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
                             }
                         ]
                     }
                 ]
+            },
+            {
+                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
+                "slug": "iphone-16",
+                "title": "iPhone 16",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [],
+                "variants": []
             },
             {
                 "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
@@ -2221,12 +2642,6 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
                 "options": [
-                    {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
                     {
                         "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
                         "name": "Memory",
@@ -2243,16 +2658,22 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                                 "position": 0
                             }
                         ]
+                    },
+                    {
+                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
                     }
                 ],
                 "variants": [
                     {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
+                        "uuid": "f6bd65d8-e1a5-4911-ac90-1cc8f82dbe93",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 3000,
+                            "amount": 4000,
                             "currencyCode": "QAR"
                         },
                         "weight": {
@@ -2268,10 +2689,16 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
                     },
                     {
                         "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
@@ -2298,20 +2725,130 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                                     "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
                                 }
                             }
-                        ]
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
+                        "title": "iPhone 18 Red 1 TB",
+                        "sku": "iphone-18-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 3000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                }
+                            }
+                        ],
+                        "images": []
                     }
                 ]
             },
             {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
+                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                "slug": "iphone-17",
+                "title": "iPhone 17",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "status": "DRAFT",
-                "options": [],
-                "variants": []
+                "options": [
+                    {
+                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                        "name": "Storage",
+                        "position": 0,
+                        "values": [
+                            {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                                "value": "2 TB",
+                                "position": 1
+                            },
+                            {
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                                "value": "1 TB",
+                                "position": 0
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
+                    }
+                ],
+                "variants": [
+                    {
+                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-2tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 2000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                }
+                            }
+                        ],
+                        "images": []
+                    }
+                ]
             }
         ]
     }
@@ -2366,6 +2903,14 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
   }
 }
@@ -2389,207 +2934,6 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     "data": {
         "getProducts": [
             {
-                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-                "slug": "iphone-17",
-                "title": "iPhone 17",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "DRAFT",
-                "options": [
-                    {
-                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
-                    {
-                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                        "name": "Storage",
-                        "position": 0,
-                        "values": [
-                            {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                                "value": "2 TB",
-                                "position": 1
-                            },
-                            {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                                "value": "1 TB",
-                                "position": 0
-                            }
-                        ]
-                    }
-                ],
-                "variants": [
-                    {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 1000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 2000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
-                "slug": "iphone-18",
-                "title": "iPhone 18",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "DRAFT",
-                "options": [
-                    {
-                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
-                        "name": "Color",
-                        "position": 0,
-                        "values": []
-                    },
-                    {
-                        "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
-                        "name": "Memory",
-                        "position": 1,
-                        "values": [
-                            {
-                                "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d",
-                                "value": "2 TB",
-                                "position": 1
-                            },
-                            {
-                                "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d",
-                                "value": "1 TB",
-                                "position": 0
-                            }
-                        ]
-                    }
-                ],
-                "variants": [
-                    {
-                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
-                        "title": "iPhone 18 Red 1 TB",
-                        "sku": "iphone-18-red-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 3000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
-                        "title": "iPhone 18 Red 2 TB",
-                        "sku": "iphone-18-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 4000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
-                "slug": "iphone-16",
-                "title": "iPhone 16",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "DRAFT",
-                "options": [],
-                "variants": []
-            }
-        ]
-    }
-}
-```
-
-Get Products By Category
-------------------------
-
-### Request Body
-
-```graphql
-{
-    "data": {
-        "getProductsByCategory": [
-            {
                 "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
                 "slug": "iphone-25",
                 "title": "iPhone 25",
@@ -2599,18 +2943,6 @@ Get Products By Category
                 "status": "DRAFT",
                 "options": [
                     {
-                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
-                        "name": "Color",
-                        "position": 0,
-                        "values": [
-                            {
-                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
-                                "value": "Red",
-                                "position": 1
-                            }
-                        ]
-                    },
-                    {
                         "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
                         "name": "Memory",
                         "position": 1,
@@ -2618,6 +2950,18 @@ Get Products By Category
                             {
                                 "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
                                 "value": "1 TB",
+                                "position": 1
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                        "name": "Color",
+                        "position": 0,
+                        "values": [
+                            {
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                                "value": "Red",
                                 "position": 1
                             }
                         ]
@@ -2653,12 +2997,322 @@ Get Products By Category
                                     "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
+                        ],
+                        "images": [
+                            {
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
                         ]
+                    }
+                ]
+            },
+            {
+                "uuid": "3b860068-9742-4fe7-9b0a-7e54e12da078",
+                "slug": "iphone-16",
+                "title": "iPhone 16",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [],
+                "variants": []
+            },
+            {
+                "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f",
+                "slug": "iphone-18",
+                "title": "iPhone 18",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [
+                    {
+                        "uuid": "ba1eae52-e95d-4e23-ab57-1689c072c397",
+                        "name": "Memory",
+                        "position": 1,
+                        "values": [
+                            {
+                                "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d",
+                                "value": "2 TB",
+                                "position": 1
+                            },
+                            {
+                                "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d",
+                                "value": "1 TB",
+                                "position": 0
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "85571dfd-3c69-4d6e-be48-b697da80c422",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
+                    }
+                ],
+                "variants": [
+                    {
+                        "uuid": "f6bd65d8-e1a5-4911-ac90-1cc8f82dbe93",
+                        "title": "iPhone 24 Red 1 TB",
+                        "sku": "iphone-24-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 4000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "27f1d58d-0633-48e2-968c-524f88075dd6",
+                        "title": "iPhone 18 Red 2 TB",
+                        "sku": "iphone-18-red-2tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 4000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "856027a1-0917-490e-a8ff-b67dfcb2e65d"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "40bd6be5-3e37-4cc0-8895-88b6a263eb53",
+                        "title": "iPhone 18 Red 1 TB",
+                        "sku": "iphone-18-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 3000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "30b6c571-b1e6-4265-b2e0-2e1f0464505d"
+                                }
+                            }
+                        ],
+                        "images": []
+                    }
+                ]
+            },
+            {
+                "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                "slug": "iphone-17",
+                "title": "iPhone 17",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [
+                    {
+                        "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                        "name": "Storage",
+                        "position": 0,
+                        "values": [
+                            {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                                "value": "2 TB",
+                                "position": 1
+                            },
+                            {
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                                "value": "1 TB",
+                                "position": 0
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                        "name": "Color",
+                        "position": 0,
+                        "values": []
+                    }
+                ],
+                "variants": [
+                    {
+                        "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-2tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 2000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                                }
+                            }
+                        ],
+                        "images": []
+                    },
+                    {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000
+                        },
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                }
+                            }
+                        ],
+                        "images": []
                     }
                 ]
             }
         ]
     }
+}
+```
+
+Get Products By Category
+------------------------
+
+### Request Body
+
+```graphql
+query GetProductsByCategory($slug: String!, $language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getProductsByCategory(slug: $slug, language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    title(language: $language)
+    brief(language: $language)
+    description(language: $language)
+    descriptionHtml(language: $language)
+    status
+    options {
+      uuid
+      name(language: $language)
+      position
+      values {
+        uuid
+        value(language: $language)
+        position
+      }
+    }
+    variants {
+      uuid
+      title(language: $language)
+      sku
+      barcode
+      price {
+        amount
+        currencyCode
+      }
+      weight {
+        amount
+        unit
+      }
+      dimensions {
+        width
+        height
+        length
+      }
+      optionValues {
+        optionValue {
+          uuid
+        }
+      }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
+    }
+  }
 }
 ```
 
@@ -2744,6 +3398,32 @@ Get Products By Category
                                     "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                                 }
                             }
+                        ],
+                        "images": [
+                            {
+                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                                "alt": "iPhone Photo",
+                                "isFeatured": true,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            },
+                            {
+                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
                         ]
                     }
                 ]
@@ -2803,6 +3483,14 @@ query GetProduct($slug: String, $language: String, $currency: String) {
           uuid
         }
       }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
     }
     reviews {
         uuid
@@ -2833,46 +3521,47 @@ query GetProduct($slug: String, $language: String, $currency: String) {
 {
     "data": {
         "getProduct": {
-            "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
-            "slug": "iphone-17",
-            "title": "iPhone 17",
+            "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
+            "slug": "iphone-25",
+            "title": "iPhone 25",
             "brief": "From $799 or $33.29/mo. per month for 24 months",
             "description": "Your new iPhone awaits. Make it yours.",
             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
             "status": "DRAFT",
             "options": [
                 {
-                    "uuid": "64862084-098d-452d-a358-cf10c2a41603",
-                    "name": "Storage",
+                    "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
+                    "name": "Color",
                     "position": 0,
                     "values": [
                         {
-                            "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
-                            "value": "1 TB",
-                            "position": 0
-                        },
-                        {
-                            "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
-                            "value": "2 TB",
+                            "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
+                            "value": "Red",
                             "position": 1
                         }
                     ]
                 },
                 {
-                    "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
-                    "name": "Color",
-                    "position": 0,
-                    "values": []
+                    "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
+                    "name": "Memory",
+                    "position": 1,
+                    "values": [
+                        {
+                            "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
+                            "value": "1 TB",
+                            "position": 1
+                        }
+                    ]
                 }
             ],
             "variants": [
                 {
-                    "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                    "title": "iPhone 17 Red 1 TB",
-                    "sku": "iphone-17-red-1tb",
+                    "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+                    "title": "iPhone 24 Red 1 TB",
+                    "sku": "iphone-24-red-1tb",
                     "barcode": "10000",
                     "price": {
-                        "amount": 1000,
+                        "amount": 4000,
                         "currencyCode": "QAR"
                     },
                     "weight": {
@@ -2888,35 +3577,39 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "optionValues": [
                         {
                             "optionValue": {
-                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
+                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
+                            }
+                        },
+                        {
+                            "optionValue": {
+                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
                             }
                         }
-                    ]
-                },
-                {
-                    "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
-                    "title": "iPhone 17 Red 1 TB",
-                    "sku": "iphone-17-red-2tb",
-                    "barcode": "10000",
-                    "price": {
-                        "amount": 2000,
-                        "currencyCode": "QAR"
-                    },
-                    "weight": {
-                        "amount": 1,
-                        "unit": "kg"
-                    },
-                    "dimensions": {
-                        "width": 1000,
-                        "height": 1000,
-                        "length": 1000,
-                        "unit": "in"
-                    },
-                    "optionValues": [
+                    ],
+                    "images": [
                         {
-                            "optionValue": {
-                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
-                            }
+                            "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                            "alt": "",
+                            "isFeatured": false,
+                            "position": 0
+                        },
+                        {
+                            "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+                            "alt": "",
+                            "isFeatured": false,
+                            "position": 0
+                        },
+                        {
+                            "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+                            "alt": "iPhone Photo",
+                            "isFeatured": true,
+                            "position": 0
                         }
                     ]
                 }

@@ -144,6 +144,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 			},
 			order: {
@@ -182,6 +183,7 @@ export class ProductsService {
 
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
+			.leftJoinAndSelect('variants.images', 'images')
 			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -221,6 +223,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 			},
 			order: {
@@ -280,6 +283,7 @@ export class ProductsService {
 							optionValues: {
 								optionValue: true,
 							},
+							images: true,
 						},
 					},
 					order: {
@@ -304,6 +308,7 @@ export class ProductsService {
 
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
+					.leftJoinAndSelect('variants.images', 'images')
 					.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 					.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -333,6 +338,7 @@ export class ProductsService {
 
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
+					.leftJoinAndSelect('variants.images', 'images')
 					.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 					.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -395,6 +401,7 @@ export class ProductsService {
 						optionValues: {
 							optionValue: true,
 						},
+						images: true,
 					},
 				},
 				order: {
@@ -413,6 +420,7 @@ export class ProductsService {
 
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
+			.leftJoinAndSelect('variants.images', 'images')
 			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -445,6 +453,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 			},
 			order: {
@@ -479,6 +488,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 			},
 			order: {
@@ -513,6 +523,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 			},
 			order: {
@@ -564,6 +575,7 @@ export class ProductsService {
 						optionValues: {
 							optionValue: true,
 						},
+						images: true,
 					},
 				},
 				order: {
@@ -582,6 +594,7 @@ export class ProductsService {
 
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
+			.leftJoinAndSelect('variants.images', 'images')
 			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -614,6 +627,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 			},
 			order: {
@@ -644,6 +658,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 				reviews: {
 					customer: true,
@@ -680,6 +695,7 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 				reviews: {
 					customer: true,
