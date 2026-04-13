@@ -14,9 +14,8 @@ Follow the steps below to manage languages in the system.
 
 1. Create a language.
 2. Retrieve languages.
-3. Retrieve a single language.
-4. Update language details.
-5. Delete a language.
+3. Update language details.
+4. Delete a language.
 
 > [!IMPORTANT]
 > You must include your access token as a `Bearer` token in the Authorization header. Your account must be active while making these requests.
@@ -85,6 +84,12 @@ GET /v1/languages HTTP/1.1
 ]
 ```
 
+> ⚠️ If no languages have been created yet, this endpoint will return an empty array:
+
+```json
+[]
+```
+
 ---
 
 ## Update Language
@@ -137,19 +142,23 @@ DELETE /v1/languages/<language-uuid> HTTP/1.1
 ---
 
 * `shortCode` must be unique (e.g., en, ar, fr)
-* `shortCode` is automatically converted to lowercase
-* Duplicate `shortCode` will result in a **409 Conflict error**
-* Default languages are automatically seeded on application startup
+* `name` must be unique
+* `shortCode` is automatically normalized to lowercase
+* Duplicate `shortCode` or `name` will result in a **409 Conflict error**
+* Updating a language with an existing `shortCode` (belonging to another language) will result in a **409 Conflict error**
+* Languages are **admin-managed resources** and must be created via API or setup process
 
 ---
 
-## 💡 Example Seeded Languages
+## 💡 Initial Data
 
 ---
 
-The system initializes with the following languages:
+No default languages are seeded automatically.
 
-* en — English
-* ar — Arabic
+If required, initial languages (e.g., en, ar, etc.) should be:
+
+* Created manually via admin APIs, or
+* Inserted through database migrations or setup scripts
 
 ---

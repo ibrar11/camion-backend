@@ -4,7 +4,6 @@ import {
 	ConflictException,
 	Injectable,
 	NotFoundException,
-	OnApplicationBootstrap,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
@@ -15,34 +14,12 @@ import { UpdateLanguageDto } from "./dtos/UpdateLanguageDto";
 
 import { Language } from "./entities/language.entity";
 
-const SEED_LANGUAGES = [
-	{ name: "English", shortCode: "en" },
-	{ name: "Arabic", shortCode: "ar" },
-];
-
 @Injectable()
-export class LanguagesService implements OnApplicationBootstrap {
+export class LanguagesService {
 	constructor(
 		@InjectRepository(Language)
 		private readonly languageRepository: Repository<Language>,
 	) {}
-
-	/**
-	 * Seed default languages on application bootstrap
-	 * @returns Promise<void>
-	 */
-	async onApplicationBootstrap(): Promise<void> {
-		for (const seed of SEED_LANGUAGES) {
-			const exists = await this.languageRepository.findOneBy({ shortCode: seed.shortCode });
-			if (!exists) {
-				const language = new Language();
-				language.uuid = crypto.randomUUID();
-				language.name = seed.name;
-				language.shortCode = seed.shortCode;
-				await this.languageRepository.save(language);
-			}
-		}
-	}
 
 	/**
 	 * Create a new language
@@ -50,7 +27,9 @@ export class LanguagesService implements OnApplicationBootstrap {
 	 * @returns Language
 	 */
 	async create(body: CreateLanguageDto): Promise<Language> {
-		const existing = await this.languageRepository.findOneBy({ shortCode: body.shortCode });
+		const shortCode = body.shortCode.trim().toLowerCase();
+
+		const existing = await this.languageRepository.findOneBy({ shortCode });
 		if (existing) {
 			throw new ConflictException({
 				error: "A language with this short code already exists.",
@@ -60,7 +39,7 @@ export class LanguagesService implements OnApplicationBootstrap {
 		const language = new Language();
 		language.uuid = crypto.randomUUID();
 		language.name = body.name.trim();
-		language.shortCode = body.shortCode.trim().toLowerCase();
+		language.shortCode = shortCode;
 
 		return this.languageRepository.save(language);
 	}
@@ -97,7 +76,17 @@ export class LanguagesService implements OnApplicationBootstrap {
 		}
 
 		if (body.shortCode !== undefined) {
-			language.shortCode = body.shortCode.trim().toLowerCase();
+			const shortCode = body.shortCode.trim().toLowerCase();
+
+			const existing = await this.languageRepository.findOneBy({ shortCode });
+
+			if (existing && existing.uuid !== uuid) {
+				throw new ConflictException({
+					error: "A language with this short code already exists.",
+				});
+			}
+
+			language.shortCode = shortCode;
 		}
 
 		return this.languageRepository.save(language);
