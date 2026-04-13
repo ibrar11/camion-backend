@@ -137,8 +137,10 @@ type ProductVariant {
 type ProductVariantImage {
   alt: String!
   dimensions: ProductVariantImageDimensions!
+  imageUrl: String!
+  isFeatured: Boolean!
   position: Int!
-  uri: String!
+  thumbnailUrl: String!
   uuid: String!
 }
 
