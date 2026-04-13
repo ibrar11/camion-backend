@@ -22,6 +22,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import KeyvRedis from "@keyv/redis";
 
+import { Keyv } from "keyv";
+import { Cacheable, CacheableMemory } from "cacheable";
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -93,7 +96,10 @@ import { LanguagesModule } from './languages/languages.module';
 			useFactory: (configService: ConfigService) => {
 				return {
 					stores: [
-						new KeyvRedis(configService.get<string>('REDIS_URI')),
+						new Keyv({
+							store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
+						}),
+						// new KeyvRedis(configService.get<string>('REDIS_URI')),
 					],
 				};
 			},
@@ -141,9 +147,13 @@ import { LanguagesModule } from './languages/languages.module';
 
 					Warehouse,
 
+<<<<<<< feature/languages-crud
 					Language,
                     
                     Post,
+=======
+					Post,
+>>>>>>> dev
 
 					ClientRefreshToken,
 
@@ -186,15 +196,19 @@ import { LanguagesModule } from './languages/languages.module';
 		CustomersModule,
 		ClientsModule,
 		InventoryModule,
-        PostsModule,
+		PostsModule,
 		HealthModule,
 		OauthModule,
 		CartModule,
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+<<<<<<< feature/languages-crud
 		LanguagesModule,
         ScheduleModule.forRoot(),
+=======
+		ScheduleModule.forRoot(),
+>>>>>>> dev
 	],
 	controllers: [AppController],
 	providers: [AppService],

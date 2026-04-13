@@ -1,4 +1,7 @@
+import crypto from "node:crypto";
+
 import {
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -7,18 +10,22 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
+import { S3Service } from "src/common/s3.service";
+
 import { getSkipAndTake } from "../common/pagination";
 
 import { UpdateProductVariantImageDto } from "./dtos/UpdateProductVariantImageDto";
 
 import { ProductVariant } from "./entities/product-variant.entity";
-import { ProductVariantImage } from "./entities/product-variant-image.entity";
+import { ProductVariantImage, ProductVariantImageDimensions } from "./entities/product-variant-image.entity";
+
 
 @Injectable()
 export class ProductVariantImageService {
 	private readonly logger = new Logger(ProductVariantImageService.name);
 
 	constructor(
+		@Inject(S3Service) private readonly s3Service: S3Service,
 		@InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantImage) private readonly productVariantImageRepository: Repository<ProductVariantImage>,
 	) { }
@@ -27,9 +34,10 @@ export class ProductVariantImageService {
 	 * Creates an image of a product variant
 	 *
 	 * @param variantUUID
+	 * @param file
 	 * @returns
 	 */
-	async createProductVariantImage(variantUUID: string): Promise<ProductVariantImage> {
+	async createProductVariantImage(variantUUID: string, file: Express.Multer.File): Promise<ProductVariantImage> {
 		this.logger.log(`Attempting to create images of product variant: ${variantUUID}`);
 
 		// Find the variant
@@ -40,14 +48,19 @@ export class ProductVariantImageService {
 			});
 		}
 
-		// TODO: Upload the image to s3
+		// Upload the image to s3
+		const params = await this.s3Service.uploadFile("product-images", file);
 
 		// Create the product variant image
 		const productVariantImage = new ProductVariantImage();
+		productVariantImage.uuid = crypto.randomUUID();
 		productVariantImage.variant = variant;
 		productVariantImage.alt = "";
-		productVariantImage.uri = "";
+		productVariantImage.imageUrl = params.url;
+		productVariantImage.thumbnailUrl = params.url;
 		productVariantImage.position = 0;
+		productVariantImage.isFeatured = false;
+		productVariantImage.dimensions = new ProductVariantImageDimensions();
 		productVariantImage.dimensions.height = 1000;
 		productVariantImage.dimensions.width = 1000;
 		return this.productVariantImageRepository.save(productVariantImage);
@@ -82,6 +95,9 @@ export class ProductVariantImageService {
 				variant: {
 					id: variant.id,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
@@ -128,6 +144,7 @@ export class ProductVariantImageService {
 		// Update the variant image
 		variantImage.alt = body.alt.trim();
 		variantImage.position = body.position;
+		variantImage.isFeatured = body.isFeatured;
 		return this.productVariantImageRepository.save(variantImage);
 	}
 
