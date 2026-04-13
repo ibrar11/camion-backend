@@ -216,7 +216,7 @@ Patch Customer Address
 ----------------------
 
 ```http
-PATCH /v1/customer-addresses/c394f3b0-e9a1-4467-9bfc-753f57b1869b HTTP/1.1
+PATCH /v1/customer-addresses/<customer-address-uuid> HTTP/1.1
 ```
 
 ### Request Body
