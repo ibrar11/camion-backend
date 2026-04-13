@@ -81,6 +81,8 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { NewsletterModule } from "./newsletter/newsletter.module";
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -194,6 +196,7 @@ import { BannersModule } from './banners/banners.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+        NewsletterModule,
 		ScheduleModule.forRoot(),
 	],
 	controllers: [AppController],
