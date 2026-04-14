@@ -1,3 +1,5 @@
+import crypto, { UUID } from "node:crypto";
+
 import { CreatePaymentDto } from "./dtos/CreatePaymentDto";
 
 export interface PaymentStrategy {
@@ -73,5 +75,25 @@ export interface ApiResponse<T> {
     message: string;
     data: T;
 }
+export interface signaturePayload {
+    Uid: UUID;
+    KeyId: string | undefined;
+    Amount: string;
+    FirstName: string;
+    LastName: string;
+    Phone: string;
+    Email: string;
+    Street: string;
+    City: string;
+    State: string;
+    Country: string;
+    PostalCode: string;
+    TransactionId: string;
+    Custom1: string;
+}
 
-export type CreatePaymentResponse = ApiResponse<InitiatePaymentResponse>;
+export interface skipcashWebhookResponse {
+    received: boolean;
+    status?: string;
+    transactionId?: string;
+}

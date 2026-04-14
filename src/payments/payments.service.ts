@@ -15,7 +15,7 @@ import { PaymentStrategyFactory } from "./factories/PaymentStrategyFactory";
 
 import { PaymentStatus } from "./enums/PaymentStatus";
 
-import { CreatePaymentResponse } from "./types";
+import { InitiatePaymentResponse } from "./types";
 
 @Injectable()
 export class PaymentsService {
@@ -32,7 +32,7 @@ export class PaymentsService {
 	 * @param dto
 	 * @returns
 	 */
-    async createPayment(dto: CreatePaymentDto): Promise<CreatePaymentResponse> {
+    async createPayment(dto: CreatePaymentDto): Promise<InitiatePaymentResponse> {
         try {
             // Create payment transaction
             const transaction = this.paymentRepo.create({
@@ -55,11 +55,7 @@ export class PaymentsService {
 
             await this.paymentRepo.save(transaction);
 
-            return {
-                success: true,
-                message: "Payment initiated",
-                data: result,
-            };
+            return result;
         } catch (error: any) {
             this.logger.error(`Error creating payment: ${error?.message}`);
             throw new InternalServerErrorException({

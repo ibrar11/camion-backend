@@ -25,12 +25,20 @@ import { PaymentStrategyFactory } from './factories/PaymentStrategyFactory';
 import { SkipCashStrategy } from './strategies/SkipcashStrategy';
 import { SkipCashAdapter } from './adapters/SkipcashAdapter';
 
+import { Client } from 'src/clients/entities/client.entity';
+import { ClientsService } from 'src/clients/clients.service';
+
+import { ClientRefreshToken } from 'src/oauth/entities/oauth-refresh-token.entity';
+import { OauthService } from 'src/oauth/oauth.service';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
             User,
             Customer,
-            PaymentTransaction
+            PaymentTransaction,
+            Client,
+            ClientRefreshToken,
         ]),
     ],
     providers: [
@@ -41,6 +49,8 @@ import { SkipCashAdapter } from './adapters/SkipcashAdapter';
         SkipCashAdapter,
         UsersService,
         CustomersService,
+        ClientsService,
+        OauthService,
     ],
     controllers: [
         PaymentsController,

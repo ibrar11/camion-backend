@@ -1,12 +1,16 @@
 import crypto from "node:crypto";
 
+import { SkipcashWebhookDto } from "src/payments/dtos/SkipcashWebhookDto";
+
+import { signaturePayload } from "src/payments/types";
+
 /**
  * Create signature for skipcash authorization
  *
  * @param payload
  * @returns
  */
-export function generateSignature(payload: any): string {
+export function generateSignature(payload: signaturePayload): string {
     const orderedFields = [
         'Uid', 'KeyId', 'Amount', 'FirstName', 'LastName',
         'Phone', 'Email', 'Street', 'City', 'State',
@@ -31,7 +35,7 @@ export function generateSignature(payload: any): string {
  * @param receivedSignature
  * @returns
  */
-export function verifySkipcashSignature(payload: any, receivedSignature: string): boolean {
+export function verifySkipcashSignature(payload: SkipcashWebhookDto, receivedSignature: string): boolean {
     const webhookKey = process.env.SKIPCASH_WEBHOOK_KEY || "";
 
     const orderedFields = [

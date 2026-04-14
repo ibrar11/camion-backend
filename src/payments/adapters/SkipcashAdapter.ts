@@ -2,8 +2,8 @@ import crypto from "node:crypto";
 
 import {
     Injectable,
+    InternalServerErrorException,
     Logger,
-    NotFoundException,
 } from "@nestjs/common";
 
 import { generateSignature } from "src/common/skipcash";
@@ -74,7 +74,9 @@ export class SkipCashAdapter {
                     message = "Forbidden: Signature does not match or invalid credentials";
                 }
 
-                throw new NotFoundException(message);
+                throw new InternalServerErrorException({
+                    error: message,
+                });
             }
 
             return {
@@ -103,7 +105,9 @@ export class SkipCashAdapter {
                 customMessage = 'Payment service temporarily unavailable. Please try again in a few minutes';
             }
 
-            throw new NotFoundException(customMessage);
+            throw new InternalServerErrorException({
+                error: customMessage,
+            });
         }
     }
 }

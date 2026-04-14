@@ -14,6 +14,8 @@ import { SkipcashWebhookDto } from "./dtos/SkipcashWebhookDto";
 import { PaymentTransaction } from "./entities/payment-transaction.entity";
 import { PaymentStatus } from "./enums/PaymentStatus";
 
+import { skipcashWebhookResponse } from "./types";
+
 @Injectable()
 export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
@@ -23,7 +25,7 @@ export class PaymentsWebhookService {
         private paymentRepo: Repository<PaymentTransaction>,
     ) { }
 
-    async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string) {
+    async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
         try {
             this.logger.log(
                 `SkipCash Webhook received: ${JSON.stringify(payload)}`,
@@ -33,7 +35,9 @@ export class PaymentsWebhookService {
 
             if (!isValid) {
                 this.logger.warn("Invalid SkipCash webhook signature");
-                throw new UnauthorizedException("Invalid signature");
+                throw new UnauthorizedException({
+                    error: "Invalid signature"
+                });
             }
 
             const {
@@ -116,7 +120,7 @@ export class PaymentsWebhookService {
             };
         } catch (error: any) {
             this.logger.error(
-                `Error processing SkipCash webhook: ${error.message}`,
+                `Error processing SkipCash webhook: ${error.message || error}`,
             );
 
             return {
