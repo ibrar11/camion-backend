@@ -144,3 +144,57 @@ GET /v1/procurement/<product-id> HTTP/1.1
     }
 }
 ```
+
+Import Products
+------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+Post /v1/procurement/import HTTP/1.1
+```
+Query Parameters
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+body | Yes | Array<String> | Array of external Ids
+
+### Request Body
+```json
+[
+    "801224173488",
+    "801224174564",
+]
+```
+
+### Response Body
+```json
+{
+    "success": [
+        {
+            "externalId": "801224174564",
+            "product": {
+                "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
+                "slug": "iphone-17",
+                "title": "iPhone 17",
+                "titleAr": "آيفون 17",
+                "brief": "From $799 or $33.29/mo. per month for 24 months",
+                "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+                "description": "Your new iPhone awaits. Make it yours.",
+                "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+                "status": "DRAFT",
+                "options": [],
+                "variants": []
+            }
+        }
+    ],
+    "failed": [
+        {
+            "id": "801224174564",
+            "reason": "failed to add product options"
+        }
+    ]
+}
+```

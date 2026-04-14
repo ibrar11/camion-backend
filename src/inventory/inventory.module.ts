@@ -102,6 +102,7 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 		ProductOptionResolver,
 		ProductOptionValueResolver,
 		ProductVariantResolver,
+		S3Service,
 	],
 	controllers: [
 		CategoriesController,

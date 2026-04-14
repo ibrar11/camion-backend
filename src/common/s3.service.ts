@@ -50,7 +50,7 @@ export class S3Service {
 
 		return {
 			key: key,
-			url: `https://${this.configService.get("AWS_S3_BUCKET")}.s3.${this.configService.get("AWS_S3_REGION")}.amazonaws.com/${key}`,
+			url: `https://${this.configService.get("AWS_S3_BUCKET")}.s3.${this.configService.get("AWS_S3_REGION")}.amazonaws.com/${prefix}/${key}`,
 		};
 	}
 }
