@@ -81,6 +81,9 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { Currency } from "./currencies/entities/currency.entity";
+import { CurrenciesModule } from './currencies/currencies.module';
+
 import { Language } from "./languages/entities/language.entity";
 import { LanguagesModule } from './languages/languages.module';
 
@@ -147,6 +150,8 @@ import { LanguagesModule } from './languages/languages.module';
 
 					Warehouse,
 
+					Currency,
+
 					Language,
                     
                     Post,
@@ -199,6 +204,7 @@ import { LanguagesModule } from './languages/languages.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+		CurrenciesModule,
 		LanguagesModule,
 		ScheduleModule.forRoot(),
 	],

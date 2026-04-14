@@ -23,6 +23,14 @@ type Category {
   uuid: String!
 }
 
+type Currency {
+  alphaCode: String!
+  createdAt: DateTime!
+  name: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
 type Customer {
   emailAddress: String
   fullName: String!
@@ -164,6 +172,7 @@ type ProductVariantOptionValue {
 type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
+  getCurrencies: [Currency!]!
   getCurrentCustomer: Customer!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
