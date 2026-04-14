@@ -14,10 +14,9 @@ type Banner {
 }
 
 type CartItem {
-  customer: Customer!
   product: Product!
-  quantity: Float!
-  subTotal: Float!
+  quantity: Int!
+  subTotal: Money!
   uuid: String!
   variant: ProductVariant!
 }
@@ -49,8 +48,8 @@ type EmojiElement {
 }
 
 type GqlCartResponse {
-  cartCount: Int!
-  cartItems: [CartItem!]!
+  count: Int!
+  items: [CartItem!]!
 }
 
 type LinkElement {

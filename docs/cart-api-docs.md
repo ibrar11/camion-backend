@@ -154,7 +154,7 @@ Update Cart Item
 ----------------
 
 ```http
-PATCH /v1/cart-items/update/<cart-item-uuid> HTTP/1.1
+PATCH /v1/cart-items/<cart-item-uuid> HTTP/1.1
 ```
 
 Parameter Name | Required | Type | Description
@@ -220,12 +220,12 @@ Remove Item from Cart
 ----------------
 
 ```http
-DELETE /v1/cart-items/remove/<cart-item-uuid> HTTP/1.1
+DELETE /v1/cart-items/<cart-item-uuid> HTTP/1.1
 ```
 
 Remove Item from Cart
 ----------------
 
 ```http
-DELETE /v1/cart HTTP/1.1
+DELETE /v1/cart-items HTTP/1.1
 ```

@@ -6,7 +6,10 @@ import {
 
 import { Product } from "src/inventory/entities/product.entity";
 import { ProductVariantImage } from "src/inventory/entities/product-variant-image.entity";
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { 
+    Money, 
+    ProductVariant 
+} from "src/inventory/entities/product-variant.entity";
 import { CartItem } from "./entities/cart-items.entity";
 
 export interface ApiResponse<T> {
@@ -21,7 +24,7 @@ export interface UpdateCartResponse {
     product: Product;
     variant: ProductVariant;
     quantity: number;
-    subTotal: number;
+    subTotal: Money;
 }
 export interface ValidatedCartItem {
     uuid: string;
@@ -31,7 +34,7 @@ export interface ValidatedCartItem {
     variant: ProductVariant;
     title: string;
     image: ProductVariantImage[];
-    subTotal: number;
+    subTotal: Money;
     availableStock: number;
     isAvailable: boolean;
     createdAt: Date;
@@ -50,8 +53,8 @@ export type RemoveCartItemResponse = ApiResponse<RemoveCartItemResponseData>;
 @ObjectType()
 export class GqlCartResponse {
     @Field(() => [CartItem])
-    cartItems: CartItem[];
+    items: FindCartResponse;
 
     @Field(() => Int)
-    cartCount: number;
+    count: number;
 }

@@ -13,40 +13,37 @@ import {
 import { Customer } from "src/customers/entities/customer.entity";
 import { CartItem } from "./entities/cart-items.entity";
 
-import { CartService } from "./cart.service";
+import { CartItemsService } from "./cart.service";
 
 import { GqlAuthGuard } from "src/auth/gql.guard";
 
-import { 
-    FindCartResponse, 
-    GqlCartResponse 
-} from "./types";
+import { GqlCartResponse } from "./types";
 
 @UseGuards(GqlAuthGuard)
 @Resolver(() => CartItem)
 export class CartResolver {
     constructor(
-        private readonly cartService: CartService,
+        private readonly cartService: CartItemsService,
     ) { }
 
     @Query(() => GqlCartResponse)
     async cart(
         @Context() context: any,
-    ): Promise<{ cartCount: number, cartItems: FindCartResponse }> {
+    ): Promise<GqlCartResponse> {
 
         const customer: Customer = context.req.customer;
 
         if (!customer) {
-            throw new BadRequestException(
-                'Customer not found'
-            )
+            throw new BadRequestException({
+                error: "Failed to find the customer. Please check and try again",
+            });
         }
 
         const cart = await this.cartService.findCart(customer);
 
         return {
-            cartItems: cart,
-            cartCount: cart.length ?? 0
+            items: cart,
+            count: cart.length ?? 0
         };
     }
 }

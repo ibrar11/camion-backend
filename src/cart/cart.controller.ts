@@ -1,12 +1,12 @@
 import {
-	Body,
-	Controller,
-	Delete,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Inject,
-	Post,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Inject,
+    Post,
     Patch,
     UseGuards,
     Param
@@ -26,25 +26,25 @@ import { CreateCartItemDto } from './dtos/CreateCartItemDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
 
 import { CartItem } from './entities/cart-items.entity';
-import { CartService } from './cart.service';
+import { CartItemsService } from './cart.service';
 
 import { Customer } from 'src/customers/entities/customer.entity';
 import { GetCustomer } from 'src/customers/customer.decorator';
 
-import { 
-    FindCartResponse, 
-    UpdateCartResponse 
+import {
+    FindCartResponse,
+    UpdateCartResponse
 } from './types';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/cart-items')
-export class CartController {
+export class CartItemsController {
     constructor(
-        @Inject(CartService)
-        private readonly cartService: CartService,
-    ) {}
+        @Inject(CartItemsService)
+        private readonly cartService: CartItemsService,
+    ) { }
 
-    @Roles(UserRole.SuperAdmin,UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     addToCart(
@@ -64,7 +64,7 @@ export class CartController {
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Guest)
-    @Patch('update/:uuid')
+    @Patch(':uuid')
     @HttpCode(HttpStatus.OK)
     updateCart(
         @Param('uuid') uuid: string,
@@ -75,7 +75,7 @@ export class CartController {
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Guest)
-    @Delete('remove/:uuid')
+    @Delete(':uuid')
     @HttpCode(HttpStatus.OK)
     async removeFromCart(
         @Param('uuid') uuid: string,
@@ -90,5 +90,5 @@ export class CartController {
         @GetCustomer() customer: Customer,
     ): Promise<void> {
         return this.cartService.clearCart(customer);
-    } 
+    }
 }

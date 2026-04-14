@@ -9,8 +9,8 @@ import { Customer } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
 
 import { CartItem } from './entities/cart-items.entity';
-import { CartService } from './cart.service';
-import { CartController } from './cart.controller';
+import { CartItemsService } from './cart.service';
+import { CartItemsController } from './cart.controller';
 
 import { Product } from 'src/inventory/entities/product.entity';
 
@@ -32,11 +32,11 @@ import { CartResolver } from './cart.resolver';
         ClientsModule,
     ],
     providers: [
-        CartService,
+        CartItemsService,
         UsersService,
         CustomersService,
         CartResolver,
     ],
-    controllers: [CartController]
+    controllers: [CartItemsController]
 })
 export class CartModule { }

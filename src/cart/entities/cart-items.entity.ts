@@ -1,5 +1,6 @@
 import { 
     Field,
+    Int,
     ObjectType 
 } from "@nestjs/graphql";
 
@@ -16,7 +17,10 @@ import { Exclude } from "class-transformer";
 
 import { Product } from "src/inventory/entities/product.entity";
 
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { 
+    Money, 
+    ProductVariant 
+} from "src/inventory/entities/product-variant.entity";
 
 import { Customer } from "src/customers/entities/customer.entity";
 
@@ -31,7 +35,6 @@ export class CartItem {
     @Column({ type: "uuid", nullable: false, unique: true, })
     uuid: string;
 
-    @Field(() => Customer)
     @ManyToOne(() => Customer, (customer) => customer.cartItems, { onDelete: "CASCADE" })
     customer: Customer;
 
@@ -43,13 +46,13 @@ export class CartItem {
     @ManyToOne(() => ProductVariant, (variant) => variant.cartItems, { onDelete: "CASCADE" })
     variant: ProductVariant;
 
-    @Field()
+    @Field(() => Int)
     @Column({ type: "int", default: 1 })
     quantity: number;
 
-    @Field()
-    @Column({ type: "decimal", precision: 10, scale: 2 })
-    subTotal: number;
+    @Field(() => Money)
+    @Column(() => Money)
+    subTotal: Money;
 
     @Exclude()
     @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
