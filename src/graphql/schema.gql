@@ -54,6 +54,14 @@ type EmojiElement {
   content: String!
 }
 
+type Language {
+  createdAt: DateTime!
+  name: String!
+  shortCode: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
 type LinkElement {
   content: String!
 }
@@ -159,6 +167,7 @@ type Query {
   getCurrentCustomer: Customer!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getLanguages: [Language!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!

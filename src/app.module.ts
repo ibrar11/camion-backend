@@ -81,6 +81,9 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { Language } from "./languages/entities/language.entity";
+import { LanguagesModule } from './languages/languages.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -144,7 +147,9 @@ import { BannersModule } from './banners/banners.module';
 
 					Warehouse,
 
-					Post,
+					Language,
+                    
+                    Post,
 
 					ClientRefreshToken,
 
@@ -194,6 +199,7 @@ import { BannersModule } from './banners/banners.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+		LanguagesModule,
 		ScheduleModule.forRoot(),
 	],
 	controllers: [AppController],
