@@ -14,7 +14,7 @@ import { CurrencyCode } from "../enums/CurrencyCode";
 import { ProductVariant } from "./product-variant.entity";
 
 export class Money {
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	amount: number;
 
 	@Column({
@@ -34,7 +34,7 @@ export class ProductVariantInventoryItem {
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
-	@Column({ type: "numeric", })
+	@Column({ type: "integer", })
 	quantity: number;
 
 	@Column({ type: "boolean", })

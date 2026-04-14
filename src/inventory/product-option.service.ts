@@ -48,7 +48,8 @@ export class ProductOptionService {
 		const productOption = new ProductOption();
 		productOption.uuid = crypto.randomUUID();
 		productOption.product = product;
-		productOption.name = body.name.trim();
+		productOption.nameEn = body.name.en.trim();
+		productOption.nameAr = body.name.ar.trim();
 		productOption.position = body.position;
 		return this.productOptionRepository.save(productOption);
 	}
@@ -124,7 +125,8 @@ export class ProductOptionService {
 		}
 
 		// Update the product option
-		productOption.name = body.name.trim();
+		productOption.nameEn = body.name.en.trim();
+		productOption.nameAr = body.name.ar.trim();
 		productOption.position = body.position;
 		return this.productOptionRepository.save(productOption);
 	}

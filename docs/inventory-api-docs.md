@@ -13,6 +13,7 @@ Follow the following steps to create your first product. Your can find the docum
 3. Create your product options.
 4. Create your product option values.
 5. Create your product variants.
+6. Create your product variant images.
 
 Warehouse API
 =============
@@ -186,6 +187,167 @@ Delete Warehouse
 DELETE /v1/warehouses/<warehouse-uuid> HTTP/1.1
 ```
 
+Categories API
+==============
+Categories are a way to organize products into logical groups so both your system and your users can understand what product belongs where.
+
+> [!IMPORTANT]
+> You must include your access token as a `Bearer` token in the Authorization header. Your account must be active while making these requests.
+
+Create a Category
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+POST /v1/categories HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+parentUUID | Yes | String | The UUID of the parent category. Must be null for root categories
+slug | Yes | String | A unique string that identifies the category
+name.en | Yes | String | The name of the category in English
+name.ar | Yes | String | The name of the category in Arabic
+pricingFactor | Yes | Number | The pricing factor of the category
+
+### Request Body
+```json
+{
+    "parentUUID": null,
+    "slug": "sneakers",
+    "name": {
+        "en": "Sneakers",
+        "ar": "أحذية رياضية"
+    },
+    "pricingFactor": 1.2
+}
+```
+
+### Response Body
+```json
+{
+    "uuid": "5d32adfe-cdaa-4d19-9a3b-c2374b2a0aab",
+    "slug": "sneakers",
+    "nameEn": "sneakers",
+    "nameAr": "أحذية رياضية",
+    "pricingFactor": 1.2,
+    "parent": null
+}
+```
+
+Retrieve Categories
+-------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`, `User`
+
+```http
+GET /v1/categories HTTP/1.1
+```
+
+### Query Parameters
+Name | Description | Default
+-----|-------------|--------
+filters | A JSON string containing your search term, or any advanced search parameters. | `{}`
+sort | The order in which we need to sort results |
+pageNumber | The current page number | 1
+itemsPerPage | The number of results to retrieve in the response | 100
+
+### Response Body
+```json
+[
+    {
+        "uuid": "5d32adfe-cdaa-4d19-9a3b-c2374b2a0aab",
+        "slug": "sneakers",
+        "nameEn": "sneakers",
+        "nameAr": "أحذية رياضية",
+        "pricingFactor": "1.2",
+        "children": [
+            {
+                "uuid": "f5d519fa-9b21-435c-97ab-8c06e1fb782c",
+                "slug": "sneakers-shoes",
+                "nameEn": "sneakers-shoes",
+                "nameAr": "أحذية رياضية",
+                "pricingFactor": "1.2",
+                "children": []
+            }
+        ]
+    }
+]
+```
+
+Retrieve a category
+-------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`, `User`
+
+```http
+GET /v1/categories/<category-uuid> HTTP/1.1
+```
+
+### Response Body
+```json
+{
+    "uuid": "e45cc8ed-72ec-4780-885c-5a378d85822a",
+    "slug": "sneakers",
+    "nameEn": "sneakers",
+    "nameAr": "sneakers",
+    "pricingFactor": 1.4
+}
+```
+
+Update a category
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+PUT /v1/categories/<category-uuid> HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+slug | Yes | String | A unique string that identifies the category
+name.en | Yes | String | The name of the category in English
+name.ar | Yes | String | The name of the category in Arabic
+
+### Request Body
+```json
+{
+    "slug": "sneakers",
+    "name": {
+        "en": "Sneakers",
+        "ar": "أحذية رياضية"
+    },
+    "pricingFactor": 1.4
+}
+```
+
+### Response Body
+```json
+{
+    "uuid": "fbb6e9d6-60e3-4d45-8dba-8cd01e6f6e52",
+    "slug": "sneakers",
+    "nameEn": "Sneakers",
+    "nameAr": "أحذية رياضية",
+    "pricingFactor": 1.4
+}
+```
+
+Delete a category
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+DELETE /v1/categories/<category-uuid> HTTP/1.1
+```
+
 Products API
 ============
 
@@ -275,12 +437,13 @@ Example Product Document
             },
             "weight": {
                 "amount": "1",
-                "unit": "KILOGRAMS"
+                "unit": "kg"
             },
             "dimensions": {
                 "width": "1000",
                 "height": "1000",
-                "length": "1000"
+                "length": "1000",
+                "unit": "in"
             },
             "optionValues": [
                 {
@@ -326,6 +489,7 @@ description.en | Yes | String | Description of the product in English
 description.ar | Yes | String | Description of the product in Arabic
 descriptionHtml.en | Yes | String | HTML Description of the product in English
 descriptionHtml.ar | Yes | String | HTML Description of the product in Arabic
+categories | No | List[UUID] | A list of UUIDs of categories
 
 ### Request Body
 ```json
@@ -346,7 +510,10 @@ descriptionHtml.ar | Yes | String | HTML Description of the product in Arabic
     "descriptionHtml": {
         "en": "<b>Your new iPhone awaits. Make it yours</b>",
         "ar": "<b>Your new iPhone awaits. Make it yours</b>"
-    }
+    },
+    "categories": [
+        "e45cc8ed-72ec-4780-885c-5a378d85822a"
+    ]
 }
 ```
 
@@ -355,13 +522,13 @@ descriptionHtml.ar | Yes | String | HTML Description of the product in Arabic
 {
     "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
     "slug": "iphone-17",
-    "title": "iPhone 17",
+    "titleEn": "iPhone 17",
     "titleAr": "آيفون 17",
-    "brief": "From $799 or $33.29/mo. per month for 24 months",
+    "briefEn": "From $799 or $33.29/mo. per month for 24 months",
     "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-    "description": "Your new iPhone awaits. Make it yours.",
+    "descriptionEn": "Your new iPhone awaits. Make it yours.",
     "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+    "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
     "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
     "status": "DRAFT"
 }
@@ -385,19 +552,24 @@ sort | The order in which we need to sort results |
 pageNumber | The current page number | 1
 itemsPerPage | The number of results to retrieve in the response | 100
 
+### Filters
+Filter | Syntax
+-------|-------
+Get products by a category | `filters={"slug":"sneakers"}`
+
 ### Response Body
 ```json
 [
     {
         "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
         "slug": "iphone-17",
-        "title": "iPhone 17",
+        "titleEn": "iPhone 17",
         "titleAr": "آيفون 17",
-        "brief": "From $799 or $33.29/mo. per month for 24 months",
+        "briefEn": "From $799 or $33.29/mo. per month for 24 months",
         "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-        "description": "Your new iPhone awaits. Make it yours.",
+        "descriptionEn": "Your new iPhone awaits. Make it yours.",
         "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-        "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+        "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
         "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
         "status": "DRAFT",
         "options": [],
@@ -421,13 +593,13 @@ GET /v1/products/<product-uuid> HTTP/1.1
 {
     "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
     "slug": "iphone-17",
-    "title": "iPhone 17",
+    "titleEn": "iPhone 17",
     "titleAr": "آيفون 17",
-    "brief": "From $799 or $33.29/mo. per month for 24 months",
+    "briefEn": "From $799 or $33.29/mo. per month for 24 months",
     "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-    "description": "Your new iPhone awaits. Make it yours.",
+    "descriptionEn": "Your new iPhone awaits. Make it yours.",
     "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+    "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
     "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
     "status": "DRAFT",
     "options": [],
@@ -483,13 +655,13 @@ descriptionHtml.ar | Yes | String | HTML Description of the product in Arabic
 {
     "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
     "slug": "iphone-17",
-    "title": "iPhone 17",
+    "titleEn": "iPhone 17",
     "titleAr": "آيفون 17",
-    "brief": "From $899 or $33.29/mo. per month for 24 months",
+    "briefEn": "From $899 or $33.29/mo. per month for 24 months",
     "briefAr": "ابتداءً من 899 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-    "description": "Your new iPhone awaits. Make it yours.",
+    "descriptionEn": "Your new iPhone awaits. Make it yours.",
     "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+    "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
     "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
     "status": "DRAFT"
 }
@@ -522,13 +694,13 @@ slug | Yes | String | A unique short slug of the product
 {
     "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
     "slug": "iphone-17-pro",
-    "title": "iPhone 17",
+    "titleEn": "iPhone 17",
     "titleAr": "آيفون 17",
-    "brief": "From $899 or $33.29/mo. per month for 24 months",
+    "briefEn": "From $899 or $33.29/mo. per month for 24 months",
     "briefAr": "ابتداءً من 899 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-    "description": "Your new iPhone awaits. Make it yours.",
+    "descriptionEn": "Your new iPhone awaits. Make it yours.",
     "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+    "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
     "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
     "status": "DRAFT"
 }
@@ -560,13 +732,13 @@ status | Yes | String | The current status of the product. Possible values are `
 {
     "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
     "slug": "iphone-17-pro",
-    "title": "iPhone 17",
+    "titleEn": "iPhone 17",
     "titleAr": "آيفون 17",
-    "brief": "From $899 or $33.29/mo. per month for 24 months",
+    "briefEn": "From $899 or $33.29/mo. per month for 24 months",
     "briefAr": "ابتداءً من 899 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-    "description": "Your new iPhone awaits. Make it yours.",
+    "descriptionEn": "Your new iPhone awaits. Make it yours.",
     "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+    "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
     "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
     "status": "ACTIVE"
 }
@@ -605,7 +777,10 @@ position | Yes | Number | Display position of the option
 ### Request Body
 ```json
 {
-    "name": "Color",
+    "name": {
+        "en": "Storage",
+        "ar": "Storage (in Arabic)"
+    },
     "position": 0
 }
 ```
@@ -614,7 +789,8 @@ position | Yes | Number | Display position of the option
 ```json
 {
     "uuid": "5926e2de-5e66-4e30-ba75-ecda7fbf4522",
-    "name": "Color",
+    "nameEn": "Storage",
+    "nameAr": "Storage (in Arabic)",
     "position": 0,
     "product": {
         "uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
@@ -655,12 +831,14 @@ itemsPerPage | The number of results to retrieve in the response | 100
 [
     {
         "uuid": "e7685ad8-fa88-41f3-bc97-745fc41fbad2",
-        "name": "Size",
+        "nameEn": "Size",
+        "nameAr": "Size (In Arabic)",
         "position": "1"
     },
     {
         "uuid": "5926e2de-5e66-4e30-ba75-ecda7fbf4522",
-        "name": "Color",
+        "nameEn": "Color",
+        "nameAr": "Color (In Arabic)",
         "position": "0"
     }
 ]
@@ -680,7 +858,8 @@ GET /v1/products/<product-uuid>/options/<option-uuid> HTTP/1.1
 ```json
 {
     "uuid": "e7685ad8-fa88-41f3-bc97-745fc41fbad2",
-    "name": "Size",
+    "nameEn": "Size",
+    "nameAr": "Size (In Arabic)",
     "position": "1"
 }
 ```
@@ -703,7 +882,10 @@ position | Yes | Number | Display position of the option
 ### Request Body
 ```json
 {
-    "name": "Memory Size",
+    "name": {
+        "en": "Memory Size",
+        "ar": "Memory Size (In Arabic)"
+    },
     "position": 1
 }
 ```
@@ -712,7 +894,8 @@ position | Yes | Number | Display position of the option
 ```json
 {
     "uuid": "e7685ad8-fa88-41f3-bc97-745fc41fbad2",
-    "name": "Memory Size",
+    "nameEn": "Memory Size",
+    "nameAr": "Memory Size (In Arabic)",
     "position": 1
 }
 ```
@@ -750,7 +933,10 @@ position | Yes | Number | Display position of the option-value
 ### Request Body
 ```json
 {
-    "value": "Blue",
+    "value": {
+        "en": "Blue",
+        "ar": "Blue (Arabic)"
+    },
     "position": 0
 }
 ```
@@ -759,7 +945,8 @@ position | Yes | Number | Display position of the option-value
 ```json
 {
     "uuid": "cdb4ed20-04f9-407c-bcc6-0d0f8679ddfd",
-    "value": "Blue",
+    "valueEn": "Blue",
+    "valueAr": "Blue (Arabic)",
     "position": 0
 }
 ```
@@ -787,7 +974,8 @@ itemsPerPage | The number of results to retrieve in the response | 100
 [
     {
         "uuid": "cdb4ed20-04f9-407c-bcc6-0d0f8679ddfd",
-        "value": "Blue",
+        "valueEn": "Blue",
+        "valueAr": "Blue (Arabic)",
         "position": "0"
     }
 ]
@@ -807,7 +995,8 @@ GET /v1/products/<product-uuid>/options/<option-uuid>/values/<value-uuid> HTTP/1
 ```json
 {
     "uuid": "cdb4ed20-04f9-407c-bcc6-0d0f8679ddfd",
-    "value": "Blue",
+    "valueEn": "Blue",
+    "valueAr": "Blue (Arabic)",
     "position": "0"
 }
 ```
@@ -830,7 +1019,10 @@ position | Yes | Number | Display position of the option-value
 ### Request Body
 ```json
 {
-    "value": "Red",
+    "value": {
+        "en": "Red",
+        "ar": "Red (Arabic)"
+    },
     "position": 1
 }
 ```
@@ -839,7 +1031,8 @@ position | Yes | Number | Display position of the option-value
 ```json
 {
     "uuid": "cdb4ed20-04f9-407c-bcc6-0d0f8679ddfd",
-    "value": "Red",
+    "valueEn": "Red",
+    "valueAr": "Red (Arabic)",
     "position": 1
 }
 ```
@@ -878,10 +1071,11 @@ barcode | Yes | String | The unique barcode of the variant
 price.amount | Yes | Number | The amount in which we will charge the customer
 price.currencyCode | Yes | String | The currency code of the price amount
 weight.amount | Yes | Number | The amount of the weight
-weight.unit | Yes | String| The weight-unit of the variant
+weight.unit | Yes | String| The weight-unit of the variant. A value from, `g, kg, oz, lb` must be provided.
 dimensions.width | Yes | Number | The width of the variant
 dimensions.height | Yes | Number | The height of the variant
 dimensions.length | Yes | Number | The length of the variant
+dimensions.unit | Yes | String | The unit of measurement for dimensions. A value from, `mm, cm, m, km, in, ft, yd, mi` must be provided.
 optionValues | No | List[UUID] | A list of UUIDs of option-values
 
 ### Request Body
@@ -901,12 +1095,13 @@ optionValues | No | List[UUID] | A list of UUIDs of option-values
     },
     "weight": {
         "amount": 1,
-        "unit": "KILOGRAMS"
+        "unit": "kg"
     },
     "dimensions": {
         "width": 1000,
         "height": 1000,
-        "length": 1000
+        "length": 1000,
+        "unit": "in"
     },
     "optionValues": [
         "443d0325-c769-49eb-8867-9287b18c2318"
@@ -918,7 +1113,7 @@ optionValues | No | List[UUID] | A list of UUIDs of option-values
 ```json
 {
     "uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-    "title": "iPhone 17 Lavender 256 GB",
+    "titleEn": "iPhone 17 Lavender 256 GB",
     "titleAr": "iPhone 17 Lavender 256 GB",
     "sku": "iphone-17-lavender-256",
     "barcode": "10000",
@@ -928,23 +1123,24 @@ optionValues | No | List[UUID] | A list of UUIDs of option-values
     },
     "weight": {
         "amount": 1,
-        "unit": "KILOGRAMS"
+        "unit": "kg"
     },
     "dimensions": {
         "width": 1000,
         "height": 1000,
-        "length": 1000
+        "length": 1000,
+        "unit": "in"
     },
     "product": {
         "uuid": "6cfd4dec-10a3-47e6-a2be-96df08cee2ac",
         "slug": "iphone-17",
-        "title": "iPhone 17",
+        "titleEn": "iPhone 17",
         "titleAr": "آيفون 17",
-        "brief": "From $799 or $33.29/mo. per month for 24 months",
+        "briefEn": "From $799 or $33.29/mo. per month for 24 months",
         "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-        "description": "Your new iPhone awaits. Make it yours.",
+        "descriptionEn": "Your new iPhone awaits. Make it yours.",
         "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-        "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+        "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
         "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
         "status": "DRAFT"
     }
@@ -974,7 +1170,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
 [
     {
         "uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-        "title": "iPhone 17 Lavender 256 GB",
+        "titleEn": "iPhone 17 Lavender 256 GB",
         "titleAr": "iPhone 17 Lavender 256 GB",
         "sku": "iphone-17-lavender-256",
         "barcode": "10000",
@@ -984,12 +1180,13 @@ itemsPerPage | The number of results to retrieve in the response | 100
         },
         "weight": {
             "amount": "1",
-            "unit": "KILOGRAMS"
+            "unit": "kg"
         },
         "dimensions": {
             "width": "1000",
             "height": "1000",
-            "length": "1000"
+            "length": "1000",
+            "unit": "in"
         }
     }
 ]
@@ -1009,7 +1206,7 @@ GET /v1/products/<product-uuid>/variants/<variant-uuid> HTTP/1.1
 ```json
 {
 	"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-	"title": "iPhone 17 Lavender 256 GB",
+	"titleEn": "iPhone 17 Lavender 256 GB",
 	"titleAr": "iPhone 17 Lavender 256 GB",
 	"sku": "iphone-17-lavender-256",
 	"barcode": "10000",
@@ -1019,12 +1216,13 @@ GET /v1/products/<product-uuid>/variants/<variant-uuid> HTTP/1.1
 	},
 	"weight": {
 		"amount": "1",
-		"unit": "KILOGRAMS"
+		"unit": "kg"
 	},
 	"dimensions": {
 		"width": "1000",
 		"height": "1000",
-		"length": "1000"
+		"length": "1000",
+        "unit": "in"
 	}
 }
 ```
@@ -1048,10 +1246,11 @@ barcode | Yes | String | The unique barcode of the variant
 price.amount | Yes | Number | The amount in which we will charge the customer
 price.currencyCode | Yes | String | The currency code of the price amount
 weight.amount | Yes | Number | The amount of the weight
-weight.unit | Yes | String| The weight-unit of the variant
+weight.unit | Yes | String| The weight-unit of the variant. A value from, `g, kg, oz, lb` must be provided.
 dimensions.width | Yes | Number | The width of the variant
 dimensions.height | Yes | Number | The height of the variant
 dimensions.length | Yes | Number | The length of the variant
+dimensions.unit | Yes | String | The unit of measurement for dimensions. A value from, `mm, cm, m, km, in, ft, yd, mi` must be provided.
 
 ### Request Body
 ```json
@@ -1068,12 +1267,13 @@ dimensions.length | Yes | Number | The length of the variant
     },
     "weight": {
         "amount": 1,
-        "unit": "KILOGRAMS"
+        "unit": "kg"
     },
     "dimensions": {
         "width": 1000,
         "height": 1000,
-        "length": 1000
+        "length": 1000,
+        "unit": "in"
     }
 }
 ```
@@ -1082,7 +1282,7 @@ dimensions.length | Yes | Number | The length of the variant
 ```json
 {
     "uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-    "title": "A new laptop (in english)",
+    "titleEn": "A new laptop (in english)",
     "titleAr": "A new laptop (in arabic)",
     "sku": "dell-xps-2026",
     "barcode": "1212321",
@@ -1092,12 +1292,13 @@ dimensions.length | Yes | Number | The length of the variant
     },
     "weight": {
         "amount": 1,
-        "unit": "KILOGRAMS"
+        "unit": "kg"
     },
     "dimensions": {
         "width": 1000,
         "height": 1000,
-        "length": 1000
+        "length": 1000,
+        "unit": "in"
     }
 }
 ```
@@ -1110,4 +1311,189 @@ Delete Product Variant
 
 ```http
 DELETE /v1/products/<product-uuid>/variants/<variant-uuid> HTTP/1.1
+```
+
+Product Variant Images
+======================
+
+Upload Variant Images
+---------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+POST /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
+```
+
+### Example
+```bash
+curl --location --request POST 'http://localhost:8000/v1/products/d0bd2ed9-81b2-44fe-84dc-9c52a794a2a3/variants/d0bd2ed9-81b2-44fe-84dc-9c52a794a2a3/images' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+--form 'file=@"/C:/m_Direct_Media____YWCMXRBDU8.jpg"'
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+    "variant": {
+        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+        "titleEn": "iPhone 24 Red 1 TB",
+        "titleAr": "iPhone 24 Red 1 TB",
+        "sku": "iphone-24-red-1tb",
+        "barcode": "10000",
+        "price": {
+            "amount": 4000,
+            "currencyCode": "QAR"
+        },
+        "weight": {
+            "amount": 1,
+            "unit": "kg"
+        },
+        "dimensions": {
+            "width": 1000,
+            "height": 1000,
+            "length": 1000,
+            "unit": "in"
+        }
+    },
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+    "alt": "",
+    "isFeatured": false,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Get Variant Images
+------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+        "alt": "",
+        "isFeatured": false,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    },
+    {
+        "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+        "alt": "",
+        "isFeatured": false,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    },
+    {
+        "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+        "alt": "iPhone Photo",
+        "isFeatured": true,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    }
+]
+```
+
+Get Variant Image
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "alt": "",
+    "isFeatured": false,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Update Variant Image
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "alt": "iPhone Photo",
+    "position": 0,
+    "isFeatured": true
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "alt": "iPhone Photo",
+    "isFeatured": true,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Delete Variant Image
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+DELETE /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
 ```

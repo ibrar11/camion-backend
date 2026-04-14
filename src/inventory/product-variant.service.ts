@@ -66,7 +66,7 @@ export class ProductVariantService {
 		const variant = new ProductVariant();
 		variant.uuid = crypto.randomUUID();
 		variant.product = product;
-		variant.title = body.title.en.trim();
+		variant.titleEn = body.title.en.trim();
 		variant.titleAr = body.title.ar.trim();
 		variant.sku = body.sku.trim();
 		variant.barcode = body.barcode.trim();
@@ -91,20 +91,21 @@ export class ProductVariantService {
 		await this.inventoryLevelRepository.save(inventoryLevel);
 
 		// Find the product option values and create product variant option values
-		// This is the join the product option values to its associated product variant.
+		// This is to join the product option values to its associated product variant.
 		if (body.optionValues !== null && body.optionValues.length !== 0) {
-			body.optionValues.forEach(async optionValueUUID => {
-				const optionValue = await this.productOptionValueRepository.findOneBy({ uuid: optionValueUUID, });
-				if (optionValue === null) {
-					return;
-				}
+			body.optionValues
+				.filter((optionValueUUID, index) => body.optionValues.indexOf(optionValueUUID) === index)
+				.forEach(async optionValueUUID => {
+					const optionValue = await this.productOptionValueRepository.findOneBy({ uuid: optionValueUUID, });
+					if (optionValue === null) {
+						return;
+					}
 
-				const productVariantOptionValue = new ProductVariantOptionValue();
-				productVariantOptionValue.uuid = crypto.randomUUID();
-				productVariantOptionValue.variant = variant;
-				productVariantOptionValue.optionValue = optionValue;
-				await this.productVariantOptionValueRepository.save(productVariantOptionValue);
-			});
+					const productVariantOptionValue = new ProductVariantOptionValue();
+					productVariantOptionValue.variant = variant;
+					productVariantOptionValue.optionValue = optionValue;
+					await this.productVariantOptionValueRepository.save(productVariantOptionValue);
+				});
 		}
 
 		return variant;
@@ -183,7 +184,7 @@ export class ProductVariantService {
 		}
 
 		// Update the variant
-		variant.title = body.title.en.trim();
+		variant.titleEn = body.title.en.trim();
 		variant.titleAr = body.title.ar.trim();
 		variant.sku = body.sku.trim();
 		variant.barcode = body.barcode.trim();

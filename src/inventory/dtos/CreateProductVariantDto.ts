@@ -16,15 +16,16 @@ import { Type } from "class-transformer";
 
 import { CurrencyCode } from "../enums/CurrencyCode";
 import { WeightUnit } from "../enums/WeightUnit";
+import { DimensionsUnit } from "../enums/DimensionsUnit";
 
 export class TitleField {
 	@IsString()
 	@MaxLength(128)
-	ar: string;
+	en: string;
 
 	@IsString()
 	@MaxLength(128)
-	en: string;
+	ar: string;
 }
 
 export class Money {
@@ -54,6 +55,10 @@ export class Dimensions {
 
 	@IsNumber()
 	length: number;
+
+	@IsString()
+	@IsEnum(DimensionsUnit)
+	unit: DimensionsUnit;
 }
 
 export class CreateProductVariantDto {

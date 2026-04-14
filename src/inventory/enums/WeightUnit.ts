@@ -1,6 +1,6 @@
 export enum WeightUnit {
-	GRAMS = "GRAMS",
-	KILOGRAMS = "KILOGRAMS",
-	OUNCES = "OUNCES",
-	POUNDS = "POUNDS",
+	Grams = "g",
+	Kilograms = "kg",
+	Ounces = "oz",
+	Pounds = "lb",
 }

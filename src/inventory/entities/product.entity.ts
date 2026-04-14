@@ -1,4 +1,9 @@
 import {
+	ObjectType,
+	Field,
+} from "@nestjs/graphql";
+
+import {
 	Column,
 	CreateDateColumn,
 	Entity,
@@ -13,43 +18,71 @@ import { ProductStatus } from "../enums/ProductStatus";
 
 import { ProductOption } from "./product-option.entity";
 import { ProductVariant } from "./product-variant.entity";
+import { ProductCategory } from "./product-category.entity";
+import { ProductReview } from "./product-review.entity";
 
+import { CartItem } from "src/cart/entities/cart-items.entity";
+
+@ObjectType()
 @Entity({ name: "products", })
 export class Product {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
+	@Field()
 	@Column({ type: "varchar", length: 64, nullable: false, unique: true, })
 	slug: string;
 
-	@Column({ type: "varchar", length: 128, })
+	@Field(() => String, { name: "title", })
 	title: string;
 
+	@Field(() => String)
+	@Column({ type: "varchar", length: 128, })
+	titleEn: string;
+
+	@Field(() => String)
 	@Column({ type: "varchar", length: 128, })
 	titleAr: string;
 
-	@Column({ type: "varchar", length: 256, })
+	@Field(() => String, { name: "brief" })
 	brief: string;
 
+	@Field(() => String)
+	@Column({ type: "varchar", length: 256, })
+	briefEn: string;
+
+	@Field(() => String)
 	@Column({ type: "varchar", length: 256, })
 	briefAr: string;
 
-	@Column({ type: "text", })
+	@Field(() => String, { name: "description" })
 	description: string;
 
+	@Field(() => String)
+	@Column({ type: "text", })
+	descriptionEn: string;
+
+	@Field(() => String)
 	@Column({ type: "text", })
 	descriptionAr: string;
 
-	@Column({ type: "text", })
+	@Field(() => String, { name: "descriptionHtml" })
 	descriptionHtml: string;
 
+	@Field(() => String)
+	@Column({ type: "text", })
+	descriptionHtmlEn: string;
+
+	@Field(() => String)
 	@Column({ type: "text", })
 	descriptionHtmlAr: string;
 
+	@Field()
 	@Column({
 		type: "enum",
 		enum: ProductStatus,
@@ -57,11 +90,23 @@ export class Product {
 	})
 	status: ProductStatus;
 
+	@Field(() => [ProductOption])
 	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, })
 	options: Array<ProductOption>;
 
+	@Field(() => [ProductVariant])
 	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, })
 	variants: Array<ProductVariant>;
+
+	@OneToMany(() => ProductCategory, (productCategories) => productCategories.product, { cascade: true, })
+	productCategories: Array<ProductCategory>;
+
+	@Field(() => [ProductReview])
+	@OneToMany(() => ProductReview, (review) => review.product, { cascade: true, })
+	reviews: Array<ProductReview>;
+
+	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
+	cartItems: Array<CartItem>;
 
 	@Exclude()
 	@Column({

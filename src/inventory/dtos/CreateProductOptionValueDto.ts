@@ -2,14 +2,22 @@ import {
 	IsNumber,
 	IsString,
 	MaxLength,
-	MinLength,
+	ValidateNested,
 } from "class-validator";
 
-export class CreateProductOptionValueDto {
+export class ValueField {
 	@IsString()
-	@MinLength(2, { message: "Option value must be at least 2 characters long" })
-	@MaxLength(64, { message: "Option value must be maximum 64 characters long" })
-	value: string;
+	@MaxLength(64)
+	en: string;
+
+	@IsString()
+	@MaxLength(64)
+	ar: string;
+}
+
+export class CreateProductOptionValueDto {
+	@ValidateNested()
+	value: ValueField;
 
 	@IsNumber()
 	position: number;

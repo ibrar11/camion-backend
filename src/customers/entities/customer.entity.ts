@@ -1,32 +1,45 @@
+import { Field, ObjectType } from "@nestjs/graphql";
+
 import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
 
 import { Exclude } from "class-transformer";
 
-@Entity()
+import { CustomerRole } from "../enums/CustomerRole";
+
+import { CartItem } from "../../cart/entities/cart-items.entity";
+import { CustomerAddress } from "./customer-address.entity";
+import { LoginRequest } from "../../auth/entities/login-request.entity";
+import { ProductReview } from "../../inventory/entities/product-review.entity";
+
+@ObjectType()
+@Entity({ name: "customers" })
 export class Customer {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
+	@Field()
 	@Column({ type: "varchar", length: 64, })
 	fullName: string;
 
-	@Exclude()
-	@Column({ type: "varchar", length: 256, nullable: true, unique: true, })
-	emailAddress: string | null;
+	@Field(() => String, { nullable: true, })
+	@Column({ type: "varchar", length: 256, nullable: false, unique: true, })
+	emailAddress: string;
 
-	@Exclude()
-	@Column({ type: "varchar", length: 16, nullable: true, unique: true, })
-	phoneNumber: string | null;
+	@Field(() => String, { nullable: true, })
+	@Column({ type: "varchar", length: 16, nullable: false, unique: true, })
+	phoneNumber: string;
 
 	@Exclude()
 	@Column({ type: "varchar", nullable: false, length: 64, })
@@ -36,6 +49,17 @@ export class Customer {
 	@Column({ type: "varchar", length: 64, default: "", })
 	secret: string;
 
+	@Column({
+		type: "enum",
+		enum: CustomerRole,
+		default: CustomerRole.Customer,
+	})
+	role: CustomerRole;
+
+	@Exclude()
+	@Column({ nullable: true, unique: true, })
+	deviceId: string;
+
 	@Exclude()
 	@Column({ type: "boolean", default: false, })
 	isEmailAddressVerified: boolean;
@@ -44,8 +68,22 @@ export class Customer {
 	@Column({ type: "boolean", default: false, })
 	isPhoneNumberVerified: boolean;
 
+	@Exclude()
 	@Column({ type: "boolean", default: true, })
 	isActive: boolean;
+
+	@OneToMany(() => CartItem, (cartItem) => cartItem.customer, { cascade: true, })
+	cartItems: Array<CartItem>;
+
+	@OneToMany(() => CustomerAddress, (customerAddress) => customerAddress.customer, { cascade: true, })
+	addresses: Array<CustomerAddress>;
+
+	@OneToMany(() => ProductReview, (productReview) => productReview.customer, { cascade: true, })
+	reviews: Array<ProductReview>;
+
+	@Exclude()
+	@OneToMany(() => LoginRequest, (loginRequest) => loginRequest.customer, { cascade: true, })
+	loginRequests: Array<LoginRequest>;
 
 	@Exclude()
 	@UpdateDateColumn({
@@ -60,4 +98,12 @@ export class Customer {
 		type: "timestamptz",
 	})
 	createdAt: Date;
+
+	@Exclude()
+	@Column({ type: 'timestamptz', nullable: true })
+	markedForDeletionAt: Date | null;
+
+	@Exclude()
+	@Column({ type: 'timestamptz', nullable: true })
+	deletedAt: Date | null;
 }

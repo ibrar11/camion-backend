@@ -1,0 +1,125 @@
+name: CI — Build, Push, Deploy
+
+on:
+  push:
+    branches:
+      - dev
+      - prod
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+# One concurrent deployment per environment.
+# A newer commit cancels the in-flight run for the same environment.
+concurrency:
+  group: ci-${{ github.event.inputs.environment || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & Deploy (${{ github.event.inputs.environment || github.ref_name }})
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || github.ref_name }}
+    permissions:
+      id-token: write   # Required for OIDC token request
+      contents: read
+
+    steps:
+      # ── 1. Source ────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Resolve environment ───────────────────────────────────────────────
+      # Sets DEPLOY_ENV and SHORT_SHA in GITHUB_ENV (available in all subsequent
+      # steps).
+      #
+      # NOTE: manual dispatch must be triggered from the dev or prod branch.
+      # The OIDC sub-claim reflects the triggering branch, not the input value.
+      # Dispatching from main or a feature branch will cause sts:AssumeRoleWithWebIdentity
+      # to fail with AccessDenied.
+      - name: Validate dispatch branch
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_NAME" != "dev" ] && [ "$REF_NAME" != "prod" ]; then
+            echo "❌ Manual dispatch must be triggered from the 'dev' or 'prod' branch."
+            echo "   Current branch: $REF_NAME"
+            echo "   The OIDC trust policy only allows these branches to assume the deployment role."
+            exit 1
+          fi
+
+      - name: Resolve environment
+        run: |
+          echo "DEPLOY_ENV=${{ github.event.inputs.environment || github.ref_name }}" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      # ── 3. AWS auth ──────────────────────────────────────────────────────────
+      # Secrets and vars are loaded from the matching GH environment (dev/prod).
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region:     ${{ vars.AWS_REGION }}
+
+      # ── 4. ECR login ─────────────────────────────────────────────────────────
+      # Outputs `registry` = <account>.dkr.ecr.<region>.amazonaws.com
+      # This is the base URL prepended to all image URIs in the build step.
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── 5. Buildx ────────────────────────────────────────────────────────────
+      # Required by docker/build-push-action (uses BuildKit).
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 6. Build & push ──────────────────────────────────────────────────────
+      # Tags pushed per build:
+      #   {env}-{short-sha}  e.g. dev-abc1234  — rollback-friendly, immutable ref
+      #   {env}-latest       e.g. dev-latest   — what the ECS task definition uses
+      #
+      # context: . is correct — camion-backend-v2 is a standalone repo and the
+      # Dockerfile sits at the repository root.
+      #
+      # GHA cache (type=gha) reuses Docker layer cache across runs for faster builds.
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.DEPLOY_ENV }}-${{ env.SHORT_SHA }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.DEPLOY_ENV }}-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── 7. Deploy ────────────────────────────────────────────────────────────
+      # --force-new-deployment tells ECS to pull the updated {env}-latest image.
+      # No task definition re-registration needed — the task def already
+      # references {env}-latest (mutable ECR tag).
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --service "${{ vars.ECS_SERVICE }}" \
+            --force-new-deployment \
+            --region  "${{ vars.AWS_REGION }}" \
+            --no-cli-pager
+
+      # ── 8. Wait ──────────────────────────────────────────────────────────────
+      # Polls every 15 s, times out after 40 polls (600 s / 10 min).
+      # Fails visibly if the new task never passes its ALB health check.
+      - name: Wait for ECS stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster  "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE }}" \
+            --region   "${{ vars.AWS_REGION }}" \
+            --no-cli-pager

@@ -27,6 +27,8 @@ import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 import { Roles } from '../auth/roles.decorator';
+import { CustomerRole } from 'src/customers/enums/CustomerRole';
+import { ProductSort } from './enums/ProductSort';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products')
@@ -40,12 +42,12 @@ export class ProductsController {
 		return this.productsService.createProduct(body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Influencer)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProducts(
 		@Query("filters") filters: string,
-		@Query("sort") sort: string,
+		@Query("sort") sort: ProductSort,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Product>> {
@@ -56,7 +58,7 @@ export class ProductsController {
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProduct(@Param('uuid') uuid: string): Promise<Product> {
-		return this.productsService.findOne(uuid);
+		return this.productsService.findOneByUUID(uuid);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
