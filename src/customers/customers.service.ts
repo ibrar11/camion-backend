@@ -5,13 +5,14 @@ import * as bcrypt from "bcrypt";
 import {
 	BadRequestException,
 	Injectable,
+	Logger,
 	NotFoundException,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { CountryCode, parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { CreateCustomerDto } from './dtos/CreateCustomerDto';
 import { UpdateCustomerDto } from "./dtos/UpdateCustomerDto";
@@ -22,8 +23,9 @@ import { Customer } from './entities/customer.entity';
 
 @Injectable()
 export class CustomersService {
-	constructor(@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>) {
-	}
+	private readonly logger = new Logger(CustomersService.name);
+
+	constructor(@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>) { }
 
 	/**
 	 * Creates a customer
@@ -32,14 +34,23 @@ export class CustomersService {
 	 * @returns
 	 */
 	async createCustomer(body: CreateCustomerDto) {
+		this.logger.log(`Creating customer: ${body.fullName}`);
+
+
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
+		}
+
 		// Trim the phone number
 		if (body.phoneNumber !== null) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
 		// Format the phone number if a country code is provided
-		if (body.phoneNumber !== null && body.countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, body.countryCode as CountryCode)?.formatInternational() as string;
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, })?.formatInternational() as string;
 		}
 
 		// Check if the customer exists by email address
@@ -89,12 +100,8 @@ export class CustomersService {
 		const customer = new Customer();
 		customer.uuid = crypto.randomUUID();
 		customer.fullName = body.fullName.trim();
-		customer.emailAddress = body.emailAddress !== null
-			? body.emailAddress.trim().toLowerCase()
-			: null;
-		customer.phoneNumber = body.phoneNumber !== null
-			? body.phoneNumber.trim()
-			: null;
+		customer.emailAddress = body.emailAddress.trim().toLowerCase();
+		customer.phoneNumber = body.phoneNumber.trim();
 		customer.password = await bcrypt.hash(body.password.trim(), 10);
 		return this.customerRepository.save(customer);
 	}
@@ -219,58 +226,58 @@ export class CustomersService {
 		});
 	}
 
-    /**
-     * Marks a customer account for deletion.
-     *
-     * The account is not deleted immediately. Instead, it is flagged for deletion,
-     * and a scheduled job will permanently deactivate it after the configured grace period.
-     *
-     * This operation is idempotent — if the account is already deleted, no action is taken.
-     *
-     * @param customerUuid - The UUID of the customer
-     */
-    async requestAccountDeletion(customerUuid: string): Promise<void> {
-        const customer = await this.customerRepository.findOne({
-            where: { uuid: customerUuid },
-        });
+	/**
+	 * Marks a customer account for deletion.
+	 *
+	 * The account is not deleted immediately. Instead, it is flagged for deletion,
+	 * and a scheduled job will permanently deactivate it after the configured grace period.
+	 *
+	 * This operation is idempotent — if the account is already deleted, no action is taken.
+	 *
+	 * @param customerUuid - The UUID of the customer
+	 */
+	async requestAccountDeletion(customerUuid: string): Promise<void> {
+		const customer = await this.customerRepository.findOne({
+			where: { uuid: customerUuid },
+		});
 
-        if (!customer) {
-            throw new NotFoundException('Customer not found');
-        }
+		if (!customer) {
+			throw new NotFoundException('Customer not found');
+		}
 
-        if (customer.deletedAt) {
-            return; // already deleted (idempotent)
-        }
+		if (customer.deletedAt) {
+			return; // already deleted (idempotent)
+		}
 
-        customer.markedForDeletionAt = new Date();
+		customer.markedForDeletionAt = new Date();
 
-        await this.customerRepository.save(customer);
-    }
+		await this.customerRepository.save(customer);
+	}
 
-    /**
-     * Cancels a previously requested account deletion.
-     *
-     * This removes the deletion flag (`markedForDeletionAt`) and restores the account
-     * to its normal active state, provided it has not already been permanently deleted.
-     *
-     * @param customerUuid - The UUID of the customer
-     * @throws BadRequestException if the account is already deleted
-     */
-    async cancelDeletion(customerUuid: string): Promise<void> {
-        const customer = await this.customerRepository.findOne({
-            where: { uuid: customerUuid },
-        });
+	/**
+	 * Cancels a previously requested account deletion.
+	 *
+	 * This removes the deletion flag (`markedForDeletionAt`) and restores the account
+	 * to its normal active state, provided it has not already been permanently deleted.
+	 *
+	 * @param customerUuid - The UUID of the customer
+	 * @throws BadRequestException if the account is already deleted
+	 */
+	async cancelDeletion(customerUuid: string): Promise<void> {
+		const customer = await this.customerRepository.findOne({
+			where: { uuid: customerUuid },
+		});
 
-        if (!customer) {
-            throw new NotFoundException('Customer not found');
-        }
+		if (!customer) {
+			throw new NotFoundException('Customer not found');
+		}
 
-        if (customer.deletedAt) {
-            throw new BadRequestException('Account already deleted');
-        }
+		if (customer.deletedAt) {
+			throw new BadRequestException('Account already deleted');
+		}
 
-        customer.markedForDeletionAt = null;
+		customer.markedForDeletionAt = null;
 
-        await this.customerRepository.save(customer);
-    }
+		await this.customerRepository.save(customer);
+	}
 }

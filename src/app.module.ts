@@ -22,6 +22,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import KeyvRedis from "@keyv/redis";
 
+import { Keyv } from "keyv";
+import { Cacheable, CacheableMemory } from "cacheable";
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -78,6 +81,12 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { Currency } from "./currencies/entities/currency.entity";
+import { CurrenciesModule } from './currencies/currencies.module';
+
+import { Language } from "./languages/entities/language.entity";
+import { LanguagesModule } from './languages/languages.module';
+
 import { Order } from "./order/entities/order.entity";
 import { OrderItem } from "./order/entities/order-item.entity";
 import { OrderModule } from './order/order.module';
@@ -94,7 +103,10 @@ import { OrderModule } from './order/order.module';
 			useFactory: (configService: ConfigService) => {
 				return {
 					stores: [
-						new KeyvRedis(configService.get<string>('REDIS_URI')),
+						new Keyv({
+							store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
+						}),
+						// new KeyvRedis(configService.get<string>('REDIS_URI')),
 					],
 				};
 			},
@@ -141,6 +153,10 @@ import { OrderModule } from './order/order.module';
 					InventoryLevel,
 
 					Warehouse,
+
+					Currency,
+
+					Language,
                     
                     Post,
 
@@ -188,14 +204,16 @@ import { OrderModule } from './order/order.module';
 		CustomersModule,
 		ClientsModule,
 		InventoryModule,
-        PostsModule,
+		PostsModule,
 		HealthModule,
 		OauthModule,
 		CartModule,
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
-        ScheduleModule.forRoot(),
+		CurrenciesModule,
+		LanguagesModule,
+		ScheduleModule.forRoot(),
 		OrderModule,
 	],
 	controllers: [AppController],

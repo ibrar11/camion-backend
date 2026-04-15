@@ -19,14 +19,13 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { ConfigService } from "@nestjs/config";
 
-import { CountryCode, parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { VerifyCustomerDto } from "./dtos/VerifyCustomerDto";
 import { RegisterCustomerDto } from "./dtos/RegisterCustomerDto";
 import { LoginCustomerByEmailAddressDto } from "./dtos/LoginCustomerByEmailAddressDto";
 import { LoginCustomerByPhoneNumberDto } from "./dtos/LoginCustomerByPhoneNumberDto";
 
-import { UpdateCustomerEmailAddressDto } from "./dtos/UpdateCustomerEmailAddressDto";
 import { UpdateCustomerDto } from "./dtos/UpdateCustomerDto";
 
 import { Customer } from "../customers/entities/customer.entity";
@@ -59,14 +58,20 @@ export class CustomerAuthService {
 	async registerCustomer(body: RegisterCustomerDto): Promise<CustomerAuthResponse> {
 		this.logger.log(`Attempting to register customer: ${body.fullName}`);
 
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
+		}
+
 		// Trim the phone number
 		if (body.phoneNumber !== null) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
 		// Format the phone number if a country code is provided
-		if (body.phoneNumber !== null && body.countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, body.countryCode as CountryCode)?.formatInternational() as string;
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
 		}
 
 		// Make sure we don't have a customer using the same email address
@@ -134,14 +139,20 @@ export class CustomerAuthService {
 	async loginCustomerByPhoneNumber(body: LoginCustomerByPhoneNumberDto): Promise<CustomerAuthVerificationResponse> {
 		this.logger.log(`Attempting to login customer by phone number: ${body.countryCode} ${body.phoneNumber}`);
 
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
+		}
+
 		// Trim the phone number
 		if (body.phoneNumber !== null) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
 		// Format the phone number if a country code is provided
-		if (body.phoneNumber !== null && body.countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, body.countryCode as CountryCode)?.formatInternational() as string;
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
 		}
 
 		// Find the customer using their phone number
@@ -155,7 +166,7 @@ export class CustomerAuthService {
 			});
 		}
 
-		// Generate a random secret to verify user email address
+		// Generate a random secret to verify customer email address
 		let secret = crypto.randomInt(100000, 1000000).toString();
 		if (this.configService.get<string>("ENABLE_MAGIC_OTP") === "Yes") {
 			secret = this.configService.get<string>("MAGIC_OTP") as string;
@@ -203,7 +214,7 @@ export class CustomerAuthService {
 			});
 		}
 
-		// Generate a random secret to verify user email address
+		// Generate a random secret to verify customer email address
 		let secret = crypto.randomInt(100000, 1000000).toString();
 		if (this.configService.get<string>("ENABLE_MAGIC_OTP") === "Yes") {
 			secret = this.configService.get<string>("MAGIC_OTP") as string;
@@ -232,13 +243,13 @@ export class CustomerAuthService {
 	}
 
 	/**
-	 * Verify user login using their phone number
+	 * Verify customer login using their phone number
 	 *
 	 * @param body
 	 * @returns
 	 */
 	async verifyCustomerByPhoneNumber(body: VerifyCustomerDto): Promise<CustomerAuthResponse> {
-		this.logger.log(`Attempting to verify user using email address`);
+		this.logger.log(`Attempting to verify customer using email address`);
 
 		// Make sure we have a valid token
 		if (!body.token) {
@@ -300,13 +311,13 @@ export class CustomerAuthService {
 	}
 
 	/**
-	 * Verify user login using their email address
+	 * Verify customer login using their email address
 	 *
 	 * @param body
 	 * @returns
 	 */
 	async verifyCustomerByEmailAddress(body: VerifyCustomerDto): Promise<CustomerAuthResponse> {
-		this.logger.log(`Attempting to verify user using phone number`);
+		this.logger.log(`Attempting to verify customer using phone number`);
 
 		// Make sure we have a valid token
 		if (!body.token) {
@@ -390,40 +401,47 @@ export class CustomerAuthService {
 	 * @returns
 	 */
 	async updateProfile(principal: Customer, body: UpdateCustomerDto): Promise<Customer> {
-		this.logger.log(`Updating user: ${principal.uuid}`);
+		this.logger.log(`Updating customer: ${principal.uuid}`);
 
-		// Find the customer
-		const self = await this.customerRepository.findOneBy({ id: principal.id, });
-		if (self === null) {
-			throw new BadRequestException({
-				errors: {
-					error: "Failed to find the customer.",
-				},
-			});
+		// Remove the prefix + sign from the country code
+		let countryCode = body.countryCode;
+		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
+			countryCode = countryCode.substring(1);
 		}
 
-		self.fullName = body.fullName.trim();
-		return this.customerRepository.save(self);
-	}
+		// Trim the phone number
+		if (body.phoneNumber !== null) {
+			body.phoneNumber = body.phoneNumber.trim();
+		}
 
-	/**
-	 * Updates the current customer's email address
-	 *
-	 * @param principal
-	 * @param body
-	 */
-	async updateEmailAddress(principal: Customer, body: UpdateCustomerEmailAddressDto): Promise<Customer> {
-		this.logger.log(`Updating customer email address: ${principal.uuid}`);
+		// Format the phone number if a country code is provided
+		if (body.phoneNumber !== null && countryCode !== null) {
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+		}
 
-		// Check if another customer exists by the same email address
+		// Make sure we don't have a customer using the same email address
 		const customerByEmailAddress = await this.customerRepository.findOneBy({
 			emailAddress: body.emailAddress.trim().toLowerCase(),
 		});
 
-		// Make sure we don't assign the same email address to more than 1 customers
 		if (customerByEmailAddress !== null && customerByEmailAddress.uuid !== principal.uuid) {
 			throw new BadRequestException({
-				emailAddress: "Email address already exists. Please use a different email address.",
+				errors: {
+					emailAddress: "Email address already exists. Please use a different email address.",
+				},
+			});
+		}
+
+		// Make sure we don't have a customer using the same phone number
+		const customerByPhoneNumber = await this.customerRepository.findOneBy({
+			phoneNumber: body.phoneNumber.trim(),
+		});
+
+		if (customerByPhoneNumber !== null && customerByPhoneNumber.uuid !== principal.uuid) {
+			throw new BadRequestException({
+				errors: {
+					phoneNumber: "Phone number already exists. Please use a different phone number.",
+				},
 			});
 		}
 
@@ -432,12 +450,14 @@ export class CustomerAuthService {
 		if (customer === null) {
 			throw new BadRequestException({
 				errors: {
-					error: "Faild to find the customer.",
+					error: "Failed to find the customer.",
 				},
 			});
 		}
 
-		customer.emailAddress = body.emailAddress.trim().toLowerCase();
+		customer.fullName = body.fullName.trim();
+		customer.emailAddress = body.emailAddress.toLowerCase().toLowerCase();
+		customer.phoneNumber = body.phoneNumber;
 		return this.customerRepository.save(customer);
 	}
 }

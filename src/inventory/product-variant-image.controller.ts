@@ -10,20 +10,24 @@ import {
 	Post,
 	Put,
 	Query,
+	UploadedFile,
 	UseGuards,
+	UseInterceptors,
 } from "@nestjs/common";
+
+import { FileInterceptor } from "@nestjs/platform-express";
 
 import { UpdateProductVariantImageDto } from "./dtos/UpdateProductVariantImageDto";
 
 import { ProductVariantImage } from "./entities/product-variant-image.entity";
 import { ProductVariantImageService } from "./product-variant-image.service";
 
-import { UserRole } from "src/users/enums/UserRole";
+import { UserRole } from "../users/enums/UserRole";
 
-import { AuthGuard } from "src/auth/auth.guard";
-import { RolesGuard } from "src/auth/roles.guard";
+import { AuthGuard } from "../auth/auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
 
-import { Roles } from "src/auth/roles.decorator";
+import { Roles } from "../auth/roles.decorator";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products/:productUUID/variants/:variantUUID/images')
@@ -32,9 +36,10 @@ export class ProductVariantImageController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Post()
+	@UseInterceptors(FileInterceptor("file"))
 	@HttpCode(HttpStatus.CREATED)
-	actionCreateProductVariantImage(@Param('variantUUID') variantUUID: string) {
-		return this.productVariantImageService.createProductVariantImage(variantUUID);
+	actionCreateProductVariantImage(@Param('variantUUID') variantUUID: string, @UploadedFile() file: Express.Multer.File): Promise<ProductVariantImage> {
+		return this.productVariantImageService.createProductVariantImage(variantUUID, file);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)

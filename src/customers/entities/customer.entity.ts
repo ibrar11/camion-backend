@@ -13,10 +13,10 @@ import { Exclude } from "class-transformer";
 
 import { CustomerRole } from "../enums/CustomerRole";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
-import { LoginRequest } from "src/auth/entities/login-request.entity";
+import { CartItem } from "../../cart/entities/cart-items.entity";
 import { CustomerAddress } from "./customer-address.entity";
-import { ProductReview } from "src/inventory/entities/product-review.entity";
+import { LoginRequest } from "../../auth/entities/login-request.entity";
+import { ProductReview } from "../../inventory/entities/product-review.entity";
 
 import { Order } from "src/order/entities/order.entity";
 
@@ -35,11 +35,13 @@ export class Customer {
 	@Column({ type: "varchar", length: 64, })
 	fullName: string;
 
-	@Column({ type: "varchar", length: 256, nullable: true, unique: true, })
-	emailAddress: string | null;
+	@Field(() => String, { nullable: true, })
+	@Column({ type: "varchar", length: 256, nullable: false, unique: true, })
+	emailAddress: string;
 
-	@Column({ type: "varchar", length: 16, nullable: true, unique: true, })
-	phoneNumber: string | null;
+	@Field(() => String, { nullable: true, })
+	@Column({ type: "varchar", length: 16, nullable: false, unique: true, })
+	phoneNumber: string;
 
 	@Exclude()
 	@Column({ type: "varchar", nullable: false, length: 64, })
@@ -56,6 +58,7 @@ export class Customer {
 	})
 	role: CustomerRole;
 
+	@Exclude()
 	@Column({ nullable: true, unique: true, })
 	deviceId: string;
 
@@ -102,10 +105,10 @@ export class Customer {
 	createdAt: Date;
 
 	@Exclude()
-    @Column({ type: 'timestamptz', nullable: true })
-    markedForDeletionAt: Date | null;
+	@Column({ type: 'timestamptz', nullable: true })
+	markedForDeletionAt: Date | null;
 
 	@Exclude()
-    @Column({ type: 'timestamptz', nullable: true })
-    deletedAt: Date | null;
+	@Column({ type: 'timestamptz', nullable: true })
+	deletedAt: Date | null;
 }

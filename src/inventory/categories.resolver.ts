@@ -21,14 +21,8 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 
 @ArgsType()
 export class GetCategoriesArgs {
-	@Field({ defaultValue: "en-us", })
-	locale: string;
-
-	@Field({ defaultValue: "" })
-	filters: string;
-
-	@Field({ defaultValue: "" })
-	sort: string;
+	@Field({ defaultValue: "en", })
+	language: string;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -44,11 +38,11 @@ export class CategoriesResolver {
 
 	@ResolveField("name", () => String)
 	getName(@Parent() category: Category, @Args() args: GetCategoriesArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const locale = args.language.toLowerCase() || "en";
 
 		const nameMap = {
-			"en-us": category.nameEn,
-			"ar-qa": category.nameAr,
+			"en": category.nameEn,
+			"ar": category.nameAr,
 		};
 
 		return nameMap[locale] ?? category.nameEn;
@@ -56,6 +50,6 @@ export class CategoriesResolver {
 
 	@Query(() => [Category])
 	getCategories(@Args() args: GetCategoriesArgs): Promise<Array<Category>> {
-		return this.categoriesService.findAll(args.filters, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.categoriesService.findAll("", "", args.pageNumber, args.itemsPerPage);
 	}
 }

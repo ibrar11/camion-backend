@@ -21,14 +21,8 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 
 @ArgsType()
 export class GetBannersArgs {
-	@Field({ defaultValue: "en-us", })
-	locale: string;
-
-	@Field({ defaultValue: "" })
-	filters: string;
-
-	@Field({ defaultValue: "" })
-	sort: string;
+	@Field({ defaultValue: "en", })
+	language: string;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -44,18 +38,18 @@ export class BannersResolver {
 
 	@ResolveField("title", () => String)
 	getTitle(@Parent() banner: Banner, @Args() args: GetBannersArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const titleMap = {
-			"en-us": banner.titleEn,
-			"ar-qa": banner.titleAr,
+			"en": banner.titleEn,
+			"ar": banner.titleAr,
 		};
 
-		return titleMap[locale] ?? banner.titleEn;
+		return titleMap[language] ?? banner.titleEn;
 	}
 
 	@Query(() => [Banner])
 	getBanners(@Args() args: GetBannersArgs): Promise<Array<Banner>> {
-		return this.bannersService.findAll(args.filters, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.bannersService.findAll("", "", args.pageNumber, args.itemsPerPage);
 	}
 }

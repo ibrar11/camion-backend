@@ -1,4 +1,5 @@
 import {
+	IsBoolean,
 	IsNumber,
 	IsString,
 	MaxLength,
@@ -11,4 +12,7 @@ export class UpdateProductVariantImageDto {
 
 	@IsNumber()
 	position: number;
+
+	@IsBoolean()
+	isFeatured: boolean;
 }

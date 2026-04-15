@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -10,8 +11,10 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Repository } from "typeorm";
 
-import { getSkipAndTake } from "src/common/pagination";
-import { generateSlug } from "src/common/slug";
+import { S3Service } from "src/common/s3.service";
+
+import { getSkipAndTake } from "../common/pagination";
+import { generateSlug } from "../common/slug";
 
 import { CreateCategoryDto } from "./dtos/CreateCategoryDto";
 import { UpdateCategoryDto } from "./dtos/UpdateCategoryDto";
@@ -22,7 +25,10 @@ import { Category } from "./entities/category.entity";
 export class CategoriesService {
 	private readonly logger = new Logger(CategoriesService.name);
 
-	constructor(@InjectRepository(Category) private readonly categoryRepository: Repository<Category>) { }
+	constructor(
+		@Inject(S3Service) private readonly s3Service: S3Service,
+		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
+	) { }
 
 	/**
 	 * Creates a new product category
@@ -64,11 +70,37 @@ export class CategoriesService {
 
 		const category = new Category();
 		category.uuid = crypto.randomUUID();
+		category.parent = parentCategory;
 		category.slug = generateSlug(body.slug);
 		category.nameEn = body.name.en.trim().toLowerCase();
 		category.nameAr = body.name.ar.trim().toLowerCase();
 		category.pricingFactor = body.pricingFactor;
-		category.parent = parentCategory;
+		return this.categoryRepository.save(category);
+	}
+
+	/**
+	 * Uploads a thumbnail
+	 *
+	 * @param categoryUUID
+	 * @param file
+	 * @returns
+	 */
+	async updateThumbnail(categoryUUID: string, file: Express.Multer.File): Promise<Category> {
+		this.logger.log(`Attempting to upload a thumbnail for category: ${categoryUUID}`);
+
+		// Update the file to s3
+		const params = await this.s3Service.uploadFile("categories", file);
+
+		// Find the category
+		const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
+		if (category === null) {
+			throw new NotFoundException({
+				error: "Failed to find the category. Please check and try again.",
+			});
+		}
+
+		// Update the category
+		category.thumbnailUrl = params.url;
 		return this.categoryRepository.save(category);
 	}
 
@@ -95,6 +127,9 @@ export class CategoriesService {
 				children: {
 					children: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,

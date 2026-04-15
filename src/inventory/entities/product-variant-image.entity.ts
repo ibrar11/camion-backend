@@ -43,12 +43,20 @@ export class ProductVariantImage {
 	variant: ProductVariant;
 
 	@Field()
-	@Column({ type: "varchar", length: 64, })
-	uri: string;
+	@Column({ type: "varchar", length: 128, })
+	imageUrl: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 128, })
+	thumbnailUrl: string;
 
 	@Field()
 	@Column({ type: "varchar", length: 128, })
 	alt: string;
+
+	@Field()
+	@Column({ type: "boolean", default: false, })
+	isFeatured: boolean;
 
 	@Field(() => Int)
 	@Column({ type: "integer" })

@@ -28,6 +28,7 @@ import { RolesGuard } from '../auth/roles.guard';
 
 import { Roles } from '../auth/roles.decorator';
 import { CustomerRole } from 'src/customers/enums/CustomerRole';
+import { ProductSort } from './enums/ProductSort';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products')
@@ -46,7 +47,7 @@ export class ProductsController {
 	@HttpCode(HttpStatus.OK)
 	actionGetProducts(
 		@Query("filters") filters: string,
-		@Query("sort") sort: string,
+		@Query("sort") sort: ProductSort,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Product>> {

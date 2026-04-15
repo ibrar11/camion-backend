@@ -66,6 +66,9 @@ export class BannersService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.bannerRepository.find({
+			order: {
+				id: "DESC",
+			},
 			skip: skip,
 			take: take,
 		});

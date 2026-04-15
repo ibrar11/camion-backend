@@ -100,7 +100,7 @@ export class Product {
 	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, })
 	variants: Array<ProductVariant>;
 
-	@OneToMany(() => ProductCategory, (category) => category.product, { cascade: true, })
+	@OneToMany(() => ProductCategory, (productCategories) => productCategories.product, { cascade: true, })
 	productCategories: Array<ProductCategory>;
 
 	@Field(() => [ProductReview])

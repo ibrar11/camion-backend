@@ -1,3 +1,5 @@
+import { Product } from "src/inventory/entities/product.entity";
+
 export interface SearchProductItem {
     offerId: number;
     subject: string;
@@ -77,6 +79,7 @@ export interface SearchProducts {
 }
 
 export interface ProductVariant {
+    title: string;
     skuId: number;
     price: number;
     stock: number;
@@ -99,6 +102,7 @@ export interface ProductAttributeFormatted {
 
 export interface ProductDetail {
     externalId: number;
+    slug: string;
     title: string;
     description: string;
     descriptionTrans: string;
@@ -137,4 +141,9 @@ export interface ProductDetail {
         sold?: number;
         isDropshipping: boolean;
     };
+}
+
+export interface importedProduct {
+    externalId: string,
+    product: Product
 }

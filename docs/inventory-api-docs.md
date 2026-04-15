@@ -13,6 +13,7 @@ Follow the following steps to create your first product. Your can find the docum
 3. Create your product options.
 4. Create your product option values.
 5. Create your product variants.
+6. Create your product variant images.
 
 Warehouse API
 =============
@@ -1310,4 +1311,189 @@ Delete Product Variant
 
 ```http
 DELETE /v1/products/<product-uuid>/variants/<variant-uuid> HTTP/1.1
+```
+
+Product Variant Images
+======================
+
+Upload Variant Images
+---------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+POST /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
+```
+
+### Example
+```bash
+curl --location --request POST 'http://localhost:8000/v1/products/d0bd2ed9-81b2-44fe-84dc-9c52a794a2a3/variants/d0bd2ed9-81b2-44fe-84dc-9c52a794a2a3/images' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+--form 'file=@"/C:/m_Direct_Media____YWCMXRBDU8.jpg"'
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+    "variant": {
+        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+        "titleEn": "iPhone 24 Red 1 TB",
+        "titleAr": "iPhone 24 Red 1 TB",
+        "sku": "iphone-24-red-1tb",
+        "barcode": "10000",
+        "price": {
+            "amount": 4000,
+            "currencyCode": "QAR"
+        },
+        "weight": {
+            "amount": 1,
+            "unit": "kg"
+        },
+        "dimensions": {
+            "width": 1000,
+            "height": 1000,
+            "length": 1000,
+            "unit": "in"
+        }
+    },
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+    "alt": "",
+    "isFeatured": false,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Get Variant Images
+------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+        "alt": "",
+        "isFeatured": false,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    },
+    {
+        "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+        "alt": "",
+        "isFeatured": false,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    },
+    {
+        "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+        "alt": "iPhone Photo",
+        "isFeatured": true,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    }
+]
+```
+
+Get Variant Image
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "alt": "",
+    "isFeatured": false,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Update Variant Image
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "alt": "iPhone Photo",
+    "position": 0,
+    "isFeatured": true
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "alt": "iPhone Photo",
+    "isFeatured": true,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Delete Variant Image
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+DELETE /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
 ```

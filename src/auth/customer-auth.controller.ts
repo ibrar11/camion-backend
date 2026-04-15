@@ -19,7 +19,6 @@ import { LoginCustomerByEmailAddressDto } from './dtos/LoginCustomerByEmailAddre
 import { LoginCustomerByPhoneNumberDto } from './dtos/LoginCustomerByPhoneNumberDto';
 
 import { UpdateCustomerDto } from './dtos/UpdateCustomerDto';
-import { UpdateCustomerEmailAddressDto } from './dtos/UpdateCustomerEmailAddressDto';
 
 import { CustomerAuthVerificationResponse } from './response/CustomerAuthVerificationResponse';
 import { CustomerAuthResponse } from './response/CustomerAuthResponse';
@@ -90,19 +89,5 @@ export class CustomerAuthController {
 		body: UpdateCustomerDto,
 	): Promise<Customer> {
 		return this.customerAuthService.updateProfile(req.customer, body);
-	}
-
-	@UseGuards(AuthGuard)
-	@HttpCode(HttpStatus.OK)
-	@Put('self/email-address')
-	actionUpdateCustomerEmailAddress(
-		@Req()
-		req: Request & {
-			customer: Customer,
-		},
-		@Body()
-		body: UpdateCustomerEmailAddressDto,
-	): Promise<Customer> {
-		return this.customerAuthService.updateEmailAddress(req.customer, body);
 	}
 }

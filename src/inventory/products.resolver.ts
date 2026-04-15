@@ -14,6 +14,8 @@ import {
 	Resolver,
 } from "@nestjs/graphql";
 
+import { ProductSort } from "./enums/ProductSort";
+
 import { Product } from "./entities/product.entity";
 import { ProductOption } from "./entities/product-option.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
@@ -25,14 +27,35 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 
 @ArgsType()
 export class GetProductsArgs {
-	@Field({ defaultValue: "en-us", })
-	locale: string;
+	@Field({ defaultValue: "en", })
+	language: string;
 
-	@Field({ defaultValue: "" })
-	filters: string;
+	@Field({ defaultValue: "usd", })
+	currency: string;
 
-	@Field({ defaultValue: "" })
-	sort: string;
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 100, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetProductsByCategoryArgs {
+	@Field(() => String)
+	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -45,6 +68,114 @@ export class GetProductsArgs {
 export class GetProductArgs {
 	@Field({ defaultValue: "", })
 	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+}
+
+@ArgsType()
+export class SearchProductsArgs {
+	@Field()
+	query: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 100, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetRecommendedProductsArgs {
+	@Field()
+	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 100, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetFeaturedProductsArgs {
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 100, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetPopularProductsArgs {
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 100, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetRelatedProductsArgs {
+	@Field()
+	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 100, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetRecentlyViewedProductsArgs {
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 100, })
+	itemsPerPage: number;
 }
 
 @UseGuards(GqlAuthGuard)
@@ -54,60 +185,95 @@ export class ProductsResolver {
 
 	@ResolveField("title", () => String)
 	getTitle(@Parent() product: Product, @Args() args: GetProductsArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const titleMap = {
-			"en-us": product.titleEn,
-			"ar-qa": product.titleAr,
+			"en": product.titleEn,
+			"ar": product.titleAr,
 		};
 
-		return titleMap[locale] ?? product.titleEn;
+		return titleMap[language] ?? product.titleEn;
 	}
 
 	@ResolveField("brief", () => String)
 	getBrief(@Parent() product: Product, @Args() args: GetProductsArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const briefMap = {
-			"en-us": product.briefEn,
-			"ar-qa": product.briefAr,
+			"en": product.briefEn,
+			"ar": product.briefAr,
 		};
 
-		return briefMap[locale] ?? product.briefEn;
+		return briefMap[language] ?? product.briefEn;
 	}
 
 	@ResolveField("description", () => String)
 	getDescription(@Parent() product: Product, @Args() args: GetProductsArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const descriptionMap = {
-			"en-us": product.descriptionEn,
-			"ar-qa": product.descriptionAr,
+			"en": product.descriptionEn,
+			"ar": product.descriptionAr,
 		};
 
-		return descriptionMap[locale] ?? product.descriptionEn;
+		return descriptionMap[language] ?? product.descriptionEn;
 	}
 
 	@ResolveField("descriptionHtml", () => String)
 	getDescriptionHtml(@Parent() product: Product, @Args() args: GetProductsArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const descriptionHtmlMap = {
-			"en-us": product.descriptionHtmlEn,
-			"ar-qa": product.descriptionHtmlAr,
+			"en": product.descriptionHtmlEn,
+			"ar": product.descriptionHtmlAr,
 		};
 
-		return descriptionHtmlMap[locale] ?? product.descriptionHtmlEn;
+		return descriptionHtmlMap[language] ?? product.descriptionHtmlEn;
 	}
 
 	@Query(() => [Product])
 	getProducts(@Args() args: GetProductsArgs): Promise<Array<Product>> {
-		return this.productsService.findAll(args.filters, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAll("", args.sort as ProductSort, args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getProductsByCategory(@Args() args: GetProductsByCategoryArgs): Promise<Array<Product>> {
+		return this.productsService.findAllByCategory(args.slug, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => Product, { nullable: true, })
 	getProduct(@Args() args: GetProductArgs): Promise<Product> {
 		return this.productsService.findOneBySlug(args.slug);
+	}
+
+	@Query(() => [Product])
+	searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
+		return this.productsService.searchProducts(args.query, args.language, args.sort, args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getRecommendedProducts(@Args() args: GetRecommendedProductsArgs): Promise<Array<Product>> {
+		return this.productsService.getRecommendedProducts(args.slug, args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getFeaturedProducts(@Args() args: GetFeaturedProductsArgs): Promise<Array<Product>> {
+		return this.productsService.getFeaturedProducts(args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getPopularProducts(@Args() args: GetPopularProductsArgs): Promise<Array<Product>> {
+		return this.productsService.getPopularProducts(args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getRelatedProducts(@Args() args: GetRelatedProductsArgs): Promise<Array<Product>> {
+		return this.productsService.getRelatedProducts(args.slug, args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getRecentlyViewedProducts(@Args() args: GetRecentlyViewedProductsArgs): Promise<Array<Product>> {
+		return this.productsService.getRecentlyViewedProducts("", args.pageNumber, args.itemsPerPage);
 	}
 }
 
@@ -115,14 +281,14 @@ export class ProductsResolver {
 export class ProductOptionResolver {
 	@ResolveField("name", () => String)
 	getName(@Parent() productOption: ProductOption, @Args() args: GetProductsArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const nameMap = {
-			"en-us": productOption.nameEn,
-			"ar-qa": productOption.nameAr,
+			"en": productOption.nameEn,
+			"ar": productOption.nameAr,
 		};
 
-		return nameMap[locale] ?? productOption.nameEn;
+		return nameMap[language] ?? productOption.nameEn;
 	}
 }
 
@@ -130,14 +296,14 @@ export class ProductOptionResolver {
 export class ProductOptionValueResolver {
 	@ResolveField("value", () => String)
 	getValue(@Parent() productOptionValue: ProductOptionValue, @Args() args: GetProductsArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const ValueMap = {
-			"en-us": productOptionValue.valueEn,
-			"ar-qa": productOptionValue.valueAr,
+			"en": productOptionValue.valueEn,
+			"ar": productOptionValue.valueAr,
 		};
 
-		return ValueMap[locale] ?? productOptionValue.valueAr;
+		return ValueMap[language] ?? productOptionValue.valueAr;
 	}
 }
 
@@ -145,13 +311,13 @@ export class ProductOptionValueResolver {
 export class ProductVariantResolver {
 	@ResolveField("title", () => String)
 	getName(@Parent() productVariant: ProductVariant, @Args() args: GetProductsArgs): string {
-		const locale = args.locale.toLowerCase() || "en-us";
+		const language = args.language.toLowerCase() || "en";
 
 		const titleMap = {
-			"en-us": productVariant.titleEn,
-			"ar-qa": productVariant.titleAr,
+			"en": productVariant.titleEn,
+			"ar": productVariant.titleAr,
 		};
 
-		return titleMap[locale] ?? productVariant.titleEn;
+		return titleMap[language] ?? productVariant.titleEn;
 	}
 }

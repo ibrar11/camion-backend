@@ -3,7 +3,29 @@ import {
     Logger,
     BadRequestException,
     InternalServerErrorException,
+    Inject,
 } from '@nestjs/common';
+
+import { generateSlug } from 'src/common/slug';
+import { fetchImageAsFile } from 'src/common/fetchImage';
+
+import { CurrencyCode } from 'src/inventory/enums/CurrencyCode';
+import { WeightUnit } from 'src/inventory/enums/WeightUnit';
+import { DimensionsUnit } from 'src/inventory/enums/DimensionsUnit';
+
+import { ImportProductDto } from './dtos/ImportProductDto';
+
+import { CreateProductVariantDto } from 'src/inventory/dtos/CreateProductVariantDto';
+
+import { ProductsService } from 'src/inventory/products.service';
+
+import { ProductVariantService } from 'src/inventory/product-variant.service';
+
+import { ProductOptionService } from 'src/inventory/product-option.service';
+
+import { ProductOptionValueService } from 'src/inventory/product-option-value.service';
+
+import { ProductVariantImageService } from 'src/inventory/product-variant-image.service';
 
 import {
     ProductAttribute,
@@ -11,12 +33,22 @@ import {
     ProductSku,
     SearchProductItem,
     SearchProducts,
-    SkuAttribute
+    SkuAttribute,
+    importedProduct
 } from './types';
+
 
 @Injectable()
 export class ProcurementService {
     private readonly logger = new Logger(ProcurementService.name);
+
+    constructor(
+        @Inject(ProductsService) private readonly productService: ProductsService,
+        @Inject(ProductVariantService) private readonly variantService: ProductVariantService,
+        @Inject(ProductOptionService) private readonly optionService: ProductOptionService,
+        @Inject(ProductOptionValueService) private readonly optionValueService: ProductOptionValueService,
+        @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
+    ) { }
 
     /**
      * Finds a list of products with specific keyword
@@ -25,11 +57,11 @@ export class ProcurementService {
      * @returns
      */
     async searchProduct(
-        keyword: string, 
-        page: string = '1', 
-        pageSize: string = '20', 
-        sort: string, 
-        priceStart: string = '', 
+        keyword: string,
+        page: string = '1',
+        pageSize: string = '20',
+        sort: string,
+        priceStart: string = '',
         priceEnd: string = ''
     ): Promise<Array<SearchProducts>> {
         try {
@@ -103,7 +135,7 @@ export class ProcurementService {
             this.logger.error(`Error fetching products: ${error?.message}`);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch products',
-                details: error.response?.data || error.message,
+                details: error.response?.error || error.message,
             });
         }
     }
@@ -186,7 +218,10 @@ export class ProcurementService {
                     return { name, value };
                 }) ?? [];
 
+                const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
+
                 return {
+                    title: title,
                     skuId: sku.skuId,
                     price: parseFloat(
                         sku.price ||
@@ -211,9 +246,11 @@ export class ProcurementService {
                 value: getValue(attr),
             }));
 
+            const slug = generateSlug(product.subjectTrans || product.subject);
             // Format the Product
             const formattedProduct = {
                 externalId: product.offerId,
+                slug: slug,
                 title: product.subjectTrans || product.subject,
                 description: description,
                 descriptionTrans: descriptionTrans,
@@ -254,10 +291,200 @@ export class ProcurementService {
 
             return formattedProduct;
         } catch (error: any) {
-            this.logger.error(`Error fetching products: ${error?.message}`);
+            this.logger.error(`Error fetching product: ${error?.message}`, error);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch product',
-                details: error.response?.data || error.message,
+                details: error.response?.error || error.message,
+            });
+        }
+    }
+
+    /**
+     * Import product details in db
+     *
+     * @param dto
+     * @returns
+     */
+    async importProduct(dto: ImportProductDto) {
+        const results = {
+            success: [] as importedProduct[],
+            failed: [] as { id: string; reason: string }[],
+        };
+
+        try {
+            const ids = [...new Set(dto.externalId || [])];
+
+            if (!ids.length) {
+                throw new BadRequestException({
+                    message: 'externalId array cannot be empty',
+                });
+            }
+
+            const BATCH_SIZE = 3;
+
+            for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+                const batch = ids.slice(i, i + BATCH_SIZE);
+
+                await Promise.all(
+                    batch.map(async (id) => {
+                        try {
+                            // 1. Fetch product details from 1688
+                            const productDetails = await this.getProductDetail(id);
+
+                            // 2. create product in database and 
+                            const product = await this.productService.createProduct({
+                                slug: productDetails.slug,
+                                title: {
+                                    en: productDetails.title,
+                                    ar: productDetails.title
+                                },
+                                description: {
+                                    en: productDetails.description, //need to update through admin dashboard
+                                    ar: productDetails.description //need to update through admin dashboard
+                                },
+                                brief: {
+                                    en: '', //need to add through admin dashboard
+                                    ar: '' //need to add through admin dashboard
+                                },
+                                descriptionHtml: {
+                                    en: productDetails.description,
+                                    ar: productDetails.description
+                                },
+                                categories: [] //need to add categories through admin dashboard
+                            });
+
+                            const optionValuesUuids: string[] = []
+
+                            // 3. create product option and product option values for product
+                            if (productDetails.options?.length) {
+                                const VARIANT_BATCH_SIZE = 5;
+
+                                for (let i = 0; i < productDetails.options.length; i += VARIANT_BATCH_SIZE) {
+                                    const batch = productDetails.options.slice(i, i + VARIANT_BATCH_SIZE);
+
+                                    await Promise.all(
+                                        batch.map(async (option, index) => {
+                                            try {
+                                                const optionPayload = {
+                                                    name: {
+                                                        en: option.name,
+                                                        ar: option.name,
+                                                    },
+                                                    position: i + index + 1
+                                                };
+
+                                                // add product options
+                                                const createdOption = await this.optionService.createProductOption(
+                                                    product.uuid,
+                                                    optionPayload,
+                                                );
+
+                                                for (let valueIndex = 0; valueIndex < option.values.length; valueIndex++) {
+                                                    try {
+                                                        const optionValuePayload = {
+                                                            value: {
+                                                                en: option.values[valueIndex],
+                                                                ar: option.values[valueIndex],
+                                                            },
+                                                            position: valueIndex + 1,
+                                                        };
+
+                                                        // add product options values
+                                                        const optionValue = await this.optionValueService.createProductOptionValue(
+                                                            createdOption.uuid,
+                                                            optionValuePayload
+                                                        );
+                                                        optionValuesUuids.push(optionValue.uuid)
+                                                    } catch (error: any) {
+                                                        this.logger.error(`Option value creation failed for product ${product.uuid}: ${error?.message}`);
+                                                    }
+                                                }
+
+                                            } catch (error: any) {
+                                                this.logger.error(`Option creation failed for product ${product.uuid}: ${error?.message}`,);
+                                            }
+                                        }),
+                                    );
+                                }
+                            }
+
+                            // 4. create product variants and product variant images
+                            if (productDetails.variants?.length) {
+                                const VARIANT_BATCH_SIZE = 5;
+
+                                for (let i = 0; i < productDetails.variants.length; i += VARIANT_BATCH_SIZE) {
+                                    const batch = productDetails.variants.slice(i, i + VARIANT_BATCH_SIZE);
+
+                                    await Promise.all(
+                                        batch.map(async (variant) => {
+                                            try {
+                                                const dto: CreateProductVariantDto = {
+                                                    warehouse: '02637c52-5770-4769-8da0-ee00e8c46b16', //currently using dummy warehouse, need to replace it with default warehouse
+                                                    title: {
+                                                        en: variant.title ?? '',
+                                                        ar: variant.title ?? '',
+                                                    },
+                                                    sku: variant.skuId?.toString() || crypto.randomUUID(),
+                                                    barcode: variant.skuId?.toString() || '',
+                                                    quantity: variant.stock || 0,
+                                                    price: {
+                                                        amount: variant.price || 0,
+                                                        currencyCode: CurrencyCode.USD,
+                                                    },
+                                                    weight: {
+                                                        amount: productDetails.shipping?.weight || 0,
+                                                        unit: WeightUnit.Kilograms,
+                                                    },
+                                                    dimensions: {
+                                                        width: productDetails.shipping?.width || 0,
+                                                        height: productDetails.shipping?.height || 0,
+                                                        length: productDetails.shipping?.length || 0,
+                                                        unit: DimensionsUnit.Centimeter
+                                                    },
+                                                    optionValues: optionValuesUuids,
+                                                };
+
+                                                // add product variants
+                                                const createdVariant = await this.variantService.createProductVariant(
+                                                    product.uuid,
+                                                    dto,
+                                                );
+
+                                                const imageFile = await fetchImageAsFile(variant.image || '')
+
+                                                await this.variantImageService.createProductVariantImage(createdVariant.uuid, imageFile);
+
+                                            } catch (error: any) {
+                                                this.logger.error(`Variant creation failed for product ${product.uuid}: ${error?.message}`,error);
+                                            }
+                                        }),
+                                    );
+                                }
+                            }
+
+                            results.success.push({
+                                externalId: id,
+                                product: product
+                            });
+
+                        } catch (error: any) {
+                            this.logger.error(`Failed importing product ${id}: ${error?.message}`);
+
+                            results.failed.push({
+                                id,
+                                reason: error?.message || error,
+                            });
+                        }
+                    }),
+                );
+            }
+
+            return results;
+        } catch (error: any) {
+            this.logger.error(`Error importing products: ${error?.message || error}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to import products',
+                details: error.response?.error || error.message,
             });
         }
     }
