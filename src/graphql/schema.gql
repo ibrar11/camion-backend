@@ -23,6 +23,14 @@ type Category {
   uuid: String!
 }
 
+type Currency {
+  alphaCode: String!
+  createdAt: DateTime!
+  name: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
 type Customer {
   emailAddress: String
   fullName: String!
@@ -43,6 +51,11 @@ type CustomerAddress {
   zipCode: String!
 }
 
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type Dimensions {
   height: Int!
   length: Int!
@@ -54,6 +67,14 @@ type EmojiElement {
   content: String!
 }
 
+type Language {
+  createdAt: DateTime!
+  name: String!
+  shortCode: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
 type LinkElement {
   content: String!
 }
@@ -61,6 +82,19 @@ type LinkElement {
 type Money {
   amount: Int!
   currencyCode: String!
+}
+
+type Notification {
+  brief: String!
+  createdAt: DateTime!
+  isRead: Boolean!
+  message: String!
+  payload: String!
+  priority: String!
+  title: String!
+  type: String!
+  updatedAt: DateTime!
+  uuid: String!
 }
 
 type PollElement {
@@ -156,9 +190,12 @@ type ProductVariantOptionValue {
 type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
+  getCurrencies: [Currency!]!
   getCurrentCustomer: Customer!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getLanguages: [Language!]!
+  getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!

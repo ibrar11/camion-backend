@@ -83,6 +83,15 @@ import { BannersModule } from './banners/banners.module';
 
 import { NewsletterModule } from "./newsletter/newsletter.module";
 
+import { Currency } from "./currencies/entities/currency.entity";
+import { CurrenciesModule } from './currencies/currencies.module';
+
+import { Language } from "./languages/entities/language.entity";
+import { LanguagesModule } from './languages/languages.module';
+
+import { Notification } from "./notifications/entities/notification.entity";
+import { NotificationsModule } from './notifications/notifications.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -146,7 +155,11 @@ import { NewsletterModule } from "./newsletter/newsletter.module";
 
 					Warehouse,
 
-					Post,
+					Currency,
+
+					Language,
+                    
+          Post,
 
 					ClientRefreshToken,
 
@@ -156,6 +169,8 @@ import { NewsletterModule } from "./newsletter/newsletter.module";
 					StoryFrame,
 
 					Banner,
+
+          Notification,
 				],
 				synchronize: true,
 			}),
@@ -196,7 +211,10 @@ import { NewsletterModule } from "./newsletter/newsletter.module";
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
-        NewsletterModule,
+    NewsletterModule,
+		CurrenciesModule,
+		LanguagesModule,
+    NotificationsModule,
 		ScheduleModule.forRoot(),
 	],
 	controllers: [AppController],

@@ -37,5 +37,6 @@ import { CustomersScheduler } from './customers.scheduler';
 		CustomersController,
 		CustomerAddressesController,
 	],
+	exports: [CustomersService],
 })
 export class CustomersModule { }
