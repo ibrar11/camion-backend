@@ -159,7 +159,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 					Language,
                     
-          Post,
+                    Post,
 
 					ClientRefreshToken,
 
@@ -170,7 +170,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 					Banner,
 
-          Notification,
+                    Notification,
 				],
 				synchronize: true,
 			}),
@@ -211,10 +211,10 @@ import { NotificationsModule } from './notifications/notifications.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
-    NewsletterModule,
+        NewsletterModule,
 		CurrenciesModule,
 		LanguagesModule,
-    NotificationsModule,
+        NotificationsModule,
 		ScheduleModule.forRoot(),
 	],
 	controllers: [AppController],
