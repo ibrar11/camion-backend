@@ -31,6 +31,19 @@ import { InventoryLevel } from "src/inventory/entities/inventory-level.entity";
 
 import { CartItem } from "src/cart/entities/cart-items.entity";
 
+import { CustomerAddress } from "src/customers/entities/customer-address.entity";
+
+import { calculateStock } from "src/common/calculateStock";
+
+import {
+    calculateCartShipping,
+    ShippingCalculationResult
+} from "src/common/calculateShipping";
+
+import {
+    OrderPreviewResponse,
+} from "./types";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -43,6 +56,7 @@ export class OrderService {
         @InjectRepository(InventoryItem) private inventoryRepo: Repository<InventoryItem>,
         @InjectRepository(InventoryLevel) private inventoryLevelRepo: Repository<InventoryLevel>,
         @InjectRepository(CartItem) private cartRepo: Repository<CartItem>,
+        @InjectRepository(CustomerAddress) private readonly addressRepo: Repository<CustomerAddress>,
     ) { }
 
     /**
@@ -339,6 +353,113 @@ export class OrderService {
             throw new InternalServerErrorException({
                 error: 'Failed to cancel order',
                 details: error.message || error,
+            });
+        }
+    }
+
+    /**
+    * order preview
+    * @param customer
+    * @returns
+    */
+    async orderPreview(customer: Customer): Promise<OrderPreviewResponse> {
+        try {
+            // Get cart items with relations
+            const cartItems = await this.cartRepo.find({
+                where: { customer: { id: customer.id } },
+                relations: {
+                    product: true,
+                    variant: {
+                        inventoryItem: {
+                            levels: true
+                        }
+                    }
+                }
+            });
+
+            if (!cartItems || cartItems.length === 0) {
+                throw new BadRequestException({
+                    error: 'Cart is empty'
+                });
+            }
+
+            const address = await this.addressRepo.findOne({
+                where: {
+                    customer: { id: customer.id },
+                    isDefault: true,
+                },
+            });
+
+            if (!address) {
+                throw new BadRequestException({
+                    error: 'User address cannot be found.'
+                });
+            }
+
+            // Validate cart items and prepare for shipping calculation
+            const validatedItems: CartItem[] = [];
+            let subtotal = 0;
+
+            for (const item of cartItems) {
+                // Check stock availability
+                const stock = calculateStock(item.variant);
+
+                if (stock < item.quantity) {
+                    throw new BadRequestException({
+                        error: `Insufficient stock for ${item.product.titleEn} - ${item.variant.titleEn}`
+                    });
+                }
+
+                const itemTotal = item.variant.price.amount * item.quantity;
+                subtotal += itemTotal;
+
+                validatedItems.push({
+                    ...item
+                });
+            }
+
+            // Prepare cart items for shipping calculation
+            const shippingCartItems = cartItems.map(item => ({
+                weight: {
+                    amount: item.variant.weight.amount,
+                    unit: item.variant.weight.unit,
+                },
+                quantity: item.quantity,
+            }));
+
+            // Calculate shipping fee using utility function
+            const shippingCalculation = calculateCartShipping(
+                shippingCartItems,
+                address.country,
+                "USD", // Todo make currency dynamic
+                subtotal
+            );
+
+            if ('error' in shippingCalculation) {
+                throw new BadRequestException({
+                    error: shippingCalculation.error
+                });
+            }
+
+            // Calculate total order amount
+            const totalAmount = subtotal + (shippingCalculation as ShippingCalculationResult).totalShippingCost;
+
+            // Return complete order preview
+            const orderPreview = {
+                cart: validatedItems,
+                address,
+                cart_total: subtotal,
+                shipping: shippingCalculation,
+                shippingTotal: (shippingCalculation as ShippingCalculationResult).totalShippingCost,
+                grand_total: totalAmount,
+            };
+
+            return orderPreview;
+        } catch (error: any) {
+            this.logger.error(`Error getting order preview: ${error}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to get order preview',
+                details: error,
             });
         }
     }

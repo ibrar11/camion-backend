@@ -13,6 +13,7 @@ import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 
 import { Customer } from 'src/customers/entities/customer.entity';
+import { CustomerAddress } from 'src/customers/entities/customer-address.entity';
 import { CustomersService } from 'src/customers/customers.service';
 
 import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
@@ -33,6 +34,7 @@ import { InventoryLevel } from 'src/inventory/entities/inventory-level.entity';
             InventoryItem,
             InventoryLevel,
             CartItem,
+            CustomerAddress
         ]),
         ClientsModule,
     ],

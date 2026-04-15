@@ -30,12 +30,14 @@ import { OrderService } from './order.service';
 import { Customer } from 'src/customers/entities/customer.entity';
 import { UserRole } from 'src/users/enums/UserRole';
 
+import { OrderPreviewResponse } from './types';
+
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/orders')
 export class OrderController {
     constructor(@Inject(OrderService) private readonly orderService: OrderService) { }
 
-    @Roles(UserRole.SuperAdmin,UserRole.Admin, CustomerRole.Customer)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     create(
@@ -45,7 +47,7 @@ export class OrderController {
         return this.orderService.create(customer, dto);
     }
 
-    @Roles(UserRole.SuperAdmin,UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Get()
     @HttpCode(HttpStatus.OK)
     findAll() {
@@ -61,14 +63,23 @@ export class OrderController {
         return this.orderService.myOrders(customer.uuid);
     }
 
-    @Roles(UserRole.SuperAdmin,UserRole.Admin, CustomerRole.Customer)
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
+    @Get('order-preview')
+    orderPreview(
+        @GetCustomer() customer: Customer,
+    ): Promise<OrderPreviewResponse> {
+        return this.orderService.orderPreview(customer)
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
     @Get(':uuid')
     @HttpCode(HttpStatus.OK)
     findOne(@Param('uuid') uuid: string): Promise<Order> {
         return this.orderService.findOne(uuid);
     }
 
-    @Roles(UserRole.SuperAdmin,UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Patch(':uuid/status')
     @HttpCode(HttpStatus.OK)
     updateStatus(
@@ -78,7 +89,7 @@ export class OrderController {
         return this.orderService.updateStatus(uuid, status);
     }
 
-    @Roles(UserRole.SuperAdmin,UserRole.Admin, CustomerRole.Customer)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
     @Delete(':uuid')
     @HttpCode(HttpStatus.OK)
     cancel(@Param('uuid') uuid: string): Promise<void> {
