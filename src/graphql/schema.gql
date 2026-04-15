@@ -84,6 +84,19 @@ type Money {
   currencyCode: String!
 }
 
+type Notification {
+  brief: String!
+  createdAt: DateTime!
+  isRead: Boolean!
+  message: String!
+  payload: String!
+  priority: String!
+  title: String!
+  type: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
 type PollElement {
   options: PollOptionElement!
   question: String!
@@ -182,6 +195,7 @@ type Query {
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
+  getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!

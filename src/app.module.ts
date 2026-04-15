@@ -87,6 +87,9 @@ import { CurrenciesModule } from './currencies/currencies.module';
 import { Language } from "./languages/entities/language.entity";
 import { LanguagesModule } from './languages/languages.module';
 
+import { Notification } from "./notifications/entities/notification.entity";
+import { NotificationsModule } from './notifications/notifications.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -164,6 +167,8 @@ import { LanguagesModule } from './languages/languages.module';
 					StoryFrame,
 
 					Banner,
+
+                    Notification,
 				],
 				synchronize: true,
 			}),
@@ -206,6 +211,7 @@ import { LanguagesModule } from './languages/languages.module';
 		BannersModule,
 		CurrenciesModule,
 		LanguagesModule,
+        NotificationsModule,
 		ScheduleModule.forRoot(),
 	],
 	controllers: [AppController],

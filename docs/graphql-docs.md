@@ -9,6 +9,7 @@ This document includes the documentation of GraphQL support for the following it
 - Stories
 - Categories
 - Products
+- Notifications
 
 > [!IMPORTANT]
 > You must include your access token as a `Bearer` token in the Authorization header. Your must have a Customer account to use the GraphQL APIs.
@@ -55,6 +56,8 @@ The following features are currently supported by the GraphQL API.
 - Get Products By Category
 - Get Product
 - Get Categories
+- Get Notifications
+- Mark Notification as Read
 
 Get Current Customer
 --------------------
@@ -3784,4 +3787,137 @@ query GetCurrencies {
 * Both fields are unique and enforced at API level
 
 ---
+
+Notifications
+=============
+
+Notifications are created by the system or admin and delivered to customers. Customers can query their own notifications and mark them as read.
+
+**Notification Types**
+
+| Type | Description |
+|---|---|
+| `ORDER_PLACED` | Order has been successfully placed |
+| `ORDER_CONFIRMED` | Order confirmed by the vendor |
+| `ORDER_PROCESSING` | Order is being prepared |
+| `ORDER_SHIPPED` | Order has been shipped |
+| `ORDER_OUT_FOR_DELIVERY` | Order is out for delivery |
+| `ORDER_DELIVERED` | Order has been delivered |
+| `ORDER_DELAYED` | Order delivery has been delayed |
+| `ORDER_CANCELLED` | Order was cancelled |
+| `ORDER_RETURNED` | Order return initiated |
+| `ORDER_REFUNDED` | Refund has been processed |
+| `PAYMENT_SUCCESSFUL` | Payment was completed successfully |
+| `PAYMENT_FAILED` | Payment attempt failed |
+| `PAYMENT_PENDING` | Payment is awaiting confirmation |
+| `PAYMENT_REFUND_INITIATED` | Refund has been initiated |
+| `PAYMENT_REFUND_COMPLETED` | Refund has been credited back |
+| `PAYMENT_METHOD_ADDED` | A new payment method was added |
+| `PAYMENT_METHOD_REMOVED` | A payment method was removed |
+| `PAYMENT_DUE_REMINDER` | Upcoming or overdue payment reminder |
+| `LOW_STOCK_ALERT` | Product stock is running low |
+| `OUT_OF_STOCK` | Product is now out of stock |
+| `BACK_IN_STOCK` | Previously out-of-stock product is available again |
+| `PRICE_DROP` | Product price has dropped |
+| `LIMITED_STOCK_WARNING` | Only a few units remaining |
+
+**Priority Levels**
+
+| Value | Meaning |
+|---|---|
+| `LOW` | Informational, no urgency |
+| `MEDIUM` | Standard notification (default) |
+| `HIGH` | Requires immediate attention |
+
+---
+
+Get Notifications
+-----------------
+
+Retrieves all notifications for the logged-in customer, ordered by most recent first.
+
+### Request Body
+
+```graphql
+query GetNotifications {
+  getNotifications {
+    uuid
+    type
+    title
+    brief
+    message
+    payload
+    priority
+    isRead
+    createdAt
+    updatedAt
+    customer {
+      uuid
+      fullName
+      emailAddress
+      phoneNumber
+    }
+  }
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getNotifications": [
+            {
+                "uuid": "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c",
+                "type": "ORDER_SHIPPED",
+                "title": "Your order has been shipped",
+                "brief": "Order #1042 is on its way",
+                "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+                "payload": {
+                    "orderId": "1042",
+                    "trackingNumber": "TRK9876543210"
+                },
+                "priority": "HIGH",
+                "isRead": false,
+                "createdAt": "2026-04-15T10:30:00.000Z",
+                "updatedAt": "2026-04-15T10:30:00.000Z",
+                "customer": {
+                    "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+                    "fullName": "Your Name",
+                    "emailAddress": "your-name@your-domain.com",
+                    "phoneNumber": "+974 12345678"
+                }
+            },
+            {
+                "uuid": "b7d2f3e5-1c98-4e23-cd45-2g3f4e5b6c7d",
+                "type": "PRICE_DROP",
+                "title": "Price drop on an item you liked",
+                "brief": "iPhone 25 is now cheaper",
+                "message": "The iPhone 25 you viewed recently has dropped in price. Grab it before it sells out!",
+                "payload": {
+                    "productSlug": "iphone-25",
+                    "oldPrice": 79900,
+                    "newPrice": 69900,
+                    "currency": "qar"
+                },
+                "priority": "MEDIUM",
+                "isRead": true,
+                "createdAt": "2026-04-14T08:00:00.000Z",
+                "updatedAt": "2026-04-14T09:15:00.000Z",
+                "customer": {
+                    "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+                    "fullName": "Your Name",
+                    "emailAddress": "your-name@your-domain.com",
+                    "phoneNumber": "+974 12345678"
+                }
+            }
+        ]
+    }
+}
+```
+
+> ⚠️ Returns an empty array if the customer has no notifications.
+
+---
+
 
