@@ -81,6 +81,13 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { Affiliate } from "./referral/entities/affiliate.entity";
+import { BankAccount } from "./referral/entities/bank-account.entity";
+import { Coupon } from "./referral/entities/coupon.entity";
+import { Transaction } from "./referral/entities/transaction.entity";
+import { Wallet } from "./referral/entities/wallet.entity";
+import { ReferralModule } from './referral/referral.module';
+
 import { Currency } from "./currencies/entities/currency.entity";
 import { CurrenciesModule } from './currencies/currencies.module';
 
@@ -102,10 +109,10 @@ import { NotificationsModule } from './notifications/notifications.module';
 			useFactory: (configService: ConfigService) => {
 				return {
 					stores: [
-						new Keyv({
-							store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
-						}),
-						// new KeyvRedis(configService.get<string>('REDIS_URI')),
+						// new Keyv({
+						// 	store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
+						// }),
+						new KeyvRedis(configService.get<string>('REDIS_URI')),
 					],
 				};
 			},
@@ -156,7 +163,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 					Currency,
 
 					Language,
-                    
+
                     Post,
 
 					ClientRefreshToken,
@@ -169,6 +176,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 					Banner,
 
                     Notification,
+					Affiliate,
+					BankAccount,
+					Coupon,
+					Transaction,
+					Wallet,
 				],
 				synchronize: true,
 			}),
@@ -213,6 +225,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 		LanguagesModule,
         NotificationsModule,
 		ScheduleModule.forRoot(),
+		ReferralModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

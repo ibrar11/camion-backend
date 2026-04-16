@@ -44,7 +44,6 @@ export class StoriesController {
 		return this.storiesService.createStory(body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetStories(
@@ -56,7 +55,6 @@ export class StoriesController {
 		return this.storiesService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetStory(@Param('uuid') uuid: string): Promise<Story> {

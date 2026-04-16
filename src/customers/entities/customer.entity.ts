@@ -5,6 +5,7 @@ import {
 	CreateDateColumn,
 	Entity,
 	OneToMany,
+	OneToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -17,6 +18,7 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 import { CustomerAddress } from "./customer-address.entity";
 import { LoginRequest } from "../../auth/entities/login-request.entity";
 import { ProductReview } from "../../inventory/entities/product-review.entity";
+import { Affiliate } from "src/referral/entities/affiliate.entity";
 
 @ObjectType()
 @Entity({ name: "customers" })
@@ -84,6 +86,9 @@ export class Customer {
 	@Exclude()
 	@OneToMany(() => LoginRequest, (loginRequest) => loginRequest.customer, { cascade: true, })
 	loginRequests: Array<LoginRequest>;
+
+	@OneToOne(() => Affiliate, (affiliate) => affiliate.customer)
+	affiliate: Affiliate;
 
 	@Exclude()
 	@UpdateDateColumn({

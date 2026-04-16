@@ -58,6 +58,12 @@ The following features are currently supported by the GraphQL API.
 - Get Categories
 - Get Notifications
 - Mark Notification as Read
+- Get Languages
+- Get Currencies
+- Get Current Affiliate
+- Get Current Affiliate Wallet Transactions
+- Get Current Affiliate Bank Accounts
+- Get Current Affiliate Coupons
 
 Get Current Customer
 --------------------
@@ -3697,7 +3703,8 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 }
 ```
 
-## Get Languages
+Get Languages
+-------------
 
 ### Request Body
 
@@ -3736,7 +3743,8 @@ query GetLanguages {
 
 ---
 
-## Get Currencies
+Get Currencies
+--------------
 
 ### Request Body
 
@@ -3836,6 +3844,8 @@ Get Notifications
 
 Retrieves all notifications for the logged-in customer, ordered by most recent first.
 
+> ⚠️ Returns an empty array if the customer has no notifications.
+
 ### Request Body
 
 ```graphql
@@ -3916,8 +3926,210 @@ query GetNotifications {
 }
 ```
 
-> ⚠️ Returns an empty array if the customer has no notifications.
+Get Current Affiliate
+---------------------
 
----
+### GraphQL Query
 
+```graphql
+query GetCurrentAffiliate {
+    getCurrentAffiliate {
+        uuid
+        fullName
+        gender
+        nationality
+        bio
+        type
+        status
+        status
+        wallet {
+            uuid
+            amount {
+                amount
+                currencyCode
+            }
+        }
+    }
+}
+```
 
+### Response Body
+
+```json
+{
+    "data": {
+        "getCurrentAffiliate": {
+            "uuid": "650c2dab-3347-4223-95be-ed322f915c53",
+            "fullName": "James",
+            "gender": "Male",
+            "nationality": "Qatari",
+            "bio": "I am not a Qatari",
+            "type": "influencer",
+            "status": "accepted",
+            "wallet": {
+                "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
+                "amount": {
+                    "amount": 200,
+                    "currencyCode": "QAR"
+                }
+            }
+        }
+    }
+}
+```
+
+Get Current Affiliate Wallet Transactions
+-----------------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentAffiliateWalletTransactions(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        amount {
+            amount
+            currencyCode
+        }
+        type
+        description
+    }
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getCurrentAffiliateWalletTransactions": [
+            {
+                "uuid": "804f8446-cb10-4997-bfac-d7e0487aba93",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July"
+            },
+            {
+                "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "debit",
+                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
+            },
+            {
+                "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July"
+            },
+            {
+                "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July"
+            }
+        ]
+    }
+}
+```
+
+Get Current Affiliate Bank Accounts
+-----------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentAffiliateBankAccounts($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentAffiliateBankAccounts(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        bankName
+        accountHolderName
+        accountNumber
+        iban
+        swiftCode
+        isDefault
+    }
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getCurrentAffiliateBankAccounts": [
+            {
+                "uuid": "15aca348-0ef6-49ca-85ac-6917ffaef677",
+                "bankName": "Habib Bank Limited",
+                "accountHolderName": "James Cann",
+                "accountNumber": "1993 9899 3948 3948 12392",
+                "iban": "PKHBLL199398993948394812394",
+                "swiftCode": "PKHBLL1",
+                "isDefault": false
+            },
+            {
+                "uuid": "61b690d6-de05-497d-bef9-ca2be1b75476",
+                "bankName": "Habib Bank Limited",
+                "accountHolderName": "James Cann",
+                "accountNumber": "1993 9899 3948 3948 12394",
+                "iban": "PKHBLL199398993948394812394",
+                "swiftCode": "PKHBLL1",
+                "isDefault": false
+            },
+            {
+                "uuid": "cc1f48c9-4d77-4422-be4d-d26e92c76cbc",
+                "bankName": "Habib Bank Limited",
+                "accountHolderName": "James Cann",
+                "accountNumber": "1993 9899 3948 3948 12394",
+                "iban": "PKHBLL199398993948394812394",
+                "swiftCode": "PKHBLL1",
+                "isDefault": true
+            }
+        ]
+    }
+}
+```
+
+Get Current Affiliate Coupons
+-----------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentAffiliateCoupons(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        code
+        discountPercentage
+        expiresAt
+    }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentAffiliateCoupons": [
+            {
+                "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
+                "code": "james10",
+                "discountPercentage": 10,
+                "expiresAt": "2026-12-31T00:00:00.000Z"
+            }
+        ]
+    }
+}
+```

@@ -49,7 +49,6 @@ export class CategoriesController {
 		return this.productCategoryService.updateThumbnail(uuid, file);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductCategories(
@@ -61,7 +60,6 @@ export class CategoriesController {
 		return this.productCategoryService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProductCategory(@Param('uuid') uuid: string): Promise<Category> {

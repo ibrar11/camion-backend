@@ -2,6 +2,39 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Affiliate {
+  bio: String!
+  couponsCreated: Float!
+  couponsUsed: Float!
+  fullName: String!
+  gender: String!
+  nationality: String!
+  remainingBalance: AffiliateMoney!
+  status: String!
+  topProduct: Product!
+  totalCommission: AffiliateMoney!
+  totalPaid: AffiliateMoney!
+  trendingCoupon: Coupon!
+  type: String!
+  uuid: String!
+  wallet: Wallet!
+}
+
+type AffiliateMoney {
+  amount: Float!
+  currencyCode: String!
+}
+
+type BankAccount {
+  accountHolderName: String!
+  accountNumber: String!
+  bankName: String!
+  iban: String!
+  isDefault: Boolean!
+  swiftCode: String!
+  uuid: String!
+}
+
 type Banner {
   imageUrl: String!
   isActive: Boolean!
@@ -20,6 +53,13 @@ type Category {
   nameEn: String!
   slug: String!
   thumbnailUrl: String
+  uuid: String!
+}
+
+type Coupon {
+  code: String!
+  discountPercentage: Float!
+  expiresAt: DateTime!
   uuid: String!
 }
 
@@ -191,6 +231,10 @@ type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCurrencies: [Currency!]!
+  getCurrentAffiliate: Affiliate!
+  getCurrentAffiliateBankAccounts(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [BankAccount!]!
+  getCurrentAffiliateCoupons(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Coupon!]!
+  getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
@@ -242,6 +286,30 @@ type StorySticker {
 type TextElement {
   ar: String!
   en: String!
+}
+
+type Transaction {
+  amount: TransactionMoney!
+  description: String!
+  type: String!
+  uuid: String!
+}
+
+type TransactionMoney {
+  amount: Float!
+  currencyCode: String!
+}
+
+type Wallet {
+  amount: WalletMoney!
+  amountAvailable: WalletMoney!
+  amountPending: WalletMoney!
+  uuid: String!
+}
+
+type WalletMoney {
+  amount: Float!
+  currencyCode: String!
 }
 
 type Weight {

@@ -42,7 +42,7 @@ export class ProductsController {
 		return this.productsService.createProduct(body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Influencer)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProducts(
@@ -54,7 +54,7 @@ export class ProductsController {
 		return this.productsService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProduct(@Param('uuid') uuid: string): Promise<Product> {

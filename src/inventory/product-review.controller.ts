@@ -34,7 +34,7 @@ import { Roles } from "src/auth/roles.decorator";
 export class ProductReviewController {
 	constructor(@Inject(ProductReviewService) private readonly reviewService: ProductReviewService) { }
 
-	@Roles(CustomerRole.Customer, CustomerRole.Influencer)
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProductReview(
@@ -48,7 +48,7 @@ export class ProductReviewController {
 		return this.reviewService.createProductReview(req.customer, productUUID, body);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Influencer)
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductReviews(
@@ -61,21 +61,21 @@ export class ProductReviewController {
 		return this.reviewService.findAll(productUUID, filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Influencer)
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProductReview(@Param('uuid') reviewUUID: string): Promise<ProductReview> {
 		return this.reviewService.findOne(reviewUUID);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Influencer)
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Put(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductVariant(@Param('uuid') reviewUUID: string, @Body() body: UpdateReviewDto): Promise<ProductReview> {
 		return this.reviewService.updateProductReview(reviewUUID, body);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Influencer)
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Delete(':uuid')
 	@HttpCode(HttpStatus.OK)
 	action(@Param('uuid') reviewUUID: string): Promise<void> {
