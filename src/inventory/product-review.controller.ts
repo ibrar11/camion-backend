@@ -11,8 +11,12 @@ import {
 	Put,
 	Query,
 	Req,
+	UploadedFile,
 	UseGuards,
+	UseInterceptors,
 } from "@nestjs/common";
+
+import { FileInterceptor } from "@nestjs/platform-express";
 
 import { CreateReviewDto } from "./dtos/CreateReviewDto";
 import { UpdateReviewDto } from "./dtos/UpdateReviewDto";
@@ -20,19 +24,26 @@ import { UpdateReviewDto } from "./dtos/UpdateReviewDto";
 import { ProductReview } from "./entities/product-review.entity";
 import { ProductReviewService } from "./product-review.service";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../customers/entities/customer.entity";
 
-import { CustomerRole } from "src/customers/enums/CustomerRole";
+import { ProductReviewImage } from "./entities/product-review-image.entity";
+import { ProductReviewImageService } from "./product-review-image.service";
 
-import { AuthGuard } from "src/auth/auth.guard";
-import { RolesGuard } from "src/auth/roles.guard";
+import { CustomerRole } from "../customers/enums/CustomerRole";
+import { UserRole } from "../users/enums/UserRole";
 
-import { Roles } from "src/auth/roles.decorator";
+import { AuthGuard } from "../auth/auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
+
+import { Roles } from "../auth/roles.decorator";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products/:productUUID/reviews')
 export class ProductReviewController {
-	constructor(@Inject(ProductReviewService) private readonly reviewService: ProductReviewService) { }
+	constructor(
+		@Inject(ProductReviewService) private readonly reviewService: ProductReviewService,
+		@Inject(ProductReviewImageService) private readonly productReviewImageService: ProductReviewImageService,
+	) { }
 
 	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Post()
@@ -46,6 +57,17 @@ export class ProductReviewController {
 		@Body() body: CreateReviewDto,
 	): Promise<ProductReview> {
 		return this.reviewService.createProductReview(req.customer, productUUID, body);
+	}
+
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Post(':uuid/images')
+	@UseInterceptors(FileInterceptor("file"))
+	@HttpCode(HttpStatus.CREATED)
+	actionCreateProductReviewImage(
+		@Param('uuid') reviewUUID: string,
+		@UploadedFile() file: Express.Multer.File
+	): Promise<ProductReviewImage> {
+		return this.productReviewImageService.createProductReviewImage(reviewUUID, file);
 	}
 
 	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
@@ -75,7 +97,7 @@ export class ProductReviewController {
 		return this.reviewService.updateProductReview(reviewUUID, body);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Delete(':uuid')
 	@HttpCode(HttpStatus.OK)
 	action(@Param('uuid') reviewUUID: string): Promise<void> {

@@ -15,19 +15,20 @@ import {
 	UseInterceptors,
 } from "@nestjs/common";
 
+import { FileInterceptor } from "@nestjs/platform-express";
+
 import { CreateCategoryDto } from "./dtos/CreateCategoryDto";
 import { UpdateCategoryDto } from "./dtos/UpdateCategoryDto";
 
-import { UserRole } from "src/users/enums/UserRole";
+import { UserRole } from "../users/enums/UserRole";
 
 import { Category } from "./entities/category.entity";
 import { CategoriesService } from "./categories.service";
 
-import { AuthGuard } from "src/auth/auth.guard";
-import { RolesGuard } from "src/auth/roles.guard";
+import { AuthGuard } from "../auth/auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
 
-import { Roles } from "src/auth/roles.decorator";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { Roles } from "../auth/roles.decorator";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/categories")

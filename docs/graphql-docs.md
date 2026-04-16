@@ -3509,6 +3509,11 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             uuid
             fullName
         }
+        images {
+            uuid
+            thumbnailUrl
+            imageUrl
+        }
     }
   }
 }
@@ -3530,47 +3535,46 @@ query GetProduct($slug: String, $language: String, $currency: String) {
 {
     "data": {
         "getProduct": {
-            "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
-            "slug": "iphone-25",
-            "title": "iPhone 25",
+            "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+            "slug": "iphone-17",
+            "title": "iPhone 17",
             "brief": "From $799 or $33.29/mo. per month for 24 months",
             "description": "Your new iPhone awaits. Make it yours.",
             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
             "status": "DRAFT",
             "options": [
                 {
-                    "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
-                    "name": "Color",
+                    "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                    "name": "Storage",
                     "position": 0,
                     "values": [
                         {
-                            "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
-                            "value": "Red",
+                            "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                            "value": "1 TB",
+                            "position": 0
+                        },
+                        {
+                            "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                            "value": "2 TB",
                             "position": 1
                         }
                     ]
                 },
                 {
-                    "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
-                    "name": "Memory",
-                    "position": 1,
-                    "values": [
-                        {
-                            "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
-                            "value": "1 TB",
-                            "position": 1
-                        }
-                    ]
+                    "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                    "name": "Color",
+                    "position": 0,
+                    "values": []
                 }
             ],
             "variants": [
                 {
-                    "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
-                    "title": "iPhone 24 Red 1 TB",
-                    "sku": "iphone-24-red-1tb",
+                    "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                    "title": "iPhone 17 Red 1 TB",
+                    "sku": "iphone-17-red-1tb",
                     "barcode": "10000",
                     "price": {
-                        "amount": 4000,
+                        "amount": 1000,
                         "currencyCode": "QAR"
                     },
                     "weight": {
@@ -3586,52 +3590,57 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "optionValues": [
                         {
                             "optionValue": {
-                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
-                            }
-                        },
-                        {
-                            "optionValue": {
-                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
                             }
                         }
                     ],
-                    "images": [
+                    "images": []
+                },
+                {
+                    "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                    "title": "iPhone 17 Red 1 TB",
+                    "sku": "iphone-17-red-2tb",
+                    "barcode": "10000",
+                    "price": {
+                        "amount": 2000,
+                        "currencyCode": "QAR"
+                    },
+                    "weight": {
+                        "amount": 1,
+                        "unit": "kg"
+                    },
+                    "dimensions": {
+                        "width": 1000,
+                        "height": 1000,
+                        "length": 1000,
+                        "unit": "in"
+                    },
+                    "optionValues": [
                         {
-                            "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                            "alt": "",
-                            "isFeatured": false,
-                            "position": 0
-                        },
-                        {
-                            "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                            "alt": "",
-                            "isFeatured": false,
-                            "position": 0
-                        },
-                        {
-                            "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                            "alt": "iPhone Photo",
-                            "isFeatured": true,
-                            "position": 0
+                            "optionValue": {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                            }
                         }
-                    ]
+                    ],
+                    "images": []
                 }
             ],
             "reviews": [
                 {
-                    "uuid": "362ad2ce-c5bf-46dd-be56-f00ba4241982",
+                    "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
                         "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
                         "fullName": "Your Name"
-                    }
+                    },
+                    "images": [
+                        {
+                            "uuid": "cb9eb5bd-7165-47fa-96c8-e3f85a27e890",
+                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg",
+                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg"
+                        }
+                    ]
                 }
             ]
         }

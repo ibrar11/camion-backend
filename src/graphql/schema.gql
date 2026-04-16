@@ -189,8 +189,15 @@ type ProductOptionValue {
 type ProductReview {
   comment: String!
   customer: Customer!
+  images: [ProductReviewImage!]!
   isEdited: Boolean!
   rating: Int!
+  uuid: String!
+}
+
+type ProductReviewImage {
+  imageUrl: String!
+  thumbnailUrl: String!
   uuid: String!
 }
 

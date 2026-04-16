@@ -48,6 +48,7 @@ import { ProductCategory } from "./inventory/entities/product-category.entity";
 import { ProductOption } from "./inventory/entities/product-option.entity";
 import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
 import { ProductReview } from "./inventory/entities/product-review.entity";
+import { ProductReviewImage } from "./inventory/entities/product-review-image.entity";
 import { ProductVariant } from "./inventory/entities/product-variant.entity";
 import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
 import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
@@ -150,6 +151,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 					ProductOption,
 					ProductOptionValue,
 					ProductReview,
+					ProductReviewImage,
 					ProductVariant,
 					ProductVariantImage,
 					ProductVariantInventoryItem,
@@ -164,7 +166,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 					Language,
 
-                    Post,
+					Post,
 
 					ClientRefreshToken,
 
@@ -175,7 +177,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 					Banner,
 
-                    Notification,
+					Notification,
 					Affiliate,
 					BankAccount,
 					Coupon,
@@ -223,7 +225,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 		BannersModule,
 		CurrenciesModule,
 		LanguagesModule,
-        NotificationsModule,
+		NotificationsModule,
 		ScheduleModule.forRoot(),
 		ReferralModule,
 	],

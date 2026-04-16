@@ -19,6 +19,8 @@ import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 
 import { UserRole } from '../users/enums/UserRole';
+import { CustomerRole } from '../customers/enums/CustomerRole';
+import { ProductSort } from './enums/ProductSort';
 
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
@@ -27,8 +29,6 @@ import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 import { Roles } from '../auth/roles.decorator';
-import { CustomerRole } from 'src/customers/enums/CustomerRole';
-import { ProductSort } from './enums/ProductSort';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products')

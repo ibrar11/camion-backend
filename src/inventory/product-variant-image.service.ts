@@ -10,7 +10,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { S3Service } from "src/common/s3.service";
+import { S3Service } from "../common/s3.service";
 
 import { getSkipAndTake } from "../common/pagination";
 

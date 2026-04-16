@@ -28,7 +28,7 @@ import { ProductVariantOptionValue } from "./product-variant-option-value.entity
 
 import { InventoryItem } from "./inventory-item.entity";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
+import { CartItem } from "../../cart/entities/cart-items.entity";
 
 @ObjectType()
 export class Money {
