@@ -242,8 +242,12 @@ export class ProductsResolver {
 	}
 
 	@Query(() => Product, { nullable: true, })
-	getProduct(@Args() args: GetProductArgs): Promise<Product> {
-		return this.productsService.findOneBySlug(args.slug);
+	async getProduct(@Args() args: GetProductArgs): Promise<Product | null> {
+		try {
+			return await this.productsService.findOneBySlug(args.slug);
+		} catch {
+			return Promise.resolve(null);
+		}
 	}
 
 	@Query(() => [Product])

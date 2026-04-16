@@ -3531,6 +3531,18 @@ query GetProduct($slug: String, $language: String, $currency: String) {
 
 ### Response Body
 
+#### Failed Response
+
+```json
+{
+    "data": {
+        "getProduct": null
+    }
+}
+```
+
+#### Successful Response
+
 ```json
 {
     "data": {
@@ -3997,7 +4009,7 @@ If the current customer is not an affiliate, this method should return null.
 }
 ```
 
-#### Successfull Response
+#### Successful Response
 
 ```json
 {
