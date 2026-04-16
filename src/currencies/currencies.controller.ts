@@ -34,7 +34,6 @@ export class CurrenciesController {
 		return this.currenciesService.create(body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@Get()
 	@HttpCode(HttpStatus.OK)
     async actionGetCurrencies(): Promise<Currency[]> {

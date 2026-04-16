@@ -34,7 +34,6 @@ export class LanguagesController {
 		return this.languagesService.create(body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionFindAll(): Promise<Language[]> {

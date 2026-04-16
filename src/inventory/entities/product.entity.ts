@@ -21,7 +21,7 @@ import { ProductVariant } from "./product-variant.entity";
 import { ProductCategory } from "./product-category.entity";
 import { ProductReview } from "./product-review.entity";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
+import { CartItem } from "../../cart/entities/cart-items.entity";
 
 import { OrderItem } from "src/order/entities/order-item.entity";
 

@@ -9,6 +9,7 @@ This document includes the documentation of GraphQL support for the following it
 - Stories
 - Categories
 - Products
+- Notifications
 
 > [!IMPORTANT]
 > You must include your access token as a `Bearer` token in the Authorization header. Your must have a Customer account to use the GraphQL APIs.
@@ -55,6 +56,14 @@ The following features are currently supported by the GraphQL API.
 - Get Products By Category
 - Get Product
 - Get Categories
+- Get Notifications
+- Mark Notification as Read
+- Get Languages
+- Get Currencies
+- Get Current Affiliate
+- Get Current Affiliate Wallet Transactions
+- Get Current Affiliate Bank Accounts
+- Get Current Affiliate Coupons
 
 Get Current Customer
 --------------------
@@ -3500,6 +3509,11 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             uuid
             fullName
         }
+        images {
+            uuid
+            thumbnailUrl
+            imageUrl
+        }
     }
   }
 }
@@ -3521,47 +3535,46 @@ query GetProduct($slug: String, $language: String, $currency: String) {
 {
     "data": {
         "getProduct": {
-            "uuid": "15f027b7-ede7-4ccf-9ce9-7cf17ca32c95",
-            "slug": "iphone-25",
-            "title": "iPhone 25",
+            "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+            "slug": "iphone-17",
+            "title": "iPhone 17",
             "brief": "From $799 or $33.29/mo. per month for 24 months",
             "description": "Your new iPhone awaits. Make it yours.",
             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
             "status": "DRAFT",
             "options": [
                 {
-                    "uuid": "aeb2c8c8-fbdd-4ba6-aae5-aaf40c00a26a",
-                    "name": "Color",
+                    "uuid": "64862084-098d-452d-a358-cf10c2a41603",
+                    "name": "Storage",
                     "position": 0,
                     "values": [
                         {
-                            "uuid": "16624414-447d-41d2-9224-e1e3efff8205",
-                            "value": "Red",
+                            "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf",
+                            "value": "1 TB",
+                            "position": 0
+                        },
+                        {
+                            "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735",
+                            "value": "2 TB",
                             "position": 1
                         }
                     ]
                 },
                 {
-                    "uuid": "dd1d28cf-37d7-47d7-88c8-9331c27d5201",
-                    "name": "Memory",
-                    "position": 1,
-                    "values": [
-                        {
-                            "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47",
-                            "value": "1 TB",
-                            "position": 1
-                        }
-                    ]
+                    "uuid": "d3c1f7d0-4c86-4932-b09c-82eeb9d468ae",
+                    "name": "Color",
+                    "position": 0,
+                    "values": []
                 }
             ],
             "variants": [
                 {
-                    "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
-                    "title": "iPhone 24 Red 1 TB",
-                    "sku": "iphone-24-red-1tb",
+                    "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                    "title": "iPhone 17 Red 1 TB",
+                    "sku": "iphone-17-red-1tb",
                     "barcode": "10000",
                     "price": {
-                        "amount": 4000,
+                        "amount": 1000,
                         "currencyCode": "QAR"
                     },
                     "weight": {
@@ -3577,52 +3590,57 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "optionValues": [
                         {
                             "optionValue": {
-                                "uuid": "16624414-447d-41d2-9224-e1e3efff8205"
-                            }
-                        },
-                        {
-                            "optionValue": {
-                                "uuid": "652cb2d4-3a4d-4343-82b2-55422a84cb47"
+                                "uuid": "433393c9-fe11-46c1-a731-74ca0dd20caf"
                             }
                         }
                     ],
-                    "images": [
+                    "images": []
+                },
+                {
+                    "uuid": "ea85dc28-2786-46a4-bd27-00fce68ab35f",
+                    "title": "iPhone 17 Red 1 TB",
+                    "sku": "iphone-17-red-2tb",
+                    "barcode": "10000",
+                    "price": {
+                        "amount": 2000,
+                        "currencyCode": "QAR"
+                    },
+                    "weight": {
+                        "amount": 1,
+                        "unit": "kg"
+                    },
+                    "dimensions": {
+                        "width": 1000,
+                        "height": 1000,
+                        "length": 1000,
+                        "unit": "in"
+                    },
+                    "optionValues": [
                         {
-                            "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                            "alt": "",
-                            "isFeatured": false,
-                            "position": 0
-                        },
-                        {
-                            "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                            "alt": "",
-                            "isFeatured": false,
-                            "position": 0
-                        },
-                        {
-                            "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                            "alt": "iPhone Photo",
-                            "isFeatured": true,
-                            "position": 0
+                            "optionValue": {
+                                "uuid": "e0538aa0-f12e-4562-9357-e842ab89d735"
+                            }
                         }
-                    ]
+                    ],
+                    "images": []
                 }
             ],
             "reviews": [
                 {
-                    "uuid": "362ad2ce-c5bf-46dd-be56-f00ba4241982",
+                    "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
                         "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
                         "fullName": "Your Name"
-                    }
+                    },
+                    "images": [
+                        {
+                            "uuid": "cb9eb5bd-7165-47fa-96c8-e3f85a27e890",
+                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg",
+                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg"
+                        }
+                    ]
                 }
             ]
         }
@@ -3694,7 +3712,8 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 }
 ```
 
-## Get Languages
+Get Languages
+-------------
 
 ### Request Body
 
@@ -3733,7 +3752,8 @@ query GetLanguages {
 
 ---
 
-## Get Currencies
+Get Currencies
+--------------
 
 ### Request Body
 
@@ -3785,3 +3805,340 @@ query GetCurrencies {
 
 ---
 
+Notifications
+=============
+
+Notifications are created by the system or admin and delivered to customers. Customers can query their own notifications and mark them as read.
+
+**Notification Types**
+
+| Type | Description |
+|---|---|
+| `ORDER_PLACED` | Order has been successfully placed |
+| `ORDER_CONFIRMED` | Order confirmed by the vendor |
+| `ORDER_PROCESSING` | Order is being prepared |
+| `ORDER_SHIPPED` | Order has been shipped |
+| `ORDER_OUT_FOR_DELIVERY` | Order is out for delivery |
+| `ORDER_DELIVERED` | Order has been delivered |
+| `ORDER_DELAYED` | Order delivery has been delayed |
+| `ORDER_CANCELLED` | Order was cancelled |
+| `ORDER_RETURNED` | Order return initiated |
+| `ORDER_REFUNDED` | Refund has been processed |
+| `PAYMENT_SUCCESSFUL` | Payment was completed successfully |
+| `PAYMENT_FAILED` | Payment attempt failed |
+| `PAYMENT_PENDING` | Payment is awaiting confirmation |
+| `PAYMENT_REFUND_INITIATED` | Refund has been initiated |
+| `PAYMENT_REFUND_COMPLETED` | Refund has been credited back |
+| `PAYMENT_METHOD_ADDED` | A new payment method was added |
+| `PAYMENT_METHOD_REMOVED` | A payment method was removed |
+| `PAYMENT_DUE_REMINDER` | Upcoming or overdue payment reminder |
+| `LOW_STOCK_ALERT` | Product stock is running low |
+| `OUT_OF_STOCK` | Product is now out of stock |
+| `BACK_IN_STOCK` | Previously out-of-stock product is available again |
+| `PRICE_DROP` | Product price has dropped |
+| `LIMITED_STOCK_WARNING` | Only a few units remaining |
+
+**Priority Levels**
+
+| Value | Meaning |
+|---|---|
+| `LOW` | Informational, no urgency |
+| `MEDIUM` | Standard notification (default) |
+| `HIGH` | Requires immediate attention |
+
+---
+
+Get Notifications
+-----------------
+
+Retrieves all notifications for the logged-in customer, ordered by most recent first.
+
+> ⚠️ Returns an empty array if the customer has no notifications.
+
+### Request Body
+
+```graphql
+query GetNotifications {
+  getNotifications {
+    uuid
+    type
+    title
+    brief
+    message
+    payload
+    priority
+    isRead
+    createdAt
+    updatedAt
+    customer {
+      uuid
+      fullName
+      emailAddress
+      phoneNumber
+    }
+  }
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getNotifications": [
+            {
+                "uuid": "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c",
+                "type": "ORDER_SHIPPED",
+                "title": "Your order has been shipped",
+                "brief": "Order #1042 is on its way",
+                "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+                "payload": {
+                    "orderId": "1042",
+                    "trackingNumber": "TRK9876543210"
+                },
+                "priority": "HIGH",
+                "isRead": false,
+                "createdAt": "2026-04-15T10:30:00.000Z",
+                "updatedAt": "2026-04-15T10:30:00.000Z",
+                "customer": {
+                    "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+                    "fullName": "Your Name",
+                    "emailAddress": "your-name@your-domain.com",
+                    "phoneNumber": "+974 12345678"
+                }
+            },
+            {
+                "uuid": "b7d2f3e5-1c98-4e23-cd45-2g3f4e5b6c7d",
+                "type": "PRICE_DROP",
+                "title": "Price drop on an item you liked",
+                "brief": "iPhone 25 is now cheaper",
+                "message": "The iPhone 25 you viewed recently has dropped in price. Grab it before it sells out!",
+                "payload": {
+                    "productSlug": "iphone-25",
+                    "oldPrice": 79900,
+                    "newPrice": 69900,
+                    "currency": "qar"
+                },
+                "priority": "MEDIUM",
+                "isRead": true,
+                "createdAt": "2026-04-14T08:00:00.000Z",
+                "updatedAt": "2026-04-14T09:15:00.000Z",
+                "customer": {
+                    "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+                    "fullName": "Your Name",
+                    "emailAddress": "your-name@your-domain.com",
+                    "phoneNumber": "+974 12345678"
+                }
+            }
+        ]
+    }
+}
+```
+
+Get Current Affiliate
+---------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentAffiliate {
+    getCurrentAffiliate {
+        uuid
+        fullName
+        gender
+        nationality
+        bio
+        type
+        status
+        status
+        wallet {
+            uuid
+            amount {
+                amount
+                currencyCode
+            }
+        }
+    }
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getCurrentAffiliate": {
+            "uuid": "650c2dab-3347-4223-95be-ed322f915c53",
+            "fullName": "James",
+            "gender": "Male",
+            "nationality": "Qatari",
+            "bio": "I am not a Qatari",
+            "type": "influencer",
+            "status": "accepted",
+            "wallet": {
+                "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
+                "amount": {
+                    "amount": 200,
+                    "currencyCode": "QAR"
+                }
+            }
+        }
+    }
+}
+```
+
+Get Current Affiliate Wallet Transactions
+-----------------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentAffiliateWalletTransactions(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        amount {
+            amount
+            currencyCode
+        }
+        type
+        description
+    }
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getCurrentAffiliateWalletTransactions": [
+            {
+                "uuid": "804f8446-cb10-4997-bfac-d7e0487aba93",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July"
+            },
+            {
+                "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "debit",
+                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
+            },
+            {
+                "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July"
+            },
+            {
+                "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July"
+            }
+        ]
+    }
+}
+```
+
+Get Current Affiliate Bank Accounts
+-----------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentAffiliateBankAccounts($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentAffiliateBankAccounts(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        bankName
+        accountHolderName
+        accountNumber
+        iban
+        swiftCode
+        isDefault
+    }
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getCurrentAffiliateBankAccounts": [
+            {
+                "uuid": "15aca348-0ef6-49ca-85ac-6917ffaef677",
+                "bankName": "Habib Bank Limited",
+                "accountHolderName": "James Cann",
+                "accountNumber": "1993 9899 3948 3948 12392",
+                "iban": "PKHBLL199398993948394812394",
+                "swiftCode": "PKHBLL1",
+                "isDefault": false
+            },
+            {
+                "uuid": "61b690d6-de05-497d-bef9-ca2be1b75476",
+                "bankName": "Habib Bank Limited",
+                "accountHolderName": "James Cann",
+                "accountNumber": "1993 9899 3948 3948 12394",
+                "iban": "PKHBLL199398993948394812394",
+                "swiftCode": "PKHBLL1",
+                "isDefault": false
+            },
+            {
+                "uuid": "cc1f48c9-4d77-4422-be4d-d26e92c76cbc",
+                "bankName": "Habib Bank Limited",
+                "accountHolderName": "James Cann",
+                "accountNumber": "1993 9899 3948 3948 12394",
+                "iban": "PKHBLL199398993948394812394",
+                "swiftCode": "PKHBLL1",
+                "isDefault": true
+            }
+        ]
+    }
+}
+```
+
+Get Current Affiliate Coupons
+-----------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentAffiliateCoupons(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        code
+        discountPercentage
+        expiresAt
+    }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentAffiliateCoupons": [
+            {
+                "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
+                "code": "james10",
+                "discountPercentage": 10,
+                "expiresAt": "2026-12-31T00:00:00.000Z"
+            }
+        ]
+    }
+}
+```

@@ -9,12 +9,12 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { getSkipAndTake } from "src/common/pagination";
+import { getSkipAndTake } from "../common/pagination";
 
 import { CreateReviewDto } from "./dtos/CreateReviewDto";
 import { UpdateReviewDto } from "./dtos/UpdateReviewDto";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../customers/entities/customer.entity";
 
 import { Product } from "./entities/product.entity";
 import { ProductReview } from "./entities/product-review.entity";
@@ -89,6 +89,7 @@ export class ProductReviewService {
 			},
 			relations: {
 				customer: true,
+				images: true,
 			},
 			skip: skip,
 			take: take,
@@ -111,6 +112,7 @@ export class ProductReviewService {
 			},
 			relations: {
 				customer: true,
+				images: true,
 			},
 		});
 
