@@ -318,6 +318,8 @@ export class AffiliatesService {
 			},
 			relations: {
 				customer: true,
+				trendingCoupon: true,
+				topProduct: true,
 				wallet: true,
 			},
 		});

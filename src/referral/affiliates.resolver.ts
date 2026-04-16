@@ -20,13 +20,18 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 export class AffiliatesResolver {
 	constructor(@Inject(AffiliatesService) private readonly affiliatesService: AffiliatesService) { }
 
-	@Query(() => Affiliate)
-	getCurrentAffiliate(@Context() context): Promise<Affiliate> {
+	@Query(() => Affiliate, { nullable: true, })
+	async getCurrentAffiliate(@Context() context): Promise<Affiliate | null> {
 		if (!context.req || !context.req.customer || !context.req.customer.uuid) {
 			throw new ForbiddenException({
 				error: "You're not allowed to retrieve affiliate information. Please check and try again.",
 			});
 		}
-		return this.affiliatesService.findOneByCustomer(context.req.customer.uuid);
+
+		try {
+			return await this.affiliatesService.findOneByCustomer(context.req.customer.uuid);
+		} catch {
+			return Promise.resolve(null);
+		}
 	}
 }

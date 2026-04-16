@@ -10,6 +10,7 @@ This document includes the documentation of GraphQL support for the following it
 - Categories
 - Products
 - Notifications
+- Orders
 
 > [!IMPORTANT]
 > You must include your access token as a `Bearer` token in the Authorization header. Your must have a Customer account to use the GraphQL APIs.
@@ -64,6 +65,7 @@ The following features are currently supported by the GraphQL API.
 - Get Current Affiliate Wallet Transactions
 - Get Current Affiliate Bank Accounts
 - Get Current Affiliate Coupons
+- Get Current Customer Orders
 
 Get Current Customer
 --------------------
@@ -3531,6 +3533,18 @@ query GetProduct($slug: String, $language: String, $currency: String) {
 
 ### Response Body
 
+#### Failed Response
+
+```json
+{
+    "data": {
+        "getProduct": null
+    }
+}
+```
+
+#### Successful Response
+
 ```json
 {
     "data": {
@@ -3951,6 +3965,26 @@ query GetCurrentAffiliate {
         type
         status
         status
+        totalCommission {
+            amount
+            currencyCode
+        }
+        totalPaid {
+            amount
+            currencyCode
+        }
+        remainingBalance {
+            amount
+            currencyCode
+        }
+        couponsCreated
+        couponsUsed
+        trendingCoupon {
+            uuid
+        }
+        topProduct {
+            uuid
+        }
         wallet {
             uuid
             amount {
@@ -3958,30 +3992,66 @@ query GetCurrentAffiliate {
                 currencyCode
             }
         }
+        createdAt
     }
 }
 ```
 
 ### Response Body
 
+If the current customer is not an affiliate, this method should return null.
+
+#### Failed Response
+
+```json
+{
+    "data": {
+        "getCurrentAffiliate": null
+    }
+}
+```
+
+#### Successful Response
+
 ```json
 {
     "data": {
         "getCurrentAffiliate": {
             "uuid": "650c2dab-3347-4223-95be-ed322f915c53",
-            "fullName": "James",
+            "fullName": "Amin Ullah",
             "gender": "Male",
-            "nationality": "Qatari",
-            "bio": "I am not a Qatari",
-            "type": "influencer",
-            "status": "accepted",
+            "nationality": "Saudi",
+            "bio": "I am a Saudi",
+            "type": "affiliate",
+            "status": "rejected",
+            "totalCommission": {
+                "amount": 0,
+                "currencyCode": "QAR"
+            },
+            "totalPaid": {
+                "amount": 0,
+                "currencyCode": "QAR"
+            },
+            "remainingBalance": {
+                "amount": 0,
+                "currencyCode": "QAR"
+            },
+            "couponsCreated": 18,
+            "couponsUsed": 0,
+            "trendingCoupon": {
+                "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9"
+            },
+            "topProduct": {
+                "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f"
+            },
             "wallet": {
                 "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
                 "amount": {
                     "amount": 200,
                     "currencyCode": "QAR"
                 }
-            }
+            },
+            "createdAt": "2026-04-14T06:44:14.229Z"
         }
     }
 }
@@ -4002,6 +4072,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
         }
         type
         description
+        createdAt
     }
 }
 ```
@@ -4019,7 +4090,8 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "credit",
-                "description": "Your commission for the month of July"
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-14T06:52:21.998Z"
             },
             {
                 "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
@@ -4028,7 +4100,8 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "debit",
-                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
+                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93",
+                "createdAt": "2026-04-14T06:53:49.184Z"
             },
             {
                 "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
@@ -4037,7 +4110,8 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "credit",
-                "description": "Your commission for the month of July"
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-14T09:59:12.921Z"
             },
             {
                 "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
@@ -4046,7 +4120,28 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "credit",
-                "description": "Your commission for the month of July"
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-15T06:51:51.011Z"
+            },
+            {
+                "uuid": "32a41b95-25dd-4024-beea-5858633d034a",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-15T10:24:10.783Z"
+            },
+            {
+                "uuid": "72b2d69c-aa4b-44ff-b61e-920c7947e909",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "debit",
+                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93",
+                "createdAt": "2026-04-15T10:27:03.400Z"
             }
         ]
     }
@@ -4121,7 +4216,9 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         uuid
         code
         discountPercentage
+        ordersCount
         expiresAt
+        createdAt
     }
 }
 ```
@@ -4134,11 +4231,305 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         "getCurrentAffiliateCoupons": [
             {
                 "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
-                "code": "james10",
-                "discountPercentage": 10,
-                "expiresAt": "2026-12-31T00:00:00.000Z"
+                "code": "amin12",
+                "discountPercentage": 4,
+                "ordersCount": 0,
+                "expiresAt": "2026-12-31T00:00:00.000Z",
+                "createdAt": "2026-04-15T10:07:07.504Z"
             }
         ]
+    }
+}
+```
+
+Get Current Customer Orders
+-----------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentCustomerOrders(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        status
+        subTotal {
+            amount
+            currencyCode
+        }
+        shippingCost {
+            amount
+            currencyCode
+        }
+        discount {
+            amount
+            currencyCode
+        }
+        total {
+            amount
+            currencyCode
+        }
+        eta
+        orderItems {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+            product {
+                uuid
+                slug
+                title
+                brief
+                description
+                descriptionHtml
+                status
+            }
+            variant {
+                uuid
+                title
+                sku
+                barcode
+                price {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
+            }
+        }
+    }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerOrders": [
+            {
+                "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
+                "status": "payment_pending",
+                "subTotal": {
+                    "amount": 688,
+                    "currencyCode": "USD"
+                },
+                "shippingCost": {
+                    "amount": 0,
+                    "currencyCode": "USD"
+                },
+                "discount": {
+                    "amount": 0,
+                    "currencyCode": "USD"
+                },
+                "total": {
+                    "amount": 688,
+                    "currencyCode": "USD"
+                },
+                "eta": "6-10 working days",
+                "orderItems": [
+                    {
+                        "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
+                        "price": {
+                            "amount": 688,
+                            "currencyCode": "USD"
+                        },
+                        "quantity": 1,
+                        "total": {
+                            "amount": 688,
+                            "currencyCode": "USD"
+                        },
+                        "product": {
+                            "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                            "slug": "iphone-17",
+                            "title": "iPhone 17",
+                            "brief": "From $799 or $33.29/mo. per month for 24 months",
+                            "description": "Your new iPhone awaits. Make it yours.",
+                            "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                            "status": "DRAFT",
+                        },
+                        "variant": {
+                            "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                            "title": "iPhone 17 Red 1 TB",
+                            "sku": "iphone-17-red-1tb",
+                            "barcode": "10000",
+                            "price": {
+                                "amount": 1000,
+                                "currencyCode": "QAR"
+                            },
+                            "weight": {
+                                "amount": 1,
+                                "unit": "kg"
+                            },
+                            "dimensions": {
+                                "width": 1000,
+                                "height": 1000,
+                                "length": 1000,
+                                "unit": "in"
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+Get Current Customer Order
+-----------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerOrder($uuid: string) {
+    getCurrentCustomerOrder(uuid: $uuid) {
+        uuid
+        status
+        subTotal {
+            amount
+            currencyCode
+        }
+        shippingCost {
+            amount
+            currencyCode
+        }
+        discount {
+            amount
+            currencyCode
+        }
+        total {
+            amount
+            currencyCode
+        }
+        eta
+        orderItems {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+            product {
+                uuid
+                slug
+                title
+                brief
+                description
+                descriptionHtml
+                status
+            }
+            variant {
+                uuid
+                title
+                sku
+                barcode
+                price {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
+            }
+        }
+    }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerOrders":{
+            "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
+            "status": "payment_pending",
+            "subTotal": {
+                "amount": 688,
+                "currencyCode": "USD"
+            },
+            "shippingCost": {
+                "amount": 0,
+                "currencyCode": "USD"
+            },
+            "discount": {
+                "amount": 0,
+                "currencyCode": "USD"
+            },
+            "total": {
+                "amount": 688,
+                "currencyCode": "USD"
+            },
+            "eta": "6-10 working days",
+            "orderItems": [
+                {
+                    "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
+                    "price": {
+                        "amount": 688,
+                        "currencyCode": "USD"
+                    },
+                    "quantity": 1,
+                    "total": {
+                        "amount": 688,
+                        "currencyCode": "USD"
+                    },
+                    "product": {
+                        "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                        "slug": "iphone-17",
+                        "title": "iPhone 17",
+                        "brief": "From $799 or $33.29/mo. per month for 24 months",
+                        "description": "Your new iPhone awaits. Make it yours.",
+                        "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                        "status": "DRAFT",
+                    },
+                    "variant": {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        }
+                    }
+                }
+            ]
+        }
     }
 }
 ```

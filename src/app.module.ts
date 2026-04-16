@@ -98,6 +98,10 @@ import { CurrenciesModule } from './currencies/currencies.module';
 import { Language } from "./languages/entities/language.entity";
 import { LanguagesModule } from './languages/languages.module';
 
+import { Order } from "./order/entities/order.entity";
+import { OrderItem } from "./order/entities/order-item.entity";
+import { OrderModule } from './order/order.module';
+
 import { Notification } from "./notifications/entities/notification.entity";
 import { NotificationsModule } from './notifications/notifications.module';
 
@@ -180,6 +184,9 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 					Banner,
 
+					Order,
+					OrderItem,
+
 					PaymentTransaction,
 
 					Notification,
@@ -232,6 +239,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 		LanguagesModule,
 		NotificationsModule,
 		ScheduleModule.forRoot(),
+		OrderModule,
 		PaymentsModule,
 		ReferralModule,
 	],

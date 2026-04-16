@@ -107,11 +107,11 @@ export class Affiliate {
 	@Column({ type: "integer", default: 0, })
 	couponsUsed: number;
 
-	@Field(() => Coupon)
+	@Field(() => Coupon, { nullable: true, })
 	@OneToOne(() => Coupon, (coupon) => coupon.affiliate)
 	trendingCoupon: Coupon;
 
-	@Field()
+	@Field(() => Product, { nullable: true })
 	@ManyToOne(() => Product, { nullable: true, onDelete: "SET NULL", })
 	@JoinColumn()
 	topProduct: Product;
@@ -130,7 +130,7 @@ export class Affiliate {
 	})
 	updatedAt: Date;
 
-	@Exclude()
+	@Field()
 	@CreateDateColumn({
 		name: "created_at",
 		type: "timestamptz",

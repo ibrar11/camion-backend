@@ -67,7 +67,7 @@ export class Transaction {
 	})
 	updatedAt: Date;
 
-	@Exclude()
+	@Field()
 	@CreateDateColumn({
 		name: "created_at",
 		type: "timestamptz",
