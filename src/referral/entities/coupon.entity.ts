@@ -36,6 +36,10 @@ export class Coupon {
 	discountPercentage: number;
 
 	@Field()
+	@Column({ type: "integer", default: 0, nullable: false, })
+	ordersCount: number;
+
+	@Field()
 	@Column({ type: "timestamptz", nullable: false, })
 	expiresAt: Date;
 
@@ -46,7 +50,7 @@ export class Coupon {
 	})
 	updatedAt: Date;
 
-	@Exclude()
+	@Field()
 	@CreateDateColumn({
 		name: "created_at",
 		type: "timestamptz",

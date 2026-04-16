@@ -3951,6 +3951,26 @@ query GetCurrentAffiliate {
         type
         status
         status
+        totalCommission {
+            amount
+            currencyCode
+        }
+        totalPaid {
+            amount
+            currencyCode
+        }
+        remainingBalance {
+            amount
+            currencyCode
+        }
+        couponsCreated
+        couponsUsed
+        trendingCoupon {
+            uuid
+        }
+        topProduct {
+            uuid
+        }
         wallet {
             uuid
             amount {
@@ -3958,30 +3978,66 @@ query GetCurrentAffiliate {
                 currencyCode
             }
         }
+        createdAt
     }
 }
 ```
 
 ### Response Body
 
+If the current customer is not an affiliate, this method should return null.
+
+#### Failed Response
+
+```json
+{
+    "data": {
+        "getCurrentAffiliate": null
+    }
+}
+```
+
+#### Successfull Response
+
 ```json
 {
     "data": {
         "getCurrentAffiliate": {
             "uuid": "650c2dab-3347-4223-95be-ed322f915c53",
-            "fullName": "James",
+            "fullName": "Amin Ullah",
             "gender": "Male",
-            "nationality": "Qatari",
-            "bio": "I am not a Qatari",
-            "type": "influencer",
-            "status": "accepted",
+            "nationality": "Saudi",
+            "bio": "I am a Saudi",
+            "type": "affiliate",
+            "status": "rejected",
+            "totalCommission": {
+                "amount": 0,
+                "currencyCode": "QAR"
+            },
+            "totalPaid": {
+                "amount": 0,
+                "currencyCode": "QAR"
+            },
+            "remainingBalance": {
+                "amount": 0,
+                "currencyCode": "QAR"
+            },
+            "couponsCreated": 18,
+            "couponsUsed": 0,
+            "trendingCoupon": {
+                "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9"
+            },
+            "topProduct": {
+                "uuid": "c6be4c62-4047-475d-8908-b984d3ac100f"
+            },
             "wallet": {
                 "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
                 "amount": {
                     "amount": 200,
                     "currencyCode": "QAR"
                 }
-            }
+            },
+            "createdAt": "2026-04-14T06:44:14.229Z"
         }
     }
 }
@@ -4002,6 +4058,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
         }
         type
         description
+        createdAt
     }
 }
 ```
@@ -4019,7 +4076,8 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "credit",
-                "description": "Your commission for the month of July"
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-14T06:52:21.998Z"
             },
             {
                 "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
@@ -4028,7 +4086,8 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "debit",
-                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
+                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93",
+                "createdAt": "2026-04-14T06:53:49.184Z"
             },
             {
                 "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
@@ -4037,7 +4096,8 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "credit",
-                "description": "Your commission for the month of July"
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-14T09:59:12.921Z"
             },
             {
                 "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
@@ -4046,7 +4106,28 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                     "currencyCode": "QAR"
                 },
                 "type": "credit",
-                "description": "Your commission for the month of July"
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-15T06:51:51.011Z"
+            },
+            {
+                "uuid": "32a41b95-25dd-4024-beea-5858633d034a",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "credit",
+                "description": "Your commission for the month of July",
+                "createdAt": "2026-04-15T10:24:10.783Z"
+            },
+            {
+                "uuid": "72b2d69c-aa4b-44ff-b61e-920c7947e909",
+                "amount": {
+                    "amount": 100,
+                    "currencyCode": "QAR"
+                },
+                "type": "debit",
+                "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93",
+                "createdAt": "2026-04-15T10:27:03.400Z"
             }
         ]
     }
@@ -4121,7 +4202,9 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         uuid
         code
         discountPercentage
+        ordersCount
         expiresAt
+        createdAt
     }
 }
 ```
@@ -4134,9 +4217,11 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         "getCurrentAffiliateCoupons": [
             {
                 "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
-                "code": "james10",
-                "discountPercentage": 10,
-                "expiresAt": "2026-12-31T00:00:00.000Z"
+                "code": "amin12",
+                "discountPercentage": 4,
+                "ordersCount": 0,
+                "expiresAt": "2026-12-31T00:00:00.000Z",
+                "createdAt": "2026-04-15T10:07:07.504Z"
             }
         ]
     }

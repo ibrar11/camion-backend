@@ -6,15 +6,16 @@ type Affiliate {
   bio: String!
   couponsCreated: Float!
   couponsUsed: Float!
+  createdAt: DateTime!
   fullName: String!
   gender: String!
   nationality: String!
   remainingBalance: AffiliateMoney!
   status: String!
-  topProduct: Product!
+  topProduct: Product
   totalCommission: AffiliateMoney!
   totalPaid: AffiliateMoney!
-  trendingCoupon: Coupon!
+  trendingCoupon: Coupon
   type: String!
   uuid: String!
   wallet: Wallet!
@@ -58,8 +59,10 @@ type Category {
 
 type Coupon {
   code: String!
+  createdAt: DateTime!
   discountPercentage: Float!
   expiresAt: DateTime!
+  ordersCount: Float!
   uuid: String!
 }
 
@@ -238,7 +241,7 @@ type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCurrencies: [Currency!]!
-  getCurrentAffiliate: Affiliate!
+  getCurrentAffiliate: Affiliate
   getCurrentAffiliateBankAccounts(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [BankAccount!]!
   getCurrentAffiliateCoupons(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Coupon!]!
   getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
@@ -297,6 +300,7 @@ type TextElement {
 
 type Transaction {
   amount: TransactionMoney!
+  createdAt: DateTime!
   description: String!
   type: String!
   uuid: String!
