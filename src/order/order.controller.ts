@@ -38,7 +38,7 @@ import { OrderPreviewResponse } from './types';
 export class OrderController {
     constructor(@Inject(OrderService) private readonly orderService: OrderService) { }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
+    @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     create(
@@ -65,7 +65,7 @@ export class OrderController {
     }
 
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
+    @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Get('order-preview')
     orderPreview(
         @GetCustomer() customer: Customer,
