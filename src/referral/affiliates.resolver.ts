@@ -18,8 +18,6 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Affiliate)
 export class AffiliatesResolver {
-
-
 	constructor(@Inject(AffiliatesService) private readonly affiliatesService: AffiliatesService) { }
 
 	@Query(() => Affiliate, { nullable: true, })
