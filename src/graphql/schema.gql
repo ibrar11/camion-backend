@@ -2,6 +2,39 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Affiliate {
+  bio: String!
+  couponsCreated: Float!
+  couponsUsed: Float!
+  fullName: String!
+  gender: String!
+  nationality: String!
+  remainingBalance: AffiliateMoney!
+  status: String!
+  topProduct: Product!
+  totalCommission: AffiliateMoney!
+  totalPaid: AffiliateMoney!
+  trendingCoupon: Coupon!
+  type: String!
+  uuid: String!
+  wallet: Wallet!
+}
+
+type AffiliateMoney {
+  amount: Float!
+  currencyCode: String!
+}
+
+type BankAccount {
+  accountHolderName: String!
+  accountNumber: String!
+  bankName: String!
+  iban: String!
+  isDefault: Boolean!
+  swiftCode: String!
+  uuid: String!
+}
+
 type Banner {
   imageUrl: String!
   isActive: Boolean!
@@ -20,6 +53,21 @@ type Category {
   nameEn: String!
   slug: String!
   thumbnailUrl: String
+  uuid: String!
+}
+
+type Coupon {
+  code: String!
+  discountPercentage: Float!
+  expiresAt: DateTime!
+  uuid: String!
+}
+
+type Currency {
+  alphaCode: String!
+  createdAt: DateTime!
+  name: String!
+  updatedAt: DateTime!
   uuid: String!
 }
 
@@ -43,6 +91,11 @@ type CustomerAddress {
   zipCode: String!
 }
 
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type Dimensions {
   height: Int!
   length: Int!
@@ -54,6 +107,14 @@ type EmojiElement {
   content: String!
 }
 
+type Language {
+  createdAt: DateTime!
+  name: String!
+  shortCode: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
 type LinkElement {
   content: String!
 }
@@ -61,6 +122,19 @@ type LinkElement {
 type Money {
   amount: Int!
   currencyCode: String!
+}
+
+type Notification {
+  brief: String!
+  createdAt: DateTime!
+  isRead: Boolean!
+  message: String!
+  payload: String!
+  priority: String!
+  title: String!
+  type: String!
+  updatedAt: DateTime!
+  uuid: String!
 }
 
 type PollElement {
@@ -115,8 +189,15 @@ type ProductOptionValue {
 type ProductReview {
   comment: String!
   customer: Customer!
+  images: [ProductReviewImage!]!
   isEdited: Boolean!
   rating: Int!
+  uuid: String!
+}
+
+type ProductReviewImage {
+  imageUrl: String!
+  thumbnailUrl: String!
   uuid: String!
 }
 
@@ -156,9 +237,16 @@ type ProductVariantOptionValue {
 type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
+  getCurrencies: [Currency!]!
+  getCurrentAffiliate: Affiliate!
+  getCurrentAffiliateBankAccounts(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [BankAccount!]!
+  getCurrentAffiliateCoupons(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Coupon!]!
+  getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getLanguages: [Language!]!
+  getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
@@ -205,6 +293,30 @@ type StorySticker {
 type TextElement {
   ar: String!
   en: String!
+}
+
+type Transaction {
+  amount: TransactionMoney!
+  description: String!
+  type: String!
+  uuid: String!
+}
+
+type TransactionMoney {
+  amount: Float!
+  currencyCode: String!
+}
+
+type Wallet {
+  amount: WalletMoney!
+  amountAvailable: WalletMoney!
+  amountPending: WalletMoney!
+  uuid: String!
+}
+
+type WalletMoney {
+  amount: Float!
+  currencyCode: String!
 }
 
 type Weight {

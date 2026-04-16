@@ -3,8 +3,14 @@ import {
     Get,
     UseGuards,
     Query,
-    Param
+    Param,
+    Post,
+    Body,
+    HttpCode,
+    HttpStatus
 } from '@nestjs/common';
+
+import { ImportProductDto } from './dtos/ImportProductDto';
 
 import { UserRole } from 'src/users/enums/UserRole';
 
@@ -25,8 +31,8 @@ import {
 export class ProcurementController {
     constructor(private readonly procurementService: ProcurementService) { }
 
-    @Get()
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get()
     search(
         @Query("keyword") keyword: string,
         @Query("pageNumber") pageNumber: string,
@@ -38,11 +44,20 @@ export class ProcurementController {
         return this.procurementService.searchProduct(keyword, pageNumber, itemsPerPage, sort, priceStart, priceEnd);
     }
 
-    @Get(':productId')
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get(':productId')
     detail(
         @Param('productId') productId: string,
     ): Promise<ProductDetail> {
         return this.procurementService.getProductDetail(productId);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Post('import')
+    @HttpCode(HttpStatus.OK)
+    importProducts(
+        @Body() body: ImportProductDto
+    ) {
+        return this.procurementService.importProduct(body)
     }
 }

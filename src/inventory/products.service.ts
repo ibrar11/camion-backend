@@ -662,6 +662,7 @@ export class ProductsService {
 				},
 				reviews: {
 					customer: true,
+					images: true,
 				},
 			},
 		});
@@ -699,6 +700,7 @@ export class ProductsService {
 				},
 				reviews: {
 					customer: true,
+					images: true,
 				},
 			},
 		});
