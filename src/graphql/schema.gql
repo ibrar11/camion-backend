@@ -140,6 +140,27 @@ type Notification {
   uuid: String!
 }
 
+type Order {
+  discount: Money!
+  eta: String!
+  orderItems: [OrderItem!]!
+  shippingCost: Money!
+  status: String!
+  subTotal: Money!
+  total: Money!
+  uuid: String!
+}
+
+type OrderItem {
+  order: Order!
+  price: Money!
+  product: Product!
+  quantity: Int!
+  total: Money!
+  uuid: String!
+  variant: ProductVariant!
+}
+
 type PollElement {
   options: PollOptionElement!
   question: String!
@@ -246,6 +267,8 @@ type Query {
   getCurrentAffiliateCoupons(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Coupon!]!
   getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
+  getCurrentCustomerOrder(uuid: String!): Order!
+  getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!

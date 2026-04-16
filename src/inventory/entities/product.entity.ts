@@ -23,6 +23,8 @@ import { ProductReview } from "./product-review.entity";
 
 import { CartItem } from "../../cart/entities/cart-items.entity";
 
+import { OrderItem } from "src/order/entities/order-item.entity";
+
 @ObjectType()
 @Entity({ name: "products", })
 export class Product {
@@ -107,6 +109,9 @@ export class Product {
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@OneToMany(() => OrderItem, (orderItem) => orderItem.product)
+	orderItems: Array<OrderItem>;
 
 	@Exclude()
 	@Column({
