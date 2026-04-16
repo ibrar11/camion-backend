@@ -150,7 +150,37 @@ export class OrderService {
 
             const currency = cartItems[0].variant.price.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
-            const shippingCost = 0;
+
+            const address = await this.addressRepo.findOne({
+                where: {
+                    customer: { id: customer.id },
+                    isDefault: true,
+                },
+            });
+
+            if (!address) {
+                throw new BadRequestException({
+                    error: 'User address cannot be found.'
+                });
+            }
+            const shippingCartItems = cartItems.map(item => ({
+                weight: {
+                    amount: item.variant.weight.amount,
+                    unit: item.variant.weight.unit,
+                },
+                quantity: item.quantity,
+            }));
+
+            // Calculate shipping fee using utility function
+            const shippingCalculation = calculateCartShipping(
+                shippingCartItems,
+                address.country,
+                "USD", // Todo make currency dynamic
+                subTotal
+            );
+            const shippingCost = Math.floor(shippingCalculation.totalShippingCost);
+            const eta = shippingCalculation.transitTime.estimatedRange
+
             const discount = 0;
             const total = subTotal + shippingCost - discount;
 
@@ -177,6 +207,7 @@ export class OrderService {
                 amount: total,
                 currencyCode: currency,
             };
+            order.eta = eta;
             order.orderItems = orderItems;
 
             await this.orderRepo.save(order);
@@ -188,7 +219,7 @@ export class OrderService {
 
             return order;
         } catch (error: any) {
-            this.logger.error(`Error placing order: ${error?.message}`);
+            this.logger.error(`Error placing order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to place order',
                 details: error.message || error,
@@ -208,7 +239,10 @@ export class OrderService {
 
             return this.orderRepo.find({
                 relations: {
-                    orderItems: true,
+                    orderItems: {
+                        product: true,
+                        variant: true,
+                    },
                 },
                 order: {
                     id: "DESC",
@@ -241,7 +275,10 @@ export class OrderService {
                     customer: { uuid: customerUuid }
                 },
                 relations: {
-                    orderItems: true,
+                    orderItems: {
+                        product: true,
+                        variant: true,
+                    },
                 },
                 order: {
                     id: "DESC",
@@ -268,7 +305,10 @@ export class OrderService {
             const order = await this.orderRepo.findOne({
                 where: { uuid },
                 relations: {
-                    orderItems: true,
+                    orderItems: {
+                        product: true,
+                        variant: true,
+                    },
                 },
             });
 

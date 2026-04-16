@@ -35,31 +35,71 @@ paymentMethod | Yes | String | The payment method selected by the customer (e.g.
 ### Response Body
 ```json
 {
-    "uuid": "f7b2a1d0-5c91-4d3e-a2f1-123456789abc",
+    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
     "status": "payment_pending",
-    "currency": "USD",
-    "subTotal": 1598.00,
-    "shippingCost": 0,
-    "discount": 0,
-    "total": 1598.00,
-    "isPaid": false,
-    "paidAt": null,
+    "subTotal": {
+        "amount": 688,
+        "currencyCode": "USD"
+    },
+    "shippingCost": {
+        "amount": 321,
+        "currencyCode": "USD"
+    },
+    "discount": {
+        "amount": 0,
+        "currencyCode": "USD"
+    },
+    "total": {
+        "amount": 1009,
+        "currencyCode": "USD"
+    },
+    "eta": "6-10 working days",
     "orderItems": [
         {
-            "uuid": "a9c8f7d6-1234-4567-8901-abcdef123456",
+            "uuid": "8183c409-82dd-48fe-95ad-ef45853b6635",
+            "product": {
+                "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                "titleEn": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                "titleAr": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                "briefEn": "",
+                "briefAr": "",
+                "description": "",
+                "descriptionEn": "",
+                "status": "ACTIVE"
+            },
+            "variant": {
+                "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
+                "titleEn": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                "titleAr": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                "sku": "5627530595058",
+                "barcode": "5627530595058",
+                "price": {
+                    "amount": 688,
+                    "currencyCode": "USD"
+                },
+                "weight": {
+                    "amount": 16,
+                    "unit": "kg"
+                },
+                "dimensions": {
+                    "width": 36,
+                    "height": 57,
+                    "length": 88,
+                    "unit": "cm"
+                }
+            },
             "price": {
-                "amount": 799.00,
+                "amount": 688,
                 "currencyCode": "USD"
             },
-            "quantity": 2,
+            "quantity": 1,
             "total": {
-                "amount": 799.00,
+                "amount": 688,
                 "currencyCode": "USD"
             }
         }
-    ],
-    "createdAt": "2026-04-09T10:15:30Z",
-    "updatedAt": "2026-04-09T10:15:30Z"
+    ]
 }
 ```
 
@@ -74,14 +114,14 @@ GET /v1/orders HTTP/1.1
 ```json
 [
     {
-        "uuid": "bf5f6137-ee3d-4b38-a4e8-d006b3703574",
+        "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
         "status": "payment_pending",
         "subTotal": {
-            "amount": 310,
+            "amount": 688,
             "currencyCode": "USD"
         },
         "shippingCost": {
-            "amount": 0,
+            "amount": 321,
             "currencyCode": "USD"
         },
         "discount": {
@@ -89,100 +129,52 @@ GET /v1/orders HTTP/1.1
             "currencyCode": "USD"
         },
         "total": {
-            "amount": 310,
+            "amount": 1009,
             "currencyCode": "USD"
         },
+        "eta": "6-10 working days",
         "orderItems": [
             {
-                "uuid": "ef893667-0357-401a-97e6-6f03aba6c06c",
+                "uuid": "8183c409-82dd-48fe-95ad-ef45853b6635",
+                "product": {
+                    "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                    "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                    "titleEn": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                    "titleAr": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                    "briefEn": "",
+                    "briefAr": "",
+                    "description": "",
+                    "descriptionEn": "",
+                    "status": "ACTIVE"
+                },
+                "variant": {
+                    "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
+                    "titleEn": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                    "titleAr": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                    "sku": "5627530595058",
+                    "barcode": "5627530595058",
+                    "price": {
+                        "amount": 688,
+                        "currencyCode": "USD"
+                    },
+                    "weight": {
+                        "amount": 16,
+                        "unit": "kg"
+                    },
+                    "dimensions": {
+                        "width": 36,
+                        "height": 57,
+                        "length": 88,
+                        "unit": "cm"
+                    }
+                },
                 "price": {
-                    "amount": 310,
+                    "amount": 688,
                     "currencyCode": "USD"
                 },
                 "quantity": 1,
                 "total": {
-                    "amount": 310,
-                    "currencyCode": "USD"
-                }
-            }
-        ]
-    }
-]
-```
-
-Retrieve My Orders
------------------
-
-```http
-GET /v1/orders/me HTTP/1.1
-```
-
-### Response Body
-```json
-[
-    {
-        "uuid": "bf5f6137-ee3d-4b38-a4e8-d006b3703574",
-        "status": "payment_pending",
-        "subTotal": {
-            "amount": 310,
-            "currencyCode": "USD"
-        },
-        "shippingCost": {
-            "amount": 0,
-            "currencyCode": "USD"
-        },
-        "discount": {
-            "amount": 0,
-            "currencyCode": "USD"
-        },
-        "total": {
-            "amount": 310,
-            "currencyCode": "USD"
-        },
-        "orderItems": [
-            {
-                "uuid": "ef893667-0357-401a-97e6-6f03aba6c06c",
-                "price": {
-                    "amount": 310,
-                    "currencyCode": "USD"
-                },
-                "quantity": 1,
-                "total": {
-                    "amount": 310,
-                    "currencyCode": "USD"
-                }
-            }
-        ]
-    },
-    {
-        "uuid": "8bb057d2-86ee-4877-b429-28d7ef63cbe5",
-        "status": "cancelled",
-        "subTotal": {
-            "amount": 310,
-            "currencyCode": "USD"
-        },
-        "shippingCost": {
-            "amount": 0,
-            "currencyCode": "USD"
-        },
-        "discount": {
-            "amount": 0,
-            "currencyCode": "USD"
-        },
-        "total": {
-            "amount": 310,
-            "currencyCode": "USD"
-        },
-        "orderItems": [
-            {
-                "uuid": "5c8b2532-4833-4cdc-b6ef-654474e39be3",
-                "price": {
-                    "amount": 310,
-                    "currencyCode": "USD"
-                },
-                "quantity": 1,
-                "total": {
-                    "amount": 310,
+                    "amount": 688,
                     "currencyCode": "USD"
                 }
             }
@@ -318,14 +310,14 @@ GET /v1/orders/<order-uuid> HTTP/1.1
 ### Response Body
 ```json
 {
-    "uuid": "8bb057d2-86ee-4877-b429-28d7ef63cbe5",
-    "status": "cancelled",
+    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
+    "status": "payment_pending",
     "subTotal": {
-        "amount": 310,
+        "amount": 688,
         "currencyCode": "USD"
     },
     "shippingCost": {
-        "amount": 0,
+        "amount": 321,
         "currencyCode": "USD"
     },
     "discount": {
@@ -333,19 +325,52 @@ GET /v1/orders/<order-uuid> HTTP/1.1
         "currencyCode": "USD"
     },
     "total": {
-        "amount": 310,
+        "amount": 1009,
         "currencyCode": "USD"
     },
+    "eta": "6-10 working days",
     "orderItems": [
         {
-            "uuid": "5c8b2532-4833-4cdc-b6ef-654474e39be3",
+            "uuid": "8183c409-82dd-48fe-95ad-ef45853b6635",
+            "product": {
+                "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                "titleEn": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                "titleAr": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                "briefEn": "",
+                "briefAr": "",
+                "description": "",
+                "descriptionEn": "",
+                "status": "ACTIVE"
+            },
+            "variant": {
+                "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
+                "titleEn": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                "titleAr": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                "sku": "5627530595058",
+                "barcode": "5627530595058",
+                "price": {
+                    "amount": 688,
+                    "currencyCode": "USD"
+                },
+                "weight": {
+                    "amount": 16,
+                    "unit": "kg"
+                },
+                "dimensions": {
+                    "width": 36,
+                    "height": 57,
+                    "length": 88,
+                    "unit": "cm"
+                }
+            },
             "price": {
-                "amount": 310,
+                "amount": 688,
                 "currencyCode": "USD"
             },
             "quantity": 1,
             "total": {
-                "amount": 310,
+                "amount": 688,
                 "currencyCode": "USD"
             }
         }
@@ -374,31 +399,71 @@ status | Yes | String | new status for order
 ### Response Body
 ```json
 {
-    "uuid": "f7b2a1d0-5c91-4d3e-a2f1-123456789abc",
-    "status": "payment_pending",
-    "currency": "USD",
-    "subTotal": 1598.00,
-    "shippingCost": 0,
-    "discount": 0,
-    "total": 1598.00,
-    "isPaid": false,
-    "paidAt": null,
+    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
+    "status": "payment_successful",
+    "subTotal": {
+        "amount": 688,
+        "currencyCode": "USD"
+    },
+    "shippingCost": {
+        "amount": 321,
+        "currencyCode": "USD"
+    },
+    "discount": {
+        "amount": 0,
+        "currencyCode": "USD"
+    },
+    "total": {
+        "amount": 1009,
+        "currencyCode": "USD"
+    },
+    "eta": "6-10 working days",
     "orderItems": [
         {
-            "uuid": "a9c8f7d6-1234-4567-8901-abcdef123456",
+            "uuid": "8183c409-82dd-48fe-95ad-ef45853b6635",
+            "product": {
+                "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                "titleEn": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                "titleAr": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                "briefEn": "",
+                "briefAr": "",
+                "description": "",
+                "descriptionEn": "",
+                "status": "ACTIVE"
+            },
+            "variant": {
+                "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
+                "titleEn": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                "titleAr": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                "sku": "5627530595058",
+                "barcode": "5627530595058",
+                "price": {
+                    "amount": 688,
+                    "currencyCode": "USD"
+                },
+                "weight": {
+                    "amount": 16,
+                    "unit": "kg"
+                },
+                "dimensions": {
+                    "width": 36,
+                    "height": 57,
+                    "length": 88,
+                    "unit": "cm"
+                }
+            },
             "price": {
-                "amount": 799.00,
+                "amount": 688,
                 "currencyCode": "USD"
             },
-            "quantity": 2,
+            "quantity": 1,
             "total": {
-                "amount": 799.00,
+                "amount": 688,
                 "currencyCode": "USD"
             }
         }
-    ],
-    "createdAt": "2026-04-09T10:15:30Z",
-    "updatedAt": "2026-04-09T10:15:30Z"
+    ]
 }
 ```
 

@@ -59,6 +59,10 @@ export class Order {
     @Column(() => Money)
     total: Money;
 
+    @Field()
+    @Column({ type: "varchar", length: 64 })
+    eta: string;
+
     @Field(() => [OrderItem])
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
     orderItems: Array<OrderItem>;

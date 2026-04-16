@@ -4171,6 +4171,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
             amount
             currencyCode
         }
+        eta
         orderItems {
             uuid
             price {
@@ -4181,6 +4182,35 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
             total {
                 amount
                 currencyCode
+            }
+            product {
+                uuid
+                slug
+                title
+                brief
+                description
+                descriptionHtml
+                status
+            }
+            variant {
+                uuid
+                title
+                sku
+                barcode
+                price {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
             }
         }
     }
@@ -4194,10 +4224,10 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
     "data": {
         "getCurrentCustomerOrders": [
             {
-                "uuid": "bf5f6137-ee3d-4b38-a4e8-d006b3703574",
+                "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
                 "status": "payment_pending",
                 "subTotal": {
-                    "amount": 310,
+                    "amount": 688,
                     "currencyCode": "USD"
                 },
                 "shippingCost": {
@@ -4209,12 +4239,200 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
                     "currencyCode": "USD"
                 },
                 "total": {
-                    "amount": 310,
+                    "amount": 688,
                     "currencyCode": "USD"
                 },
-                "orderItems": []
+                "eta": "6-10 working days",
+                "orderItems": [
+                    {
+                        "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
+                        "price": {
+                            "amount": 688,
+                            "currencyCode": "USD"
+                        },
+                        "quantity": 1,
+                        "total": {
+                            "amount": 688,
+                            "currencyCode": "USD"
+                        },
+                        "product": {
+                            "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                            "slug": "iphone-17",
+                            "title": "iPhone 17",
+                            "brief": "From $799 or $33.29/mo. per month for 24 months",
+                            "description": "Your new iPhone awaits. Make it yours.",
+                            "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                            "status": "DRAFT",
+                        },
+                        "variant": {
+                            "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                            "title": "iPhone 17 Red 1 TB",
+                            "sku": "iphone-17-red-1tb",
+                            "barcode": "10000",
+                            "price": {
+                                "amount": 1000,
+                                "currencyCode": "QAR"
+                            },
+                            "weight": {
+                                "amount": 1,
+                                "unit": "kg"
+                            },
+                            "dimensions": {
+                                "width": 1000,
+                                "height": 1000,
+                                "length": 1000,
+                                "unit": "in"
+                            }
+                        }
+                    }
+                ]
             }
         ]
+    }
+}
+```
+
+Get Current Customer Order
+-----------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerOrder($uuid: string) {
+    getCurrentCustomerOrder(uuid: $uuid) {
+        uuid
+        status
+        subTotal {
+            amount
+            currencyCode
+        }
+        shippingCost {
+            amount
+            currencyCode
+        }
+        discount {
+            amount
+            currencyCode
+        }
+        total {
+            amount
+            currencyCode
+        }
+        eta
+        orderItems {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+            product {
+                uuid
+                slug
+                title
+                brief
+                description
+                descriptionHtml
+                status
+            }
+            variant {
+                uuid
+                title
+                sku
+                barcode
+                price {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
+            }
+        }
+    }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerOrders":{
+            "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
+            "status": "payment_pending",
+            "subTotal": {
+                "amount": 688,
+                "currencyCode": "USD"
+            },
+            "shippingCost": {
+                "amount": 0,
+                "currencyCode": "USD"
+            },
+            "discount": {
+                "amount": 0,
+                "currencyCode": "USD"
+            },
+            "total": {
+                "amount": 688,
+                "currencyCode": "USD"
+            },
+            "eta": "6-10 working days",
+            "orderItems": [
+                {
+                    "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
+                    "price": {
+                        "amount": 688,
+                        "currencyCode": "USD"
+                    },
+                    "quantity": 1,
+                    "total": {
+                        "amount": 688,
+                        "currencyCode": "USD"
+                    },
+                    "product": {
+                        "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+                        "slug": "iphone-17",
+                        "title": "iPhone 17",
+                        "brief": "From $799 or $33.29/mo. per month for 24 months",
+                        "description": "Your new iPhone awaits. Make it yours.",
+                        "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                        "status": "DRAFT",
+                    },
+                    "variant": {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        }
+                    }
+                }
+            ]
+        }
     }
 }
 ```

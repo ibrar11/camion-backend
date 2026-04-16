@@ -38,11 +38,11 @@ export class OrderItem {
     @ManyToOne(() => Order, (order) => order.orderItems)
     order: Order;
 
-    @Exclude()
+    @Field(() => Product)
     @ManyToOne(() => Product, (product) => product.orderItems)
     product: Product;
 
-    @Exclude()
+    @Field(() => ProductVariant)
     @ManyToOne(() => ProductVariant, (variant) => variant.orderItems)
     variant: ProductVariant;
 
