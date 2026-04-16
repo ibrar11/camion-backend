@@ -11,7 +11,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Repository } from "typeorm";
 
-import { S3Service } from "src/common/s3.service";
+import { S3Service } from "../common/s3.service";
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
@@ -127,6 +127,9 @@ export class CategoriesService {
 				children: {
 					children: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,

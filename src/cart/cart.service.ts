@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 import {
     Injectable,
-    BadRequestException, 
+    BadRequestException,
     NotFoundException ,
     Logger,
 } from "@nestjs/common";
@@ -23,9 +23,9 @@ import { ProductVariant } from "src/inventory/entities/product-variant.entity";
 
 import { Customer } from "src/customers/entities/customer.entity";
 
-import { 
-    FindCartResponse, 
-    UpdateCartResponse, 
+import {
+    FindCartResponse,
+    UpdateCartResponse,
     ValidatedCartItem
 } from "./types";
 
@@ -139,8 +139,8 @@ export class CartService {
         try{
 
             const where = { customer: {uuid: customer.uuid} };
-            
-            const items = await this.cartRepo.find({ 
+
+            const items = await this.cartRepo.find({
                 where,
                 relations: {
                     product: true,
@@ -148,7 +148,7 @@ export class CartService {
                     customer: true
                 }
             });
-            
+
             const validatedItems: ValidatedCartItem[] = [];
 
             for (const item of items) {
@@ -190,7 +190,7 @@ export class CartService {
                     }
                 );
             }
-            
+
             return validatedItems;
         } catch (err) {
             this.logger.error("Error while fetching cart: ", err);
@@ -210,7 +210,7 @@ export class CartService {
             const { productUuid, variantUuid, quantity } = dto;
 
             // find the cart item to update
-            const cartItem = await this.cartRepo.findOne({ 
+            const cartItem = await this.cartRepo.findOne({
                 where: {
                     product: {uuid: productUuid},
                     uuid: uuid
@@ -256,7 +256,7 @@ export class CartService {
             if (!variant) {
                 throw new NotFoundException('Variant not found');
             }
-            
+
             // check the variant stock availability
             const availableStock = calculateStock(variant);
 
@@ -277,7 +277,7 @@ export class CartService {
                     customer: true
                 }
             })
-            
+
             const pricePerUnit = variant?.price?.amount || 0.0;
 
             // merge the dupliate variant and remove the old one
@@ -338,14 +338,14 @@ export class CartService {
 	 */
     async removeItem(uuid: string): Promise<void> {
         try {
-            const cartItem = await this.cartRepo.findOne({ 
+            const cartItem = await this.cartRepo.findOne({
                 where: {
                     uuid: uuid
                 }
             });
-            
+
             if (!cartItem) throw new NotFoundException("Cart item not found");
-            
+
             await this.cartRepo.remove(cartItem);
         } catch (err) {
             this.logger.error("Error while removing cart item: ", err);

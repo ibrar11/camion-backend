@@ -81,17 +81,19 @@ export class ProductsService {
 		// Find the categories and create product categories.
 		// This is to join the categories to its associated product.
 		if (body.categories !== null && body.categories.length !== 0) {
-			body.categories.forEach(async categoryUUID => {
-				const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
-				if (category === null) {
-					return;
-				}
+			body.categories
+				.filter((categoryUUID, index) => body.categories.indexOf(categoryUUID) === index)
+				.forEach(async categoryUUID => {
+					const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
+					if (category === null) {
+						return;
+					}
 
-				const productCategory = new ProductCategory();
-				productCategory.product = product;
-				productCategory.category = category;
-				await this.productCategoryRepository.save(productCategory);
-			});
+					const productCategory = new ProductCategory();
+					productCategory.product = product;
+					productCategory.category = category;
+					await this.productCategoryRepository.save(productCategory);
+				});
 		}
 
 		return product;
@@ -113,7 +115,10 @@ export class ProductsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Parse the filters
-		let filtersObject: { slug?: string } = {};
+		let filtersObject: {
+			slug?: string,
+			query?: string,
+		} = {};
 		try {
 			filtersObject = JSON.parse(filters);
 		} catch {
@@ -122,7 +127,12 @@ export class ProductsService {
 
 		// Returns products by category
 		if (filtersObject.slug !== undefined) {
-			return this.findAllByCategorySlug(filtersObject.slug, sort, skip, take);
+			return this.findAllByCategory(filtersObject.slug, pageNumber, itemsPerPage);
+		}
+
+		// Returns products by query
+		if (filtersObject.query !== undefined) {
+			return this.searchProducts(filtersObject.query, "en", ProductSort.BestMatch, pageNumber, itemsPerPage);
 		}
 
 		return this.productRepository.find({
@@ -134,11 +144,60 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
 		});
+	}
+
+	/**
+	 * Finds a list of products in a specific category
+	 *
+	 * @param categorySlug
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAllByCategory(categorySlug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products by category slug: ${categorySlug}`);
+
+		// Find the category, return empty array if there is not category
+		const category = await this.categoryRepository.findOneBy({ slug: categorySlug, });
+		if (category === null) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		return this.productRepository.createQueryBuilder("product")
+			// Populate options and their values
+			.leftJoinAndSelect('product.options', 'options')
+			.leftJoinAndSelect('options.values', 'optionValues')
+
+			// Populate variants and their specific option value mappings
+			.leftJoinAndSelect('product.variants', 'variants')
+			.leftJoinAndSelect('variants.images', 'images')
+			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
+			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
+
+			// Many-to-many join
+			.innerJoin("product.productCategories", "productCategory")
+			.innerJoin("productCategory.category", "category")
+			.where("category.id = :id", {
+				id: category.id,
+			})
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
 	}
 
 	/**
@@ -164,7 +223,11 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
@@ -220,7 +283,11 @@ export class ProductsService {
 							optionValues: {
 								optionValue: true,
 							},
+							images: true,
 						},
+					},
+					order: {
+						id: "DESC",
 					},
 					skip: skip,
 					take: take,
@@ -241,6 +308,7 @@ export class ProductsService {
 
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
+					.leftJoinAndSelect('variants.images', 'images')
 					.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 					.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -270,6 +338,7 @@ export class ProductsService {
 
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
+					.leftJoinAndSelect('variants.images', 'images')
 					.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 					.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -332,7 +401,11 @@ export class ProductsService {
 						optionValues: {
 							optionValue: true,
 						},
+						images: true,
 					},
+				},
+				order: {
+					id: "DESC",
 				},
 				skip: skip,
 				take: take,
@@ -347,6 +420,7 @@ export class ProductsService {
 
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
+			.leftJoinAndSelect('variants.images', 'images')
 			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -379,7 +453,11 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
@@ -410,7 +488,11 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
@@ -441,7 +523,11 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
@@ -489,7 +575,11 @@ export class ProductsService {
 						optionValues: {
 							optionValue: true,
 						},
+						images: true,
 					},
+				},
+				order: {
+					id: "DESC",
 				},
 				skip: skip,
 				take: take,
@@ -504,6 +594,7 @@ export class ProductsService {
 
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
+			.leftJoinAndSelect('variants.images', 'images')
 			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
 			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
@@ -536,33 +627,15 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
 		});
-	}
-
-	/**
-	 * Finds products by a category slug
-	 *
-	 * @param slug
-	 * @param sort
-	 * @param skip
-	 * @param take
-	 * @returns
-	 */
-	async findAllByCategorySlug(slug: string, sort: string, skip: number, take: number): Promise<Array<Product>> {
-		this.logger.log(`Retrieving products by category slug: ${slug}`);
-
-		return this.productRepository
-			.createQueryBuilder("product")
-			.innerJoin("product.productCategories", "pc")
-			.innerJoin("pc.category", "category")
-			.where("category.slug = :slug", { slug: slug, })
-			.skip(skip)
-			.take(take)
-			.getMany();
 	}
 
 	/**
@@ -585,9 +658,11 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 				reviews: {
 					customer: true,
+					images: true,
 				},
 			},
 		});
@@ -621,9 +696,11 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					images: true,
 				},
 				reviews: {
 					customer: true,
+					images: true,
 				},
 			},
 		});

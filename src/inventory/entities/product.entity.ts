@@ -21,7 +21,10 @@ import { ProductVariant } from "./product-variant.entity";
 import { ProductCategory } from "./product-category.entity";
 import { ProductReview } from "./product-review.entity";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
+import { CartItem } from "../../cart/entities/cart-items.entity";
+
+import { OrderItem } from "src/order/entities/order-item.entity";
+
 import { WishlistItem } from "src/wishlist/entities/wishlist.entity";
 
 @ObjectType()
@@ -108,6 +111,9 @@ export class Product {
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@OneToMany(() => OrderItem, (orderItem) => orderItem.product)
+	orderItems: Array<OrderItem>;
 
 	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product)
 	wishlistItems: Array<WishlistItem>;

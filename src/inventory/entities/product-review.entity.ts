@@ -5,6 +5,7 @@ import {
 	CreateDateColumn,
 	Entity,
 	ManyToOne,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -12,7 +13,8 @@ import {
 import { Exclude } from "class-transformer";
 
 import { Product } from "./product.entity";
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../../customers/entities/customer.entity";
+import { ProductReviewImage } from "./product-review-image.entity";
 
 @ObjectType()
 @Entity({ name: "product_reviews" })
@@ -29,7 +31,7 @@ export class ProductReview {
 	@ManyToOne(() => Customer, (customer) => customer.reviews, { onDelete: "CASCADE", })
 	customer: Customer;
 
-	@ManyToOne(() => Product, (product) => product.variants, { onDelete: "CASCADE", })
+	@ManyToOne(() => Product, (product) => product.reviews, { onDelete: "CASCADE", })
 	product: Product;
 
 	@Field(() => Int)
@@ -43,6 +45,10 @@ export class ProductReview {
 	@Field()
 	@Column({ type: "boolean", default: false, })
 	isEdited: boolean;
+
+	@Field(() => [ProductReviewImage])
+	@OneToMany(() => ProductReviewImage, (image) => image.review, { cascade: true, })
+	images: Array<ProductReviewImage>;
 
 	@Exclude()
 	@UpdateDateColumn({

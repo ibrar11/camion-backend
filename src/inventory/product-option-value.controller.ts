@@ -19,12 +19,12 @@ import { UpdateProductOptionValueDto } from "./dtos/UpdateProductOptionValueDto"
 import { ProductOptionValue } from "./entities/product-option-value.entity";
 import { ProductOptionValueService } from "./product-option-value.service";
 
-import { UserRole } from "src/users/enums/UserRole";
+import { UserRole } from "../users/enums/UserRole";
 
-import { AuthGuard } from "src/auth/auth.guard";
-import { RolesGuard } from "src/auth/roles.guard";
+import { AuthGuard } from "../auth/auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
 
-import { Roles } from "src/auth/roles.decorator";
+import { Roles } from "../auth/roles.decorator";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products/:productUUID/options/:productOptionUUID/values')

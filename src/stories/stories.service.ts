@@ -70,6 +70,9 @@ export class StoriesService {
 			relations: {
 				frames: true,
 			},
+			order: {
+				id: "DESC",
+			},
 			skip: skip,
 			take: take,
 		});
