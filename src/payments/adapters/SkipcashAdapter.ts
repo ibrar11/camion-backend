@@ -10,7 +10,10 @@ import { generateSignature } from "src/common/skipcash";
 
 import { CreatePaymentDto } from "../dtos/CreatePaymentDto";
 
-import { InitiatePaymentResponse } from "../types";
+import { 
+    InitiatePaymentResponse, 
+    SignaturePayload 
+} from "../types";
 
 @Injectable()
 export class SkipCashAdapter {
@@ -33,7 +36,7 @@ export class SkipCashAdapter {
 
             // note: payment logic needs to be reviewed once payment integration starts
 
-            const payload = {
+            const payload: SignaturePayload = {
                 Uid: crypto.randomUUID(),
                 KeyId: process.env.SKIPCASH_KEY_ID,
                 Amount: dto.amount.toFixed(2),

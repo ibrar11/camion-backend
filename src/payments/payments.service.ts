@@ -22,7 +22,7 @@ export class PaymentsService {
     private readonly logger = new Logger(PaymentsService.name);
     
     constructor(
-        @InjectRepository(PaymentTransaction) private paymentRepo: Repository<PaymentTransaction>,
+        @InjectRepository(PaymentTransaction) private paymentTransactionRepository: Repository<PaymentTransaction>,
         private strategyfactory: PaymentStrategyFactory,
     ) {}
     
@@ -35,14 +35,14 @@ export class PaymentsService {
     async createPayment(dto: CreatePaymentDto): Promise<InitiatePaymentResponse> {
         try {
             // Create payment transaction
-            const transaction = this.paymentRepo.create({
+            const transaction = this.paymentTransactionRepository.create({
                 provider: dto.provider,
                 orderId: dto.orderId,
                 amount: dto.amount,
                 currency: dto.currency,
                 status: PaymentStatus.PENDING
             })
-            await this.paymentRepo.save(transaction);
+            await this.paymentTransactionRepository.save(transaction);
             
             // fetch the strategy for specified provider
             const strategy = this.strategyfactory.getStrategy(dto.provider);
@@ -53,7 +53,7 @@ export class PaymentsService {
             transaction.transactionId = result.transactionId;
             transaction.rawResponse = result.raw;
 
-            await this.paymentRepo.save(transaction);
+            await this.paymentTransactionRepository.save(transaction);
 
             return result;
         } catch (error: any) {

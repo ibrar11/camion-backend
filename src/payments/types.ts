@@ -75,7 +75,7 @@ export interface ApiResponse<T> {
     message: string;
     data: T;
 }
-export interface signaturePayload {
+export interface SignaturePayload {
     Uid: UUID;
     KeyId: string | undefined;
     Amount: string;
