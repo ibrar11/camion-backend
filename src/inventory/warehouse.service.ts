@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { getSkipAndTake } from "src/common/pagination";
+import { getSkipAndTake } from "../common/pagination";
 
 import { CreateWarehouseDto } from "./dtos/CreateWarehouseDto";
 import { UpdateWarehouseDto } from "./dtos/UpdateWarehouseDto";

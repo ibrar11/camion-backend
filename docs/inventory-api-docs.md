@@ -13,6 +13,7 @@ Follow the following steps to create your first product. Your can find the docum
 3. Create your product options.
 4. Create your product option values.
 5. Create your product variants.
+6. Create your product variant images.
 
 Warehouse API
 =============
@@ -1310,4 +1311,385 @@ Delete Product Variant
 
 ```http
 DELETE /v1/products/<product-uuid>/variants/<variant-uuid> HTTP/1.1
+```
+
+Product Variant Images
+======================
+
+Upload Variant Images
+---------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+POST /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
+```
+
+### Example
+```bash
+curl --location --request POST 'http://localhost:8000/v1/products/d0bd2ed9-81b2-44fe-84dc-9c52a794a2a3/variants/d0bd2ed9-81b2-44fe-84dc-9c52a794a2a3/images' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+--form 'file=@"/C:/m_Direct_Media____YWCMXRBDU8.jpg"'
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+    "variant": {
+        "uuid": "28a9db5c-1fb1-4acb-8193-e44514fb0952",
+        "titleEn": "iPhone 24 Red 1 TB",
+        "titleAr": "iPhone 24 Red 1 TB",
+        "sku": "iphone-24-red-1tb",
+        "barcode": "10000",
+        "price": {
+            "amount": 4000,
+            "currencyCode": "QAR"
+        },
+        "weight": {
+            "amount": 1,
+            "unit": "kg"
+        },
+        "dimensions": {
+            "width": 1000,
+            "height": 1000,
+            "length": 1000,
+            "unit": "in"
+        }
+    },
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+    "alt": "",
+    "isFeatured": false,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Get Variant Images
+------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+        "alt": "",
+        "isFeatured": false,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    },
+    {
+        "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
+        "alt": "",
+        "isFeatured": false,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    },
+    {
+        "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+        "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+        "alt": "iPhone Photo",
+        "isFeatured": true,
+        "position": 0,
+        "dimensions": {
+            "width": 1000,
+            "height": 1000
+        }
+    }
+]
+```
+
+Get Variant Image
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "alt": "",
+    "isFeatured": false,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Update Variant Image
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "alt": "iPhone Photo",
+    "position": 0,
+    "isFeatured": true
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
+    "alt": "iPhone Photo",
+    "isFeatured": true,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Delete Variant Image
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+```http
+DELETE /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+Product Reviews
+===============
+
+> [!IMPORTANT]
+> You must include your access token as a `Bearer` token in the Authorization header. Your account must be a customer while making these requests.
+
+Create Product Review
+---------------------
+
+```http
+POST /v1/products/<product-uuid>/reviews HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "rating": 1.0,
+    "comment": "This was very bad"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
+    "customer": {
+        "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+        "fullName": "Your Name",
+        "emailAddress": "your-name@your-domain.com",
+        "phoneNumber": "+974 12345678",
+        "role": "influencer"
+    },
+    "product": {
+        "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
+        "slug": "iphone-17",
+        "titleEn": "iPhone 17",
+        "titleAr": "آيفون 17",
+        "briefEn": "From $799 or $33.29/mo. per month for 24 months",
+        "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+        "descriptionEn": "Your new iPhone awaits. Make it yours.",
+        "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+        "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
+        "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+        "status": "DRAFT"
+    },
+    "rating": "1",
+    "comment": "This was very bad",
+    "isEdited": false
+}
+```
+
+Create Product Review Image
+---------------------------
+
+```http
+POST /v1/products/<product-uuid>/reviews/<product-review-uuid>/images HTTP/1.1
+```
+
+```bash
+curl --location --request POST 'http://localhost:8000/v1/products/<product-uuid>/reviews/<product-review-uuid>/images' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+--form 'file=@"/m_Direct_Media____YWCMXRBDU8.jpg"'
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "cb9eb5bd-7165-47fa-96c8-e3f85a27e890",
+    "review": {
+        "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
+        "rating": "1",
+        "comment": "This was very bad",
+        "isEdited": false
+    },
+    "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg",
+    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg"
+}
+```
+
+Get Product Reviews
+-------------------
+
+```http
+GET /v1/products/<product-uuid>/reviews HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
+        "customer": {
+            "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+            "fullName": "Your Name",
+            "emailAddress": "your-name@your-domain.com",
+            "phoneNumber": "+974 12345678",
+            "role": "influencer"
+        },
+        "rating": "1",
+        "comment": "This was very bad",
+        "isEdited": false,
+        "images": [
+            {
+                "uuid": "cb9eb5bd-7165-47fa-96c8-e3f85a27e890",
+                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg",
+                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg"
+            }
+        ]
+    },
+    {
+        "uuid": "362ad2ce-c5bf-46dd-be56-f00ba4241982",
+        "customer": {
+            "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+            "fullName": "Your Name",
+            "emailAddress": "your-name@your-domain.com",
+            "phoneNumber": "+974 12345678",
+            "role": "influencer"
+        },
+        "rating": "1",
+        "comment": "This was very bad",
+        "isEdited": false,
+        "images": []
+    }
+]
+```
+
+Get Product Review
+------------------
+
+```http
+GET /v1/products/<product-uuid>/reviews/<review-uuid> HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
+    "customer": {
+        "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+        "fullName": "Your Name",
+        "emailAddress": "your-name@your-domain.com",
+        "phoneNumber": "+974 12345678",
+        "role": "influencer"
+    },
+    "rating": "1",
+    "comment": "This was very bad",
+    "isEdited": false,
+    "images": [
+        {
+            "uuid": "cb9eb5bd-7165-47fa-96c8-e3f85a27e890",
+            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg",
+            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg"
+        }
+    ]
+}
+```
+
+Update Product Review
+---------------------
+
+```http
+PUT /v1/products/<product-uuid>/reviews/<review-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "rating": 1.0,
+    "comment": "This was very very bad"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
+    "rating": 1,
+    "comment": "This was very very bad",
+    "isEdited": true
+}
+```
+
+Delete Product Review
+---------------------
+
+```http
+DELETE /v1/products/<product-uuid>/reviews/<review-uuid> HTTP/1.1
 ```
