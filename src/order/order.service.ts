@@ -40,6 +40,8 @@ import {
     ShippingCalculationResult
 } from "src/common/calculateShipping";
 
+import { getSkipAndTake } from "src/common/pagination";
+
 import {
     OrderPreviewResponse,
 } from "./types";
@@ -199,13 +201,20 @@ export class OrderService {
      *
      * @returns
      */
-    async findAll(): Promise<Array<Order>> {
+    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Order>> {
         try {
+            // Get pagination params
+            const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
             return this.orderRepo.find({
                 relations: {
                     orderItems: true,
                 },
-                order: { createdAt: 'DESC' },
+                order: {
+                    id: "DESC",
+                },
+                skip: skip,
+                take: take,
             });
         } catch (error: any) {
             this.logger.error(`Error fetching orders: ${error?.message}`);
@@ -221,8 +230,12 @@ export class OrderService {
      * @param customerUuid
      * @returns
      */
-    async myOrders(customerUuid: string): Promise<Array<Order>> {
+    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Order>> {
         try {
+
+            // Get pagination params
+            const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
             return this.orderRepo.find({
                 where: {
                     customer: { uuid: customerUuid }
@@ -230,7 +243,11 @@ export class OrderService {
                 relations: {
                     orderItems: true,
                 },
-                order: { createdAt: 'DESC' },
+                order: {
+                    id: "DESC",
+                },
+                skip: skip,
+                take: take,
             });
         } catch (error: any) {
             this.logger.error(`Error fetching my orders: ${error?.message}`);

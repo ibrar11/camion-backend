@@ -6,6 +6,7 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
+import { OrderResolver } from './order.resolver';
 
 import { ClientsModule } from 'src/clients/clients.module';
 
@@ -42,6 +43,7 @@ import { InventoryLevel } from 'src/inventory/entities/inventory-level.entity';
         OrderService,
         UsersService,
         CustomersService,
+        OrderResolver,
     ],
     controllers: [
         OrderController

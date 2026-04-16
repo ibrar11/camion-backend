@@ -9,6 +9,7 @@ import {
     Param,
     Patch,
     Post,
+    Query,
     UseGuards
 } from '@nestjs/common';
 
@@ -37,7 +38,7 @@ import { OrderPreviewResponse } from './types';
 export class OrderController {
     constructor(@Inject(OrderService) private readonly orderService: OrderService) { }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     create(
@@ -47,24 +48,24 @@ export class OrderController {
         return this.orderService.create(customer, dto);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Get()
     @HttpCode(HttpStatus.OK)
-    findAll() {
-        return this.orderService.findAll();
+    findAll(
+        @GetCustomer() customer: Customer,
+        @Query("filters") filters: string,
+        @Query("sort") sort: string,
+        @Query("pageNumber") pageNumber: number,
+        @Query("itemsPerPage") itemsPerPage: number,
+    ): Promise<Array<Order>> {
+        if (customer) {
+            return this.orderService.findAllByCustomer(customer.uuid, filters, sort, pageNumber, itemsPerPage);
+        }
+        return this.orderService.findAll(filters, sort, pageNumber, itemsPerPage);
     }
 
-    @Roles(CustomerRole.Customer)
-    @Get('me')
-    @HttpCode(HttpStatus.OK)
-    findMyOrders(
-        @GetCustomer() customer: Customer
-    ) {
-        return this.orderService.myOrders(customer.uuid);
-    }
 
-
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Get('order-preview')
     orderPreview(
         @GetCustomer() customer: Customer,
@@ -72,7 +73,7 @@ export class OrderController {
         return this.orderService.orderPreview(customer)
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Get(':uuid')
     @HttpCode(HttpStatus.OK)
     findOne(@Param('uuid') uuid: string): Promise<Order> {
@@ -89,7 +90,7 @@ export class OrderController {
         return this.orderService.updateStatus(uuid, status);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Delete(':uuid')
     @HttpCode(HttpStatus.OK)
     cancel(@Param('uuid') uuid: string): Promise<void> {

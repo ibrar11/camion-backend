@@ -1,3 +1,5 @@
+import { Field, ObjectType } from "@nestjs/graphql";
+
 import {
     Column,
     CreateDateColumn,
@@ -10,32 +12,22 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { CurrencyCode } from "src/inventory/enums/CurrencyCode";
 import { OrderStatus } from "../enums/OrderStatus";
 
 import { Customer } from "src/customers/entities/customer.entity";
 
 import { OrderItem } from "./order-item.entity";
 
+import { Money } from "src/inventory/entities/product-variant.entity";
 
-export class Money {
-    @Column({ type: "integer", })
-    amount: number;
-
-    @Column({
-        type: "enum",
-        enum: CurrencyCode,
-        default: CurrencyCode.USD,
-    })
-    currencyCode: CurrencyCode;
-}
-
+@ObjectType()
 @Entity({ name: 'orders', })
 export class Order {
     @Exclude()
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Field()
     @Column({ type: "uuid", nullable: false, unique: true, })
     uuid: string;
 
@@ -43,6 +35,7 @@ export class Order {
     @ManyToOne(() => Customer, (customer) => customer.orders)
     customer: Customer;
 
+    @Field()
     @Column({
         type: "enum",
         enum: OrderStatus,
@@ -50,20 +43,25 @@ export class Order {
     })
     status: OrderStatus;
 
+    @Field(() => Money)
     @Column(() => Money)
     subTotal: Money;
 
+    @Field(() => Money)
     @Column(() => Money)
     shippingCost: Money;
 
+    @Field(() => Money)
     @Column(() => Money)
     discount: Money;
 
+    @Field(() => Money)
     @Column(() => Money)
     total: Money;
 
+    @Field(() => [OrderItem])
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
-    orderItems: OrderItem[];
+    orderItems: Array<OrderItem>;
 
     @Exclude()
     @UpdateDateColumn({

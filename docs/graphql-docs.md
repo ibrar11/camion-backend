@@ -10,6 +10,7 @@ This document includes the documentation of GraphQL support for the following it
 - Categories
 - Products
 - Notifications
+- Orders
 
 > [!IMPORTANT]
 > You must include your access token as a `Bearer` token in the Authorization header. Your must have a Customer account to use the GraphQL APIs.
@@ -64,6 +65,7 @@ The following features are currently supported by the GraphQL API.
 - Get Current Affiliate Wallet Transactions
 - Get Current Affiliate Bank Accounts
 - Get Current Affiliate Coupons
+- Get Current Customer Orders
 
 Get Current Customer
 --------------------
@@ -4137,6 +4139,80 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
                 "code": "james10",
                 "discountPercentage": 10,
                 "expiresAt": "2026-12-31T00:00:00.000Z"
+            }
+        ]
+    }
+}
+```
+
+Get Current Customer Orders
+-----------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
+    getCurrentCustomerOrders(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        status
+        subTotal {
+            amount
+            currencyCode
+        }
+        shippingCost {
+            amount
+            currencyCode
+        }
+        discount {
+            amount
+            currencyCode
+        }
+        total {
+            amount
+            currencyCode
+        }
+        orderItems {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+        }
+    }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerOrders": [
+            {
+                "uuid": "bf5f6137-ee3d-4b38-a4e8-d006b3703574",
+                "status": "payment_pending",
+                "subTotal": {
+                    "amount": 310,
+                    "currencyCode": "USD"
+                },
+                "shippingCost": {
+                    "amount": 0,
+                    "currencyCode": "USD"
+                },
+                "discount": {
+                    "amount": 0,
+                    "currencyCode": "USD"
+                },
+                "total": {
+                    "amount": 310,
+                    "currencyCode": "USD"
+                },
+                "orderItems": []
             }
         ]
     }

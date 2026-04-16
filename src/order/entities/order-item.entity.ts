@@ -1,3 +1,5 @@
+import { Field, Int, ObjectType } from "@nestjs/graphql";
+
 import {
     Column,
     CreateDateColumn,
@@ -9,37 +11,30 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { CurrencyCode } from "src/inventory/enums/CurrencyCode";
 
 import { Order } from "./order.entity";
 
 import { Product } from "src/inventory/entities/product.entity";
 
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { 
+    Money, 
+    ProductVariant 
+} from "src/inventory/entities/product-variant.entity";
 
 import { Warehouse } from "src/inventory/entities/warehouse.entity";
 
-
-export class Money {
-    @Column({ type: "integer", })
-    amount: number;
-
-    @Column({
-        type: "enum",
-        enum: CurrencyCode,
-        default: CurrencyCode.USD,
-    })
-    currencyCode: CurrencyCode;
-}
+@ObjectType()
 @Entity('order_items')
 export class OrderItem {
     @Exclude()
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Field()
     @Column({ type: "uuid", nullable: false, unique: true, })
     uuid: string;
 
+    @Field(() => Order)
     @ManyToOne(() => Order, (order) => order.orderItems)
     order: Order;
 
@@ -55,12 +50,15 @@ export class OrderItem {
     @ManyToOne(() => Warehouse, (warehouse) => warehouse.orderItems)
     warehouse: Warehouse;
 
+    @Field(() => Money)
     @Column(() => Money)
     price: Money;
 
+    @Field(() => Int)
     @Column()
     quantity: number;
 
+    @Field(() => Money)
     @Column(() => Money)
     total: Money;
 
