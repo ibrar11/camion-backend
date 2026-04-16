@@ -82,6 +82,9 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { PaymentTransaction } from "./payments/entities/payment-transaction.entity";
+import { PaymentsModule } from './payments/payments.module';
+
 import { Affiliate } from "./referral/entities/affiliate.entity";
 import { BankAccount } from "./referral/entities/bank-account.entity";
 import { Coupon } from "./referral/entities/coupon.entity";
@@ -184,6 +187,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 					Order,
 					OrderItem,
 
+					PaymentTransaction,
+
 					Notification,
 					Affiliate,
 					BankAccount,
@@ -235,6 +240,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 		NotificationsModule,
 		ScheduleModule.forRoot(),
 		OrderModule,
+		PaymentsModule,
 		ReferralModule,
 	],
 	controllers: [AppController],
