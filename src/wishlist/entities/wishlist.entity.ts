@@ -30,7 +30,7 @@ export class WishlistItem {
     @Column({ type: 'uuid', unique: true })
     uuid: string;
 
-    @Field(() => Customer)
+    @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.wishlistItems, { onDelete: 'CASCADE', })
     customer: Customer;
 

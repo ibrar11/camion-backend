@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 
 import {
     BadRequestException,
+    ConflictException,
     Injectable,
     InternalServerErrorException,
     Logger,
@@ -12,10 +13,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
+import { getSkipAndTake } from "src/common/pagination";
+
 import { CreateWishlistDto } from './dtos/CreateWishListDto';
 
 import { Customer } from 'src/customers/entities/customer.entity';
+
 import { WishlistItem } from './entities/wishlist.entity';
+
 import { Product } from 'src/inventory/entities/product.entity';
 
 @Injectable()
@@ -44,7 +49,7 @@ export class WishlistService {
             });
 
             if (existing) {
-                throw new BadRequestException({
+                throw new ConflictException({
                     status: "fail",
                     errors: {
                         message: "A product already exists in wish list",
@@ -61,7 +66,9 @@ export class WishlistService {
             });
 
             if (!product || product.status !== 'ACTIVE') {
-                throw new BadRequestException('Product not available');
+                throw new BadRequestException({
+                    error: 'Product not available'
+                });
             }
 
             const wishlistItem = new WishlistItem();
@@ -69,7 +76,7 @@ export class WishlistService {
             wishlistItem.customer = customer;
             wishlistItem.product = product;
 
-            return await this.wishlistRepo.save(wishlistItem);
+            return this.wishlistRepo.save(wishlistItem);
 
         } catch (error: any) {
             this.logger.error(`Error adding to wish list: ${error?.message}`);
@@ -86,14 +93,20 @@ export class WishlistService {
      * @param customer
      * @returns
      */
-    async getWishlist(customer: Customer): Promise<Array<WishlistItem>> {
+    async getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
         try {
+
+            // Get pagination params
+            const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
             const items = await this.wishlistRepo.find({
                 where: { customer: { uuid: customer.uuid } },
                 relations: {
                     product: true
                 },
-                order: { createdAt: 'DESC' },
+                order: { id: 'DESC' },
+                skip: skip,
+                take: take,
             });
 
             return items;
@@ -127,11 +140,8 @@ export class WishlistService {
             });
 
             if (!item) {
-                throw new BadRequestException({
-                    status: "fail",
-                    errors: {
-                        message: "wish list item not found",
-                    },
+                throw new NotFoundException({
+                    error: "Wishlist item not found. Please check and try again.",
                 });
             }
 
@@ -161,7 +171,11 @@ export class WishlistService {
                 }
             });
 
-            if (!item) throw new NotFoundException("Cart item not found");
+            if (!item) {
+                throw new NotFoundException({
+                    error: "Wishlist item not found. Please check and try again.",
+                });
+            };
 
             await this.wishlistRepo.remove(item);
 

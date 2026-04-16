@@ -16,13 +16,13 @@ Wishlist API
 ============
 
 > [!IMPORTANT]
-> You must include your access token as a `Bearer` token in the Authorization header. Your account must be active while making these requests.
+> You must include your access token as a `Bearer` token in the Authorization header. Your must have a Customer account while making these requests.
 
 Add item to wishlist
 --------------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`, `Customer`, `Guest`
+> Required roles: `Customer`, `Influencer`, `Affiliate`
 
 ```http
 POST /v1/wishlist HTTP/1.1
@@ -71,7 +71,7 @@ Retrieve Wishlist
 ------------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`, `Customer`, `Guest`
+> Required roles: `Customer`, `Influencer`, `Affiliate`
 
 ```http
 GET /v1/wishlist HTTP/1.1
@@ -103,7 +103,7 @@ Retrieve Wishlist Item
 -----------------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`, `Customer`, `Guest`
+> Required roles: `Customer`, `Influencer`, `Affiliate`
 
 ```http
 GET /v1/wishlist/<wishlist-item-uuid> HTTP/1.1
@@ -141,10 +141,10 @@ Remove Item from Wishlist
 --------------------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`, `Customer`, `Guest`
+> Required roles: `Customer`, `Influencer`, `Affiliate`
 
 ```http
-DELETE /v1/wishlist/remove/<product-uuid> HTTP/1.1
+DELETE /v1/wishlist/<product-uuid> HTTP/1.1
 ```
 
 
@@ -152,7 +152,7 @@ Clear Wishlist
 ---------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`, `Customer`, `Guest`
+> Required roles: `Customer`, `Influencer`, `Affiliate`
 
 ```http
 DELETE /v1/wishlist HTTP/1.1

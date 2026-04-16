@@ -7,10 +7,10 @@ import {
 import { WishlistItem } from './entities/wishlist.entity';
 
 @ObjectType()
-export class GqlWishlistResponse {
+export class WishlistResponse {
     @Field(() => Int)
-    wishListCount: number;
+    count: number;
 
     @Field(() => [WishlistItem])
-    wishListItems: WishlistItem[];
+    items: WishlistItem[];
 }

@@ -7,6 +7,7 @@ import {
     HttpStatus,
     Param,
     Post,
+    Query,
     UseGuards
 } from '@nestjs/common';
 
@@ -31,7 +32,7 @@ import { WishlistService } from './wishlist.service';
 export class WishlistController {
     constructor(private readonly wishlistService: WishlistService) { }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     async create(
@@ -41,16 +42,20 @@ export class WishlistController {
         return await this.wishlistService.addToWishlist(customer, dto);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
     @Get()
     @HttpCode(HttpStatus.OK)
     async get(
         @GetCustomer() customer: Customer,
+        @Query("filters") filters: string,
+        @Query("sort") sort: string,
+        @Query("pageNumber") pageNumber: number,
+        @Query("itemsPerPage") itemsPerPage: number,
     ): Promise<Array<WishlistItem>> {
-        return await this.wishlistService.getWishlist(customer);
+        return await this.wishlistService.getWishlist(customer, filters, sort, pageNumber, itemsPerPage);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
     @Get(':uuid')
     @HttpCode(HttpStatus.OK)
     async getOne(
@@ -60,7 +65,7 @@ export class WishlistController {
         return await this.wishlistService.getWishlistItem(customer, uuid);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
     @Delete('remove/:uuid')
     @HttpCode(HttpStatus.OK)
     async remove(
@@ -70,7 +75,7 @@ export class WishlistController {
         return await this.wishlistService.removeFromWishlist(customer, productUuid);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
     @Delete()
     @HttpCode(HttpStatus.OK)
     async clear(

@@ -4533,3 +4533,54 @@ query GetCurrentCustomerOrder($uuid: string) {
     }
 }
 ```
+
+Get Current Customer WishList
+-----------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCustomerWishlist {
+    getCustomerWishlist {
+        items {
+            uuid
+            product {
+                uuid
+                slug
+                title
+                brief
+                description
+                descriptionHtml
+                status
+            }
+        }
+        count
+    }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCustomerWishlist": {
+            "items": [
+                {
+                    "uuid": "f0fdab43-b693-4762-a997-cc9d3817ba85",
+                    "product": {
+                        "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                        "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                        "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                        "brief": "",
+                        "description": "",
+                        "descriptionHtml": "",
+                        "status": "ACTIVE"
+                    }
+                }
+            ],
+            "count": 1
+        }
+    }
+}
+```

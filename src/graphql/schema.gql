@@ -118,11 +118,6 @@ type Language {
   uuid: String!
 }
 
-type GqlWishlistResponse {
-  wishListCount: Int!
-  wishListItems: [WishlistItem!]!
-}
-
 type LinkElement {
   content: String!
 }
@@ -275,6 +270,7 @@ type Query {
   getCurrentCustomerOrder(uuid: String!): Order!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
+  getCustomerWishlist(itemsPerPage: Int! = 100, pageNumber: Int! = 1): WishlistResponse!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
@@ -287,7 +283,6 @@ type Query {
   getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
   getStories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Story!]!
   searchProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
-  wishlist: GqlWishlistResponse!
 }
 
 type Story {
@@ -358,7 +353,11 @@ type Weight {
 }
 
 type WishlistItem {
-  customer: Customer!
   product: Product!
   uuid: String!
+}
+
+type WishlistResponse {
+  count: Int!
+  items: [WishlistItem!]!
 }
