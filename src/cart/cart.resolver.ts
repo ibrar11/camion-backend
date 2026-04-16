@@ -27,7 +27,7 @@ export class CartResolver {
     ) { }
 
     @Query(() => GqlCartResponse)
-    async cart(
+    async getCart(
         @Context() context: any,
     ): Promise<GqlCartResponse> {
 

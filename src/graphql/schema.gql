@@ -272,8 +272,8 @@ type ProductVariantOptionValue {
 }
 
 type Query {
-  cart: GqlCartResponse!
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
+  getCart: GqlCartResponse!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCurrencies: [Currency!]!
   getCurrentAffiliate: Affiliate

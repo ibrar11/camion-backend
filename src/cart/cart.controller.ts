@@ -44,7 +44,7 @@ export class CartItemsController {
         private readonly cartService: CartItemsService,
     ) { }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     addToCart(
@@ -54,7 +54,7 @@ export class CartItemsController {
         return this.cartService.create(dto, customer);
     }
 
-    @Roles(CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Get()
     @HttpCode(HttpStatus.OK)
     getCart(
@@ -63,7 +63,7 @@ export class CartItemsController {
         return this.cartService.findCart(customer);
     }
 
-    @Roles(CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Patch(':uuid')
     @HttpCode(HttpStatus.OK)
     updateCart(
@@ -74,7 +74,7 @@ export class CartItemsController {
         return this.cartService.update(uuid, dto, customer);
     }
 
-    @Roles(CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Delete(':uuid')
     @HttpCode(HttpStatus.OK)
     async removeFromCart(
@@ -83,7 +83,7 @@ export class CartItemsController {
         return this.cartService.removeItem(uuid);
     }
 
-    @Roles(CustomerRole.Customer, CustomerRole.Guest)
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Delete()
     @HttpCode(HttpStatus.OK)
     clearCart(
