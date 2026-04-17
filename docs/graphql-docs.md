@@ -4542,19 +4542,16 @@ Get Current Customer WishList
 ```graphql
 query GetCustomerWishlist($language: String) {
     getCustomerWishlist(language: $language) {
-        items {
+        uuid
+        product {
             uuid
-            product {
-                uuid
-                slug
-                title(language: $language)
-                brief(language: $language)
-                description(language: $language)
-                descriptionHtml(language: $language)
-                status
-            }
+            slug
+            title(language: $language)
+            brief(language: $language)
+            description(language: $language)
+            descriptionHtml(language: $language)
+            status
         }
-        count
     }
 }
 ```
@@ -4593,7 +4590,7 @@ Get Current Customer WishList Count
 ### GraphQL Query
 
 ```graphql
-query GetCustomerWishlist {
+query GetCustomerWishlistCount {
     getCustomerWishlistCount
 }
 ```
