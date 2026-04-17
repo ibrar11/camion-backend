@@ -23,7 +23,7 @@ import { ProductReview } from "./product-review.entity";
 
 import { CartItem } from "../../cart/entities/cart-items.entity";
 
-import { OrderItem } from "src/order/entities/order-item.entity";
+import { OrderItem } from "../../order/entities/order-item.entity";
 
 @ObjectType()
 @Entity({ name: "products", })

@@ -14,11 +14,11 @@ import { Exclude } from "class-transformer";
 
 import { OrderStatus } from "../enums/OrderStatus";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../../customers/entities/customer.entity";
 
 import { OrderItem } from "./order-item.entity";
 
-import { Money } from "src/inventory/entities/product-variant.entity";
+import { Money } from "../../inventory/entities/product-variant.entity";
 
 @ObjectType()
 @Entity({ name: 'orders', })

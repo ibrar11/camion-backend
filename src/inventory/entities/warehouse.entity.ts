@@ -10,7 +10,7 @@ import {
 import { Exclude } from "class-transformer";
 
 import { InventoryLevel } from "./inventory-level.entity";
-import { OrderItem } from "src/order/entities/order-item.entity";
+import { OrderItem } from "../../order/entities/order-item.entity";
 
 @Entity({ name: "warehouses" })
 export class Warehouse {

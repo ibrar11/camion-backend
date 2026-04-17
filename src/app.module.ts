@@ -143,6 +143,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 				username: configService.get<string>("DB_USERNAME"),
 				password: configService.get<string>("DB_PASSWORD"),
 				database: configService.get<string>("DB_DATABASE"),
+				synchronize: false,
+				namingStrategy: new SnakeNamingStrategy(),
 				entities: [
 					User,
 
@@ -198,8 +200,6 @@ import { NotificationsModule } from './notifications/notifications.module';
 					Transaction,
 					Wallet,
 				],
-				synchronize: true,
-				namingStrategy: new SnakeNamingStrategy(),
 			}),
 		}),
 		JwtModule.registerAsync({

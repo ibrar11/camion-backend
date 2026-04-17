@@ -9,11 +9,11 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { Product } from "src/inventory/entities/product.entity";
+import { Product } from "../../inventory/entities/product.entity";
 
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { ProductVariant } from "../../inventory/entities/product-variant.entity";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../../customers/entities/customer.entity";
 
 @Entity({ name: "cart_items" })
 export class CartItem {
