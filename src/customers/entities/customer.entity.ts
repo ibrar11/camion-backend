@@ -22,6 +22,8 @@ import { Affiliate } from "../../referral/entities/affiliate.entity";
 
 import { Order } from "../../order/entities/order.entity";
 
+import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
+
 @ObjectType()
 @Entity({ name: "customers" })
 export class Customer {
@@ -81,6 +83,9 @@ export class Customer {
 
 	@OneToMany(() => Order, (order) => order.customer)
 	orders: Array<Order>;
+
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.customer, { cascade: true, })
+	wishlistItems: Array<WishlistItem>;
 
 	@OneToMany(() => CustomerAddress, (customerAddress) => customerAddress.customer, { cascade: true, })
 	addresses: Array<CustomerAddress>;

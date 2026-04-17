@@ -71,6 +71,9 @@ import { StoryFrame } from "./stories/entities/story-frame.entity";
 // users
 import { User } from "./users/entities/user.entity";
 
+//WishList
+import { WishlistItem } from "./wishlist/entities/wishlist.entity";
+
 export const CamionDataSource = new DataSource({
 	type: "postgres",
 	host: process.env.DB_HOST,
@@ -118,6 +121,7 @@ export const CamionDataSource = new DataSource({
 		User,
 		Wallet,
 		Warehouse,
+		WishlistItem,
 	],
 	migrations: [
 		"src/migrations/*",
