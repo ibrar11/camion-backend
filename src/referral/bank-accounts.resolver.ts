@@ -34,12 +34,16 @@ export class BankAccountsResolver {
 	constructor(@Inject(BankAccountsService) private readonly bankAccountsService: BankAccountsService) { }
 
 	@Query(() => [BankAccount])
-	getCurrentAffiliateBankAccounts(@Context() context, @Args() args: GetCurrentAffiliateBankAccountsArgs): Promise<Array<BankAccount>> {
+	async getCurrentAffiliateBankAccounts(@Context() context, @Args() args: GetCurrentAffiliateBankAccountsArgs): Promise<Array<BankAccount>> {
 		if (!context.req || !context.req.customer || !context.req.customer.uuid) {
 			throw new ForbiddenException({
 				error: "You're not allowed to retrieve affiliate information. Please check and try again.",
 			});
 		}
-		return this.bankAccountsService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage);
+		try {
+			return await this.bankAccountsService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage);
+		} catch {
+			return [];
+		}
 	}
 }

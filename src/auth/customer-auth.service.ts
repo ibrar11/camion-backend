@@ -162,7 +162,9 @@ export class CustomerAuthService {
 
 		if (customer === null) {
 			throw new BadRequestException({
-				error: "Customer not found with the provided phone number.",
+				errors: {
+					phoneNumber: "Customer not found with the provided phone number.",
+				},
 			});
 		}
 
@@ -210,7 +212,9 @@ export class CustomerAuthService {
 
 		if (customer === null) {
 			throw new BadRequestException({
-				error: "Customer not found with the provided email address.",
+				errors: {
+					emailAddress: "Customer not found with the provided email address.",
+				},
 			});
 		}
 

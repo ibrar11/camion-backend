@@ -34,12 +34,17 @@ export class CouponsResolver {
 	constructor(@Inject(CouponsService) private readonly couponsService: CouponsService) { }
 
 	@Query(() => [Coupon])
-	getCurrentAffiliateCoupons(@Context() context, @Args() args: GetCurrentAffiliateCouponsArgs): Promise<Array<Coupon>> {
+	async getCurrentAffiliateCoupons(@Context() context, @Args() args: GetCurrentAffiliateCouponsArgs): Promise<Array<Coupon>> {
 		if (!context.req || !context.req.customer || !context.req.customer.uuid) {
 			throw new ForbiddenException({
 				error: "You're not allowed to retrieve affiliate coupons. Please check and try again.",
 			});
 		}
-		return this.couponsService.getCouponsByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage);
+
+		try {
+			return await this.couponsService.getCouponsByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage);
+		} catch {
+			return [];
+		}
 	}
 }
