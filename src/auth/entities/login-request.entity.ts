@@ -9,7 +9,7 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../../customers/entities/customer.entity";
 
 @Entity({ name: "login_requests" })
 export class LoginRequest {

@@ -297,8 +297,8 @@ export class ProductsService {
 				// Subquery to sort variants of a product by minimum price
 				const leastExpensiveVariantQuery = this.productRepository
 					.manager.createQueryBuilder(ProductVariant, 'v')
-					.select('MIN(v.priceAmount)', 'minPriceAmount')
-					.where('v.productId = product.id')
+					.select('MIN(v.price_amount)', 'minPriceAmount')
+					.where('v.product_id = product.id')
 					.getQuery();
 
 				return this.productRepository.createQueryBuilder('product')
@@ -327,8 +327,8 @@ export class ProductsService {
 			case ProductSort.PriceHighToLow:
 				const mostExpensiveVariantQuery = this.productRepository
 					.manager.createQueryBuilder(ProductVariant, 'v')
-					.select('MAX(v.priceAmount)', 'maxPriceAmount')
-					.where('v.productId = product.id')
+					.select('MAX(v.price_amount)', 'maxPriceAmount')
+					.where('v.product_id = product.id')
 					.getQuery();
 
 				return this.productRepository.createQueryBuilder('product')
@@ -382,9 +382,7 @@ export class ProductsService {
 		});
 
 		if (product === null) {
-			throw new BadRequestException({
-				error: "Failed to find the product. Please check and try again.",
-			});
+			return [];
 		}
 
 		// Get pagination params
@@ -556,9 +554,7 @@ export class ProductsService {
 		});
 
 		if (product === null) {
-			throw new BadRequestException({
-				error: "Failed to find the product. Please check and try again.",
-			});
+			return [];
 		}
 
 		// Get pagination params

@@ -18,9 +18,9 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 import { CustomerAddress } from "./customer-address.entity";
 import { LoginRequest } from "../../auth/entities/login-request.entity";
 import { ProductReview } from "../../inventory/entities/product-review.entity";
-import { Affiliate } from "src/referral/entities/affiliate.entity";
+import { Affiliate } from "../../referral/entities/affiliate.entity";
 
-import { Order } from "src/order/entities/order.entity";
+import { Order } from "../../order/entities/order.entity";
 
 import { WishlistItem } from "src/wishlist/entities/wishlist.entity";
 

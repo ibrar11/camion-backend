@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { SnakeNamingStrategy } from "typeorm-naming-strategies";
+
 import { Module } from '@nestjs/common';
 
 import {
@@ -144,6 +146,8 @@ import { WishlistModule } from './wishlist/wishlist.module';
 				username: configService.get<string>("DB_USERNAME"),
 				password: configService.get<string>("DB_PASSWORD"),
 				database: configService.get<string>("DB_DATABASE"),
+				synchronize: false,
+				namingStrategy: new SnakeNamingStrategy(),
 				entities: [
 					User,
 
@@ -201,7 +205,6 @@ import { WishlistModule } from './wishlist/wishlist.module';
 
 					WishlistItem,
 				],
-				synchronize: true,
 			}),
 		}),
 		JwtModule.registerAsync({
