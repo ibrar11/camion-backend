@@ -44,6 +44,7 @@ export class StoriesController {
 		return this.storiesService.createStory(body);
 	}
 
+	@Roles()
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetStories(
@@ -55,6 +56,7 @@ export class StoriesController {
 		return this.storiesService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
+	@Roles()
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetStory(@Param('uuid') uuid: string): Promise<Story> {
@@ -83,7 +85,7 @@ export class StoriesController {
 		return this.storiesService.createStoryFrame(uuid, file);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles()
 	@Get(':uuid/frames')
 	@HttpCode(HttpStatus.OK)
 	actionRetrieveStoryFrames(
@@ -96,7 +98,7 @@ export class StoriesController {
 		return this.storiesService.findAllFrames(uuid, filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles()
 	@Get(':uuid/frames/:frameUUID')
 	@HttpCode(HttpStatus.OK)
 	actionGetOneFramse(@Param('frameUUID') frameUUID: string): Promise<StoryFrame> {

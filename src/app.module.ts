@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { SnakeNamingStrategy } from "typeorm-naming-strategies";
+
 import { Module } from '@nestjs/common';
 
 import {
@@ -197,6 +199,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 					Wallet,
 				],
 				synchronize: true,
+				namingStrategy: new SnakeNamingStrategy(),
 			}),
 		}),
 		JwtModule.registerAsync({
