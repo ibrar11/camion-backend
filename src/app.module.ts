@@ -146,7 +146,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 				username: configService.get<string>("DB_USERNAME"),
 				password: configService.get<string>("DB_PASSWORD"),
 				database: configService.get<string>("DB_DATABASE"),
-				synchronize: false,
+				synchronize: true,
 				namingStrategy: new SnakeNamingStrategy(),
 				entities: [
 					User,
