@@ -13,15 +13,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { getSkipAndTake } from "src/common/pagination";
+import { getSkipAndTake } from "../common/pagination";
 
 import { CreateWishlistDto } from './dtos/CreateWishListDto';
 
-import { Customer } from 'src/customers/entities/customer.entity';
+import { Customer } from '../customers/entities/customer.entity';
 
 import { WishlistItem } from './entities/wishlist.entity';
 
-import { Product } from 'src/inventory/entities/product.entity';
+import { Product } from '../inventory/entities/product.entity';
 
 @Injectable()
 export class WishlistService {
@@ -151,6 +151,31 @@ export class WishlistService {
             this.logger.error(`Error getting wish list item: ${error?.message}`);
             throw new InternalServerErrorException({
                 error: 'Failed to get wish list item',
+                details: error.response?.data || error.message,
+            });
+        }
+    }
+
+    /**
+     * Fetch wish list count
+     *
+     * @param customer
+     * @returns
+     */
+    async getWishlistCount(customer: Customer): Promise<number> {
+        try {
+            const count = await this.wishlistRepo.count({
+                where: {
+                    customer: { uuid: customer.uuid },
+                },
+            });
+
+            return count;
+
+        } catch (error: any) {
+            this.logger.error(`Error getting wish list count: ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to get wish list count',
                 details: error.response?.data || error.message,
             });
         }

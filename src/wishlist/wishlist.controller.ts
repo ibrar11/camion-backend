@@ -11,18 +11,17 @@ import {
     UseGuards
 } from '@nestjs/common';
 
-import { AuthGuard } from 'src/auth/auth.guard';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
 
-import { GetCustomer } from 'src/customers/customer.decorator';
-import { Roles } from 'src/auth/roles.decorator';
+import { GetCustomer } from '../customers/customer.decorator';
+import { Roles } from '../auth/roles.decorator';
 
-import { UserRole } from 'src/users/enums/UserRole';
-import { CustomerRole } from 'src/customers/enums/CustomerRole';
+import { CustomerRole } from '../customers/enums/CustomerRole';
 
 import { CreateWishlistDto } from './dtos/CreateWishListDto';
 
-import { Customer } from 'src/customers/entities/customer.entity';
+import { Customer } from '../customers/entities/customer.entity';
 
 import { WishlistItem } from './entities/wishlist.entity';
 import { WishlistService } from './wishlist.service';
@@ -66,7 +65,7 @@ export class WishlistController {
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
-    @Delete('remove/:uuid')
+    @Delete(':uuid')
     @HttpCode(HttpStatus.OK)
     async remove(
         @GetCustomer() customer: Customer,

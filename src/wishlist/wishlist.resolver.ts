@@ -14,17 +14,18 @@ import {
     ArgsType,
 } from "@nestjs/graphql";
 
-import { GqlAuthGuard } from "src/auth/gql.guard";
+import { GqlAuthGuard } from "../auth/gql.guard";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../customers/entities/customer.entity";
 
 import { WishlistItem } from "./entities/wishlist.entity";
 import { WishlistService } from "./wishlist.service";
 
-import { WishlistResponse } from "./types";
-
 @ArgsType()
 export class GetCustomerWishListArgs {
+    @Field({ defaultValue: "en", })
+	language: string;
+    
     @Field(() => Int, { defaultValue: 1, })
     pageNumber: number;
 
@@ -39,11 +40,11 @@ export class WishListResolver {
         @Inject(WishlistService) private readonly wishListService: WishlistService,
     ) { }
 
-    @Query(() => WishlistResponse)
+    @Query(() => [WishlistItem])
     async getCustomerWishlist(
         @Context() context: any,
         @Args() args: GetCustomerWishListArgs
-    ): Promise<WishlistResponse> {
+    ): Promise<Array<WishlistItem>> {
 
         const customer: Customer = context.req.customer;
 
@@ -53,11 +54,24 @@ export class WishListResolver {
             });
         }
 
-        const items = await this.wishListService.getWishlist(customer, "", "", args.pageNumber, args.itemsPerPage);
+        return this.wishListService.getWishlist(customer, "", "", args.pageNumber, args.itemsPerPage);
 
-        return {
-            items: items,
-            count: items.length ?? 0
-        };
+    }
+
+    @Query(() => Number)
+    async getCustomerWishlistCount(
+        @Context() context: any,
+    ): Promise<number> {
+
+        const customer: Customer = context.req.customer;
+
+        if (!customer) {
+            throw new NotFoundException({
+                error: "Failed to find the customer. Please check and try again.",
+            });
+        }
+
+        return this.wishListService.getWishlistCount(customer);
+
     }
 }

@@ -4540,22 +4540,29 @@ Get Current Customer WishList
 ### GraphQL Query
 
 ```graphql
-query GetCustomerWishlist {
-    getCustomerWishlist {
+query GetCustomerWishlist($language: String) {
+    getCustomerWishlist(language: $language) {
         items {
             uuid
             product {
                 uuid
                 slug
-                title
-                brief
-                description
-                descriptionHtml
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
                 status
             }
         }
         count
     }
+}
+```
+### GraphQL Variables
+
+```json
+{
+    "language": "en",
 }
 ```
 
@@ -4565,22 +4572,38 @@ query GetCustomerWishlist {
 {
     "data": {
         "getCustomerWishlist": {
-            "items": [
-                {
-                    "uuid": "f0fdab43-b693-4762-a997-cc9d3817ba85",
-                    "product": {
-                        "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
-                        "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
-                        "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
-                        "brief": "",
-                        "description": "",
-                        "descriptionHtml": "",
-                        "status": "ACTIVE"
-                    }
-                }
-            ],
-            "count": 1
+            "uuid": "f0fdab43-b693-4762-a997-cc9d3817ba85",
+            "product": {
+                "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                "brief": "",
+                "description": "",
+                "descriptionHtml": "",
+                "status": "ACTIVE"
+            }
         }
+    }
+}
+```
+
+Get Current Customer WishList Count
+-------------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCustomerWishlist {
+    getCustomerWishlistCount
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCustomerWishlist": 1
     }
 }
 ```

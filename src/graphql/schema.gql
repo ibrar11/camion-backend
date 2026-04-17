@@ -270,7 +270,8 @@ type Query {
   getCurrentCustomerOrder(uuid: String!): Order!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
-  getCustomerWishlist(itemsPerPage: Int! = 100, pageNumber: Int! = 1): WishlistResponse!
+  getCustomerWishlist(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
+  getCustomerWishlistCount: Float!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
@@ -355,9 +356,4 @@ type Weight {
 type WishlistItem {
   product: Product!
   uuid: String!
-}
-
-type WishlistResponse {
-  count: Int!
-  items: [WishlistItem!]!
 }

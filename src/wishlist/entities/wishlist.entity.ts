@@ -10,8 +10,9 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { Customer } from "src/customers/entities/customer.entity";
-import { Product } from "src/inventory/entities/product.entity";
+import { Customer } from "../../customers/entities/customer.entity";
+
+import { Product } from "../../inventory/entities/product.entity";
 
 import {
     Field,
