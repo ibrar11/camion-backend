@@ -118,11 +118,6 @@ type EmojiElement {
   content: String!
 }
 
-type GqlCartResponse {
-  count: Int!
-  items: [CartItem!]!
-}
-
 type Language {
   createdAt: DateTime!
   name: String!
@@ -273,7 +268,6 @@ type ProductVariantOptionValue {
 
 type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
-  getCart: GqlCartResponse!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCurrencies: [Currency!]!
   getCurrentAffiliate: Affiliate
@@ -284,6 +278,8 @@ type Query {
   getCurrentCustomerOrder(uuid: String!): Order!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
+  getCustomerCart(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
+  getCustomerCartCount: Float!
   getCustomerWishlist(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!

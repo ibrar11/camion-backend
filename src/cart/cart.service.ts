@@ -5,26 +5,27 @@ import {
     BadRequestException,
     NotFoundException,
     Logger,
+    InternalServerErrorException,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { calculateStock } from "src/common/calculateStock";
+import { calculateStock } from "../common/calculateStock";
+import { getSkipAndTake } from "../common/pagination";
 
 import { CreateCartItemDto } from "./dtos/CreateCartItemDto";
 import { UpdateCartItemDto } from "./dtos/UpdateCartItemDto";
 
 import { CartItem } from "./entities/cart-items.entity";
 
-import { Product } from "src/inventory/entities/product.entity";
+import { Product } from "../inventory/entities/product.entity";
 
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../customers/entities/customer.entity";
 
 import {
-    FindCartResponse,
     UpdateCartResponse,
     ValidatedCartItem
 } from "./types";
@@ -123,9 +124,9 @@ export class CartItemsService {
                 cartItem.product = product;
                 cartItem.variant = variant;
                 cartItem.quantity = quantity;
-                cartItem.subTotal = { 
-                    amount: price * quantity, 
-                    currencyCode: variant.price.currencyCode 
+                cartItem.subTotal = {
+                    amount: price * quantity,
+                    currencyCode: variant.price.currencyCode
                 };
                 return this.cartRepo.save(cartItem);
             }
@@ -139,10 +140,17 @@ export class CartItemsService {
     /**
      * Find the cart items for a customer
      * @param customer
+     * @param filters
+     * @param sort
+     * @param pageNumber
+     * @param itemsPerPage
      * @returns
      */
-    async findCart(customer: Customer): Promise<FindCartResponse> {
+    async findCart(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ValidatedCartItem>> {
         try {
+
+            // Get pagination params
+            const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
             const where = { customer: { uuid: customer.uuid } };
 
@@ -152,7 +160,10 @@ export class CartItemsService {
                     product: true,
                     variant: true,
                     customer: true
-                }
+                },
+                order: { id: 'DESC' },
+                skip: skip,
+                take: take,
             });
 
             const validatedItems: ValidatedCartItem[] = [];
@@ -181,18 +192,9 @@ export class CartItemsService {
 
                 validatedItems.push(
                     {
-                        uuid: item.uuid,
-                        customerUuid: item.customer.uuid,
-                        product: item.product,
-                        quantity: item.quantity,
-                        variant: variant,
-                        title: product.title,
-                        image: variant.images,
-                        subTotal: item.subTotal,
+                        ...item,
                         availableStock: stock,
                         isAvailable: stock > 0,
-                        createdAt: item.createdAt,
-                        updatedAt: item.updatedAt
                     }
                 );
             }
@@ -201,6 +203,31 @@ export class CartItemsService {
         } catch (err) {
             this.logger.error("Error while fetching cart: ", err);
             throw err;
+        }
+    }
+
+    /**
+     * Fetch cart count
+     *
+     * @param customer
+     * @returns
+     */
+    async getCartCount(customer: Customer): Promise<number> {
+        try {
+            const count = await this.cartRepo.count({
+                where: {
+                    customer: { uuid: customer.uuid },
+                },
+            });
+
+            return count;
+
+        } catch (error: any) {
+            this.logger.error(`Error getting cart count: ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to get cart count',
+                details: error.response?.data || error.message,
+            });
         }
     }
 
@@ -297,7 +324,7 @@ export class CartItemsService {
 
                 existingItem.quantity = mergedQuantity;
                 existingItem.subTotal = {
-                    amount: pricePerUnit * mergedQuantity, 
+                    amount: pricePerUnit * mergedQuantity,
                     currencyCode: existingItem.subTotal.currencyCode
                 };
                 existingItem.variant = variant;

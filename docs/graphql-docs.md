@@ -4568,18 +4568,20 @@ query GetCustomerWishlist($language: String) {
 ```json
 {
     "data": {
-        "getCustomerWishlist": {
-            "uuid": "f0fdab43-b693-4762-a997-cc9d3817ba85",
-            "product": {
-                "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
-                "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
-                "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
-                "brief": "",
-                "description": "",
-                "descriptionHtml": "",
-                "status": "ACTIVE"
+        "getCustomerWishlist": [
+            {
+                "uuid": "f0fdab43-b693-4762-a997-cc9d3817ba85",
+                "product": {
+                    "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                    "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                    "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                    "brief": "",
+                    "description": "",
+                    "descriptionHtml": "",
+                    "status": "ACTIVE"
+                }
             }
-        }
+        ]
     }
 }
 ```
@@ -4605,53 +4607,58 @@ query GetCustomerWishlistCount {
 }
 ```
 
-Get Cart
----------
+Get Customer Cart
+------------------
 
 ### GraphQL Query
 
 ```graphql
-query GetCart {
-    getCart {
-        items {
+query GetCustomerCart($language: String) {
+    getCustomerCart(language: $language) {
+        uuid
+        product {
             uuid
-            product {
-                uuid
-                slug
-                title
-                brief
-                description
-                descriptionHtml
-                status
-            }
-            variant {
-                uuid
-                title
-                sku
-                barcode
-                price {
-                    amount
-                    currencyCode
-                }
-                weight {
-                    amount
-                    unit
-                }
-                dimensions {
-                    width
-                    height
-                    length
-                    unit
-                }
-            }
-            quantity
-            subTotal {
+            slug
+            title(language: $language)
+            brief(language: $language)
+            description(language: $language)
+            descriptionHtml(language: $language)
+            status
+        }
+        variant {
+            uuid
+            title(language: $language)
+            sku
+            barcode
+            price {
                 amount
                 currencyCode
             }
+            weight {
+                amount
+                unit
+            }
+            dimensions {
+                width
+                height
+                length
+                unit
+            }
         }
-        count
+        quantity
+        subTotal {
+            amount
+            currencyCode
+        }
     }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en",
 }
 ```
 
@@ -4660,48 +4667,66 @@ query GetCart {
 ```json
 {
     "data": {
-        "getCart": {
-            "items": [
-                {
-                    "uuid": "3fe6f35d-f6be-4c93-81f6-36372de8ee76",
-                    "product": {
-                        "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
-                        "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
-                        "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
-                        "brief": "",
-                        "description": "Get you bike",
-                        "descriptionHtml": "",
-                        "status": "ACTIVE"
-                    },
-                    "variant": {
-                        "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
-                        "title": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
-                        "sku": "5627530595058",
-                        "barcode": "5627530595058",
-                        "price": {
-                            "amount": 688,
-                            "currencyCode": "USD"
-                        },
-                        "weight": {
-                            "amount": 16,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 36,
-                            "height": 57,
-                            "length": 88,
-                            "unit": "cm"
-                        }
-                    },
-                    "quantity": 1,
-                    "subTotal": {
+        "getCustomerCart": [
+            {
+                "uuid": "3fe6f35d-f6be-4c93-81f6-36372de8ee76",
+                "product": {
+                    "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
+                    "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
+                    "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
+                    "brief": "",
+                    "description": "Get you bike",
+                    "descriptionHtml": "",
+                    "status": "ACTIVE"
+                },
+                "variant": {
+                    "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
+                    "title": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
+                    "sku": "5627530595058",
+                    "barcode": "5627530595058",
+                    "price": {
                         "amount": 688,
                         "currencyCode": "USD"
+                    },
+                    "weight": {
+                        "amount": 16,
+                        "unit": "kg"
+                    },
+                    "dimensions": {
+                        "width": 36,
+                        "height": 57,
+                        "length": 88,
+                        "unit": "cm"
                     }
+                },
+                "quantity": 1,
+                "subTotal": {
+                    "amount": 688,
+                    "currencyCode": "USD"
                 }
-            ],
-            "count": 1
-        }
+            }
+        ]
+    }
+}
+```
+
+Get Current Customer Cart Count
+--------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCustomerCartCount {
+    getCustomerCartCount
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCustomerCartCount": 1
     }
 }
 ```

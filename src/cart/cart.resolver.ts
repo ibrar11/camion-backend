@@ -7,18 +7,30 @@ import {
     Resolver,
     Query,
     Context,
+    Field,
+    ArgsType,
+    Int,
+    Args,
 } from "@nestjs/graphql";
 
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../customers/entities/customer.entity";
 import { CartItem } from "./entities/cart-items.entity";
 
 import { CartItemsService } from "./cart.service";
 
-import { GqlAuthGuard } from "src/auth/gql.guard";
+import { GqlAuthGuard } from "../auth/gql.guard";
+@ArgsType()
+export class GetCustomerCartArgs {
+    @Field({ defaultValue: "en", })
+    language: string;
+    
+    @Field(() => Int, { defaultValue: 1, })
+    pageNumber: number;
 
-import { GqlCartResponse } from "./types";
-
+    @Field(() => Int, { defaultValue: 100, })
+    itemsPerPage: number;
+}
 @UseGuards(GqlAuthGuard)
 @Resolver(() => CartItem)
 export class CartResolver {
@@ -26,10 +38,11 @@ export class CartResolver {
         private readonly cartService: CartItemsService,
     ) { }
 
-    @Query(() => GqlCartResponse)
-    async getCart(
+    @Query(() => [CartItem])
+    async getCustomerCart(
         @Context() context: any,
-    ): Promise<GqlCartResponse> {
+        @Args() args: GetCustomerCartArgs
+    ): Promise<Array<CartItem>> {
 
         const customer: Customer = context.req.customer;
 
@@ -39,11 +52,24 @@ export class CartResolver {
             });
         }
 
-        const cart = await this.cartService.findCart(customer);
+        return this.cartService.findCart(customer, "", "", args.pageNumber, args.itemsPerPage);
 
-        return {
-            items: cart,
-            count: cart.length ?? 0
-        };
+    }
+
+    @Query(() => Number)
+    async getCustomerCartCount(
+        @Context() context: any,
+    ): Promise<number> {
+
+        const customer: Customer = context.req.customer;
+
+        if (!customer) {
+            throw new BadRequestException({
+                error: "Failed to find the customer. Please check and try again",
+            });
+        }
+
+        return this.cartService.getCartCount(customer);
+
     }
 }

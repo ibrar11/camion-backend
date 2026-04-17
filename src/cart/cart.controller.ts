@@ -9,18 +9,19 @@ import {
     Post,
     Patch,
     UseGuards,
-    Param
+    Param,
+    Query
 } from '@nestjs/common';
 
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 
-import { RolesGuard } from 'src/auth/roles.guard';
+import { RolesGuard } from '../auth/roles.guard';
 
-import { Roles } from 'src/auth/roles.decorator';
+import { Roles } from '../auth/roles.decorator';
 
-import { CustomerRole } from 'src/customers/enums/CustomerRole';
+import { CustomerRole } from '../customers/enums/CustomerRole';
 
-import { UserRole } from 'src/users/enums/UserRole';
+import { UserRole } from '../users/enums/UserRole';
 
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
@@ -28,12 +29,12 @@ import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
 import { CartItem } from './entities/cart-items.entity';
 import { CartItemsService } from './cart.service';
 
-import { Customer } from 'src/customers/entities/customer.entity';
-import { GetCustomer } from 'src/customers/customer.decorator';
+import { Customer } from '../customers/entities/customer.entity';
+import { GetCustomer } from '../customers/customer.decorator';
 
 import {
-    FindCartResponse,
-    UpdateCartResponse
+    UpdateCartResponse,
+    ValidatedCartItem
 } from './types';
 
 @UseGuards(AuthGuard, RolesGuard)
@@ -59,8 +60,12 @@ export class CartItemsController {
     @HttpCode(HttpStatus.OK)
     getCart(
         @GetCustomer() customer: Customer,
-    ): Promise<FindCartResponse> {
-        return this.cartService.findCart(customer);
+        @Query("filters") filters: string,
+        @Query("sort") sort: string,
+        @Query("pageNumber") pageNumber: number,
+        @Query("itemsPerPage") itemsPerPage: number,
+    ): Promise<Array<ValidatedCartItem>> {
+        return this.cartService.findCart(customer, filters, sort, pageNumber, itemsPerPage);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)

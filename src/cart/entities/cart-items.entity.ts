@@ -35,6 +35,7 @@ export class CartItem {
     @Column({ type: "uuid", nullable: false, unique: true, })
     uuid: string;
 
+    @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.cartItems, { onDelete: "CASCADE" })
     customer: Customer;
 

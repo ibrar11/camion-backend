@@ -64,8 +64,6 @@ quantity | Yes | Number | Quantity to add (minimum 1
 		"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
 		"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
 		"status": "DRAFT",
-		"options": [],
-		"variants": []
 	},
 	"variant": {
 		"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
@@ -104,7 +102,6 @@ GET /v1/cart-items HTTP/1.1
 [
 	{
 		"uuid": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
-		"customerUuid": "c023bd4c-e8ce-453e-b41b-07b42c7f0d6d",
 		"product": {
 			"uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
 			"slug": "iphone-17",
@@ -117,8 +114,6 @@ GET /v1/cart-items HTTP/1.1
 			"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
 			"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
 			"status": "DRAFT",
-			"options": [],
-			"variants": []
 		},
 		"quantity": "2",
 		"variation": {
@@ -141,8 +136,6 @@ GET /v1/cart-items HTTP/1.1
 				"length": "1000"
 			}
 		},
-		"title": "iPhone 17",
-		"image": "ProductVariantImage"[],
 		"totalPrice": "345",
 		"availableStock": "5",
 		"isAvailable": "true"
@@ -188,8 +181,6 @@ quantity | Yes | Number | Updated quantity (min 1)
 		"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
 		"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
 		"status": "DRAFT",
-		"options": [],
-		"variants": []
 	},
 	"variant": {
 		"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
