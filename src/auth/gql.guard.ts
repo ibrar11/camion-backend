@@ -46,6 +46,19 @@ export class GqlAuthGuard implements CanActivate {
 				throw new UnauthorizedException();
 			}
 
+			// We don't store the guest auth token in cache since guest are already logged out
+			// So, if the payload type is guest, we just allow them to continue
+			if (payload.type === "guest") {
+				const customer = await this.customersService.findOne(payload.sub);
+				if (customer === null || !customer.isActive) {
+					throw new UnauthorizedException();
+				}
+
+				request["jti"] = payload.jti;
+				request["customer"] = customer;
+				return true;
+			}
+
 			// Make sure the token exists in the cache
 			const tokenExists = await this.cacheManager.get(
 				payload.type === "user"
