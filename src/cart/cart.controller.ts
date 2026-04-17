@@ -1,41 +1,51 @@
 import {
-	Body,
-	Controller,
-	Delete,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Inject,
-	Post,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Inject,
+    Post,
     Patch,
     UseGuards,
-    Param
+    Param,
+    Query
 } from '@nestjs/common';
 
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
+
+import { RolesGuard } from '../auth/roles.guard';
+
+import { Roles } from '../auth/roles.decorator';
+
+import { CustomerRole } from '../customers/enums/CustomerRole';
+
+import { UserRole } from '../users/enums/UserRole';
 
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
 
 import { CartItem } from './entities/cart-items.entity';
-import { CartService } from './cart.service';
+import { CartItemsService } from './cart.service';
 
-import { Customer } from 'src/customers/entities/customer.entity';
-import { GetCustomer } from 'src/customers/customer.decorator';
+import { Customer } from '../customers/entities/customer.entity';
+import { GetCustomer } from '../customers/customer.decorator';
 
-import { 
-    FindCartResponse, 
-    UpdateCartResponse 
+import {
+    UpdateCartResponse,
+    ValidatedCartItem
 } from './types';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/cart-items')
-export class CartController {
+export class CartItemsController {
     constructor(
-        @Inject(CartService)
-        private readonly cartService: CartService,
-    ) {}
+        @Inject(CartItemsService)
+        private readonly cartService: CartItemsService,
+    ) { }
 
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     addToCart(
@@ -45,15 +55,21 @@ export class CartController {
         return this.cartService.create(dto, customer);
     }
 
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Get()
     @HttpCode(HttpStatus.OK)
     getCart(
         @GetCustomer() customer: Customer,
-    ): Promise<FindCartResponse> {
-        return this.cartService.findCart(customer);
+        @Query("filters") filters: string,
+        @Query("sort") sort: string,
+        @Query("pageNumber") pageNumber: number,
+        @Query("itemsPerPage") itemsPerPage: number,
+    ): Promise<Array<ValidatedCartItem>> {
+        return this.cartService.findCart(customer, filters, sort, pageNumber, itemsPerPage);
     }
 
-    @Patch('update/:uuid')
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
+    @Patch(':uuid')
     @HttpCode(HttpStatus.OK)
     updateCart(
         @Param('uuid') uuid: string,
@@ -63,7 +79,8 @@ export class CartController {
         return this.cartService.update(uuid, dto, customer);
     }
 
-    @Delete('remove/:uuid')
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
+    @Delete(':uuid')
     @HttpCode(HttpStatus.OK)
     async removeFromCart(
         @Param('uuid') uuid: string,
@@ -71,11 +88,12 @@ export class CartController {
         return this.cartService.removeItem(uuid);
     }
 
+    @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Delete()
     @HttpCode(HttpStatus.OK)
     clearCart(
         @GetCustomer() customer: Customer,
     ): Promise<void> {
         return this.cartService.clearCart(customer);
-    } 
+    }
 }

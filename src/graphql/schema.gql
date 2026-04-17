@@ -47,6 +47,14 @@ type Banner {
   uuid: String!
 }
 
+type CartItem {
+  product: Product!
+  quantity: Int!
+  subTotal: Money!
+  uuid: String!
+  variant: ProductVariant!
+}
+
 type Category {
   children: [Category!]!
   name(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
@@ -270,6 +278,8 @@ type Query {
   getCurrentCustomerOrder(uuid: String!): Order!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
+  getCustomerCart(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
+  getCustomerCartCount: Float!
   getCustomerWishlist(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!

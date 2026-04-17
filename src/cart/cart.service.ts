@@ -3,52 +3,53 @@ import crypto from "node:crypto";
 import {
     Injectable,
     BadRequestException,
-    NotFoundException ,
+    NotFoundException,
     Logger,
+    InternalServerErrorException,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { calculateStock } from "src/common/calculateStock";
+import { calculateStock } from "../common/calculateStock";
+import { getSkipAndTake } from "../common/pagination";
 
 import { CreateCartItemDto } from "./dtos/CreateCartItemDto";
 import { UpdateCartItemDto } from "./dtos/UpdateCartItemDto";
 
 import { CartItem } from "./entities/cart-items.entity";
 
-import { Product } from "src/inventory/entities/product.entity";
+import { Product } from "../inventory/entities/product.entity";
 
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../customers/entities/customer.entity";
 
 import {
-    FindCartResponse,
     UpdateCartResponse,
     ValidatedCartItem
 } from "./types";
 
 @Injectable()
-export class CartService {
-    private readonly logger = new Logger(CartService.name);
+export class CartItemsService {
+    private readonly logger = new Logger(CartItemsService.name);
 
     constructor(
         @InjectRepository(CartItem) private readonly cartRepo: Repository<CartItem>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
         @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
-    ) {}
+    ) { }
 
     /**
-	 * Add the product to cart
-	 * @param dto
-	 * @param customer
-	 * @returns
-	 */
+     * Add the product to cart
+     * @param dto
+     * @param customer
+     * @returns
+     */
     async create(dto: CreateCartItemDto, customer: Customer): Promise<CartItem> {
         try {
-            const { productUuid, variantUuid, quantity} = dto;
+            const { productUuid, variantUuid, quantity } = dto;
 
             this.logger.log(`Attempting to add to cart for product: ${productUuid}`);
 
@@ -58,7 +59,7 @@ export class CartService {
 
             // find the product needs to be added
             const product = await this.productRepository.findOne({
-                where: {uuid: productUuid},
+                where: { uuid: productUuid },
                 relations: {
                     variants: {
                         inventoryItem: {
@@ -95,9 +96,9 @@ export class CartService {
             // check if the variant alreadu exists
             const existing = await this.cartRepo.findOne({
                 where: {
-                    product: {uuid: productUuid},
-                    variant: {uuid: variantUuid},
-                    customer: {uuid: customer.uuid}
+                    product: { uuid: productUuid },
+                    variant: { uuid: variantUuid },
+                    customer: { uuid: customer.uuid }
                 }
             })
 
@@ -111,7 +112,10 @@ export class CartService {
 
                 const updatedPrice = price * updatedQuantity;
                 existing.quantity = updatedQuantity;
-                existing.subTotal = updatedPrice;
+                existing.subTotal = {
+                    amount: updatedPrice,
+                    currencyCode: variant.price.currencyCode
+                };
                 return this.cartRepo.save(existing);
             } else {
                 const cartItem = new CartItem();
@@ -120,7 +124,10 @@ export class CartService {
                 cartItem.product = product;
                 cartItem.variant = variant;
                 cartItem.quantity = quantity;
-                cartItem.subTotal = price * quantity;
+                cartItem.subTotal = {
+                    amount: price * quantity,
+                    currencyCode: variant.price.currencyCode
+                };
                 return this.cartRepo.save(cartItem);
             }
 
@@ -131,14 +138,21 @@ export class CartService {
     }
 
     /**
-	 * Find the cart items for a customer
-	 * @param customer
-	 * @returns
-	 */
-    async findCart(customer: Customer): Promise<FindCartResponse> {
-        try{
+     * Find the cart items for a customer
+     * @param customer
+     * @param filters
+     * @param sort
+     * @param pageNumber
+     * @param itemsPerPage
+     * @returns
+     */
+    async findCart(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ValidatedCartItem>> {
+        try {
 
-            const where = { customer: {uuid: customer.uuid} };
+            // Get pagination params
+            const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+            const where = { customer: { uuid: customer.uuid } };
 
             const items = await this.cartRepo.find({
                 where,
@@ -146,7 +160,10 @@ export class CartService {
                     product: true,
                     variant: true,
                     customer: true
-                }
+                },
+                order: { id: 'DESC' },
+                skip: skip,
+                take: take,
             });
 
             const validatedItems: ValidatedCartItem[] = [];
@@ -154,7 +171,7 @@ export class CartService {
             for (const item of items) {
 
                 const product = await this.productRepository.findOne({
-                    where: {uuid: item.product.uuid},
+                    where: { uuid: item.product.uuid },
                     relations: {
                         variants: {
                             inventoryItem: {
@@ -175,18 +192,9 @@ export class CartService {
 
                 validatedItems.push(
                     {
-                        uuid: item.uuid,
-                        customerUuid: item.customer.uuid,
-                        product: item.product,
-                        quantity: item.quantity,
-                        variation: variant,
-                        title: product.title,
-                        image: variant.images,
-                        subTotal: item.subTotal,
+                        ...item,
                         availableStock: stock,
                         isAvailable: stock > 0,
-                        createdAt: item.createdAt,
-                        updatedAt: item.updatedAt
                     }
                 );
             }
@@ -199,12 +207,37 @@ export class CartService {
     }
 
     /**
-	 * Update the cart item
-	 * @param uuid
-	 * @param dto
-	 * @param customer
-	 * @returns
-	 */
+     * Fetch cart count
+     *
+     * @param customer
+     * @returns
+     */
+    async getCartCount(customer: Customer): Promise<number> {
+        try {
+            const count = await this.cartRepo.count({
+                where: {
+                    customer: { uuid: customer.uuid },
+                },
+            });
+
+            return count;
+
+        } catch (error: any) {
+            this.logger.error(`Error getting cart count: ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to get cart count',
+                details: error.response?.data || error.message,
+            });
+        }
+    }
+
+    /**
+     * Update the cart item
+     * @param uuid
+     * @param dto
+     * @param customer
+     * @returns
+     */
     async update(uuid: string, dto: UpdateCartItemDto, customer: Customer): Promise<UpdateCartResponse> {
         try {
             const { productUuid, variantUuid, quantity } = dto;
@@ -212,7 +245,7 @@ export class CartService {
             // find the cart item to update
             const cartItem = await this.cartRepo.findOne({
                 where: {
-                    product: {uuid: productUuid},
+                    product: { uuid: productUuid },
                     uuid: uuid
                 },
                 relations: {
@@ -231,7 +264,7 @@ export class CartService {
 
             // find the cart item product
             const product = await this.productRepository.findOne({
-                where: {id: cartItem.product.id},
+                where: { id: cartItem.product.id },
             });
 
             if (!product || product.status !== 'ACTIVE') {
@@ -267,9 +300,9 @@ export class CartService {
             //Check if a cart item with the target variant already exists
             const existingItem = await this.cartRepo.findOne({
                 where: {
-                    customer: {id: customer.id},
-                    product: {id: product.id},
-                    variant: {id: variant.id}
+                    customer: { id: customer.id },
+                    product: { id: product.id },
+                    variant: { id: variant.id }
                 },
                 relations: {
                     product: true,
@@ -290,7 +323,10 @@ export class CartService {
                 }
 
                 existingItem.quantity = mergedQuantity;
-                existingItem.subTotal = pricePerUnit * mergedQuantity;
+                existingItem.subTotal = {
+                    amount: pricePerUnit * mergedQuantity,
+                    currencyCode: existingItem.subTotal.currencyCode
+                };
                 existingItem.variant = variant;
 
                 const savedItem = await this.cartRepo.save(existingItem);
@@ -314,7 +350,10 @@ export class CartService {
 
             cartItem.variant = variant;
             cartItem.quantity = finalQuantity;
-            cartItem.subTotal = pricePerUnit * finalQuantity;
+            cartItem.subTotal = {
+                amount: pricePerUnit * finalQuantity,
+                currencyCode: variant.price.currencyCode
+            };
 
             const savedItem = await this.cartRepo.save(cartItem);
             return {
@@ -331,11 +370,11 @@ export class CartService {
     }
 
     /**
-	 * Remove the cart item
-	 *
-	 * @param uuid
-	 * @returns
-	 */
+     * Remove the cart item
+     *
+     * @param uuid
+     * @returns
+     */
     async removeItem(uuid: string): Promise<void> {
         try {
             const cartItem = await this.cartRepo.findOne({
@@ -354,10 +393,10 @@ export class CartService {
     }
 
     /**
-	 * Clear the cart
-	 * @param customer
-	 * @returns
-	 */
+     * Clear the cart
+     * @param customer
+     * @returns
+     */
     async clearCart(customer: Customer): Promise<void> {
         try {
             await this.cartRepo.delete({

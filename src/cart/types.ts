@@ -1,6 +1,11 @@
-import { Product } from "src/inventory/entities/product.entity";
-import { ProductVariantImage } from "src/inventory/entities/product-variant-image.entity";
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { Product } from "../inventory/entities/product.entity";
+
+import { 
+    Money, 
+    ProductVariant 
+} from "../inventory/entities/product-variant.entity";
+
+import { CartItem } from "./entities/cart-items.entity";
 
 export interface ApiResponse<T> {
     success: boolean;
@@ -14,25 +19,12 @@ export interface UpdateCartResponse {
     product: Product;
     variant: ProductVariant;
     quantity: number;
-    subTotal: number;
+    subTotal: Money;
 }
-export interface ValidatedCartItem {
-    uuid: string;
-    customerUuid: string;
-    product: Product;
-    quantity: number;
-    variation: ProductVariant;
-    title: string;
-    image: ProductVariantImage[];
-    subTotal: number;
+export interface ValidatedCartItem extends CartItem {
     availableStock: number;
     isAvailable: boolean;
-    createdAt: Date;
-    updatedAt: Date;
 }
-
-// return type for find cart
-export type FindCartResponse = ValidatedCartItem[];
 
 // return type for remove cart item
 export interface RemoveCartItemResponseData {
