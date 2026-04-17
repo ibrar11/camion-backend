@@ -15,14 +15,14 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { Product } from "src/inventory/entities/product.entity";
+import { Product } from "../../inventory/entities/product.entity";
 
 import { 
     Money, 
     ProductVariant 
-} from "src/inventory/entities/product-variant.entity";
+} from "../../inventory/entities/product-variant.entity";
 
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../../customers/entities/customer.entity";
 
 @ObjectType()
 @Entity({ name: "cart_items" })

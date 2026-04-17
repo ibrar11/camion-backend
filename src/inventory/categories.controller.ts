@@ -50,6 +50,7 @@ export class CategoriesController {
 		return this.productCategoryService.updateThumbnail(uuid, file);
 	}
 
+	@Roles()
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductCategories(
@@ -61,6 +62,7 @@ export class CategoriesController {
 		return this.productCategoryService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
+	@Roles()
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProductCategory(@Param('uuid') uuid: string): Promise<Category> {

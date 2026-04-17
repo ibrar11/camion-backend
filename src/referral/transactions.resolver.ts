@@ -34,12 +34,17 @@ export class TransactionsResolver {
 	constructor(@Inject(TransactionsService) private readonly transactionsService: TransactionsService) { }
 
 	@Query(() => [Transaction])
-	getCurrentAffiliateWalletTransactions(@Context() context, @Args() args: GetCurrentWalletTransactionsArgs): Promise<Array<Transaction>> {
+	async getCurrentAffiliateWalletTransactions(@Context() context, @Args() args: GetCurrentWalletTransactionsArgs): Promise<Array<Transaction>> {
 		if (!context.req || !context.req.customer || !context.req.customer.uuid) {
 			throw new ForbiddenException({
 				error: "You're not allowed to retrieve affiliate information. Please check and try again.",
 			});
 		}
-		return this.transactionsService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage);
+
+		try {
+			return await this.transactionsService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage);
+		} catch {
+			return [];
+		}
 	}
 }
