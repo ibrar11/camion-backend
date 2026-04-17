@@ -14,14 +14,14 @@ import { Exclude } from "class-transformer";
 
 import { Order } from "./order.entity";
 
-import { Product } from "src/inventory/entities/product.entity";
+import { Product } from "../../inventory/entities/product.entity";
 
-import { 
-    Money, 
-    ProductVariant 
-} from "src/inventory/entities/product-variant.entity";
+import {
+    Money,
+    ProductVariant
+} from "../../inventory/entities/product-variant.entity";
 
-import { Warehouse } from "src/inventory/entities/warehouse.entity";
+import { Warehouse } from "../../inventory/entities/warehouse.entity";
 
 @ObjectType()
 @Entity('order_items')
