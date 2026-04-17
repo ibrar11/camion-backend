@@ -25,7 +25,7 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 
 import { OrderItem } from "../../order/entities/order-item.entity";
 
-import { WishlistItem } from "src/wishlist/entities/wishlist.entity";
+import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
 
 @ObjectType()
 @Entity({ name: "products", })

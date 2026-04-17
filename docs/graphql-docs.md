@@ -4600,7 +4600,7 @@ query GetCustomerWishlistCount {
 ```json
 {
     "data": {
-        "getCustomerWishlist": 1
+        "getCustomerWishlistCount": 1
     }
 }
 ```

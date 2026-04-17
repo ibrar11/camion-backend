@@ -22,7 +22,7 @@ import { Affiliate } from "../../referral/entities/affiliate.entity";
 
 import { Order } from "../../order/entities/order.entity";
 
-import { WishlistItem } from "src/wishlist/entities/wishlist.entity";
+import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
 
 @ObjectType()
 @Entity({ name: "customers" })
