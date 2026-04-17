@@ -107,6 +107,9 @@ import { OrderModule } from './order/order.module';
 import { Notification } from "./notifications/entities/notification.entity";
 import { NotificationsModule } from './notifications/notifications.module';
 
+import { WishlistItem } from "./wishlist/entities/wishlist.entity";
+import { WishlistModule } from './wishlist/wishlist.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -199,6 +202,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 					Coupon,
 					Transaction,
 					Wallet,
+
+					WishlistItem,
 				],
 			}),
 		}),
@@ -245,6 +250,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 		OrderModule,
 		PaymentsModule,
 		ReferralModule,
+        WishlistModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

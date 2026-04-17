@@ -25,6 +25,8 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 
 import { OrderItem } from "../../order/entities/order-item.entity";
 
+import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
+
 @ObjectType()
 @Entity({ name: "products", })
 export class Product {
@@ -112,6 +114,9 @@ export class Product {
 
 	@OneToMany(() => OrderItem, (orderItem) => orderItem.product)
 	orderItems: Array<OrderItem>;
+
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product)
+	wishlistItems: Array<WishlistItem>;
 
 	@Exclude()
 	@Column({
