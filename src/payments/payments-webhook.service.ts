@@ -22,7 +22,7 @@ export class PaymentsWebhookService {
 
     constructor(
         @InjectRepository(PaymentTransaction)
-        private paymentRepo: Repository<PaymentTransaction>,
+        private paymentRepository: Repository<PaymentTransaction>,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -53,7 +53,7 @@ export class PaymentsWebhookService {
                 return { received: true };
             }
 
-            const transaction = await this.paymentRepo.findOne({
+            const transaction = await this.paymentRepository.findOne({
                 where: { orderId: TransactionId },
             });
 
@@ -90,7 +90,7 @@ export class PaymentsWebhookService {
             transaction.transactionId = PaymentId;
             transaction.webhookData = payload;
 
-            await this.paymentRepo.save(transaction);
+            await this.paymentRepository.save(transaction);
 
             this.logger.log(
                 `Transaction ${transaction.id} updated to ${newStatus}`,

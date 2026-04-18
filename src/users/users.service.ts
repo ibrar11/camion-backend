@@ -43,9 +43,8 @@ export class UsersService {
 		// Make sure we don't create another user using the same email address
 		if (userByEmailAddress !== null) {
 			throw new BadRequestException({
-				status: "fail",
 				errors: {
-					error: "Email address already exists. Please use a different email address.",
+					emailAddress: "Email address already exists. Please use a different email address.",
 				},
 			});
 		}
@@ -99,7 +98,7 @@ export class UsersService {
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
 		if (user === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the user. Please check and try again.",
 			});
 		}
 		return user;
@@ -119,10 +118,7 @@ export class UsersService {
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
 		if (user === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "Failed to find the user by the provided uuid. Please check and try again.",
-				},
+				error: "Failed to find the user by the provided uuid. Please check and try again.",
 			});
 		}
 
@@ -148,7 +144,6 @@ export class UsersService {
 		// Make sure we don't create another user using the same email address
 		if (userByEmailAddress !== null && userByEmailAddress.uuid !== uuid) {
 			throw new BadRequestException({
-				status: "fail",
 				errors: {
 					emailAddress: "Email address already exists. Please use a different email address.",
 				},
@@ -159,10 +154,7 @@ export class UsersService {
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
 		if (user === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "Failed to find the user by the provided id. Please check and try again.",
-				},
+				error: "Failed to find the user by the provided id. Please check and try again.",
 			});
 		}
 
@@ -184,10 +176,7 @@ export class UsersService {
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
 		if (user === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "Failed to find the user by the provided id. Please check and try again.",
-				},
+				error: "Failed to find the user by the provided id. Please check and try again.",
 			});
 		}
 

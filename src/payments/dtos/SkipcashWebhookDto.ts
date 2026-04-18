@@ -1,7 +1,7 @@
-import { 
-    IsNumber, 
-    IsOptional, 
-    IsString 
+import {
+    IsNumber,
+    IsOptional,
+    IsString
 } from "class-validator";
 
 export class SkipcashWebhookDto {

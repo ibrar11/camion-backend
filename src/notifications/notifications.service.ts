@@ -12,7 +12,7 @@ import { CustomersService } from "src/customers/customers.service";
 export class NotificationsService {
 	constructor(
 		@InjectRepository(Notification)
-		private readonly notificationRepo: Repository<Notification>,
+		private readonly notificationRepository: Repository<Notification>,
 		private readonly customersService: CustomersService,
 	) {}
 
@@ -41,7 +41,7 @@ export class NotificationsService {
 		notification.payload = body.payload || {};
 		notification.priority = body.priority ?? NotificationPriority.MEDIUM;
 
-		return this.notificationRepo.save(notification);
+		return this.notificationRepository.save(notification);
 	}
 
 	/**
@@ -51,7 +51,7 @@ export class NotificationsService {
 	 * @returns
 	 */
 	async getByCustomer(customerUUID: string): Promise<Notification[]> {
-		return this.notificationRepo.find({
+		return this.notificationRepository.find({
 			where: {
 				customer: { uuid: customerUUID },
 			},
@@ -66,7 +66,7 @@ export class NotificationsService {
 	 * @returns
 	 */
 	async markAsRead(uuid: string): Promise<Notification> {
-		const notification = await this.notificationRepo.findOne({
+		const notification = await this.notificationRepository.findOne({
 			where: { uuid: uuid },
 		});
 
@@ -78,7 +78,7 @@ export class NotificationsService {
 
 		notification.isRead = true;
 
-		return this.notificationRepo.save(notification);
+		return this.notificationRepository.save(notification);
 	}
-    
+
 }

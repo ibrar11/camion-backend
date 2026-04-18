@@ -66,13 +66,15 @@ export class ClientsController {
 	): Promise<Client> {
 		if (request.user) {
 			const allowedRoles: UserRole[] = [
-                UserRole.SuperAdmin,
-                UserRole.Admin,
-                UserRole.Manager,
-            ];
+				UserRole.SuperAdmin,
+				UserRole.Admin,
+				UserRole.Manager,
+			];
 
 			if (!allowedRoles.includes(request.user.role)) {
-				throw new ForbiddenException('Access denied');
+				throw new ForbiddenException({
+					error: 'Access denied',
+				});
 			}
 
 			return this.clientsService.findOne(uuid);
@@ -80,13 +82,17 @@ export class ClientsController {
 
 		if (request.client) {
 			if (request.client.uuid !== uuid) {
-				throw new ForbiddenException('Access denied');
+				throw new ForbiddenException({
+					error: 'Access denied',
+				});
 			}
 
 			return this.clientsService.findOne(uuid);
 		}
 
-		throw new ForbiddenException('Unauthorized');
+		throw new ForbiddenException({
+			error: 'Unauthorized',
+		});
 	}
 
 	@UseGuards(AuthGuard, RolesGuard)

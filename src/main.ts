@@ -3,11 +3,13 @@ import {
 	Reflector,
 } from '@nestjs/core';
 import {
+	BadRequestException,
 	ClassSerializerInterceptor,
 	ValidationPipe,
 } from '@nestjs/common';
 
 import { AppModule } from './app.module';
+import { ValidationError } from 'class-validator';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -53,7 +55,21 @@ async function bootstrap() {
 
 	app.useGlobalPipes(new ValidationPipe({
 		transform: true,
+		stopAtFirstError: false,
+		exceptionFactory: (errors: Array<ValidationError>) => {
+			return new BadRequestException({
+				errors: Object.fromEntries(
+					errors.map((error) => [
+						error.property,
+						error.constraints !== null && error.constraints !== undefined
+							? error.constraints[Object.keys(error.constraints)[0]]
+							: "Validation failed"
+					]),
+				),
+			});
+		},
 	}));
+
 	app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)),);
 
 	await app.listen(process.env.PORT ?? 3000);

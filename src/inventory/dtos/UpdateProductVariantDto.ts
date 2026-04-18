@@ -7,6 +7,7 @@ import {
 	IsObject,
 	IsString,
 	MaxLength,
+	MinLength,
 	ValidateNested,
 } from "class-validator";
 
@@ -18,10 +19,12 @@ import { DimensionsUnit } from "../enums/DimensionsUnit";
 
 export class TitleField {
 	@IsString()
+	@MinLength(1)
 	@MaxLength(128)
 	en: string;
 
 	@IsString()
+	@MinLength(1)
 	@MaxLength(128)
 	ar: string;
 }
@@ -64,9 +67,11 @@ export class UpdateProductVariantDto {
 	title: TitleField;
 
 	@IsString()
+	@MinLength(1)
 	sku: string;
 
 	@IsString()
+	@MinLength(1)
 	barcode: string;
 
 	@IsDefined()

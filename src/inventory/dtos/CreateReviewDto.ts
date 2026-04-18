@@ -4,6 +4,7 @@ import {
 	Max,
 	MaxLength,
 	Min,
+	MinLength,
 } from "class-validator";
 
 export class CreateReviewDto {
@@ -13,6 +14,7 @@ export class CreateReviewDto {
 	rating: number;
 
 	@IsString()
+	@MinLength(1)
 	@MaxLength(512)
 	comment: string;
 }
