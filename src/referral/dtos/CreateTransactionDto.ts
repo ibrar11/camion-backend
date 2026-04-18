@@ -3,6 +3,7 @@ import {
 	IsNumber,
 	IsString,
 	MaxLength,
+	MinLength,
 } from "class-validator";
 
 import { TransactionType } from "../enums/TransactionType.enum";
@@ -19,6 +20,7 @@ export class CreateTransactionDto {
 	type: TransactionType;
 
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	description: string;
 }

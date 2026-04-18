@@ -55,7 +55,6 @@ export class ProductsService {
 			// Make sure we don't create another product with the same slug
 			if (productBySlug !== null) {
 				throw new BadRequestException({
-					status: "fail",
 					errors: {
 						slug: "A product using the same slug already exists. Please use a different slug.",
 					},
@@ -665,7 +664,7 @@ export class ProductsService {
 
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
 			});
 		}
 
@@ -724,7 +723,7 @@ export class ProductsService {
 		const product = await this.productRepository.findOneBy({ uuid: uuid, });
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
 			});
 		}
 
@@ -786,7 +785,6 @@ export class ProductsService {
 			// Make sure we don't create another product with the same slug
 			if (productBySlug !== null && productBySlug.uuid !== uuid) {
 				throw new BadRequestException({
-					status: "fail",
 					errors: {
 						slug: "A product using the same slug already exists. Please use a different slug.",
 					},
@@ -798,7 +796,7 @@ export class ProductsService {
 		const product = await this.productRepository.findOneBy({ uuid: uuid, });
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
 			});
 		}
 
@@ -821,7 +819,7 @@ export class ProductsService {
 		const product = await this.productRepository.findOneBy({ uuid: uuid, });
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
 			});
 		}
 

@@ -40,7 +40,7 @@ export class ProductOptionValueService {
 		const productOption = await this.productOptionRepository.findOneBy({ uuid: productOptionUUID, });
 		if (productOption === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the option. Please check and try again.",
 			});
 		}
 
@@ -71,7 +71,7 @@ export class ProductOptionValueService {
 		const productOption = await this.productOptionRepository.findOneBy({ uuid: productOptionUUID, });
 		if (productOption === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the option. Please check and try again.",
 			});
 		}
 
@@ -100,7 +100,7 @@ export class ProductOptionValueService {
 		const productOptionValue = await this.productOptionValueRepository.findOneBy({ uuid: uuid, });
 		if (productOptionValue === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the option value. Please check and try again.",
 			});
 		}
 		return productOptionValue;
@@ -120,7 +120,7 @@ export class ProductOptionValueService {
 		const productOptionValue = await this.productOptionValueRepository.findOneBy({ uuid: uuid, });
 		if (productOptionValue === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the option value. Please check and try again.",
 			});
 		}
 

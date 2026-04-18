@@ -1,7 +1,9 @@
-import { 
-    IsEnum, 
-    IsNumber, 
-    IsString, 
+import {
+    IsEmail,
+    IsEnum,
+    IsNumber,
+    IsString,
+    MinLength, 
     IsUUID
 } from "class-validator";
 
@@ -15,37 +17,49 @@ export class CreatePaymentDto {
     amount: number;
 
     @IsString()
+    @MinLength(1)
     currency: string;
 
     @IsString()
     @IsUUID()
+    @MinLength(1)
     orderUUID: string;
 
     // Customer info (needed by SkipCash)
     @IsString()
+    @MinLength(1)
     firstName: string;
 
     @IsString()
+    @MinLength(1)
     lastName: string;
 
     @IsString()
-    phone: string;
+    @MinLength(1)
+    phoneNumber: string;
 
     @IsString()
-    email: string;
+    @IsEmail()
+    @MinLength(1)
+    emailAddress: string;
 
     @IsString()
+    @MinLength(1)
     street: string;
 
     @IsString()
+    @MinLength(1)
     city: string;
 
     @IsString()
+    @MinLength(1)
     state: string;
 
     @IsString()
+    @MinLength(1)
     country: string;
 
     @IsString()
+    @MinLength(1)
     postalCode: string;
 }

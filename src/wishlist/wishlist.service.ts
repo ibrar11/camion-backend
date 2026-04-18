@@ -27,7 +27,7 @@ import { Product } from '../inventory/entities/product.entity';
 export class WishlistService {
     private readonly logger = new Logger(WishlistService.name);
     constructor(
-        @InjectRepository(WishlistItem) private readonly wishlistRepo: Repository<WishlistItem>,
+        @InjectRepository(WishlistItem) private readonly wishlistRepository: Repository<WishlistItem>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
     ) { }
 
@@ -41,7 +41,7 @@ export class WishlistService {
     async addToWishlist(customer: Customer, dto: CreateWishlistDto): Promise<WishlistItem> {
         try {
             // check if product exits
-            const existing = await this.wishlistRepo.findOne({
+            const existing = await this.wishlistRepository.findOne({
                 where: {
                     customer: { uuid: customer.uuid },
                     product: { uuid: dto.productUuid },
@@ -50,10 +50,7 @@ export class WishlistService {
 
             if (existing) {
                 throw new ConflictException({
-                    status: "fail",
-                    errors: {
-                        message: "A product already exists in wish list",
-                    },
+                    error: "A product already exists in wish list",
                 });
             }
 
@@ -76,7 +73,7 @@ export class WishlistService {
             wishlistItem.customer = customer;
             wishlistItem.product = product;
 
-            return this.wishlistRepo.save(wishlistItem);
+            return this.wishlistRepository.save(wishlistItem);
 
         } catch (error: any) {
             this.logger.error(`Error adding to wish list: ${error?.message}`);
@@ -99,7 +96,7 @@ export class WishlistService {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-            const items = await this.wishlistRepo.find({
+            const items = await this.wishlistRepository.find({
                 where: { customer: { uuid: customer.uuid } },
                 relations: {
                     product: true
@@ -129,7 +126,7 @@ export class WishlistService {
      */
     async getWishlistItem(customer: Customer, uuid: string): Promise<WishlistItem> {
         try {
-            const item = await this.wishlistRepo.findOne({
+            const item = await this.wishlistRepository.findOne({
                 where: {
                     uuid: uuid,
                     customer: { uuid: customer.uuid }
@@ -164,7 +161,7 @@ export class WishlistService {
      */
     async getWishlistCount(customer: Customer): Promise<number> {
         try {
-            const count = await this.wishlistRepo.count({
+            const count = await this.wishlistRepository.count({
                 where: {
                     customer: { uuid: customer.uuid },
                 },
@@ -189,7 +186,7 @@ export class WishlistService {
      */
     async removeFromWishlist(customer: Customer, productUuid: string): Promise<void> {
         try {
-            const item = await this.wishlistRepo.findOne({
+            const item = await this.wishlistRepository.findOne({
                 where: {
                     customer: { uuid: customer.uuid },
                     product: { uuid: productUuid },
@@ -202,7 +199,7 @@ export class WishlistService {
                 });
             };
 
-            await this.wishlistRepo.remove(item);
+            await this.wishlistRepository.remove(item);
 
 
         } catch (error: any) {
@@ -221,7 +218,7 @@ export class WishlistService {
      */
     async clearWishList(customer: Customer): Promise<void> {
         try {
-            await this.wishlistRepo.delete({
+            await this.wishlistRepository.delete({
                 customer: { id: customer.id }
             });
         } catch (error: any) {

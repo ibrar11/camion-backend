@@ -6,6 +6,7 @@ import {
 
 export class UpdateUserPasswordDto {
 	@IsString()
+	@MinLength(1)
 	passwordOld: string;
 
 	@IsString()

@@ -25,7 +25,7 @@ export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
 
     constructor(
-        @InjectRepository(PaymentTransaction) private readonly paymentTransactionRepository: Repository<PaymentTransaction>,
+        @InjectRepository(PaymentTransaction) private readonly paymentRepository: Repository<PaymentTransaction>,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     ) { }
 
@@ -71,7 +71,7 @@ export class PaymentsWebhookService {
                 return { received: true };
             }
 
-            const transaction = await this.paymentTransactionRepository.findOne({
+            const transaction = await this.paymentRepository.findOne({
                 where: {
                     id: order.paymentTransaction.id
                 },
@@ -110,7 +110,7 @@ export class PaymentsWebhookService {
             transaction.transactionId = PaymentId;
             transaction.webhookData = payload;
 
-            await this.paymentTransactionRepository.save(transaction);
+            await this.paymentRepository.save(transaction);
 
             this.logger.log(
                 `Transaction ${transaction.id} updated to ${newStatus}`,
