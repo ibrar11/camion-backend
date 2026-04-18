@@ -115,9 +115,9 @@ export class CustomerAuthService {
 		await this.customerRepository.save(customer);
 
 		// merge the customer gurst cart
-		if (body.deviceId) {
+		if (body.guestUUID) {
 			const guestCustomer = await this.customerRepository.findOneBy({
-				deviceId: body.deviceId.trim(),
+				uuid: body.guestUUID.trim(),
 			});
 
 			if (guestCustomer) {

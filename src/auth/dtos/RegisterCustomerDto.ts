@@ -3,6 +3,7 @@ import {
 	IsNotEmpty,
 	IsOptional,
 	IsString,
+	IsUUID,
 	MinLength,
 } from "class-validator";
 
@@ -25,6 +26,6 @@ export class RegisterCustomerDto {
 
 	@IsOptional()
 	@IsString()
-	@MinLength(1)
-	deviceId?: string;
+	@IsUUID(1)
+	guestUUID?: string;
 }
