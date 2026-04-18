@@ -35,7 +35,7 @@ export class CartItemsService {
     private readonly logger = new Logger(CartItemsService.name);
 
     constructor(
-        @InjectRepository(CartItem) private readonly cartRepo: Repository<CartItem>,
+        @InjectRepository(CartItem) private readonly cartRepository: Repository<CartItem>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
         @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
@@ -54,7 +54,9 @@ export class CartItemsService {
             this.logger.log(`Attempting to add to cart for product: ${productUuid}`);
 
             if (!productUuid) {
-                throw new BadRequestException('productUuid is required');
+                throw new BadRequestException({
+                    error: 'productUuid is required',
+                });
             }
 
             // find the product needs to be added
@@ -70,31 +72,39 @@ export class CartItemsService {
             });
 
             if (!product || product.status !== 'ACTIVE') {
-                throw new BadRequestException('Product not available');
+                throw new BadRequestException({
+                    error: 'Product not available',
+                });
             }
 
             // find the specific variant from the product
             const variant = product?.variants?.find((item) => (item.uuid === variantUuid));
 
             if (!variant) {
-                throw new NotFoundException('Variant not found');
+                throw new NotFoundException({
+                    error: 'Variant not found',
+                });
             }
 
             // check the variant stock availability
             const availableStock = calculateStock(variant);
 
             if (availableStock <= 0) {
-                throw new BadRequestException('Product is out of stock');
+                throw new BadRequestException({
+                    error: 'Product is out of stock',
+                });
             }
 
             if (availableStock < quantity) {
-                throw new BadRequestException('Insufficient stock');
+                throw new BadRequestException({
+                    error: 'Insufficient stock',
+                });
             }
 
             const price = variant?.price?.amount || 0.0;
 
             // check if the variant alreadu exists
-            const existing = await this.cartRepo.findOne({
+            const existing = await this.cartRepository.findOne({
                 where: {
                     product: { uuid: productUuid },
                     variant: { uuid: variantUuid },
@@ -107,7 +117,9 @@ export class CartItemsService {
                 const updatedQuantity = existing.quantity + quantity;
 
                 if (availableStock < updatedQuantity) {
-                    throw new BadRequestException('Not enough stock available');
+                    throw new BadRequestException({
+                        error: 'Not enough stock available',
+                    });
                 }
 
                 const updatedPrice = price * updatedQuantity;
@@ -116,7 +128,7 @@ export class CartItemsService {
                     amount: updatedPrice,
                     currencyCode: variant.price.currencyCode
                 };
-                return this.cartRepo.save(existing);
+                return this.cartRepository.save(existing);
             } else {
                 const cartItem = new CartItem();
                 cartItem.uuid = crypto.randomUUID();
@@ -128,7 +140,7 @@ export class CartItemsService {
                     amount: price * quantity,
                     currencyCode: variant.price.currencyCode
                 };
-                return this.cartRepo.save(cartItem);
+                return this.cartRepository.save(cartItem);
             }
 
         } catch (err) {
@@ -154,7 +166,7 @@ export class CartItemsService {
 
             const where = { customer: { uuid: customer.uuid } };
 
-            const items = await this.cartRepo.find({
+            const items = await this.cartRepository.find({
                 where,
                 relations: {
                     product: true,
@@ -214,7 +226,7 @@ export class CartItemsService {
      */
     async getCartCount(customer: Customer): Promise<number> {
         try {
-            const count = await this.cartRepo.count({
+            const count = await this.cartRepository.count({
                 where: {
                     customer: { uuid: customer.uuid },
                 },
@@ -243,7 +255,7 @@ export class CartItemsService {
             const { productUuid, variantUuid, quantity } = dto;
 
             // find the cart item to update
-            const cartItem = await this.cartRepo.findOne({
+            const cartItem = await this.cartRepository.findOne({
                 where: {
                     product: { uuid: productUuid },
                     uuid: uuid
@@ -256,7 +268,9 @@ export class CartItemsService {
             });
 
             if (!cartItem) {
-                throw new NotFoundException("Cart item not found");
+                throw new NotFoundException({
+                    error: "Cart item not found",
+                });
             }
 
             const finalVariantUuid = variantUuid ?? cartItem.variant.uuid;
@@ -268,7 +282,9 @@ export class CartItemsService {
             });
 
             if (!product || product.status !== 'ACTIVE') {
-                throw new BadRequestException('Product not available');
+                throw new BadRequestException({
+                    error: 'Product not available',
+                });
             }
 
             // find the cart item product's variant
@@ -287,18 +303,22 @@ export class CartItemsService {
             });
 
             if (!variant) {
-                throw new NotFoundException('Variant not found');
+                throw new NotFoundException({
+                    error: 'Variant not found',
+                });
             }
 
             // check the variant stock availability
             const availableStock = calculateStock(variant);
 
             if (availableStock <= 0) {
-                throw new BadRequestException('Product is out of stock');
+                throw new BadRequestException({
+                    error: 'Product is out of stock',
+                });
             }
 
             //Check if a cart item with the target variant already exists
-            const existingItem = await this.cartRepo.findOne({
+            const existingItem = await this.cartRepository.findOne({
                 where: {
                     customer: { id: customer.id },
                     product: { id: product.id },
@@ -319,7 +339,9 @@ export class CartItemsService {
                 const mergedQuantity = existingItem.quantity + finalQuantity;
 
                 if (availableStock < mergedQuantity) {
-                    throw new BadRequestException('Insufficient stock after merge');
+                    throw new BadRequestException({
+                        error: 'Insufficient stock after merge',
+                    });
                 }
 
                 existingItem.quantity = mergedQuantity;
@@ -329,10 +351,10 @@ export class CartItemsService {
                 };
                 existingItem.variant = variant;
 
-                const savedItem = await this.cartRepo.save(existingItem);
+                const savedItem = await this.cartRepository.save(existingItem);
 
                 // remove duplicate item
-                await this.cartRepo.remove(cartItem);
+                await this.cartRepository.remove(cartItem);
 
                 return {
                     uuid: savedItem.uuid,
@@ -344,7 +366,9 @@ export class CartItemsService {
             }
 
             if (availableStock < finalQuantity) {
-                throw new BadRequestException('Insufficient stock');
+                throw new BadRequestException({
+                    error: 'Insufficient stock',
+                });
             }
 
 
@@ -355,7 +379,7 @@ export class CartItemsService {
                 currencyCode: variant.price.currencyCode
             };
 
-            const savedItem = await this.cartRepo.save(cartItem);
+            const savedItem = await this.cartRepository.save(cartItem);
             return {
                 uuid: savedItem.uuid,
                 product: savedItem.product,
@@ -377,15 +401,19 @@ export class CartItemsService {
      */
     async removeItem(uuid: string): Promise<void> {
         try {
-            const cartItem = await this.cartRepo.findOne({
+            const cartItem = await this.cartRepository.findOne({
                 where: {
                     uuid: uuid
                 }
             });
 
-            if (!cartItem) throw new NotFoundException("Cart item not found");
+            if (!cartItem) {
+                throw new NotFoundException({
+                    error: "Cart item not found",
+                });
+            }
 
-            await this.cartRepo.remove(cartItem);
+            await this.cartRepository.remove(cartItem);
         } catch (err) {
             this.logger.error("Error while removing cart item: ", err);
             throw err;
@@ -399,7 +427,7 @@ export class CartItemsService {
      */
     async clearCart(customer: Customer): Promise<void> {
         try {
-            await this.cartRepo.delete({
+            await this.cartRepository.delete({
                 customer: { id: customer.id }
             });
         } catch (err) {

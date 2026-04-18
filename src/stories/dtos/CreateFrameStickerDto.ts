@@ -5,6 +5,7 @@ import {
 	Max,
 	MaxLength,
 	Min,
+	MinLength,
 	ValidateNested,
 } from "class-validator";
 
@@ -12,41 +13,49 @@ import { StoryStickerType } from "../enums/StoryStickerType.enum";
 
 export class TextField {
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	en: string;
 
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	ar: string;
 }
 
 export class QuestionField {
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	en: string;
 
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	ar: string;
 }
 
 export class OptionField {
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	en: string;
 
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	ar: string;
 }
 
 export class EmojiSticker {
 	@IsString()
+	@MinLength(1)
 	emoji: string;
 }
 
 export class LinkSticker {
 	@IsString()
+	@MinLength(1)
 	@MaxLength(256)
 	link: string;
 }
@@ -64,9 +73,11 @@ export class TextSticker {
 	text: TextField;
 
 	@IsString()
+	@MinLength(1)
 	fontFamily: string;
 
 	@IsString()
+	@MinLength(1)
 	color: string;
 }
 

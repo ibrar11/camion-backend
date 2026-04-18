@@ -51,14 +51,14 @@ export class OrderService {
     private readonly logger = new Logger(OrderService.name);
 
     constructor(
-        @InjectRepository(Order) private orderRepo: Repository<Order>,
-        @InjectRepository(OrderItem) private orderItemRepo: Repository<OrderItem>,
-        @InjectRepository(Customer) private customerRepo: Repository<Customer>,
-        @InjectRepository(ProductVariant) private variantRepo: Repository<ProductVariant>,
-        @InjectRepository(InventoryItem) private inventoryRepo: Repository<InventoryItem>,
-        @InjectRepository(InventoryLevel) private inventoryLevelRepo: Repository<InventoryLevel>,
-        @InjectRepository(CartItem) private cartRepo: Repository<CartItem>,
-        @InjectRepository(CustomerAddress) private readonly addressRepo: Repository<CustomerAddress>,
+        @InjectRepository(Order) private orderRepository: Repository<Order>,
+        @InjectRepository(OrderItem) private orderItemRepository: Repository<OrderItem>,
+        @InjectRepository(Customer) private customerRepository: Repository<Customer>,
+        @InjectRepository(ProductVariant) private variantRepository: Repository<ProductVariant>,
+        @InjectRepository(InventoryItem) private inventoryRepository: Repository<InventoryItem>,
+        @InjectRepository(InventoryLevel) private inventoryLevelRepository: Repository<InventoryLevel>,
+        @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
+        @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
     ) { }
 
     /**
@@ -71,7 +71,7 @@ export class OrderService {
     async create(customer: Customer, dto: CreateOrderDto): Promise<Order> {
         try {
             // get cart items
-            const cartItems = await this.cartRepo.find({
+            const cartItems = await this.cartRepository.find({
                 where: {
                     uuid: In(dto.cartItemUuids),
                     customer: { id: customer.id }
@@ -84,7 +84,9 @@ export class OrderService {
             });
 
             if (cartItems.length !== dto.cartItemUuids.length) {
-                throw new BadRequestException("Invalid cart items");
+                throw new BadRequestException({
+                    error: "Invalid cart items",
+                });
             }
 
             let subTotal = 0;
@@ -94,7 +96,7 @@ export class OrderService {
                 const variant = cart.variant;
 
                 // get inventory item of the product variant
-                const inventoryItem = await this.inventoryRepo.findOne({
+                const inventoryItem = await this.inventoryRepository.findOne({
                     where: { variant: { id: variant.id } },
                     relations: {
                         levels: {
@@ -104,7 +106,9 @@ export class OrderService {
                 });
 
                 if (!inventoryItem || !inventoryItem.levels.length) {
-                    throw new BadRequestException(`No inventory found for ${variant.sku}`);
+                    throw new BadRequestException({
+                        error: `No inventory found for ${variant.sku}`,
+                    });
                 }
 
                 // Find a warehouse with enough stock
@@ -120,7 +124,7 @@ export class OrderService {
 
                 // Deduct
                 level.quantity -= cart.quantity;
-                await this.inventoryLevelRepo.save(level);
+                await this.inventoryLevelRepository.save(level);
 
                 const priceAmount = Number(variant.price.amount);
                 const totalAmount = priceAmount * cart.quantity;
@@ -143,7 +147,7 @@ export class OrderService {
                     currencyCode: variant.price.currencyCode,
                 };
 
-                await this.orderItemRepo.save(orderItem);
+                await this.orderItemRepository.save(orderItem);
 
                 orderItems.push(orderItem)
             }
@@ -151,7 +155,7 @@ export class OrderService {
             const currency = cartItems[0].variant.price.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
 
-            const address = await this.addressRepo.findOne({
+            const address = await this.addressRepository.findOne({
                 where: {
                     customer: { id: customer.id },
                     isDefault: true,
@@ -210,10 +214,10 @@ export class OrderService {
             order.eta = eta;
             order.orderItems = orderItems;
 
-            await this.orderRepo.save(order);
+            await this.orderRepository.save(order);
 
             // clear the cart
-            await this.cartRepo.delete({
+            await this.cartRepository.delete({
                 uuid: In(dto.cartItemUuids)
             });
 
@@ -237,7 +241,7 @@ export class OrderService {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-            return this.orderRepo.find({
+            return this.orderRepository.find({
                 relations: {
                     orderItems: {
                         product: true,
@@ -270,7 +274,7 @@ export class OrderService {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-            return this.orderRepo.find({
+            return this.orderRepository.find({
                 where: {
                     customer: { uuid: customerUuid }
                 },
@@ -302,7 +306,7 @@ export class OrderService {
      */
     async findOne(uuid: string): Promise<Order> {
         try {
-            const order = await this.orderRepo.findOne({
+            const order = await this.orderRepository.findOne({
                 where: { uuid },
                 relations: {
                     orderItems: {
@@ -312,7 +316,9 @@ export class OrderService {
                 },
             });
 
-            if (!order) throw new NotFoundException('Order not found');
+            if (!order) throw new NotFoundException({
+                error: 'Order not found',
+            });
 
             return order;
         } catch (error: any) {
@@ -336,7 +342,7 @@ export class OrderService {
 
             order.status = status;
 
-            return this.orderRepo.save(order);
+            return this.orderRepository.save(order);
         } catch (error: any) {
             this.logger.error(`Error updating order status: ${error?.message}`);
             throw new InternalServerErrorException({
@@ -354,7 +360,7 @@ export class OrderService {
     async cancel(uuid: string): Promise<void> {
         try {
             // find the order to cancel
-            const order = await this.orderRepo.findOne({
+            const order = await this.orderRepository.findOne({
                 where: { uuid },
                 relations: {
                     orderItems: {
@@ -365,16 +371,20 @@ export class OrderService {
             });
 
             if (!order) {
-                throw new NotFoundException('Order not found');
+                throw new NotFoundException({
+                    error: 'Order not found',
+                });
             }
 
             if (order.status === OrderStatus.CANCELLED) {
-                throw new BadRequestException('Already cancelled');
+                throw new BadRequestException({
+                    error: 'Already cancelled',
+                });
             }
 
             // Restore inventory
             for (const item of order.orderItems) {
-                const inventoryItem = await this.inventoryRepo.findOne({
+                const inventoryItem = await this.inventoryRepository.findOne({
                     where: {
                         variant: { id: item.variant.id }
                     }
@@ -382,7 +392,7 @@ export class OrderService {
 
                 if (!inventoryItem) continue;
 
-                const level = await this.inventoryLevelRepo.findOne({
+                const level = await this.inventoryLevelRepository.findOne({
                     where: {
                         inventoryItem: { id: inventoryItem.id },
                         warehouse: { id: item.warehouse.id },
@@ -398,12 +408,12 @@ export class OrderService {
                 // Restore stock
                 level.quantity += item.quantity;
 
-                await this.inventoryLevelRepo.save(level);
+                await this.inventoryLevelRepository.save(level);
             }
 
             order.status = OrderStatus.CANCELLED;
 
-            await this.orderRepo.save(order);
+            await this.orderRepository.save(order);
 
         } catch (error: any) {
             this.logger.error(`Error canceling order: ${error?.message}`);
@@ -422,7 +432,7 @@ export class OrderService {
     async orderPreview(customer: Customer): Promise<OrderPreviewResponse> {
         try {
             // Get cart items with relations
-            const cartItems = await this.cartRepo.find({
+            const cartItems = await this.cartRepository.find({
                 where: { customer: { id: customer.id } },
                 relations: {
                     product: true,
@@ -440,7 +450,7 @@ export class OrderService {
                 });
             }
 
-            const address = await this.addressRepo.findOne({
+            const address = await this.addressRepository.findOne({
                 where: {
                     customer: { id: customer.id },
                     isDefault: true,

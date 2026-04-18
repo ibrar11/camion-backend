@@ -64,9 +64,8 @@ export class UserAuthService {
 		// Make sure we don't create another user using the same email address
 		if (userByEmailAddress !== null) {
 			throw new BadRequestException({
-				status: "fail",
 				errors: {
-					error: "Email address already exists. Please use a different email address.",
+					emailAddress: "Email address already exists. Please use a different email address.",
 				},
 			});
 		}
@@ -77,8 +76,8 @@ export class UserAuthService {
 		user.fullName = body.fullName.trim();
 		user.emailAddress = body.emailAddress.trim().toLowerCase();
 		user.password = await bcrypt.hash(body.password.trim(), 10);
-		user.role = UserRole.User;
-		user.isActive = false;
+		user.role = UserRole.SuperAdmin;
+		user.isActive = true;
 		this.userRepository.save(user);
 
 		// Create the payload for the jwt
@@ -114,20 +113,14 @@ export class UserAuthService {
 
 		if (user === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "We weren't able to log you in. Give your email and password another look and try again.",
-				},
+				error: "We weren't able to log you in. Give your email and password another look and try again.",
 			});
 		}
 
 		// Match the password of the user
 		if (!bcrypt.compareSync(body.password, user.password)) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "We weren't able to log you in. Give your email and password another look and try again.",
-				},
+				error: "We weren't able to log you in. Give your email and password another look and try again.",
 			});
 		}
 
@@ -178,18 +171,14 @@ export class UserAuthService {
 		const self = await this.userRepository.findOneBy({ id: principal.id, });
 		if (self === null) {
 			throw new BadRequestException({
-				errors: {
-					error: "Faild to find the user.",
-				},
+				error: "Failed to find the user.",
 			});
 		}
 
 		// Make sure mfa isn't already enabled.
 		if (self.isMfaEnabled) {
 			throw new BadRequestException({
-				errors: {
-					error: "MFA is already been enabled.",
-				},
+				error: "MFA is already been enabled.",
 			});
 		}
 
@@ -221,37 +210,28 @@ export class UserAuthService {
 		const self = await this.userRepository.findOneBy({ id: principal.id, });
 		if (self === null) {
 			throw new BadRequestException({
-				errors: {
-					error: "Faild to find the user.",
-				},
+				error: "Failed to find the user.",
 			});
 		}
 
 		// Make sure mfa isn't already enabled.
 		if (self.isMfaEnabled) {
 			throw new BadRequestException({
-				errors: {
-					error: "MFA is already been enabled.",
-				},
+				error: "MFA is already been enabled.",
 			});
 		}
 
 		// Verify user password before enabling mfa
 		if (!bcrypt.compareSync(body.password, self.password)) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "We weren't able to verify your password. Please check your password and try again.",
-				},
+				error: "We weren't able to verify your password. Please check your password and try again.",
 			});
 		}
 
 		// Verify the verification code against the secret stored.
 		if (!speakeasy.totp.verify({ secret: self.secret, encoding: "base32", token: body.verificationCode, window: 1 })) {
 			throw new BadRequestException({
-				errors: {
-					error: "Failed to verify your token. Please check and try again.",
-				},
+				error: "Failed to verify your token. Please check and try again.",
 			});
 		}
 
@@ -274,9 +254,7 @@ export class UserAuthService {
 		const self = await this.userRepository.findOneBy({ id: principal.id, });
 		if (self === null) {
 			throw new BadRequestException({
-				errors: {
-					error: "Faild to find the user.",
-				},
+				error: "Failed to find the user.",
 			});
 		}
 
@@ -312,9 +290,7 @@ export class UserAuthService {
 		const self = await this.userRepository.findOneBy({ id: principal.id, });
 		if (self === null) {
 			throw new BadRequestException({
-				errors: {
-					error: "Faild to find the user.",
-				},
+				error: "Failed to find the user.",
 			});
 		}
 
@@ -335,7 +311,6 @@ export class UserAuthService {
 		// Make sure new and confirmed passwords match
 		if (body.passwordNew.trim() !== body.passwordConfirm.trim()) {
 			throw new BadRequestException({
-				status: "fail",
 				errors: {
 					passwordConfirm: "Your confirmed password don't match your new password. Please check and try again.",
 				},
@@ -346,17 +321,13 @@ export class UserAuthService {
 		const self = await this.userRepository.findOneBy({ id: principal.id, });
 		if (self === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "Failed to find the user by the provided id. Please check and try again.",
-				},
+				error: "Failed to find the user by the provided id. Please check and try again.",
 			});
 		}
 
 		// Make sure the old password matches
 		if (!bcrypt.compareSync(body.passwordOld, self.password)) {
 			throw new BadRequestException({
-				status: "fail",
 				errors: {
 					passwordOld: "Failed to match the password. Please check and try again.",
 				},

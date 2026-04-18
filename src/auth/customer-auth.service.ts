@@ -453,9 +453,7 @@ export class CustomerAuthService {
 		const customer = await this.customerRepository.findOneBy({ id: principal.id, });
 		if (customer === null) {
 			throw new BadRequestException({
-				errors: {
-					error: "Failed to find the customer.",
-				},
+				error: "Failed to find the customer.",
 			});
 		}
 

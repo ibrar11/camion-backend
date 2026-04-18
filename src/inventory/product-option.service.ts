@@ -40,7 +40,7 @@ export class ProductOptionService {
 		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
 			});
 		}
 
@@ -71,7 +71,7 @@ export class ProductOptionService {
 		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
 		if (product === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product. Please check and try again.",
 			});
 		}
 
@@ -100,7 +100,7 @@ export class ProductOptionService {
 		const productOption = await this.productOptionRepository.findOneBy({ uuid: uuid, });
 		if (productOption === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product option. Please check and try again.",
 			});
 		}
 		return productOption;
@@ -120,7 +120,7 @@ export class ProductOptionService {
 		const productOption = await this.productOptionRepository.findOneBy({ uuid: uuid, });
 		if (productOption === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Failed to find the product option. Please check and try again.",
 			});
 		}
 

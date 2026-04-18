@@ -13,6 +13,7 @@ import {
 import { Exclude } from "class-transformer";
 
 import { Affiliate } from "./affiliate.entity";
+import { length } from "class-validator";
 
 @ObjectType()
 @Entity({ name: "affiliate_bank_accounts" })
@@ -30,23 +31,23 @@ export class BankAccount {
 	affiliate: Affiliate;
 
 	@Field()
-	@Column({ nullable: false, })
+	@Column({ type: "varchar", length: 32, nullable: false, })
 	bankName: string;
 
 	@Field()
-	@Column({ nullable: false, })
+	@Column({ type: "varchar", length: 32, nullable: false, })
 	accountHolderName: string;
 
 	@Field()
-	@Column({ nullable: false, })
+	@Column({ type: "varchar", length: 32, nullable: false, })
 	accountNumber: string;
 
 	@Field()
-	@Column({ nullable: false, })
+	@Column({ type: "varchar", length: 32, nullable: false, })
 	iban: string;
 
 	@Field()
-	@Column({ nullable: true, })
+	@Column({ type: "varchar", length: 16, nullable: true, })
 	swiftCode: string;
 
 	@Field()

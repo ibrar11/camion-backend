@@ -10,9 +10,9 @@ import { generateSignature } from "src/common/skipcash";
 
 import { CreatePaymentDto } from "../dtos/CreatePaymentDto";
 
-import { 
-    InitiatePaymentResponse, 
-    SignaturePayload 
+import {
+    InitiatePaymentResponse,
+    SignaturePayload
 } from "../types";
 
 @Injectable()
@@ -42,8 +42,8 @@ export class SkipCashAdapter {
                 Amount: dto.amount.toFixed(2),
                 FirstName: dto.firstName,
                 LastName: dto.lastName,
-                Phone: dto.phone,
-                Email: dto.email,
+                Phone: dto.phoneNumber,
+                Email: dto.emailAddress,
                 Street: dto.street,
                 City: dto.city,
                 State: dto.state,

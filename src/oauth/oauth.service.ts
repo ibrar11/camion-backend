@@ -31,7 +31,7 @@ export class OauthService {
 
         @InjectRepository(ClientRefreshToken)
         private readonly refreshTokenRepository: Repository<ClientRefreshToken>,
-    ) {}
+    ) { }
 
     /**
      * Generates an OAuth token based on the provided grant type.
@@ -53,7 +53,9 @@ export class OauthService {
 
         if (grant_type === 'client_credentials') {
             if (!client_id || !client_secret) {
-                throw new BadRequestException('client_id and client_secret are required');
+                throw new BadRequestException({
+                    error: 'client_id and client_secret are required',
+                });
             }
 
             return this.handleClientCredentials(client_id, client_secret);
@@ -61,13 +63,19 @@ export class OauthService {
 
         if (grant_type === 'refresh_token') {
             if (!refresh_token) {
-                throw new BadRequestException('refresh_token is required');
+                throw new BadRequestException({
+                    errors: {
+                        refresh_token: 'refresh_token is required',
+                    },
+                });
             }
 
             return this.handleRefreshToken(refresh_token);
         }
 
-        throw new BadRequestException('Unsupported grant type');
+        throw new BadRequestException({
+            error: 'Unsupported grant type',
+        });
     }
 
     /**
@@ -91,24 +99,30 @@ export class OauthService {
         const client = await this.clientsService.findByUuidWithSecret(client_id);
 
         if (!client) {
-            throw new UnauthorizedException('Invalid client credentials');
+            throw new UnauthorizedException({
+                error: 'Invalid client credentials',
+            });
         }
 
         if (client.status !== 'Active') {
-            throw new UnauthorizedException('Client is not active');
+            throw new UnauthorizedException({
+                error: 'Client is not active',
+            });
         }
 
         const isMatch = await bcrypt.compare(client_secret, client.secret);
         if (!isMatch) {
-            throw new UnauthorizedException('Invalid client credentials');
+            throw new UnauthorizedException({
+                error: 'Invalid client credentials',
+            });
         }
 
-        
+
         const payload = {
             sub: client.uuid,
             type: 'client',
         };
-        
+
         const accessTtl = this.configService.get<string>('ACCESS_TOKEN_TTL') || '48h';
 
         const signOptions: JwtSignOptions = {
@@ -149,33 +163,41 @@ export class OauthService {
         });
 
         if (!existingToken) {
-            throw new UnauthorizedException('Invalid refresh token');
+            throw new UnauthorizedException({
+                error: 'Invalid refresh token',
+            });
         }
 
         if (existingToken.revoked) {
-            throw new UnauthorizedException('Refresh token revoked');
+            throw new UnauthorizedException({
+                error: 'Refresh token revoked',
+            });
         }
 
         if (existingToken.expiresAt < new Date()) {
-            throw new UnauthorizedException('Refresh token expired');
+            throw new UnauthorizedException({
+                error: 'Refresh token expired',
+            });
         }
 
         const client = await this.clientsService.findByUuidWithSecret(existingToken.clientUuid);
 
         if (!client || client.status !== 'Active') {
-            throw new UnauthorizedException('Client is not active');
+            throw new UnauthorizedException({
+                error: 'Client is not active',
+            });
         }
 
         // 🔁 rotation
         existingToken.revoked = true;
         await this.refreshTokenRepository.save(existingToken);
 
-        
+
         const payload = {
             sub: client.uuid,
             type: 'client',
         };
-        
+
         const accessTtl = this.configService.get<string>('ACCESS_TOKEN_TTL') || '48h';
 
         const signOptions: JwtSignOptions = {
