@@ -6,6 +6,7 @@ import {
     NotFoundException,
     Logger,
     InternalServerErrorException,
+    Inject,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,32 +16,34 @@ import {
 } from 'typeorm';
 
 import { OrderStatus } from "./enums/OrderStatus";
+import { PaymentProvider } from "../payments/enums/PaymentProvider";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
 
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 
-import { Customer } from 'src/customers/entities/customer.entity';
+import { Customer } from '../customers/entities/customer.entity';
 
-import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
+import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
-import { InventoryItem } from 'src/inventory/entities/inventory-item.entity';
+import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 
-import { InventoryLevel } from "src/inventory/entities/inventory-level.entity";
+import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
+import { CartItem } from "../cart/entities/cart-items.entity";
 
-import { CustomerAddress } from "src/customers/entities/customer-address.entity";
+import { CustomerAddress } from "../customers/entities/customer-address.entity";
 
-import { calculateStock } from "src/common/calculateStock";
+import { PaymentsService } from "../payments/payments.service";
+import { calculateStock } from "../common/calculateStock";
 
 import {
     calculateCartShipping,
     ShippingCalculationResult
-} from "src/common/calculateShipping";
+} from "../common/calculateShipping";
 
-import { getSkipAndTake } from "src/common/pagination";
+import { getSkipAndTake } from "../common/pagination";
 
 import {
     OrderPreviewResponse,
@@ -59,6 +62,7 @@ export class OrderService {
         @InjectRepository(InventoryLevel) private inventoryLevelRepo: Repository<InventoryLevel>,
         @InjectRepository(CartItem) private cartRepo: Repository<CartItem>,
         @InjectRepository(CustomerAddress) private readonly addressRepo: Repository<CustomerAddress>,
+        @Inject(PaymentsService) private readonly paymentService: PaymentsService,
     ) { }
 
     /**
@@ -70,6 +74,19 @@ export class OrderService {
      */
     async create(customer: Customer, dto: CreateOrderDto): Promise<Order> {
         try {
+            this.logger.log(`Attempting to create order for customer: ${customer.fullName}`);
+            const address = await this.addressRepo.findOne({
+                where: {
+                    customer: { id: customer.id },
+                    isDefault: true,
+                },
+            });
+
+            if (!address) {
+                throw new BadRequestException({
+                    error: 'User address cannot be found.'
+                });
+            }
             // get cart items
             const cartItems = await this.cartRepo.find({
                 where: {
@@ -150,19 +167,6 @@ export class OrderService {
 
             const currency = cartItems[0].variant.price.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
-
-            const address = await this.addressRepo.findOne({
-                where: {
-                    customer: { id: customer.id },
-                    isDefault: true,
-                },
-            });
-
-            if (!address) {
-                throw new BadRequestException({
-                    error: 'User address cannot be found.'
-                });
-            }
             const shippingCartItems = cartItems.map(item => ({
                 weight: {
                     amount: item.variant.weight.amount,
@@ -181,10 +185,9 @@ export class OrderService {
             const shippingCost = Math.floor(shippingCalculation.totalShippingCost);
             const eta = shippingCalculation.transitTime.estimatedRange
 
+            // Shipping is being calculated in USD and product prices are in CNY
             const discount = 0;
             const total = subTotal + shippingCost - discount;
-
-            // payment service needs to integrated here
 
             // create a order
             const order = new Order();
@@ -212,6 +215,28 @@ export class OrderService {
 
             await this.orderRepo.save(order);
 
+            const customerName: Array<string> = customer.fullName.split(" ");
+            // payment service needs to integrated here
+            const paymentPayload = {
+                provider: PaymentProvider.SKIPCASH,
+                amount: total,
+                currency: currency,
+                orderUUID: order.uuid,
+                firstName: customerName[0],
+                lastName: customerName[1] ?? customerName[0],
+                email: customer.emailAddress,
+                phone: address.phoneNumber.replace(/\s+/g, ""),
+                street: address.streetAddress,
+                city: address.city,
+                state: address.state,
+                country: address.country,
+                postalCode: address.zipCode,
+            }
+
+            const payment = await this.paymentService.createPayment(paymentPayload)
+            order.paymentTransaction = payment;
+            await this.orderRepo.save(order);
+
             // clear the cart
             await this.cartRepo.delete({
                 uuid: In(dto.cartItemUuids)
@@ -222,7 +247,7 @@ export class OrderService {
             this.logger.error(`Error placing order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to place order',
-                details: error.message || error,
+                details: error?.message || error,
             });
         }
     }

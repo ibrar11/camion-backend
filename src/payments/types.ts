@@ -10,7 +10,6 @@ export interface InitiatePaymentResponse {
     provider: string;
     transactionId: string;
     paymentUrl: string;
-    orderId: string;
     raw: SkipCashResponse;
 }
 

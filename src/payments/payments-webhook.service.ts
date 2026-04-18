@@ -7,12 +7,16 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { verifySkipcashSignature } from "src/common/skipcash";
+import { verifySkipcashSignature } from "../common/skipcash";
+
+import { OrderStatus } from "../order/enums/OrderStatus";
 
 import { SkipcashWebhookDto } from "./dtos/SkipcashWebhookDto";
 
 import { PaymentTransaction } from "./entities/payment-transaction.entity";
 import { PaymentStatus } from "./enums/PaymentStatus";
+
+import { Order } from "../order/entities/order.entity";
 
 import { skipcashWebhookResponse } from "./types";
 
@@ -21,8 +25,8 @@ export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
 
     constructor(
-        @InjectRepository(PaymentTransaction)
-        private paymentRepo: Repository<PaymentTransaction>,
+        @InjectRepository(PaymentTransaction) private readonly paymentTransactionRepository: Repository<PaymentTransaction>,
+        @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -42,10 +46,8 @@ export class PaymentsWebhookService {
 
             const {
                 PaymentId,
-                Amount,
                 StatusId,
                 TransactionId,
-                VisaId,
             } = payload;
 
             if (!TransactionId) {
@@ -53,8 +55,26 @@ export class PaymentsWebhookService {
                 return { received: true };
             }
 
-            const transaction = await this.paymentRepo.findOne({
-                where: { orderId: TransactionId },
+            const order = await this.orderRepository.findOne({
+                where: {
+                    uuid: TransactionId
+                },
+                relations: {
+                    paymentTransaction: true
+                }
+            })
+
+            if (!order) {
+                this.logger.warn(
+                    `Order not found for orderUUId: ${TransactionId}`,
+                );
+                return { received: true };
+            }
+
+            const transaction = await this.paymentTransactionRepository.findOne({
+                where: {
+                    id: order.paymentTransaction.id
+                },
             });
 
             if (!transaction) {
@@ -90,7 +110,7 @@ export class PaymentsWebhookService {
             transaction.transactionId = PaymentId;
             transaction.webhookData = payload;
 
-            await this.paymentRepo.save(transaction);
+            await this.paymentTransactionRepository.save(transaction);
 
             this.logger.log(
                 `Transaction ${transaction.id} updated to ${newStatus}`,
@@ -101,7 +121,9 @@ export class PaymentsWebhookService {
                     `Payment SUCCESS for transaction: ${TransactionId}`,
                 );
 
-                // Need to implement order updation accordingly once order apis implemented
+                order.status = OrderStatus.PAYMENT_SUCCESSFUL;
+                await this.orderRepository.save(order);
+
             } else if (
                 newStatus === PaymentStatus.FAILED ||
                 newStatus === PaymentStatus.CANCELLED
@@ -110,7 +132,8 @@ export class PaymentsWebhookService {
                     `Payment FAILED/CANCELLED for transaction: ${TransactionId}`,
                 );
 
-                // Need to implement order updation accordingly once order apis implemented
+                order.status = OrderStatus.PAYMENT_REJECTED;
+                await this.orderRepository.save(order);
             }
 
             return {

@@ -159,7 +159,6 @@ export class CartItemsService {
                 relations: {
                     product: true,
                     variant: true,
-                    customer: true
                 },
                 order: { id: 'DESC' },
                 skip: skip,

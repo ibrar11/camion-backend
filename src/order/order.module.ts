@@ -8,21 +8,25 @@ import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
 import { OrderResolver } from './order.resolver';
 
-import { ClientsModule } from 'src/clients/clients.module';
+import { ClientsModule } from '../clients/clients.module';
 
-import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
+import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 
-import { Customer } from 'src/customers/entities/customer.entity';
-import { CustomerAddress } from 'src/customers/entities/customer-address.entity';
-import { CustomersService } from 'src/customers/customers.service';
+import { Customer } from '../customers/entities/customer.entity';
+import { CustomerAddress } from '../customers/entities/customer-address.entity';
+import { CustomersService } from '../customers/customers.service';
 
-import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
+import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
-import { InventoryItem } from 'src/inventory/entities/inventory-item.entity';
+import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 
-import { CartItem } from 'src/cart/entities/cart-items.entity';
-import { InventoryLevel } from 'src/inventory/entities/inventory-level.entity';
+import { CartItem } from '../cart/entities/cart-items.entity';
+import { InventoryLevel } from '../inventory/entities/inventory-level.entity';
+
+import { PaymentTransaction } from '../payments/entities/payment-transaction.entity';
+import { PaymentsService } from '../payments/payments.service';
+import { PaymentStrategyFactory } from '../payments/factories/PaymentStrategyFactory';
 
 @Module({
     imports: [
@@ -35,7 +39,8 @@ import { InventoryLevel } from 'src/inventory/entities/inventory-level.entity';
             InventoryItem,
             InventoryLevel,
             CartItem,
-            CustomerAddress
+            CustomerAddress,
+            PaymentTransaction,
         ]),
         ClientsModule,
     ],
@@ -44,6 +49,8 @@ import { InventoryLevel } from 'src/inventory/entities/inventory-level.entity';
         UsersService,
         CustomersService,
         OrderResolver,
+        PaymentsService,
+        PaymentStrategyFactory,
     ],
     controllers: [
         OrderController

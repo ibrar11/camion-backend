@@ -6,7 +6,7 @@ import { PaymentStrategy } from "../types";
 
 @Injectable()
 export class PaymentStrategyFactory {
-    private strategies = new Map<PaymentProvider, PaymentStrategy>();
+    private static strategies = new Map<PaymentProvider, PaymentStrategy>();
 
     /**
 	 * Register provider and strategy
@@ -17,7 +17,7 @@ export class PaymentStrategyFactory {
 	 */
     register(provider: PaymentProvider, strategy: PaymentStrategy) {
         // register the strategies for providers
-        this.strategies.set(provider, strategy);
+        PaymentStrategyFactory.strategies.set(provider, strategy);
     }
 
     /**
@@ -28,7 +28,7 @@ export class PaymentStrategyFactory {
 	 */
     getStrategy(provider: PaymentProvider): PaymentStrategy {
         // fetch strategy for specific provider
-        const strategy = this.strategies.get(provider);
+        const strategy = PaymentStrategyFactory.strategies.get(provider);
 
         if (!strategy) {
         throw new Error(`No strategy found for ${provider}`);

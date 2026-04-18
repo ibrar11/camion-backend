@@ -1,8 +1,8 @@
 import { 
     IsEnum, 
     IsNumber, 
-    IsOptional, 
-    IsString 
+    IsString, 
+    IsUUID
 } from "class-validator";
 
 import { PaymentProvider } from "../enums/PaymentProvider";
@@ -17,10 +17,9 @@ export class CreatePaymentDto {
     @IsString()
     currency: string;
 
-    // Temporary reference (later → orderId)
-    @IsOptional()
     @IsString()
-    orderId?: string;
+    @IsUUID()
+    orderUUID: string;
 
     // Customer info (needed by SkipCash)
     @IsString()
