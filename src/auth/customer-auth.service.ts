@@ -35,6 +35,7 @@ import { CustomerAuthVerificationResponse } from "./response/CustomerAuthVerific
 import { CustomerAuthResponse } from "./response/CustomerAuthResponse";
 
 import { CustomerRole } from "src/customers/enums/CustomerRole";
+import { EmailService } from "src/email/email.service";
 
 @Injectable()
 export class CustomerAuthService {
@@ -46,6 +47,7 @@ export class CustomerAuthService {
 		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 		private readonly configService: ConfigService,
 		private readonly jwtService: JwtService,
+		private readonly emailService: EmailService,
 	) {
 	}
 
@@ -231,8 +233,10 @@ export class CustomerAuthService {
 		request.secret = await bcrypt.hash(secret, 10);
 		await this.loginRequestRepository.save(request);
 
-		// TODO: Send the secret to the customer using their email address
-		console.log(secret);
+		// Send OTP to the customer via email
+		await this.emailService.sendOtpEmail(customer.emailAddress, {
+			otp: secret,
+		});
 
 		// Create a payload for the session token
 		const payload = {

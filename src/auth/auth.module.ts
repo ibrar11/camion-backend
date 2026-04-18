@@ -7,6 +7,7 @@ import { CustomersService } from 'src/customers/customers.service';
 import { CustomerAuthService } from './customer-auth.service';
 import { CustomerAuthController } from './customer-auth.controller';
 import { CustomerAuthResolver } from './customer-auth.resolver';
+import { EmailModule } from 'src/email/email.module';
 
 import { User } from 'src/users/entities/user.entity';
 
@@ -34,6 +35,7 @@ import { RolesGuard } from './roles.guard';
         ]),
         UsersModule,
         ClientsModule,
+        EmailModule,
     ],
     providers: [
         CustomerAuthService,

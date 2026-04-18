@@ -110,6 +110,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 import { WishlistModule } from './wishlist/wishlist.module';
 
+import { EmailModule } from './email/email.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -246,6 +248,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 		CurrenciesModule,
 		LanguagesModule,
 		NotificationsModule,
+		EmailModule,
 		ScheduleModule.forRoot(),
 		OrderModule,
 		PaymentsModule,
