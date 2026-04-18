@@ -11,9 +11,9 @@ import { fetchImageAsFile } from '../common/fetchImage';
 import { smartRoundInt } from '../common/smartRound';
 import { extractFormattedText } from '../common/extractFormattedText';
 
-import { CurrencyCode } from '../inventory/enums/CurrencyCode';
-import { WeightUnit } from '../inventory/enums/WeightUnit';
-import { DimensionsUnit } from '../inventory/enums/DimensionsUnit';
+import { CurrencyCode } from 'src/inventory/enums/CurrencyCode.enum';
+import { WeightUnit } from 'src/inventory/enums/WeightUnit.enum';
+import { DimensionsUnit } from 'src/inventory/enums/DimensionsUnit.enum';
 
 import { ImportProductDto } from './dtos/ImportProductDto';
 
@@ -337,7 +337,7 @@ export class ProcurementService {
                             // 1. Fetch product details from 1688
                             const productDetails = await this.getProductDetail(id);
 
-                            // 2. create product in database and 
+                            // 2. create product in database and
                             const product = await this.productService.createProduct({
                                 slug: productDetails.slug,
                                 title: {
@@ -433,7 +433,7 @@ export class ProcurementService {
                                                     sku: variant.skuId?.toString() || crypto.randomUUID(),
                                                     barcode: variant.skuId?.toString() || '',
                                                     quantity: variant.stock || 0,
-                                                    price: {
+                                                    cost: {
                                                         amount: variant.price || 0,
                                                         currencyCode: CurrencyCode.USD,
                                                     },

@@ -7,7 +7,6 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
-	Index,
 	ManyToOne,
 	OneToMany,
 	PrimaryGeneratedColumn,

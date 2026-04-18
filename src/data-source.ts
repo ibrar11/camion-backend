@@ -74,6 +74,12 @@ import { User } from "./users/entities/user.entity";
 //WishList
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 
+// pricing
+import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
+
+// key-value-pairs
+import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
+
 export const CamionDataSource = new DataSource({
 	type: "postgres",
 	host: process.env.DB_HOST,
@@ -122,6 +128,8 @@ export const CamionDataSource = new DataSource({
 		Wallet,
 		Warehouse,
 		WishlistItem,
+		ExchangeRate,
+		KeyValuePair,
 	],
 	migrations: [
 		"src/migrations/*",
