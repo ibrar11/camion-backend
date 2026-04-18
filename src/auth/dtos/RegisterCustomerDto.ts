@@ -1,6 +1,7 @@
 import {
 	IsEmail,
 	IsNotEmpty,
+	IsOptional,
 	IsString,
 	MinLength,
 } from "class-validator";
@@ -21,4 +22,9 @@ export class RegisterCustomerDto {
 	@IsString()
 	@MinLength(1)
 	phoneNumber: string;
+
+	@IsOptional()
+	@IsString()
+	@MinLength(1)
+	deviceId?: string;
 }

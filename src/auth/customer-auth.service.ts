@@ -36,6 +36,8 @@ import { CustomerAuthResponse } from "./response/CustomerAuthResponse";
 
 import { CustomerRole } from "src/customers/enums/CustomerRole";
 
+import { CartItem } from "../cart/entities/cart-items.entity";
+
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
@@ -43,6 +45,7 @@ export class CustomerAuthService {
 	constructor(
 		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
 		@InjectRepository(LoginRequest) private readonly loginRequestRepository: Repository<LoginRequest>,
+		@InjectRepository(CartItem) private readonly cartItemRepository: Repository<CartItem>,
 		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 		private readonly configService: ConfigService,
 		private readonly jwtService: JwtService,
@@ -110,6 +113,24 @@ export class CustomerAuthService {
 		customer.role = CustomerRole.Customer;
 		customer.isActive = true;
 		await this.customerRepository.save(customer);
+
+		// merge the customer gurst cart
+		if (body.deviceId) {
+			const guestCustomer = await this.customerRepository.findOneBy({
+				deviceId: body.deviceId.trim(),
+			});
+
+			if (guestCustomer) {
+				await this.cartItemRepository.update(
+					{ customer: { id: guestCustomer.id } },
+					{ customer: customer }
+				);
+
+				// deactivate the guest user after after merge
+				guestCustomer.isActive = false;
+				await this.customerRepository.save(guestCustomer);
+			}
+		}
 
 		// Create the payload
 		const payload = {
