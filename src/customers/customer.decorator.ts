@@ -8,11 +8,6 @@ import {
 export const GetCustomer = createParamDecorator(
     (data: unknown, ctx: ExecutionContext) => {
         const request = ctx.switchToHttp().getRequest();
-        if (!request.customer) {
-            throw new BadRequestException (
-                'Customer not found'
-            )
-        }
         return request.customer;
     },
 );
