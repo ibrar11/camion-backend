@@ -1,4 +1,4 @@
-import { Product } from "src/inventory/entities/product.entity";
+import { Product } from "../inventory/entities/product.entity";
 
 export interface SearchProductItem {
     offerId: number;
@@ -106,6 +106,7 @@ export interface ProductDetail {
     title: string;
     description: string;
     descriptionTrans: string;
+    descriptionHtml: string;
     images: string[];
     mainImage: string | null;
     video?: string;
