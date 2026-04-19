@@ -25,7 +25,7 @@ paymentMethod | Yes | String | The payment method selected by the customer (e.g.
 ### Request Body
 ```json
 {
-    "cartItems": [
+    "cartItemUuids": [
         "f7b2a1d0-5c91-4d3e-a2f1-123456789abc"
     ],
     "paymentMethod": "COD"
