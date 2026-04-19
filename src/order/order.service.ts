@@ -251,7 +251,7 @@ export class OrderService {
             this.logger.error(`Error placing order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to place order',
-                details: error?.message || error,
+                details: error?.response?.error || error?.message || error,
             });
         }
     }
