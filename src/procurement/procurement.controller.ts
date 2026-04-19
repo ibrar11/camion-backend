@@ -12,14 +12,14 @@ import {
 
 import { ImportProductDto } from './dtos/ImportProductDto';
 
-import { UserRole } from 'src/users/enums/UserRole';
+import { UserRole } from '../users/enums/UserRole';
 
 import { ProcurementService } from './procurement.service';
 
-import { AuthGuard } from 'src/auth/auth.guard';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
 
-import { Roles } from 'src/auth/roles.decorator';
+import { Roles } from '../auth/roles.decorator';
 
 import {
     SearchProducts,
