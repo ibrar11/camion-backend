@@ -115,21 +115,26 @@ export class CustomerAuthService {
 		await this.customerRepository.save(customer);
 
 		// merge the customer gurst cart
-		if (body.guestUUID) {
-			const guestCustomer = await this.customerRepository.findOneBy({
-				uuid: body.guestUUID.trim(),
+		const guestCustomer = await this.customerRepository.findOneBy({
+			uuid: body.guestUUID.trim(),
+		});
+
+		if (guestCustomer) {
+			const cartItems = await this.cartItemRepository.find({
+				where: {
+					customer: { id: guestCustomer.id }
+				}
 			});
 
-			if (guestCustomer) {
-				await this.cartItemRepository.update(
-					{ customer: { id: guestCustomer.id } },
-					{ customer: customer }
-				);
-
-				// deactivate the guest user after after merge
-				guestCustomer.isActive = false;
-				await this.customerRepository.save(guestCustomer);
+			for (const item of cartItems) {
+				item.customer = customer;
 			}
+
+			await this.cartItemRepository.save(cartItems);
+
+			// deactivate the guest user after after merge
+			guestCustomer.isActive = false;
+			await this.customerRepository.save(guestCustomer);
 		}
 
 		// Create the payload
@@ -189,6 +194,29 @@ export class CustomerAuthService {
 			});
 		}
 
+		// merge the customer gurst cart
+		const guestCustomer = await this.customerRepository.findOneBy({
+			uuid: body.guestUUID.trim(),
+		});
+
+		if (guestCustomer) {
+			const cartItems = await this.cartItemRepository.find({
+				where: {
+					customer: { id: guestCustomer.id }
+				}
+			});
+
+			for (const item of cartItems) {
+				item.customer = customer;
+			}
+
+			await this.cartItemRepository.save(cartItems);
+
+			// deactivate the guest user after after merge
+			guestCustomer.isActive = false;
+			await this.customerRepository.save(guestCustomer);
+		}
+
 		// Generate a random secret to verify customer email address
 		let secret = crypto.randomInt(100000, 1000000).toString();
 		if (this.configService.get<string>("ENABLE_MAGIC_OTP") === "Yes") {
@@ -237,6 +265,29 @@ export class CustomerAuthService {
 					emailAddress: "Customer not found with the provided email address.",
 				},
 			});
+		}
+		
+		// merge the customer gurst cart
+		const guestCustomer = await this.customerRepository.findOneBy({
+			uuid: body.guestUUID.trim(),
+		});
+
+		if (guestCustomer) {
+			const cartItems = await this.cartItemRepository.find({
+				where: {
+					customer: { id: guestCustomer.id }
+				}
+			});
+
+			for (const item of cartItems) {
+				item.customer = customer;
+			}
+
+			await this.cartItemRepository.save(cartItems);
+
+			// deactivate the guest user after after merge
+			guestCustomer.isActive = false;
+			await this.customerRepository.save(guestCustomer);
 		}
 
 		// Generate a random secret to verify customer email address
