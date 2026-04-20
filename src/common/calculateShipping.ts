@@ -4,6 +4,8 @@ import { WeightUnit } from 'src/inventory/enums/WeightUnit.enum';
 
 import shippingRatesData from 'src/data/shipping-rates.json';
 
+import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
+
 export interface WeightRange {
     min: number;
     max: number;
@@ -35,7 +37,7 @@ export interface HandlingFeeRange {
 }
 
 export interface ShippingCalculationInput {
-    exchangeRates: ExchageRate;
+    exchangeRates: CurrencyExchageRate;
     countryCode: string;
     totalWeightKg: number;
     declaredValue?: number;
@@ -86,7 +88,7 @@ export interface CartItemForShipping {
     quantity: number;
 }
 
-export interface ExchageRate {
+export interface CurrencyExchageRate {
     cnyToTarget: number;
     usdToTarget: number;
     currency: string;
@@ -129,15 +131,18 @@ export function calculateCartShipping(
     cartItems: CartItemForShipping[],
     countryCode: string,
     currency: string,
+    rates: ExchangeRate[],
     declaredValue?: number
 ): ShippingCalculationResult {
     try {
         // Todo: exchage rate imeplementation (CNY -> target and USD -> target)
+        const cnyToTarget = rates?.find(rate => rate.srcCurrencyCode === 'cny' && rate.targetCurrencyCode === currency);
+        const usdToTarget = rates?.find(rate => rate.srcCurrencyCode === 'usd' && rate.targetCurrencyCode === currency);
 
         const exchangeRates = {
-            cnyToTarget: 0.15, // converting CNY → USD
-            usdToTarget: 1, // target = USD
-            currency: "USD",
+            cnyToTarget: cnyToTarget?.factor ?? 0.54, // default converting CNY → QAR
+            usdToTarget: usdToTarget?.factor ?? 0.15, // default target = QAR
+            currency: currency,
         };
 
         const totalWeightKg = calculateTotalWeightFromCart(cartItems);
@@ -321,8 +326,14 @@ export function getShippingRate(countryCode: string, weightKg: number): Shipping
     );
 
     if (!weightRange) {
+        let maxWeight = 0;
+        countryData.weightRanges.forEach((range) => {
+            if(range.max > maxWeight) {
+                maxWeight = range.max;
+            }
+        })
         throw new BadRequestException({
-            error: `No shipping rate for ${countryCode} at weight ${weightKg}kg`
+            error: `No shipping rate for ${countryCode} at weight ${weightKg}kg, weight should not be more than ${maxWeight}kg`
         });
     }
 

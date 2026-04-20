@@ -17,15 +17,16 @@ import {
 
 import { OrderStatus } from "./enums/OrderStatus";
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
+import { TransactionType } from "../referral/enums/TransactionType.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
+
+import { CreateTransactionDto } from "../referral/dtos/CreateTransactionDto";
 
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 
 import { Customer } from '../customers/entities/customer.entity';
-
-import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
 import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 
@@ -36,7 +37,18 @@ import { CartItem } from "../cart/entities/cart-items.entity";
 import { CustomerAddress } from "../customers/entities/customer-address.entity";
 
 import { PaymentsService } from "../payments/payments.service";
+
+import { ExchangeRateService } from "../pricing/exchange-rate.service";
+
 import { calculateStock } from "../common/calculateStock";
+
+import { Coupon } from "../referral/entities/coupon.entity";
+
+import { Wallet } from "../referral/entities/wallet.entity";
+
+import { TransactionsService } from "../referral/transactions.service";
+
+import { Affiliate } from "../referral/entities/affiliate.entity";
 
 import {
     calculateCartShipping,
@@ -44,6 +56,11 @@ import {
 } from "../common/calculateShipping";
 
 import { getSkipAndTake } from "../common/pagination";
+
+import {
+    calculateAffiliateCommission,
+    calculateCouponDiscount
+} from "../common/calculateCouponDiscount";
 
 import {
     OrderPreviewResponse,
@@ -56,13 +73,16 @@ export class OrderService {
     constructor(
         @InjectRepository(Order) private orderRepository: Repository<Order>,
         @InjectRepository(OrderItem) private orderItemRepository: Repository<OrderItem>,
-        @InjectRepository(Customer) private customerRepository: Repository<Customer>,
-        @InjectRepository(ProductVariant) private variantRepository: Repository<ProductVariant>,
         @InjectRepository(InventoryItem) private inventoryRepository: Repository<InventoryItem>,
         @InjectRepository(InventoryLevel) private inventoryLevelRepository: Repository<InventoryLevel>,
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
         @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
+        @InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
+        @InjectRepository(Wallet) private readonly walletRepository: Repository<Wallet>,
+        @InjectRepository(Affiliate) private readonly affiliateRepository: Repository<Affiliate>,
+        @Inject(TransactionsService) private readonly transactionsService: TransactionsService,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
+        @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
     ) { }
 
     /**
@@ -134,9 +154,9 @@ export class OrderService {
                 );
 
                 if (!level) {
-                    throw new BadRequestException(
-                        `Insufficient stock for ${variant.sku}`
-                    );
+                    throw new BadRequestException({
+                        error: `Insufficient stock for ${variant.sku}`
+                    });
                 }
 
                 // Deduct
@@ -169,6 +189,8 @@ export class OrderService {
                 orderItems.push(orderItem)
             }
 
+            const exchangeRates = await this.exchangeRateService.findAll("", "");
+
             const currency = cartItems[0].variant.cost.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
             const shippingCartItems = cartItems.map(item => ({
@@ -183,14 +205,34 @@ export class OrderService {
             const shippingCalculation = calculateCartShipping(
                 shippingCartItems,
                 address.country,
-                "USD", // Todo make currency dynamic
+                currency, // Todo make currency dynamic
+                exchangeRates,
                 subTotal
             );
             const shippingCost = Math.floor(shippingCalculation.totalShippingCost);
             const eta = shippingCalculation.transitTime.estimatedRange
 
-            // Shipping is being calculated in USD and product prices are in CNY
-            const discount = 0;
+            // COUPON VALIDATION & DISCOUNT
+            let discount = 0;
+            const coupon = await this.couponRepository.findOne({
+                where: { code: dto.couponCode?.toLowerCase().trim() },
+                relations: {
+                    affiliate: {
+                        customer: true,
+                        wallet: true,
+                    },
+                },
+            });
+
+            // Check if coupon exists
+            if (!coupon) {
+                throw new BadRequestException({
+                    error: "Invalid coupon code. Please check and try again."
+                });
+            }
+
+            discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+
             const total = subTotal + shippingCost - discount;
 
             // create a order
@@ -219,10 +261,57 @@ export class OrderService {
 
             await this.orderRepository.save(order);
 
+            // RECORD AFFILIATE COMMISSION
+            if (coupon?.affiliate && coupon.code && discount >= 0) {
+                const commissionAmount = calculateAffiliateCommission(
+                    coupon.affiliate,
+                    total,
+                    discount
+                );
+
+                if (commissionAmount > 0 && coupon.affiliate.wallet?.id) {
+                    const walletId = coupon.affiliate.wallet.id
+                    const wallet = await this.walletRepository.findOne({
+                        where: { id: walletId },
+                        relations: { affiliate: true },
+                    });
+
+                    if (!wallet) {
+                        throw new BadRequestException({
+                            error: `Wallet not found: ${walletId}`
+                        });
+                    }
+
+                    // Create transaction record
+                    const referralTransactionDto : CreateTransactionDto = {
+                        amount: commissionAmount,
+                        currencyCode: currency,
+                        type: TransactionType.Credit,
+                        description: `Commission from order #${order.uuid} using coupon ${coupon.code}`
+                    }
+                    await this.transactionsService.createTransaction(wallet.uuid, referralTransactionDto)
+
+                    // Update wallet balance
+                    wallet.amount.amount += commissionAmount;
+                    wallet.amountAvailable.amount += commissionAmount;
+                    await this.walletRepository.save(wallet);
+
+                    // // Update affiliate's total commission and remaining balance
+                    const affiliate = wallet.affiliate;
+                    affiliate.totalCommission.amount += commissionAmount;
+                    affiliate.remainingBalance.amount += commissionAmount;
+                    affiliate.couponsUsed += 1;
+                    await this.affiliateRepository.save(affiliate);
+
+                    await this.couponRepository.increment({ id: coupon.id }, 'ordersCount', 1);
+                }
+            }
+
             const customerName: Array<string> = customer.fullName.split(" ");
+            const provider = dto.paymentMethod === "default" ? PaymentProvider.SKIPCASH : PaymentProvider[dto.paymentMethod]
             // payment service needs to integrated here
             const paymentPayload = {
-                provider: PaymentProvider.SKIPCASH,
+                provider: provider,
                 amount: total,
                 currency: currency,
                 orderUUID: order.uuid,
@@ -519,11 +608,15 @@ export class OrderService {
                 quantity: item.quantity,
             }));
 
+            const exchangeRates = await this.exchangeRateService.findAll("", "");
+            const currency = cartItems[0].variant.cost.currencyCode;
+
             // Calculate shipping fee using utility function
             const shippingCalculation = calculateCartShipping(
                 shippingCartItems,
                 address.country,
-                "USD", // Todo make currency dynamic
+                currency, // Todo make currency dynamic
+                exchangeRates,
                 subtotal
             );
 

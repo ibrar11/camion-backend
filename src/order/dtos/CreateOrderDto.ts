@@ -1,5 +1,6 @@
 import {
     IsArray,
+    IsOptional,
     IsString,
     IsUUID,
     MinLength,
@@ -13,4 +14,8 @@ export class CreateOrderDto {
     @IsArray()
     @IsUUID("all", { each: true })
     cartItemUuids: string[];
+
+    @IsOptional()
+    @IsString()
+    couponCode?: string;
 }

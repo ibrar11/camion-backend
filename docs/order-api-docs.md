@@ -20,7 +20,8 @@ POST /v1/orders HTTP/1.1
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 cartItems | Yes | Array<String> |list of cart items to be ordered
-paymentMethod | Yes | String | The payment method selected by the customer (e.g., COD, CARD, etc.)
+paymentMethod | Yes | String | The payment method selected by the customer (e.g., COD, CARD, default(skipcash will be used) etc.)
+couponCode | No | String | coupon code to apply
 
 ### Request Body
 ```json
@@ -28,7 +29,8 @@ paymentMethod | Yes | String | The payment method selected by the customer (e.g.
     "cartItemUuids": [
         "f7b2a1d0-5c91-4d3e-a2f1-123456789abc"
     ],
-    "paymentMethod": "COD"
+    "paymentMethod": "default",
+    "couponCode": "rvse23"
 }
 ```
 

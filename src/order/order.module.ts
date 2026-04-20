@@ -17,8 +17,6 @@ import { Customer } from '../customers/entities/customer.entity';
 import { CustomerAddress } from '../customers/entities/customer-address.entity';
 import { CustomersService } from '../customers/customers.service';
 
-import { ProductVariant } from '../inventory/entities/product-variant.entity';
-
 import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 
 import { CartItem } from '../cart/entities/cart-items.entity';
@@ -28,6 +26,18 @@ import { PaymentTransaction } from '../payments/entities/payment-transaction.ent
 import { PaymentsService } from '../payments/payments.service';
 import { PaymentStrategyFactory } from '../payments/factories/PaymentStrategyFactory';
 
+import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
+import { ExchangeRateService } from '../pricing/exchange-rate.service';
+
+import { Coupon } from '../referral/entities/coupon.entity';
+
+import { Wallet } from '../referral/entities/wallet.entity';
+
+import { Affiliate } from '../referral/entities/affiliate.entity';
+
+import { Transaction } from '../referral/entities/transaction.entity';
+import { TransactionsService } from '../referral/transactions.service';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -35,12 +45,16 @@ import { PaymentStrategyFactory } from '../payments/factories/PaymentStrategyFac
             OrderItem,
             User,
             Customer,
-            ProductVariant,
             InventoryItem,
             InventoryLevel,
             CartItem,
             CustomerAddress,
             PaymentTransaction,
+            ExchangeRate,
+            Coupon,
+            Wallet,
+            Affiliate,
+            Transaction
         ]),
         ClientsModule,
     ],
@@ -51,6 +65,8 @@ import { PaymentStrategyFactory } from '../payments/factories/PaymentStrategyFac
         OrderResolver,
         PaymentsService,
         PaymentStrategyFactory,
+        ExchangeRateService,
+        TransactionsService,
     ],
     controllers: [
         OrderController
