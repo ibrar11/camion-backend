@@ -14,6 +14,6 @@ export class LoginCustomerByPhoneNumberDto {
 	phoneNumber: string;
 
 	@IsString()
-	@IsUUID(1)
+	@IsUUID()
 	guestUUID: string;
 }

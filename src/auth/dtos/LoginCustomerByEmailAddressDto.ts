@@ -9,6 +9,6 @@ export class LoginCustomerByEmailAddressDto {
 	emailAddress: string;
 
 	@IsString()
-	@IsUUID(1)
+	@IsUUID()
 	guestUUID: string;
 }

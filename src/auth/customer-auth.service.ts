@@ -38,6 +38,8 @@ import { CustomerRole } from "src/customers/enums/CustomerRole";
 
 import { CartItem } from "../cart/entities/cart-items.entity";
 
+import { calculateStock } from "../common/calculateStock";
+
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
@@ -195,26 +197,85 @@ export class CustomerAuthService {
 		}
 
 		// merge the customer gurst cart
-		const guestCustomer = await this.customerRepository.findOneBy({
-			uuid: body.guestUUID.trim(),
-		});
-
-		if (guestCustomer) {
-			const cartItems = await this.cartItemRepository.find({
-				where: {
-					customer: { id: guestCustomer.id }
-				}
+		if (body.guestUUID) {
+			const guestCustomer = await this.customerRepository.findOne({
+				where: { uuid: body.guestUUID.trim() },
 			});
 
-			for (const item of cartItems) {
-				item.customer = customer;
+			if (
+				guestCustomer &&
+				guestCustomer.id !== customer.id &&
+				guestCustomer.isActive
+			) {
+				const guestCartItems = await this.cartItemRepository.find({
+					where: { customer: { id: guestCustomer.id } },
+					relations: {
+						product: true,
+						variant: true
+					},
+				});
+
+				if (guestCartItems.length > 0) {
+					const existingCartItems = await this.cartItemRepository.find({
+						where: { customer: { id: customer.id } },
+						relations: {
+							product: true,
+							variant: true
+						},
+					});
+
+					// Build lookup map
+					const existingMap = new Map<string, CartItem>();
+					for (const item of existingCartItems) {
+						const key = `${item.product.id}-${item.variant.id}`;
+						existingMap.set(key, item);
+					}
+
+					const itemsToSave: CartItem[] = [];
+					const guestItemsToRemove: CartItem[] = [];
+
+					for (const guestItem of guestCartItems) {
+						const key = `${guestItem.product.id}-${guestItem.variant.id}`;
+						const existingItem = existingMap.get(key);
+
+						if (existingItem) {
+							const availableStock = calculateStock(existingItem.variant);
+							const totalQuantity = existingItem.quantity + guestItem.quantity;
+
+							// Merge quantity
+							existingItem.quantity = (availableStock < totalQuantity) ? availableStock : totalQuantity;
+
+							existingItem.subTotal = {
+								...existingItem.subTotal,
+								amount:
+									existingItem.quantity *
+									existingItem.variant.cost.amount,
+							};
+
+							itemsToSave.push(existingItem);
+							guestItemsToRemove.push(guestItem);
+						} else {
+							// Reassign guest item
+							guestItem.customer = customer;
+							itemsToSave.push(guestItem);
+						}
+					}
+
+					// Save items
+					if (itemsToSave.length > 0) {
+						await this.cartItemRepository.save(itemsToSave);
+					}
+
+					// remove merged guest items
+					if (guestItemsToRemove.length > 0) {
+						await this.cartItemRepository.remove(guestItemsToRemove);
+					}
+				}
+
+				// Deactivate guest to prevent re-merge
+				guestCustomer.isActive = false;
+				await this.customerRepository.save(guestCustomer);
 			}
-
-			await this.cartItemRepository.save(cartItems);
-
-			// deactivate the guest user after after merge
-			guestCustomer.isActive = false;
-			await this.customerRepository.save(guestCustomer);
 		}
 
 		// Generate a random secret to verify customer email address
@@ -266,28 +327,87 @@ export class CustomerAuthService {
 				},
 			});
 		}
-		
-		// merge the customer gurst cart
-		const guestCustomer = await this.customerRepository.findOneBy({
-			uuid: body.guestUUID.trim(),
-		});
 
-		if (guestCustomer) {
-			const cartItems = await this.cartItemRepository.find({
-				where: {
-					customer: { id: guestCustomer.id }
-				}
+		// merge the customer gurst cart
+		if (body.guestUUID) {
+			const guestCustomer = await this.customerRepository.findOne({
+				where: { uuid: body.guestUUID.trim() },
 			});
 
-			for (const item of cartItems) {
-				item.customer = customer;
+			if (
+				guestCustomer &&
+				guestCustomer.id !== customer.id &&
+				guestCustomer.isActive
+			) {
+				const guestCartItems = await this.cartItemRepository.find({
+					where: { customer: { id: guestCustomer.id } },
+					relations: {
+						product: true,
+						variant: true
+					},
+				});
+
+				if (guestCartItems.length > 0) {
+					const existingCartItems = await this.cartItemRepository.find({
+						where: { customer: { id: customer.id } },
+						relations: {
+							product: true,
+							variant: true
+						},
+					});
+
+					// Build lookup map
+					const existingMap = new Map<string, CartItem>();
+					for (const item of existingCartItems) {
+						const key = `${item.product.id}-${item.variant.id}`;
+						existingMap.set(key, item);
+					}
+
+					const itemsToSave: CartItem[] = [];
+					const guestItemsToRemove: CartItem[] = [];
+
+					for (const guestItem of guestCartItems) {
+						const key = `${guestItem.product.id}-${guestItem.variant.id}`;
+						const existingItem = existingMap.get(key);
+
+						if (existingItem) {
+							const availableStock = calculateStock(existingItem.variant);
+							const totalQuantity = existingItem.quantity + guestItem.quantity;
+
+							// Merge quantity
+							existingItem.quantity = (availableStock < totalQuantity) ? availableStock : totalQuantity;
+
+							existingItem.subTotal = {
+								...existingItem.subTotal,
+								amount:
+									existingItem.quantity *
+									existingItem.variant.cost.amount,
+							};
+
+							itemsToSave.push(existingItem);
+							guestItemsToRemove.push(guestItem);
+						} else {
+							// Reassign guest item
+							guestItem.customer = customer;
+							itemsToSave.push(guestItem);
+						}
+					}
+
+					// Save items
+					if (itemsToSave.length > 0) {
+						await this.cartItemRepository.save(itemsToSave);
+					}
+
+					// remove merged guest items
+					if (guestItemsToRemove.length > 0) {
+						await this.cartItemRepository.remove(guestItemsToRemove);
+					}
+				}
+
+				// Deactivate guest to prevent re-merge
+				guestCustomer.isActive = false;
+				await this.customerRepository.save(guestCustomer);
 			}
-
-			await this.cartItemRepository.save(cartItems);
-
-			// deactivate the guest user after after merge
-			guestCustomer.isActive = false;
-			await this.customerRepository.save(guestCustomer);
 		}
 
 		// Generate a random secret to verify customer email address
