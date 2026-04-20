@@ -110,6 +110,13 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 import { WishlistModule } from './wishlist/wishlist.module';
 
+
+import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
+import { PricingModule } from './pricing/pricing.module';
+
+import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
+import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -204,6 +211,10 @@ import { WishlistModule } from './wishlist/wishlist.module';
 					Wallet,
 
 					WishlistItem,
+
+					ExchangeRate,
+
+					KeyValuePair,
 				],
 			}),
 		}),
@@ -250,7 +261,9 @@ import { WishlistModule } from './wishlist/wishlist.module';
 		OrderModule,
 		PaymentsModule,
 		ReferralModule,
-        WishlistModule,
+		WishlistModule,
+		PricingModule,
+		KeyValuePairsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

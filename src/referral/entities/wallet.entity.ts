@@ -11,7 +11,7 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { CurrencyCode } from "../../inventory/enums/CurrencyCode";
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
 
 import { Transaction } from "./transaction.entity";
 import { Affiliate } from "./affiliate.entity";

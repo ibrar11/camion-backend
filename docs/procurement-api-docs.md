@@ -157,14 +157,17 @@ Post /v1/procurement/import HTTP/1.1
 Query Parameters
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
-body | Yes | Array<String> | Array of external Ids
+externalId | Yes | Array<String> | Array of external Ids
+categories | Yes | Array<String> | Array of categories uuIds
+warehouseUUID | Yes | String | uuid of waregouse
 
 ### Request Body
 ```json
-[
-    "801224173488",
-    "801224174564",
-]
+{
+    "externalId": ["724311508795"],
+    "categories": ["413ca229-065d-4f29-b4cc-c63151bd3b2a"],
+    "warehouseUUID": "6ba35190-ef22-4b73-af06-5ba1e0580b57"
+}
 ```
 
 ### Response Body

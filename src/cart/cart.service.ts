@@ -29,6 +29,7 @@ import {
     UpdateCartResponse,
     ValidatedCartItem
 } from "./types";
+import { ProductStatus } from "src/inventory/enums/ProductStatus.enum";
 
 @Injectable()
 export class CartItemsService {
@@ -71,7 +72,7 @@ export class CartItemsService {
                 }
             });
 
-            if (!product || product.status !== 'ACTIVE') {
+            if (!product || product.status !== ProductStatus.ACTIVE) {
                 throw new BadRequestException({
                     error: 'Product not available',
                 });
@@ -101,7 +102,7 @@ export class CartItemsService {
                 });
             }
 
-            const price = variant?.price?.amount || 0.0;
+            const price = variant?.cost?.amount || 0.0;
 
             // check if the variant alreadu exists
             const existing = await this.cartRepository.findOne({
@@ -126,7 +127,7 @@ export class CartItemsService {
                 existing.quantity = updatedQuantity;
                 existing.subTotal = {
                     amount: updatedPrice,
-                    currencyCode: variant.price.currencyCode
+                    currencyCode: variant.cost.currencyCode
                 };
                 return this.cartRepository.save(existing);
             } else {
@@ -138,7 +139,7 @@ export class CartItemsService {
                 cartItem.quantity = quantity;
                 cartItem.subTotal = {
                     amount: price * quantity,
-                    currencyCode: variant.price.currencyCode
+                    currencyCode: variant.cost.currencyCode
                 };
                 return this.cartRepository.save(cartItem);
             }
@@ -193,7 +194,7 @@ export class CartItemsService {
                     }
                 });
 
-                if (!product || product.status !== 'ACTIVE') continue;
+                if (!product || product.status !== ProductStatus.ACTIVE) continue;
 
                 const variant = product.variants.find(v => v.uuid === item.variant.uuid);
 
@@ -280,7 +281,7 @@ export class CartItemsService {
                 where: { id: cartItem.product.id },
             });
 
-            if (!product || product.status !== 'ACTIVE') {
+            if (!product || product.status !== ProductStatus.ACTIVE) {
                 throw new BadRequestException({
                     error: 'Product not available',
                 });
@@ -330,7 +331,7 @@ export class CartItemsService {
                 }
             })
 
-            const pricePerUnit = variant?.price?.amount || 0.0;
+            const pricePerUnit = variant?.cost?.amount || 0.0;
 
             // merge the dupliate variant and remove the old one
             if (existingItem && existingItem.uuid !== cartItem.uuid) {
@@ -375,7 +376,7 @@ export class CartItemsService {
             cartItem.quantity = finalQuantity;
             cartItem.subTotal = {
                 amount: pricePerUnit * finalQuantity,
-                currencyCode: variant.price.currencyCode
+                currencyCode: variant.cost.currencyCode
             };
 
             const savedItem = await this.cartRepository.save(cartItem);

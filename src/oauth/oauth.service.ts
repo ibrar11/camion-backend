@@ -20,6 +20,7 @@ import { ConfigService } from '@nestjs/config';
 import { TokenDto } from './dto/token.dto';
 import { ClientsService } from '../clients/clients.service';
 import { ClientRefreshToken } from './entities/oauth-refresh-token.entity';
+import { ClientStatus } from 'src/clients/enums/client-status';
 
 @Injectable()
 export class OauthService {
@@ -104,7 +105,7 @@ export class OauthService {
             });
         }
 
-        if (client.status !== 'Active') {
+        if (client.status !== ClientStatus.ACTIVE) {
             throw new UnauthorizedException({
                 error: 'Client is not active',
             });
@@ -182,7 +183,7 @@ export class OauthService {
 
         const client = await this.clientsService.findByUuidWithSecret(existingToken.clientUuid);
 
-        if (!client || client.status !== 'Active') {
+        if (!client || client.status !== ClientStatus.ACTIVE) {
             throw new UnauthorizedException({
                 error: 'Client is not active',
             });

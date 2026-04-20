@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
-import { WeightUnit } from 'src/inventory/enums/WeightUnit';
+import { WeightUnit } from 'src/inventory/enums/WeightUnit.enum';
 
 import shippingRatesData from 'src/data/shipping-rates.json';
 

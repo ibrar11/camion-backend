@@ -7,7 +7,7 @@ import {
 } from "class-validator";
 
 import { TransactionType } from "../enums/TransactionType.enum";
-import { CurrencyCode } from "../../inventory/enums/CurrencyCode";
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
 
 export class CreateTransactionDto {
 	@IsNumber()
