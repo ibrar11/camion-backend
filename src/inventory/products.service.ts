@@ -20,8 +20,8 @@ import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 
 import { Product } from './entities/product.entity';
 
-import { ProductStatus } from './enums/ProductStatus';
-import { ProductSort } from "./enums/ProductSort";
+import { ProductStatus } from './enums/ProductStatus.enum';
+import { ProductSort } from "./enums/ProductSort.enum";
 
 import { Category } from "./entities/category.entity";
 import { ProductCategory } from "./entities/product-category.entity";
@@ -79,7 +79,7 @@ export class ProductsService {
 
 		// Find the categories and create product categories.
 		// This is to join the categories to its associated product.
-		if (body.categories !== null && body.categories.length !== 0) {
+		if (body.categories !== null && Array.isArray(body.categories)) {
 			body.categories
 				.filter((categoryUUID, index) => body.categories.indexOf(categoryUUID) === index)
 				.forEach(async categoryUUID => {
@@ -144,6 +144,9 @@ export class ProductsService {
 						optionValue: true,
 					},
 					images: true,
+				},
+				productCategories: {
+					category: true,
 				},
 			},
 			order: {
@@ -284,6 +287,9 @@ export class ProductsService {
 							},
 							images: true,
 						},
+						productCategories: {
+							category: true,
+						},
 					},
 					order: {
 						id: "DESC",
@@ -296,7 +302,7 @@ export class ProductsService {
 				// Subquery to sort variants of a product by minimum price
 				const leastExpensiveVariantQuery = this.productRepository
 					.manager.createQueryBuilder(ProductVariant, 'v')
-					.select('MIN(v.price_amount)', 'minPriceAmount')
+					.select('MIN(v.cost_amount)', 'minCostAmount')
 					.where('v.product_id = product.id')
 					.getQuery();
 
@@ -304,6 +310,10 @@ export class ProductsService {
 					// Populate options and their values
 					.leftJoinAndSelect('product.options', 'options')
 					.leftJoinAndSelect('options.values', 'optionValues')
+
+					// Populate product categories
+					.leftJoinAndSelect('product.productCategories', 'productCategories')
+					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
@@ -326,7 +336,7 @@ export class ProductsService {
 			case ProductSort.PriceHighToLow:
 				const mostExpensiveVariantQuery = this.productRepository
 					.manager.createQueryBuilder(ProductVariant, 'v')
-					.select('MAX(v.price_amount)', 'maxPriceAmount')
+					.select('MAX(v.cost_amount)', 'maxCostAmount')
 					.where('v.product_id = product.id')
 					.getQuery();
 
@@ -334,6 +344,10 @@ export class ProductsService {
 					// Populate options and their values
 					.leftJoinAndSelect('product.options', 'options')
 					.leftJoinAndSelect('options.values', 'optionValues')
+
+					// Populate product categories
+					.leftJoinAndSelect('product.productCategories', 'productCategories')
+					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
@@ -372,7 +386,9 @@ export class ProductsService {
 
 		// Find the source product with its categories
 		const product = await this.productRepository.findOne({
-			where: { slug: slug.toLowerCase().trim(), },
+			where: {
+				slug: slug.toLowerCase().trim(),
+			},
 			relations: {
 				productCategories: {
 					category: true,
@@ -399,6 +415,9 @@ export class ProductsService {
 							optionValue: true,
 						},
 						images: true,
+					},
+					productCategories: {
+						category: true,
 					},
 				},
 				order: {
@@ -452,6 +471,9 @@ export class ProductsService {
 					},
 					images: true,
 				},
+				productCategories: {
+					category: true,
+				},
 			},
 			order: {
 				id: "DESC",
@@ -486,6 +508,9 @@ export class ProductsService {
 						optionValue: true,
 					},
 					images: true,
+				},
+				productCategories: {
+					category: true,
 				},
 			},
 			order: {
@@ -522,6 +547,9 @@ export class ProductsService {
 					},
 					images: true,
 				},
+				productCategories: {
+					category: true,
+				},
 			},
 			order: {
 				id: "DESC",
@@ -544,7 +572,9 @@ export class ProductsService {
 
 		// Find the source product
 		const product = await this.productRepository.findOne({
-			where: { slug: slug.toLowerCase().trim(), },
+			where: {
+				slug: slug.toLowerCase().trim(),
+			},
 			relations: {
 				productCategories: {
 					category: true,
@@ -571,6 +601,9 @@ export class ProductsService {
 							optionValue: true,
 						},
 						images: true,
+					},
+					productCategories: {
+						category: true,
 					},
 				},
 				order: {
@@ -624,6 +657,9 @@ export class ProductsService {
 					},
 					images: true,
 				},
+				productCategories: {
+					category: true,
+				},
 			},
 			order: {
 				id: "DESC",
@@ -654,6 +690,9 @@ export class ProductsService {
 						optionValue: true,
 					},
 					images: true,
+				},
+				productCategories: {
+					category: true,
 				},
 				reviews: {
 					customer: true,
@@ -692,6 +731,9 @@ export class ProductsService {
 						optionValue: true,
 					},
 					images: true,
+				},
+				productCategories: {
+					category: true,
 				},
 				reviews: {
 					customer: true,
@@ -747,7 +789,7 @@ export class ProductsService {
 
 		// Find the categories and create product categories.
 		// This is to join the categories to its associated product.
-		if (body.categories !== null && body.categories.length !== 0) {
+		if (body.categories !== null && Array.isArray(body.categories)) {
 			body.categories
 				.filter((categoryUUID, index) => body.categories.indexOf(categoryUUID) === index)
 				.forEach(async categoryUUID => {

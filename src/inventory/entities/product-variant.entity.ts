@@ -18,9 +18,9 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { CurrencyCode } from "../enums/CurrencyCode";
-import { WeightUnit } from "../enums/WeightUnit";
-import { DimensionsUnit } from "../enums/DimensionsUnit";
+import { CurrencyCode } from "../enums/CurrencyCode.enum";
+import { WeightUnit } from "../enums/WeightUnit.enum";
+import { DimensionsUnit } from "../enums/DimensionsUnit.enum";
 
 import { Product } from "./product.entity";
 import { ProductVariantImage } from "./product-variant-image.entity";
@@ -99,6 +99,9 @@ export class ProductVariant {
 	@ManyToOne(() => Product, (product) => product.variants, { onDelete: "CASCADE", })
 	product: Product;
 
+	@JoinColumn()
+	productId: number;
+
 	@OneToOne(() => InventoryItem, (item) => item.variant)
 	@JoinColumn()
 	inventoryItem: InventoryItem;
@@ -123,8 +126,14 @@ export class ProductVariant {
 	barcode: string;
 
 	@Field(() => Money)
-	@Column(() => Money)
 	price: Money;
+
+	@Field(() => Money)
+	discountedPrice: Money;
+
+	@Field(() => Money)
+	@Column(() => Money)
+	cost: Money;
 
 	@Field(() => Weight)
 	@Column(() => Weight)
@@ -133,6 +142,9 @@ export class ProductVariant {
 	@Field(() => Dimensions)
 	@Column(() => Dimensions)
 	dimensions: Dimensions;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	salesCount: number;
 
 	@Field(() => [ProductVariantOptionValue])
 	@OneToMany(() => ProductVariantOptionValue, (productVariantOptionValue) => productVariantOptionValue.variant, { cascade: true, })

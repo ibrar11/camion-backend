@@ -10,7 +10,7 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { CurrencyCode } from "../enums/CurrencyCode";
+import { CurrencyCode } from "../enums/CurrencyCode.enum";
 import { ProductVariant } from "./product-variant.entity";
 
 export class Money {

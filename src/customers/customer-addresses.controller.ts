@@ -29,7 +29,7 @@ import { RolesGuard } from "src/auth/roles.guard";
 import { Roles } from "src/auth/roles.decorator";
 import { CustomerRole } from "./enums/CustomerRole";
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/customer-addresses")
 export class CustomerAddressesController {
 	constructor(@Inject(CustomerAddressesService) private readonly customerAddressService: CustomerAddressesService) { }

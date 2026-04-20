@@ -12,7 +12,7 @@ import { Exclude } from "class-transformer";
 import { Wallet } from "./wallet.entity";
 
 import { TransactionType } from "../enums/TransactionType.enum";
-import { CurrencyCode } from "../../inventory/enums/CurrencyCode";
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
 import { Field, ObjectType } from "@nestjs/graphql";
 
 @ObjectType()
