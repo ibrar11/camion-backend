@@ -64,6 +64,8 @@ import { ClientsModule } from '../clients/clients.module';
 
 import { CartItem } from '../cart/entities/cart-items.entity';
 
+import { PricingModule } from '../pricing/pricing.module';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -83,9 +85,10 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 			InventoryItem,
 			InventoryLevel,
 			Warehouse,
-			CartItem
+			CartItem,
 		]),
 		ClientsModule,
+		PricingModule,
 	],
 	providers: [
 		S3Service,

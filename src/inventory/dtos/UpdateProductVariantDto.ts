@@ -13,9 +13,9 @@ import {
 
 import { Type } from "class-transformer";
 
-import { CurrencyCode } from "../enums/CurrencyCode";
-import { WeightUnit } from "../enums/WeightUnit";
-import { DimensionsUnit } from "../enums/DimensionsUnit";
+import { CurrencyCode } from "../enums/CurrencyCode.enum";
+import { WeightUnit } from "../enums/WeightUnit.enum";
+import { DimensionsUnit } from "../enums/DimensionsUnit.enum";
 
 export class TitleField {
 	@IsString()

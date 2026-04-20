@@ -6,26 +6,28 @@ import {
     Inject,
 } from '@nestjs/common';
 
-import { generateSlug } from 'src/common/slug';
-import { fetchImageAsFile } from 'src/common/fetchImage';
+import { generateSlug } from '../common/slug';
+import { fetchImageAsFile } from '../common/fetchImage';
+import { smartRoundInt } from '../common/smartRound';
+import { extractFormattedText } from '../common/extractFormattedText';
 
-import { CurrencyCode } from 'src/inventory/enums/CurrencyCode';
-import { WeightUnit } from 'src/inventory/enums/WeightUnit';
-import { DimensionsUnit } from 'src/inventory/enums/DimensionsUnit';
+import { CurrencyCode } from 'src/inventory/enums/CurrencyCode.enum';
+import { WeightUnit } from 'src/inventory/enums/WeightUnit.enum';
+import { DimensionsUnit } from 'src/inventory/enums/DimensionsUnit.enum';
 
 import { ImportProductDto } from './dtos/ImportProductDto';
 
-import { CreateProductVariantDto } from 'src/inventory/dtos/CreateProductVariantDto';
+import { CreateProductVariantDto } from '../inventory/dtos/CreateProductVariantDto';
 
-import { ProductsService } from 'src/inventory/products.service';
+import { ProductsService } from '../inventory/products.service';
 
-import { ProductVariantService } from 'src/inventory/product-variant.service';
+import { ProductVariantService } from '../inventory/product-variant.service';
 
-import { ProductOptionService } from 'src/inventory/product-option.service';
+import { ProductOptionService } from '../inventory/product-option.service';
 
-import { ProductOptionValueService } from 'src/inventory/product-option-value.service';
+import { ProductOptionValueService } from '../inventory/product-option-value.service';
 
-import { ProductVariantImageService } from 'src/inventory/product-variant-image.service';
+import { ProductVariantImageService } from '../inventory/product-variant-image.service';
 
 import {
     ProductAttribute,
@@ -107,7 +109,7 @@ export class ProcurementService {
             // Format the products
             const formattedProducts = products?.map((item) => ({
                 externalId: item.offerId,
-                title: item.subjectTrans || item.subject,
+                title: (item.subjectTrans || item.subject).slice(0,128),
                 price: parseFloat(
                     item.priceInfo?.promotionPrice ||
                     item.priceInfo?.price ||
@@ -188,9 +190,11 @@ export class ProcurementService {
                 });
             }
 
-            const description = product.description;
+            const description = extractFormattedText(product.description);
 
-            const descriptionTrans = product.descriptionTrans ?? '';
+            const descriptionTrans = product.descriptionTrans ?
+                extractFormattedText(product.descriptionTrans)
+                : description;
 
             const skus = product.productSkuInfos ?? [];
 
@@ -247,13 +251,15 @@ export class ProcurementService {
             }));
 
             const slug = generateSlug(product.subjectTrans || product.subject);
+            const title = product.subjectTrans || product.subject;
             // Format the Product
             const formattedProduct = {
                 externalId: product.offerId,
                 slug: slug,
-                title: product.subjectTrans || product.subject,
+                title: title.slice(0, 128),
                 description: description,
                 descriptionTrans: descriptionTrans,
+                descriptionHtml: product.description,
                 images: product.productImage?.images || [],
                 mainImage: product.productImage?.images?.[0] || null,
                 video: product.mainVideo,
@@ -274,10 +280,10 @@ export class ProcurementService {
                     level3: product.thirdCategoryId,
                 },
                 shipping: {
-                    weight: product.productShippingInfo?.weight,
-                    length: product.productShippingInfo?.length,
-                    width: product.productShippingInfo?.width,
-                    height: product.productShippingInfo?.height,
+                    weight: smartRoundInt(product.productShippingInfo?.weight),
+                    length: smartRoundInt(product.productShippingInfo?.length),
+                    width: smartRoundInt(product.productShippingInfo?.width),
+                    height: smartRoundInt(product.productShippingInfo?.height),
                     origin: product.productShippingInfo?.sendGoodsAddressText,
                 },
                 meta: {
@@ -331,7 +337,7 @@ export class ProcurementService {
                             // 1. Fetch product details from 1688
                             const productDetails = await this.getProductDetail(id);
 
-                            // 2. create product in database and 
+                            // 2. create product in database and
                             const product = await this.productService.createProduct({
                                 slug: productDetails.slug,
                                 title: {
@@ -339,7 +345,7 @@ export class ProcurementService {
                                     ar: productDetails.title
                                 },
                                 description: {
-                                    en: productDetails.description, //need to update through admin dashboard
+                                    en: productDetails.descriptionTrans, //need to update through admin dashboard
                                     ar: productDetails.description //need to update through admin dashboard
                                 },
                                 brief: {
@@ -347,10 +353,10 @@ export class ProcurementService {
                                     ar: '' //need to add through admin dashboard
                                 },
                                 descriptionHtml: {
-                                    en: productDetails.description,
-                                    ar: productDetails.description
+                                    en: productDetails.descriptionHtml,
+                                    ar: productDetails.descriptionHtml
                                 },
-                                categories: [] //need to add categories through admin dashboard
+                                categories: dto.categories //need to add categories through admin dashboard
                             });
 
                             const optionValuesUuids: string[] = []
@@ -411,7 +417,7 @@ export class ProcurementService {
                             // 4. create product variants and product variant images
                             if (productDetails.variants?.length) {
                                 const VARIANT_BATCH_SIZE = 5;
-
+                                const warehouse = dto.warehouseUUID;
                                 for (let i = 0; i < productDetails.variants.length; i += VARIANT_BATCH_SIZE) {
                                     const batch = productDetails.variants.slice(i, i + VARIANT_BATCH_SIZE);
 
@@ -419,7 +425,7 @@ export class ProcurementService {
                                         batch.map(async (variant) => {
                                             try {
                                                 const dto: CreateProductVariantDto = {
-                                                    warehouse: '02637c52-5770-4769-8da0-ee00e8c46b16', //currently using dummy warehouse, need to replace it with default warehouse
+                                                    warehouse: warehouse,
                                                     title: {
                                                         en: variant.title ?? '',
                                                         ar: variant.title ?? '',
@@ -427,7 +433,7 @@ export class ProcurementService {
                                                     sku: variant.skuId?.toString() || crypto.randomUUID(),
                                                     barcode: variant.skuId?.toString() || '',
                                                     quantity: variant.stock || 0,
-                                                    price: {
+                                                    cost: {
                                                         amount: variant.price || 0,
                                                         currencyCode: CurrencyCode.USD,
                                                     },
@@ -455,7 +461,7 @@ export class ProcurementService {
                                                 await this.variantImageService.createProductVariantImage(createdVariant.uuid, imageFile);
 
                                             } catch (error: any) {
-                                                this.logger.error(`Variant creation failed for product ${product.uuid}: ${error?.message}`,error);
+                                                this.logger.error(`Variant creation failed for product ${product.uuid}: ${error?.message}`, error);
                                             }
                                         }),
                                     );
@@ -484,7 +490,7 @@ export class ProcurementService {
             this.logger.error(`Error importing products: ${error?.message || error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to import products',
-                details: error.response?.error || error.message,
+                details: error.response?.error || error,
             });
         }
     }

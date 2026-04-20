@@ -70,7 +70,7 @@ export class ProductVariantService {
 		variant.titleAr = body.title.ar.trim();
 		variant.sku = body.sku.trim();
 		variant.barcode = body.barcode.trim();
-		variant.price = body.price;
+		variant.cost = body.cost;
 		variant.weight = body.weight;
 		variant.dimensions = body.dimensions;
 		await this.variantRepository.save(variant);
@@ -92,7 +92,7 @@ export class ProductVariantService {
 
 		// Find the product option values and create product variant option values
 		// This is to join the product option values to its associated product variant.
-		if (body.optionValues !== null && body.optionValues.length !== 0) {
+		if (body.optionValues !== null && Array.isArray(body.optionValues)) {
 			body.optionValues
 				.filter((optionValueUUID, index) => body.optionValues.indexOf(optionValueUUID) === index)
 				.forEach(async optionValueUUID => {
@@ -188,7 +188,7 @@ export class ProductVariantService {
 		variant.titleAr = body.title.ar.trim();
 		variant.sku = body.sku.trim();
 		variant.barcode = body.barcode.trim();
-		variant.price = body.price;
+		variant.cost = body.price;
 		variant.weight = body.weight;
 		variant.dimensions = body.dimensions;
 		return this.variantRepository.save(variant);

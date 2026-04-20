@@ -17,7 +17,7 @@ import { Exclude } from "class-transformer";
 
 import { AffiliateStatus } from "../enums/AffiliateStatus.enum";
 import { AffiliateType } from "../enums/AffiliateType.enum";
-import { CurrencyCode } from "../../inventory/enums/CurrencyCode";
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
 
 import { Coupon } from "./coupon.entity";
 import { Customer } from "../../customers/entities/customer.entity";

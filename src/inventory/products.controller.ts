@@ -20,7 +20,7 @@ import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 
 import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from '../customers/enums/CustomerRole';
-import { ProductSort } from './enums/ProductSort';
+import { ProductSort } from './enums/ProductSort.enum';
 
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';

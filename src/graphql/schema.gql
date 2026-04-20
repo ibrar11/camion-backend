@@ -198,7 +198,7 @@ type Product {
   titleAr: String!
   titleEn: String!
   uuid: String!
-  variants: [ProductVariant!]!
+  variants(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
 }
 
 type ProductOption {
@@ -235,10 +235,12 @@ type ProductReviewImage {
 
 type ProductVariant {
   barcode: String!
+  cost: Money!
   dimensions: Dimensions!
+  discountedPrice(currency: String! = "usd", language: String! = "en", slug: String! = ""): Money!
   images: [ProductVariantImage!]!
   optionValues: [ProductVariantOptionValue!]!
-  price: Money!
+  price(currency: String! = "usd", language: String! = "en", slug: String! = ""): Money!
   sku: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!

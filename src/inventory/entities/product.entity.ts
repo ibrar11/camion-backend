@@ -14,7 +14,7 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { ProductStatus } from "../enums/ProductStatus";
+import { ProductStatus } from "../enums/ProductStatus.enum";
 
 import { ProductOption } from "./product-option.entity";
 import { ProductVariant } from "./product-variant.entity";
@@ -93,6 +93,9 @@ export class Product {
 		default: ProductStatus.DRAFT,
 	})
 	status: ProductStatus;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	salesCount: number;
 
 	@Field(() => [ProductOption])
 	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, })
