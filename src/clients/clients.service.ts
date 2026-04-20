@@ -74,7 +74,7 @@ export class ClientsService {
             throw new NotFoundException({
                 error: "Failed to find the client. Please check and try again.",
             });
-	    }
+        }
         return client;
     }
 
@@ -94,7 +94,7 @@ export class ClientsService {
             throw new NotFoundException({
                 error: "Failed to find the client. Please check and try again.",
             });
-	    }
+        }
         Object.assign(client, dto);
 
         return this.clientRepository.save(client);
@@ -113,7 +113,9 @@ export class ClientsService {
         });
 
         if (!client) {
-            throw new NotFoundException(`Client ${uuid} not found`);
+            throw new NotFoundException({
+                error: `Client ${uuid} not found`,
+            });
         }
 
         client.status = status;
@@ -155,7 +157,9 @@ export class ClientsService {
         });
 
         if (!client) {
-            throw new NotFoundException(`Client ${uuid} not found`);
+            throw new NotFoundException({
+                error: `Client ${uuid} not found`,
+            });
         }
 
         Object.assign(client, data);
@@ -164,7 +168,7 @@ export class ClientsService {
     }
 
     /**
-     * Deletes a client by UUID. 
+     * Deletes a client by UUID.
      * DELETE operations are idempotent; no error is thrown if the client does not exist.
      *
      * @param uuid - The UUID of the client to delete

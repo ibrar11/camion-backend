@@ -1,8 +1,9 @@
-import { IsOptional, IsString, Length, MaxLength } from "class-validator";
+import { IsOptional, IsString, Length, MaxLength, MinLength } from "class-validator";
 
 export class UpdateCurrencyDto {
 	@IsOptional()
 	@IsString()
+	@MinLength(1)
 	@MaxLength(64)
 	name?: string;
 

@@ -5,6 +5,7 @@ import {
 	CreateDateColumn,
 	Entity,
 	OneToMany,
+	OneToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -17,6 +18,11 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 import { CustomerAddress } from "./customer-address.entity";
 import { LoginRequest } from "../../auth/entities/login-request.entity";
 import { ProductReview } from "../../inventory/entities/product-review.entity";
+import { Affiliate } from "../../referral/entities/affiliate.entity";
+
+import { Order } from "../../order/entities/order.entity";
+
+import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
 
 @ObjectType()
 @Entity({ name: "customers" })
@@ -75,6 +81,12 @@ export class Customer {
 	@OneToMany(() => CartItem, (cartItem) => cartItem.customer, { cascade: true, })
 	cartItems: Array<CartItem>;
 
+	@OneToMany(() => Order, (order) => order.customer)
+	orders: Array<Order>;
+
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.customer, { cascade: true, })
+	wishlistItems: Array<WishlistItem>;
+
 	@OneToMany(() => CustomerAddress, (customerAddress) => customerAddress.customer, { cascade: true, })
 	addresses: Array<CustomerAddress>;
 
@@ -84,6 +96,9 @@ export class Customer {
 	@Exclude()
 	@OneToMany(() => LoginRequest, (loginRequest) => loginRequest.customer, { cascade: true, })
 	loginRequests: Array<LoginRequest>;
+
+	@OneToOne(() => Affiliate, (affiliate) => affiliate.customer)
+	affiliate: Affiliate;
 
 	@Exclude()
 	@UpdateDateColumn({

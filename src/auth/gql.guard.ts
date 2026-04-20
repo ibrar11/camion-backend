@@ -15,6 +15,8 @@ import { JwtService } from "@nestjs/jwt";
 
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
+import { ClientStatus } from "../clients/enums/client-status";
+
 import { UsersService } from "../users/users.service";
 import { CustomersService } from "src/customers/customers.service";
 import { ClientsService } from "src/clients/clients.service";
@@ -46,6 +48,19 @@ export class GqlAuthGuard implements CanActivate {
 				throw new UnauthorizedException();
 			}
 
+			// We don't store the guest auth token in cache since guest are already logged out
+			// So, if the payload type is guest, we just allow them to continue
+			if (payload.type === "guest") {
+				const customer = await this.customersService.findOne(payload.sub);
+				if (customer === null || !customer.isActive) {
+					throw new UnauthorizedException();
+				}
+
+				request["jti"] = payload.jti;
+				request["customer"] = customer;
+				return true;
+			}
+
 			// Make sure the token exists in the cache
 			const tokenExists = await this.cacheManager.get(
 				payload.type === "user"
@@ -62,7 +77,7 @@ export class GqlAuthGuard implements CanActivate {
 			if (payload.type === "client") {
 				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
 
-				if (!client || client.status !== 'Active') {
+				if (!client || client.status !== ClientStatus.ACTIVE) {
 					throw new UnauthorizedException();
 				}
 

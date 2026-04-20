@@ -2,6 +2,40 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Affiliate {
+  bio: String!
+  couponsCreated: Float!
+  couponsUsed: Float!
+  createdAt: DateTime!
+  fullName: String!
+  gender: String!
+  nationality: String!
+  remainingBalance: AffiliateMoney!
+  status: String!
+  topProduct: Product
+  totalCommission: AffiliateMoney!
+  totalPaid: AffiliateMoney!
+  trendingCoupon: Coupon
+  type: String!
+  uuid: String!
+  wallet: Wallet!
+}
+
+type AffiliateMoney {
+  amount: Float!
+  currencyCode: String!
+}
+
+type BankAccount {
+  accountHolderName: String!
+  accountNumber: String!
+  bankName: String!
+  iban: String!
+  isDefault: Boolean!
+  swiftCode: String!
+  uuid: String!
+}
+
 type Banner {
   imageUrl: String!
   isActive: Boolean!
@@ -13,6 +47,14 @@ type Banner {
   uuid: String!
 }
 
+type CartItem {
+  product: Product!
+  quantity: Int!
+  subTotal: Money!
+  uuid: String!
+  variant: ProductVariant!
+}
+
 type Category {
   children: [Category!]!
   name(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
@@ -20,6 +62,15 @@ type Category {
   nameEn: String!
   slug: String!
   thumbnailUrl: String
+  uuid: String!
+}
+
+type Coupon {
+  code: String!
+  createdAt: DateTime!
+  discountPercentage: Float!
+  expiresAt: DateTime!
+  ordersCount: Float!
   uuid: String!
 }
 
@@ -97,6 +148,27 @@ type Notification {
   uuid: String!
 }
 
+type Order {
+  discount: Money!
+  eta: String!
+  orderItems: [OrderItem!]!
+  shippingCost: Money!
+  status: String!
+  subTotal: Money!
+  total: Money!
+  uuid: String!
+}
+
+type OrderItem {
+  order: Order!
+  price: Money!
+  product: Product!
+  quantity: Int!
+  total: Money!
+  uuid: String!
+  variant: ProductVariant!
+}
+
 type PollElement {
   options: PollOptionElement!
   question: String!
@@ -126,7 +198,7 @@ type Product {
   titleAr: String!
   titleEn: String!
   uuid: String!
-  variants: [ProductVariant!]!
+  variants(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
 }
 
 type ProductOption {
@@ -149,17 +221,26 @@ type ProductOptionValue {
 type ProductReview {
   comment: String!
   customer: Customer!
+  images: [ProductReviewImage!]!
   isEdited: Boolean!
   rating: Int!
   uuid: String!
 }
 
+type ProductReviewImage {
+  imageUrl: String!
+  thumbnailUrl: String!
+  uuid: String!
+}
+
 type ProductVariant {
   barcode: String!
+  cost: Money!
   dimensions: Dimensions!
+  discountedPrice(currency: String! = "usd", language: String! = "en", slug: String! = ""): Money!
   images: [ProductVariantImage!]!
   optionValues: [ProductVariantOptionValue!]!
-  price: Money!
+  price(currency: String! = "usd", language: String! = "en", slug: String! = ""): Money!
   sku: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!
@@ -191,8 +272,18 @@ type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCurrencies: [Currency!]!
+  getCurrentAffiliate: Affiliate
+  getCurrentAffiliateBankAccounts(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [BankAccount!]!
+  getCurrentAffiliateCoupons(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Coupon!]!
+  getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
+  getCurrentCustomerOrder(uuid: String!): Order!
+  getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
+  getCustomerCart(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
+  getCustomerCartCount: Float!
+  getCustomerWishlist(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
+  getCustomerWishlistCount: Float!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
@@ -244,7 +335,37 @@ type TextElement {
   en: String!
 }
 
+type Transaction {
+  amount: TransactionMoney!
+  createdAt: DateTime!
+  description: String!
+  type: String!
+  uuid: String!
+}
+
+type TransactionMoney {
+  amount: Float!
+  currencyCode: String!
+}
+
+type Wallet {
+  amount: WalletMoney!
+  amountAvailable: WalletMoney!
+  amountPending: WalletMoney!
+  uuid: String!
+}
+
+type WalletMoney {
+  amount: Float!
+  currencyCode: String!
+}
+
 type Weight {
   amount: Int!
   unit: String!
+}
+
+type WishlistItem {
+  product: Product!
+  uuid: String!
 }

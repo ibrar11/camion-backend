@@ -9,21 +9,24 @@ import {
 	IsString,
 	IsUUID,
 	MaxLength,
+	MinLength,
 	ValidateNested,
 } from "class-validator";
 
 import { Type } from "class-transformer";
 
-import { CurrencyCode } from "../enums/CurrencyCode";
-import { WeightUnit } from "../enums/WeightUnit";
-import { DimensionsUnit } from "../enums/DimensionsUnit";
+import { CurrencyCode } from "../enums/CurrencyCode.enum";
+import { WeightUnit } from "../enums/WeightUnit.enum";
+import { DimensionsUnit } from "../enums/DimensionsUnit.enum";
 
 export class TitleField {
 	@IsString()
+	@MinLength(1)
 	@MaxLength(128)
 	en: string;
 
 	@IsString()
+	@MinLength(1)
 	@MaxLength(128)
 	ar: string;
 }
@@ -69,12 +72,14 @@ export class CreateProductVariantDto {
 	title: TitleField;
 
 	@IsString()
+	@MinLength(1)
 	sku: string;
 
 	@IsNumber()
 	quantity: number;
 
 	@IsString()
+	@MinLength(1)
 	barcode: string;
 
 	@IsDefined()
@@ -82,7 +87,7 @@ export class CreateProductVariantDto {
 	@IsObject()
 	@ValidateNested()
 	@Type(() => Money)
-	price: Money;
+	cost: Money;
 
 	@IsDefined()
 	@IsNotEmpty()

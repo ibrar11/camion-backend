@@ -62,7 +62,6 @@ export class CustomersService {
 			// Make sure we don't create another customer using the same email address
 			if (customerByEmailAddress !== null) {
 				throw new BadRequestException({
-					status: "fail",
 					errors: {
 						emailAddress: "Email address already exists. Please use a different email address.",
 					},
@@ -79,7 +78,6 @@ export class CustomersService {
 			// Make sure we don't create another customer using the same phone number
 			if (customerByPhoneNumber !== null) {
 				throw new BadRequestException({
-					status: "fail",
 					errors: {
 						phoneNumber: "Phone number already exists. Please use a different phone number.",
 					},
@@ -90,7 +88,6 @@ export class CustomersService {
 		// Make sure at least one ID is available
 		if (body.emailAddress === null && body.phoneNumber === null) {
 			throw new BadRequestException({
-				status: "fail",
 				errors: {
 					emailAddress: "Please provide your email address.",
 				},
@@ -125,7 +122,7 @@ export class CustomersService {
 		const customer = await this.customerRepository.findOneBy({ uuid: uuid, });
 		if (customer === null) {
 			throw new NotFoundException({
-				status: "fail",
+				error: "Faild",
 			});
 		}
 		return customer;
@@ -143,10 +140,7 @@ export class CustomersService {
 		const customer = await this.customerRepository.findOneBy({ uuid: uuid, });
 		if (customer === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "Failed to find the customer by the provided uuid. Please check and try again.",
-				},
+				error: "Failed to find the customer by the provided uuid. Please check and try again.",
 			});
 		}
 
@@ -170,9 +164,8 @@ export class CustomersService {
 		// Make sure we don't create another customer using the same email address
 		if (customerByEmailAddress !== null && customerByEmailAddress.uuid !== uuid) {
 			throw new BadRequestException({
-				status: "fail",
 				errors: {
-					error: "Email address already exists. Please use a different email address.",
+					emailAddress: "Email address already exists. Please use a different email address.",
 				},
 			});
 		}
@@ -181,10 +174,7 @@ export class CustomersService {
 		const customer = await this.customerRepository.findOneBy({ uuid: uuid, });
 		if (customer === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "Failed to find the customer by the provided id. Please check and try again.",
-				},
+				error: "Failed to find the customer by the provided id. Please check and try again.",
 			});
 		}
 
@@ -204,10 +194,7 @@ export class CustomersService {
 		const customer = await this.customerRepository.findOneBy({ uuid: uuid, });
 		if (customer === null) {
 			throw new BadRequestException({
-				status: "fail",
-				errors: {
-					error: "Failed to find the customer by the provided id. Please check and try again.",
-				},
+				error: "Failed to find the customer by the provided id. Please check and try again.",
 			});
 		}
 
@@ -242,7 +229,9 @@ export class CustomersService {
 		});
 
 		if (!customer) {
-			throw new NotFoundException('Customer not found');
+			throw new NotFoundException({
+				error: 'Customer not found',
+			});
 		}
 
 		if (customer.deletedAt) {
@@ -269,11 +258,15 @@ export class CustomersService {
 		});
 
 		if (!customer) {
-			throw new NotFoundException('Customer not found');
+			throw new NotFoundException({
+				error: 'Customer not found',
+			});
 		}
 
 		if (customer.deletedAt) {
-			throw new BadRequestException('Account already deleted');
+			throw new BadRequestException({
+				error: 'Account already deleted',
+			});
 		}
 
 		customer.markedForDeletionAt = null;

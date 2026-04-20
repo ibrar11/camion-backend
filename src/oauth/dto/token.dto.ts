@@ -1,12 +1,14 @@
-import { IsString, IsIn, IsOptional } from 'class-validator';
+import { IsString, IsIn, IsOptional, MinLength } from 'class-validator';
 
 export class TokenDto {
     @IsOptional()
     @IsString()
+    @MinLength(1)
     client_id?: string;
 
     @IsOptional()
     @IsString()
+    @MinLength(1)
     client_secret?: string;
 
     @IsString()
@@ -15,5 +17,6 @@ export class TokenDto {
 
     @IsOptional()
     @IsString()
+    @MinLength(1)
     refresh_token?: string;
 }

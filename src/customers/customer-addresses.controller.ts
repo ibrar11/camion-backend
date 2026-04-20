@@ -17,20 +17,24 @@ import {
 
 import { CreateCustomerAddressDto } from "./dtos/CreateCustomerAddressDto";
 import { UpdateCustomerAddressDto } from "./dtos/UpdateCustomerAddressDto";
+import { PatchCustomerAddressDto } from "./dtos/PatchCustomerAddressDto";
 
 import { Customer } from "./entities/customer.entity";
 
 import { CustomerAddress } from "./entities/customer-address.entity";
 import { CustomerAddressesService } from "./customer-addresses.service";
-import { PatchCustomerAddressDto } from "./dtos/PatchCustomerAddressDto";
 
 import { AuthGuard } from "../auth/auth.guard";
+import { RolesGuard } from "src/auth/roles.guard";
+import { Roles } from "src/auth/roles.decorator";
+import { CustomerRole } from "./enums/CustomerRole";
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/customer-addresses")
 export class CustomerAddressesController {
 	constructor(@Inject(CustomerAddressesService) private readonly customerAddressService: CustomerAddressesService) { }
 
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateCustomerAddress(
@@ -44,6 +48,7 @@ export class CustomerAddressesController {
 		return this.customerAddressService.createCustomerAddress(req.customer.uuid, body);
 	}
 
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetCustomerAddresses(
@@ -57,6 +62,7 @@ export class CustomerAddressesController {
 		return this.customerAddressService.findAllByCustomer(req.customer.uuid, pageNumber, itemsPerPage);
 	}
 
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetCustomerAddress(
@@ -69,6 +75,7 @@ export class CustomerAddressesController {
 		return this.customerAddressService.findOne(req.customer.uuid, customerAddressUUID);
 	}
 
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Patch(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionPatchCustomerAddressAsDefault(
@@ -82,6 +89,7 @@ export class CustomerAddressesController {
 		return this.customerAddressService.patchCustomerAddressAsDefault(req.customer.uuid, customerAddressUUID, body);
 	}
 
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Put(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateCustomerAddress(
@@ -95,6 +103,7 @@ export class CustomerAddressesController {
 		return this.customerAddressService.updateCustomerAddress(req.customer.uuid, customerAddressUUID, body);
 	}
 
+	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Delete(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionDeleteCustomerAddress(

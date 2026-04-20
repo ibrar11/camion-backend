@@ -16,15 +16,15 @@ import {
 import { CreateWarehouseDto } from "./dtos/CreateWarehouseDto";
 import { UpdateWarehouseDto } from "./dtos/UpdateWarehouseDto";
 
-import { UserRole } from "src/users/enums/UserRole";
+import { UserRole } from "../users/enums/UserRole";
 
 import { Warehouse } from "./entities/warehouse.entity";
 import { WarehouseService } from "./warehouse.service";
 
-import { AuthGuard } from "src/auth/auth.guard";
-import { RolesGuard } from "src/auth/roles.guard";
+import { AuthGuard } from "../auth/auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
 
-import { Roles } from "src/auth/roles.decorator";
+import { Roles } from "../auth/roles.decorator";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/warehouses")

@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { SnakeNamingStrategy } from "typeorm-naming-strategies";
+
 import { Module } from '@nestjs/common';
 
 import {
@@ -48,6 +50,7 @@ import { ProductCategory } from "./inventory/entities/product-category.entity";
 import { ProductOption } from "./inventory/entities/product-option.entity";
 import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
 import { ProductReview } from "./inventory/entities/product-review.entity";
+import { ProductReviewImage } from "./inventory/entities/product-review-image.entity";
 import { ProductVariant } from "./inventory/entities/product-variant.entity";
 import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
 import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
@@ -83,14 +86,38 @@ import { BannersModule } from './banners/banners.module';
 
 import { NewsletterModule } from "./newsletter/newsletter.module";
 
+import { PaymentTransaction } from "./payments/entities/payment-transaction.entity";
+import { PaymentsModule } from './payments/payments.module';
+
+import { Affiliate } from "./referral/entities/affiliate.entity";
+import { BankAccount } from "./referral/entities/bank-account.entity";
+import { Coupon } from "./referral/entities/coupon.entity";
+import { Transaction } from "./referral/entities/transaction.entity";
+import { Wallet } from "./referral/entities/wallet.entity";
+import { ReferralModule } from './referral/referral.module';
+
 import { Currency } from "./currencies/entities/currency.entity";
 import { CurrenciesModule } from './currencies/currencies.module';
 
 import { Language } from "./languages/entities/language.entity";
 import { LanguagesModule } from './languages/languages.module';
 
+import { Order } from "./order/entities/order.entity";
+import { OrderItem } from "./order/entities/order-item.entity";
+import { OrderModule } from './order/order.module';
+
 import { Notification } from "./notifications/entities/notification.entity";
 import { NotificationsModule } from './notifications/notifications.module';
+
+import { WishlistItem } from "./wishlist/entities/wishlist.entity";
+import { WishlistModule } from './wishlist/wishlist.module';
+
+
+import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
+import { PricingModule } from './pricing/pricing.module';
+
+import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
+import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 
 @Module({
 	imports: [
@@ -104,10 +131,10 @@ import { NotificationsModule } from './notifications/notifications.module';
 			useFactory: (configService: ConfigService) => {
 				return {
 					stores: [
-						new Keyv({
-							store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
-						}),
-						// new KeyvRedis(configService.get<string>('REDIS_URI')),
+						// new Keyv({
+						// 	store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
+						// }),
+						new KeyvRedis(configService.get<string>('REDIS_URI')),
 					],
 				};
 			},
@@ -128,6 +155,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 				username: configService.get<string>("DB_USERNAME"),
 				password: configService.get<string>("DB_PASSWORD"),
 				database: configService.get<string>("DB_DATABASE"),
+				synchronize: true,
+				namingStrategy: new SnakeNamingStrategy(),
 				entities: [
 					User,
 
@@ -145,6 +174,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 					ProductOption,
 					ProductOptionValue,
 					ProductReview,
+					ProductReviewImage,
 					ProductVariant,
 					ProductVariantImage,
 					ProductVariantInventoryItem,
@@ -158,8 +188,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 					Currency,
 
 					Language,
-                    
-                    Post,
+
+					Post,
 
 					ClientRefreshToken,
 
@@ -170,9 +200,24 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 					Banner,
 
-                    Notification,
+					Order,
+					OrderItem,
+
+					PaymentTransaction,
+
+					Notification,
+					Affiliate,
+					BankAccount,
+					Coupon,
+					Transaction,
+					Wallet,
+
+					WishlistItem,
+
+					ExchangeRate,
+
+					KeyValuePair,
 				],
-				synchronize: true,
 			}),
 		}),
 		JwtModule.registerAsync({
@@ -214,8 +259,14 @@ import { NotificationsModule } from './notifications/notifications.module';
         NewsletterModule,
 		CurrenciesModule,
 		LanguagesModule,
-        NotificationsModule,
+		NotificationsModule,
 		ScheduleModule.forRoot(),
+		OrderModule,
+		PaymentsModule,
+		ReferralModule,
+		WishlistModule,
+		PricingModule,
+		KeyValuePairsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

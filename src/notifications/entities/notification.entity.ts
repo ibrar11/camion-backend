@@ -10,7 +10,7 @@ import {
 import { Exclude } from "class-transformer";
 import { NotificationType } from "../enums/notification-type.enum";
 import { NotificationPriority } from "../enums/notification-priority.enum";
-import { Customer } from "src/customers/entities/customer.entity";
+import { Customer } from "../../customers/entities/customer.entity";
 
 @ObjectType()
 @Entity({ name: "notifications" })

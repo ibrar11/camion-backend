@@ -14,14 +14,18 @@ import {
 
 import { Exclude } from "class-transformer";
 
-import { ProductStatus } from "../enums/ProductStatus";
+import { ProductStatus } from "../enums/ProductStatus.enum";
 
 import { ProductOption } from "./product-option.entity";
 import { ProductVariant } from "./product-variant.entity";
 import { ProductCategory } from "./product-category.entity";
 import { ProductReview } from "./product-review.entity";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
+import { CartItem } from "../../cart/entities/cart-items.entity";
+
+import { OrderItem } from "../../order/entities/order-item.entity";
+
+import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
 
 @ObjectType()
 @Entity({ name: "products", })
@@ -90,6 +94,9 @@ export class Product {
 	})
 	status: ProductStatus;
 
+	@Column({ type: "integer", nullable: false, default: 0, })
+	salesCount: number;
+
 	@Field(() => [ProductOption])
 	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, })
 	options: Array<ProductOption>;
@@ -107,6 +114,12 @@ export class Product {
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@OneToMany(() => OrderItem, (orderItem) => orderItem.product)
+	orderItems: Array<OrderItem>;
+
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product)
+	wishlistItems: Array<WishlistItem>;
 
 	@Exclude()
 	@Column({

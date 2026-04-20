@@ -30,7 +30,7 @@ import { Post as PostEntity } from './entities/post.entity';
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/posts')
 export class PostsController {
-    constructor(private readonly postsService: PostsService) {}
+    constructor(private readonly postsService: PostsService) { }
 
     /**
      * Create post
@@ -49,7 +49,6 @@ export class PostsController {
      * Get all posts
      */
     @Get()
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
     @HttpCode(HttpStatus.OK)
     async actionGetPosts(): Promise<PostEntity[]> {
         return this.postsService.findAll();
@@ -59,7 +58,6 @@ export class PostsController {
      * Get single post
      */
     @Get(':uuid')
-    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
     @HttpCode(HttpStatus.OK)
     async actionGetPost(@Param('uuid') uuid: string): Promise<PostEntity> {
         return this.postsService.findOne(uuid);

@@ -42,7 +42,7 @@ export class BannersController {
 		return this.bannersService.createBanner(file);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles()
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetBanners(
@@ -54,7 +54,7 @@ export class BannersController {
 		return this.bannersService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles()
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetBanner(@Param('uuid') uuid: string): Promise<Banner> {

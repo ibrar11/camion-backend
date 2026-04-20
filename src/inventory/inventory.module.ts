@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { S3Service } from 'src/common/s3.service';
+import { S3Service } from '../common/s3.service';
 
 import { User } from '../users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from '../users/users.service';
 
-import { Customer } from 'src/customers/entities/customer.entity';
-import { CustomersService } from 'src/customers/customers.service';
+import { Customer } from '../customers/entities/customer.entity';
+import { CustomersService } from '../customers/customers.service';
 
 import { Category } from './entities/category.entity';
 import { CategoriesService } from './categories.service';
@@ -47,6 +47,9 @@ import { ProductReview } from './entities/product-review.entity';
 import { ProductReviewService } from './product-review.service';
 import { ProductReviewController } from './product-review.controller';
 
+import { ProductReviewImage } from './entities/product-review-image.entity';
+import { ProductReviewImageService } from './product-review-image.service';
+
 import { ProductVariantInventoryItem } from './entities/product-variant-inventory-item.entity';
 import { ProductVariantOptionValue } from './entities/product-variant-option-value.entity';
 
@@ -59,7 +62,9 @@ import { WarehouseController } from './warehouse.controller';
 
 import { ClientsModule } from '../clients/clients.module';
 
-import { CartItem } from 'src/cart/entities/cart-items.entity';
+import { CartItem } from '../cart/entities/cart-items.entity';
+
+import { PricingModule } from '../pricing/pricing.module';
 
 @Module({
 	imports: [
@@ -72,6 +77,7 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 			ProductOption,
 			ProductOptionValue,
 			ProductReview,
+			ProductReviewImage,
 			ProductVariant,
 			ProductVariantImage,
 			ProductVariantInventoryItem,
@@ -79,9 +85,10 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 			InventoryItem,
 			InventoryLevel,
 			Warehouse,
-			CartItem
+			CartItem,
 		]),
 		ClientsModule,
+		PricingModule,
 	],
 	providers: [
 		S3Service,
@@ -93,6 +100,7 @@ import { CartItem } from 'src/cart/entities/cart-items.entity';
 		ProductOptionService,
 		ProductOptionValueService,
 		ProductReviewService,
+		ProductReviewImageService,
 		ProductsService,
 		ProductVariantImageService,
 		ProductVariantService,

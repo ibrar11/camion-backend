@@ -1,4 +1,8 @@
-import { IsUUID, IsNumber, Min } from "class-validator";
+import { 
+    IsUUID, 
+    IsNumber, 
+    Min 
+} from "class-validator";
 
 export class CreateCartItemDto {
     @IsUUID()

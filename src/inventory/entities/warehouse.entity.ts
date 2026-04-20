@@ -10,6 +10,7 @@ import {
 import { Exclude } from "class-transformer";
 
 import { InventoryLevel } from "./inventory-level.entity";
+import { OrderItem } from "../../order/entities/order-item.entity";
 
 @Entity({ name: "warehouses" })
 export class Warehouse {
@@ -43,6 +44,9 @@ export class Warehouse {
 
 	@OneToMany(() => InventoryLevel, (level) => level.warehouse)
 	levels: Array<InventoryLevel>;
+
+	@OneToMany(() => OrderItem, (item) => item.warehouse)
+	orderItems: Array<OrderItem>;
 
 	@Column({ type: "boolean", default: true, })
 	isActive: boolean;

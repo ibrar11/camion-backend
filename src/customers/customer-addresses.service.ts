@@ -187,7 +187,7 @@ export class CustomerAddressesService {
 	 * @returns
 	 */
 	async patchCustomerAddressAsDefault(customerUUID: string, customerAddressUUID: string, body: PatchCustomerAddressDto): Promise<CustomerAddress> {
-		this.logger.log(`Updating customer address: ${customerAddressUUID}`);
+		this.logger.log(`Patching customer address: ${customerAddressUUID} as default`);
 
 		// Find the customer
 		const customer = await this.customerRepository.findOneBy({ uuid: customerUUID, });
