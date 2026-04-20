@@ -268,6 +268,14 @@ type ProductVariantOptionValue {
   optionValue: ProductOptionValue!
 }
 
+type Promo {
+  callToActionLink: String!
+  callToActionText: String!
+  name: String!
+  text: String!
+  uuid: String!
+}
+
 type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
@@ -291,6 +299,7 @@ type Query {
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
   getProductsByCategory(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!, sort: String! = "best-match"): [Product!]!
+  getPromos(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Promo!]!
   getRecentlyViewedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getRecommendedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
   getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!

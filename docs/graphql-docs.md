@@ -66,6 +66,7 @@ The following features are currently supported by the GraphQL API.
 - Get Current Affiliate Bank Accounts
 - Get Current Affiliate Coupons
 - Get Current Customer Orders
+- Get Promos
 
 Get Current Customer
 --------------------
@@ -7666,6 +7667,44 @@ query GetCustomerCartCount {
 {
     "data": {
         "getCustomerCartCount": 1
+    }
+}
+```
+
+Get Promos
+----------
+
+```graphql
+query Promos($pageNumber: Int, $itemsPerPage: Int) {
+    getPromos(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        name
+        text
+        callToActionText
+        callToActionLink
+    }
+}
+```
+
+```json
+{
+    "pageNumber": 1,
+    "itemsPerPage": 100
+}
+```
+
+```json
+{
+    "data": {
+        "getPromos": [
+            {
+                "uuid": "bced1f96-3e75-40e4-a651-0cfbc8d94326",
+                "name": "summer-sale-2027",
+                "text": "Summer Sale For All Swim Suits And Free Express Delivery - OFF 80%!",
+                "callToActionText": "Shop More",
+                "callToActionLink": "https://app.dev.camiontrading.com/fr/shop"
+            }
+        ]
     }
 }
 ```

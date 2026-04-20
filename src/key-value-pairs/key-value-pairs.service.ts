@@ -75,6 +75,9 @@ export class KeyValuePairsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.keyValuePairRepository.find({
+			order: {
+				id: "DESC",
+			},
 			skip: skip,
 			take: take,
 		});
