@@ -14,16 +14,18 @@ import {
 	Resolver,
 } from "@nestjs/graphql";
 
-import { ProductSort } from "./enums/ProductSort";
+import { ProductSort } from "./enums/ProductSort.enum";
 
 import { Product } from "./entities/product.entity";
 import { ProductOption } from "./entities/product-option.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
-import { ProductVariant } from "./entities/product-variant.entity";
+import { Money, ProductVariant } from "./entities/product-variant.entity";
 
 import { ProductsService } from "./products.service";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
+import { PricingService } from "src/pricing/pricing.service";
+import { CurrencyCode } from "./enums/CurrencyCode.enum";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -181,7 +183,9 @@ export class GetRecentlyViewedProductsArgs {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Product)
 export class ProductsResolver {
-	constructor(@Inject(ProductsService) private readonly productsService: ProductsService) { }
+	constructor(
+		@Inject(ProductsService) private readonly productsService: ProductsService,
+	) { }
 
 	@ResolveField("title", () => String)
 	getTitle(@Parent() product: Product, @Args() args: GetProductsArgs): string {
@@ -229,6 +233,11 @@ export class ProductsResolver {
 		};
 
 		return descriptionHtmlMap[language] ?? product.descriptionHtmlEn;
+	}
+
+	@ResolveField("variants", () => [ProductVariant])
+	getVariants(@Parent() product: Product, @Args() args: GetProductsArgs): Array<ProductVariant> {
+		return product.variants.map(variant => ({ ...variant, product: product, }))
 	}
 
 	@Query(() => [Product])
@@ -313,6 +322,20 @@ export class ProductOptionValueResolver {
 
 @Resolver(() => ProductVariant)
 export class ProductVariantResolver {
+	constructor(
+		@Inject(PricingService) private readonly pricingService: PricingService,
+	) { }
+
+	@ResolveField("price", () => Money)
+	async getPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
+		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, false);
+	}
+
+	@ResolveField("discountedPrice", () => Money)
+	async getDiscountedPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
+		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, true);
+	}
+
 	@ResolveField("title", () => String)
 	getName(@Parent() productVariant: ProductVariant, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";

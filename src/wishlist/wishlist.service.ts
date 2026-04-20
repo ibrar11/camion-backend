@@ -10,17 +10,16 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { getSkipAndTake } from "../common/pagination";
 
 import { CreateWishlistDto } from './dtos/CreateWishListDto';
 
+import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
+
 import { Customer } from '../customers/entities/customer.entity';
-
 import { WishlistItem } from './entities/wishlist.entity';
-
 import { Product } from '../inventory/entities/product.entity';
 
 @Injectable()
@@ -62,7 +61,7 @@ export class WishlistService {
                 }
             });
 
-            if (!product || product.status !== 'ACTIVE') {
+            if (!product || product.status !== ProductStatus.ACTIVE) {
                 throw new BadRequestException({
                     error: 'Product not available'
                 });

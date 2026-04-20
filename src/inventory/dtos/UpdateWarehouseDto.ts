@@ -5,7 +5,7 @@ import {
 	MinLength,
 } from "class-validator";
 
-import { CountryCode } from "../enums/CountryCode";
+import { CountryCode } from "../enums/CountryCode.enum";
 
 export class UpdateWarehouseDto {
 	@IsString()

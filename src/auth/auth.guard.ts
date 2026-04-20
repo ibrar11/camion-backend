@@ -13,6 +13,8 @@ import { JwtService } from "@nestjs/jwt";
 
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
+import { ClientStatus } from "../clients/enums/client-status";
+
 import { UsersService } from "../users/users.service";
 import { CustomersService } from "src/customers/customers.service";
 import { ClientsService } from "src/clients/clients.service";
@@ -73,7 +75,7 @@ export class AuthGuard implements CanActivate {
 			if (payload.type === "client") {
 				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
 
-				if (!client || client.status !== 'Active') {
+				if (!client || client.status !== ClientStatus.ACTIVE) {
 					throw new UnauthorizedException();
 				}
 

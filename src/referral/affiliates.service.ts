@@ -21,7 +21,7 @@ import { UpdateAffiliateTypeDto } from "./dtos/UpdateAffiliateTypeDto";
 import { AffiliateStatus } from "./enums/AffiliateStatus.enum";
 import { AffiliateType } from "./enums/AffiliateType.enum";
 import { CustomerRole } from "../customers/enums/CustomerRole";
-import { CurrencyCode } from "../inventory/enums/CurrencyCode";
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { Affiliate, AffiliateMoney } from './entities/affiliate.entity';
 import { Customer } from "../customers/entities/customer.entity";

@@ -126,7 +126,7 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await this.inventoryLevelRepository.save(level);
 
-                const priceAmount = Number(variant.price.amount);
+                const priceAmount = Number(variant.cost.amount);
                 const totalAmount = priceAmount * cart.quantity;
 
                 subTotal += totalAmount;
@@ -139,12 +139,12 @@ export class OrderService {
                 orderItem.warehouse = level.warehouse;
                 orderItem.price = {
                     amount: priceAmount,
-                    currencyCode: variant.price.currencyCode,
+                    currencyCode: variant.cost.currencyCode,
                 };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
                     amount: totalAmount,
-                    currencyCode: variant.price.currencyCode,
+                    currencyCode: variant.cost.currencyCode,
                 };
 
                 await this.orderItemRepository.save(orderItem);
@@ -152,7 +152,7 @@ export class OrderService {
                 orderItems.push(orderItem)
             }
 
-            const currency = cartItems[0].variant.price.currencyCode;
+            const currency = cartItems[0].variant.cost.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
 
             const address = await this.addressRepository.findOne({
@@ -477,7 +477,7 @@ export class OrderService {
                     });
                 }
 
-                const itemTotal = item.variant.price.amount * item.quantity;
+                const itemTotal = item.variant.cost.amount * item.quantity;
                 subtotal += itemTotal;
 
                 validatedItems.push({

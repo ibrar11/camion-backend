@@ -1,4 +1,4 @@
-import { WeightUnit } from "src/inventory/enums/WeightUnit";
+import { WeightUnit } from "src/inventory/enums/WeightUnit.enum";
 
 import { CartItem } from "src/cart/entities/cart-items.entity";
 
