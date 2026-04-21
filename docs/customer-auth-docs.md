@@ -18,7 +18,8 @@ POST /v1/auth/customer/register HTTP/1.1
     "fullName": "Your Name",
     "emailAddress": "your-name@your-domain.com",
     "countryCode": "QA",
-    "phoneNumber": "12345678"
+    "phoneNumber": "12345678",
+    "guestUUID": "1234534"
 }
 ```
 
@@ -49,7 +50,8 @@ POST /v1/auth/customer/login/email-address HTTP/1.1
 ### Request Body
 ```json
 {
-    "emailAddress": "your-name@your-domain.com"
+    "emailAddress": "your-name@your-domain.com",
+    "guestUUID": "1234534"
 }
 ```
 
@@ -94,7 +96,8 @@ POST /v1/auth/customer/login/phone-number HTTP/1.1
 ```json
 {
     "countryCode": "QA",
-    "phoneNumber": "12345678"
+    "phoneNumber": "12345678",
+    "guestUUID": "1234534"
 }
 ```
 

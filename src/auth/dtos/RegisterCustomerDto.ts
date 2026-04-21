@@ -24,6 +24,6 @@ export class RegisterCustomerDto {
 	phoneNumber: string;
 
 	@IsString()
-	@IsUUID(1)
+	@IsUUID()
 	guestUUID: string;
 }
