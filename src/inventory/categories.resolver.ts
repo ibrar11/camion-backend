@@ -48,6 +48,22 @@ export class CategoriesResolver {
 		return nameMap[locale] ?? category.nameEn;
 	}
 
+	@ResolveField("thumbnailUrl", () => String)
+	getThumbnailUrl(@Parent() category: Category): string {
+		if (category === null || category.thumbnailUrl === null) {
+			return "";
+		}
+
+		const segments = category.thumbnailUrl.split("/");
+		if (category.thumbnailUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (category.thumbnailUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
 	@Query(() => [Category])
 	getCategories(@Args() args: GetCategoriesArgs): Promise<Array<Category>> {
 		return this.categoriesService.findAll("", "", args.pageNumber, args.itemsPerPage);
