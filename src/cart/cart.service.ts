@@ -171,7 +171,9 @@ export class CartItemsService {
                 where,
                 relations: {
                     product: true,
-                    variant: true,
+                    variant: {
+                        product: true
+                    },
                     customer: true
                 },
                 order: { id: 'DESC' },
