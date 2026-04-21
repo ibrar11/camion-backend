@@ -327,12 +327,12 @@ export class ProductVariantResolver {
 	) { }
 
 	@ResolveField("price", () => Money)
-	async getPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
+	getPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
 		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, false);
 	}
 
 	@ResolveField("discountedPrice", () => Money)
-	async getDiscountedPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
+	getDiscountedPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
 		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, true);
 	}
 
