@@ -15,10 +15,10 @@ export class S3Service {
 	constructor(private readonly configService: ConfigService) {
 		this.s3 = new S3Client({
 			region: this.configService.get<string>("AWS_S3_REGION"),
-			credentials: {
-				accessKeyId: this.configService.get("AWS_S3_ACCESS_KEY_ID") as string,
-				secretAccessKey: this.configService.get("AWS_S3_SECRET_ACCESS_KEY") as string,
-			},
+			// credentials: {
+			// 	accessKeyId: this.configService.get("AWS_S3_ACCESS_KEY_ID") as string,
+			// 	secretAccessKey: this.configService.get("AWS_S3_SECRET_ACCESS_KEY") as string,
+			// },
 		});
 	}
 
