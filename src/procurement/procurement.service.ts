@@ -36,8 +36,13 @@ import {
     SearchProductItem,
     SearchProducts,
     SkuAttribute,
-    importedProduct
+    importedProduct,
+    CreateOrderResponse,
+    BulkCreateOrderResponse,
 } from './types';
+
+import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
+import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
 
 
 @Injectable()
@@ -491,6 +496,163 @@ export class ProcurementService {
             throw new InternalServerErrorException({
                 error: 'Failed to import products',
                 details: error.response?.error || error,
+            });
+        }
+    }
+
+    /**
+     * Groups flat order items by shop_id (falls back to shop_name), merging skus
+     * and summing goods_amount and freight_fee within each group.
+     */
+    private groupOrdersByShop(orders: BulkCreateProcurementOrderDto['orders']) {
+        const groupMap = new Map<string, typeof orders>();
+
+        for (const order of orders) {
+            const key = order.shop_id || order.shop_name || `__ungrouped__${orders.indexOf(order)}`;
+            if (!groupMap.has(key)) groupMap.set(key, []);
+            groupMap.get(key)!.push(order);
+        }
+
+        return Array.from(groupMap.values()).map((group) => {
+            const first = group[0];
+
+            const mergedSkus = group.flatMap((o) => o.skus);
+
+            const totalGoodsAmount = group
+                .reduce((sum, o) => sum + parseFloat(o.goods_amount || '0'), 0)
+                .toString();
+
+            const totalFreightFee = group
+                .reduce((sum, o) => sum + parseFloat(o.freight_fee || '0'), 0)
+                .toString();
+
+            const name = group.map((o) => o.name).join(' | ').slice(0, 256);
+
+            const remark = group.map((o) => o.remark).filter(Boolean).join(' | ') || undefined;
+
+            return {
+                ...first,
+                name,
+                goods_amount: totalGoodsAmount,
+                freight_fee: totalFreightFee,
+                remark,
+                skus: mergedSkus,
+            };
+        });
+    }
+
+    /**
+     * Creates multiple Gulltrans daigou orders, auto-grouping products by shop,
+     * with a shared delivery address.
+     *
+     * @param dto
+     * @returns
+     */
+    async bulkCreateOrder(dto: BulkCreateProcurementOrderDto): Promise<BulkCreateOrderResponse> {
+        const results: BulkCreateOrderResponse = { success: [], failed: [] };
+
+        const grouped = this.groupOrdersByShop(dto.orders);
+
+        const BATCH_SIZE = 3;
+
+        for (let i = 0; i < grouped.length; i += BATCH_SIZE) {
+            const batch = grouped.slice(i, i + BATCH_SIZE);
+
+            await Promise.all(
+                batch.map(async (order) => {
+                    try {
+                        const response = await fetch(
+                            `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
+                                    'X-Uuid': process.env.GULLTRANS_UUID || '',
+                                    'Content-Type': 'application/json',
+                                    Language: 'en',
+                                },
+                                body: JSON.stringify({
+                                    ...order,
+                                    address: dto.address,
+                                    warehouse_id: process.env.GULLTRANS_WAREHOUSE_ID || '',
+                                    user_id: process.env.GULLTRANS_USER_ID || '',
+                                }),
+                            },
+                        );
+
+                        const data = await response.json();
+
+                        if (data.ret !== 1) {
+                            results.failed.push({
+                                shopId: order.shop_id,
+                                reason: data.msg,
+                            });
+                            return;
+                        }
+
+                        results.success.push({
+                            shopId: order.shop_id,
+                            orderId: data?.data?.order_id,
+                            raw: data?.data,
+                        });
+                    } catch (error: any) {
+                        this.logger.error(`Error creating order for shop ${order.shop_id}: ${error?.message}`);
+                        results.failed.push({
+                            shopId: order.shop_id,
+                            reason: error?.message || 'Unknown error',
+                        });
+                    }
+                }),
+            );
+        }
+
+        return results;
+    }
+
+    /**
+     * Creates a Gulltrans daigou order (passthrough)
+     *
+     * @param dto
+     * @returns
+     */
+    async createOrder(dto: CreateProcurementOrderDto): Promise<CreateOrderResponse> {
+        try {
+            const response = await fetch(
+                `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
+                        'X-Uuid': process.env.GULLTRANS_UUID || '',
+                        'Content-Type': 'application/json',
+                        Language: 'en',
+                    },
+                    body: JSON.stringify({
+                        ...dto,
+                        warehouse_id: process.env.GULLTRANS_WAREHOUSE_ID || '',
+                        user_id: process.env.GULLTRANS_USER_ID || '',
+                    }),
+                },
+            );
+
+            const data = await response.json();
+
+            if (data.ret !== 1) {
+                throw new BadRequestException({
+                    error: data.msg,
+                });
+            }
+
+            return {
+                success: true,
+                orderId: data?.data?.order_id,
+                raw: data?.data,
+            };
+        } catch (error: any) {
+            this.logger.error(`Error creating order: ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to create order',
+                details: error.response?.error || error.message,
             });
         }
     }
