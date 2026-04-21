@@ -109,7 +109,7 @@ export class ProcurementService {
             // Format the products
             const formattedProducts = products?.map((item) => ({
                 externalId: item.offerId,
-                title: (item.subjectTrans || item.subject).slice(0,128),
+                title: (item.subjectTrans || item.subject).slice(0, 128),
                 price: parseFloat(
                     item.priceInfo?.promotionPrice ||
                     item.priceInfo?.price ||
@@ -223,6 +223,7 @@ export class ProcurementService {
                 }) ?? [];
 
                 const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
+                const shippingInfo = product.productShippingInfo.skuShippingDetails.find(detail => detail.skuId === sku.skuId.toString());
 
                 return {
                     title: title,
@@ -235,8 +236,14 @@ export class ProcurementService {
                     ),
                     stock: sku.amountOnSale,
                     attributes,
-                    image:
-                        sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0],
+                    image: sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0],
+                    shipping: {
+                        weight: smartRoundInt(shippingInfo.weight),
+                        length: smartRoundInt(shippingInfo.length),
+                        width: smartRoundInt(shippingInfo.width),
+                        height: smartRoundInt(shippingInfo.height),
+                        origin: product.productShippingInfo.sendGoodsAddressText,
+                    },
                 };
             });
 
@@ -278,13 +285,6 @@ export class ProcurementService {
                     level1: product.topCategoryId,
                     level2: product.secondCategoryId,
                     level3: product.thirdCategoryId,
-                },
-                shipping: {
-                    weight: smartRoundInt(product.productShippingInfo?.weight),
-                    length: smartRoundInt(product.productShippingInfo?.length),
-                    width: smartRoundInt(product.productShippingInfo?.width),
-                    height: smartRoundInt(product.productShippingInfo?.height),
-                    origin: product.productShippingInfo?.sendGoodsAddressText,
                 },
                 meta: {
                     rating: parseFloat(product.tradeScore || '0'),
@@ -438,13 +438,13 @@ export class ProcurementService {
                                                         currencyCode: CurrencyCode.USD,
                                                     },
                                                     weight: {
-                                                        amount: productDetails.shipping?.weight || 0,
+                                                        amount: variant.shipping?.weight || 0,
                                                         unit: WeightUnit.Kilograms,
                                                     },
                                                     dimensions: {
-                                                        width: productDetails.shipping?.width || 0,
-                                                        height: productDetails.shipping?.height || 0,
-                                                        length: productDetails.shipping?.length || 0,
+                                                        width: variant.shipping?.width || 0,
+                                                        height: variant.shipping?.height || 0,
+                                                        length: variant.shipping?.length || 0,
                                                         unit: DimensionsUnit.Centimeter
                                                     },
                                                     optionValues: optionValuesUuids,
