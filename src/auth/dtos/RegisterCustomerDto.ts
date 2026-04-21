@@ -2,6 +2,7 @@ import {
 	IsEmail,
 	IsNotEmpty,
 	IsString,
+	IsUUID,
 	MinLength,
 } from "class-validator";
 
@@ -21,4 +22,8 @@ export class RegisterCustomerDto {
 	@IsString()
 	@MinLength(1)
 	phoneNumber: string;
+
+	@IsString()
+	@IsUUID(1)
+	guestUUID: string;
 }

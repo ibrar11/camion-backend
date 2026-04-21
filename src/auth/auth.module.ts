@@ -22,6 +22,8 @@ import { GuestAuthController } from './guest-auth.controller';
 
 import { LoginRequest } from './entities/login-request.entity';
 
+import { CartItem } from '../cart/entities/cart-items.entity';
+
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
 
@@ -31,6 +33,7 @@ import { RolesGuard } from './roles.guard';
             User,
             Customer,
             LoginRequest,
+            CartItem
         ]),
         UsersModule,
         ClientsModule,
