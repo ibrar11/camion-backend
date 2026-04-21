@@ -1,6 +1,7 @@
 import {
 	IsEmail,
 	IsNotEmpty,
+	IsOptional,
 	IsString,
 	IsUUID,
 	MinLength,
@@ -23,7 +24,8 @@ export class RegisterCustomerDto {
 	@MinLength(1)
 	phoneNumber: string;
 
+	@IsOptional()
 	@IsString()
 	@IsUUID()
-	guestUUID: string;
+	guestUUID?: string;
 }
