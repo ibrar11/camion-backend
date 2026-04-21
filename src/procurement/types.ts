@@ -88,6 +88,13 @@ export interface ProductVariant {
         value: string;
     }[];
     image: string | null;
+    shipping: {
+        weight: number;
+        length: number;
+        width: number;
+        height: number;
+        origin: string;
+    },
 }
 
 export interface ProductOption {
@@ -127,14 +134,6 @@ export interface ProductDetail {
         level1: number;
         level2: number;
         level3: number;
-    };
-
-    shipping: {
-        weight?: number;
-        length?: number;
-        width?: number;
-        height?: number;
-        origin?: string;
     };
 
     meta: {

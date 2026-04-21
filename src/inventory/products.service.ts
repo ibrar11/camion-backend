@@ -868,13 +868,13 @@ export class ProductsService {
 		// Create the status of the product
 		let status = ProductStatus.DRAFT;
 		switch (body.status) {
-			case "ACTIVE":
+			case "active":
 				status = ProductStatus.ACTIVE;
 				break;
-			case "ARCHIVED":
+			case "archived":
 				status = ProductStatus.ARCHIVED;
 				break;
-			case "DRAFT":
+			case "draft":
 				status = ProductStatus.DRAFT;
 				break;
 			default: // do nothing
