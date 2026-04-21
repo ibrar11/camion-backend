@@ -7491,6 +7491,26 @@ query GetCustomerWishlist($language: String) {
             description(language: $language)
             descriptionHtml(language: $language)
             status
+            variants {
+                uuid
+                title
+                sku
+                barcode
+                price {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
+            }
         }
     }
 }
@@ -7518,7 +7538,27 @@ query GetCustomerWishlist($language: String) {
                     "brief": "",
                     "description": "",
                     "descriptionHtml": "",
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
+                    "variants": {
+                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
+                        "title": "iPhone 17 Red 1 TB",
+                        "sku": "iphone-17-red-1tb",
+                        "barcode": "10000",
+                        "price": {
+                            "amount": 1000,
+                            "currencyCode": "QAR"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1000,
+                            "height": 1000,
+                            "length": 1000,
+                            "unit": "in"
+                        }
+                    }
                 }
             }
         ]
