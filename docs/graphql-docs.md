@@ -7480,8 +7480,8 @@ Get Current Customer WishList
 ### GraphQL Query
 
 ```graphql
-query GetCustomerWishlist($language: String) {
-    getCustomerWishlist(language: $language) {
+query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int, $itemsPerPage: Int) {
+    getCustomerWishlist(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
         uuid
         product {
             uuid
@@ -7496,7 +7496,11 @@ query GetCustomerWishlist($language: String) {
                 title
                 sku
                 barcode
-                price {
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
                     amount
                     currencyCode
                 }
@@ -7519,7 +7523,10 @@ query GetCustomerWishlist($language: String) {
 
 ```json
 {
-    "language": "en",
+    "language": "ar",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 1
 }
 ```
 
@@ -7530,35 +7537,41 @@ query GetCustomerWishlist($language: String) {
     "data": {
         "getCustomerWishlist": [
             {
-                "uuid": "f0fdab43-b693-4762-a997-cc9d3817ba85",
+                "uuid": "ffc0889c-dc10-4a8f-b67b-48834a723598",
                 "product": {
-                    "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
-                    "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
-                    "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
-                    "brief": "",
-                    "description": "",
-                    "descriptionHtml": "",
-                    "status": "ACTIVE",
-                    "variants": {
-                        "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",
-                        "title": "iPhone 17 Red 1 TB",
-                        "sku": "iphone-17-red-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 1000,
-                            "currencyCode": "QAR"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000,
-                            "unit": "in"
+                    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+                    "slug": "iphone-22",
+                    "title": "آيفون 22",
+                    "brief": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+                    "description": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+                    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                    "status": "active",
+                    "variants": [
+                        {
+                            "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+                            "title": "iPhone 20 RED 1 TB",
+                            "sku": "iphone-20-red-1tb",
+                            "barcode": "10000",
+                            "price": {
+                                "amount": 7500,
+                                "currencyCode": "qar"
+                            },
+                            "discountedPrice": {
+                                "amount": 7500,
+                                "currencyCode": "qar"
+                            },
+                            "weight": {
+                                "amount": 1,
+                                "unit": "kg"
+                            },
+                            "dimensions": {
+                                "width": 1000,
+                                "height": 1000,
+                                "length": 1000,
+                                "unit": "in"
+                            }
                         }
-                    }
+                    ]
                 }
             }
         ]

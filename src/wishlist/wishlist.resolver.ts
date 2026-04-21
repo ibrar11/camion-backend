@@ -24,8 +24,11 @@ import { WishlistService } from "./wishlist.service";
 @ArgsType()
 export class GetCustomerWishListArgs {
     @Field({ defaultValue: "en", })
-	language: string;
-    
+    language: string;
+
+    @Field({ defaultValue: "usd", })
+    currency: string;
+
     @Field(() => Int, { defaultValue: 1, })
     pageNumber: number;
 
@@ -45,15 +48,12 @@ export class WishListResolver {
         @Context() context: any,
         @Args() args: GetCustomerWishListArgs
     ): Promise<Array<WishlistItem>> {
-
         const customer: Customer = context.req.customer;
-
         if (!customer) {
             throw new NotFoundException({
                 error: "Failed to find the customer. Please check and try again.",
             });
         }
-
         return this.wishListService.getWishlist(customer, "", "", args.pageNumber, args.itemsPerPage);
 
     }
@@ -62,16 +62,12 @@ export class WishListResolver {
     async getCustomerWishlistCount(
         @Context() context: any,
     ): Promise<number> {
-
         const customer: Customer = context.req.customer;
-
         if (!customer) {
             throw new NotFoundException({
                 error: "Failed to find the customer. Please check and try again.",
             });
         }
-
         return this.wishListService.getWishlistCount(customer);
-
     }
 }

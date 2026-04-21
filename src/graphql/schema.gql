@@ -290,7 +290,7 @@ type Query {
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getCustomerCart(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!
-  getCustomerWishlist(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
+  getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
