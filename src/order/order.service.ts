@@ -18,6 +18,7 @@ import {
 import { OrderStatus } from "./enums/OrderStatus";
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
 import { TransactionType } from "../referral/enums/TransactionType.enum";
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
 
@@ -50,6 +51,8 @@ import { TransactionsService } from "../referral/transactions.service";
 
 import { Affiliate } from "../referral/entities/affiliate.entity";
 
+import { PricingService } from "../pricing/pricing.service";
+
 import {
     calculateCartShipping,
     ShippingCalculationResult
@@ -63,6 +66,7 @@ import {
 } from "../common/calculateCouponDiscount";
 
 import {
+    OrderFilters,
     OrderPreviewResponse,
 } from "./types";
 
@@ -83,6 +87,7 @@ export class OrderService {
         @Inject(TransactionsService) private readonly transactionsService: TransactionsService,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
+        @Inject(PricingService) private readonly pricingService: PricingService,
     ) { }
 
     /**
@@ -92,7 +97,7 @@ export class OrderService {
      * @param dto
      * @returns
      */
-    async create(customer: Customer, dto: CreateOrderDto): Promise<Order> {
+    async create(customer: Customer, dto: CreateOrderDto, targetCurrency: CurrencyCode = CurrencyCode.QAR): Promise<Order> {
         try {
             this.logger.log(`Attempting to create order for customer: ${customer.fullName}`);
             const address = await this.addressRepository.findOne({
@@ -163,8 +168,10 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await this.inventoryLevelRepository.save(level);
 
-                const priceAmount = Number(variant.cost.amount);
-                const totalAmount = priceAmount * cart.quantity;
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, targetCurrency, false);
+                const discountedPriceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, targetCurrency, true);
+                // const priceAmount = Number(variant.cost.amount);
+                const totalAmount = discountedPriceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
 
@@ -175,8 +182,12 @@ export class OrderService {
                 orderItem.variant = variant;
                 orderItem.warehouse = level.warehouse;
                 orderItem.price = {
-                    amount: priceAmount,
-                    currencyCode: variant.cost.currencyCode,
+                    ...priceAmount,
+                    amount: priceAmount.amount,
+                };
+                orderItem.discountedPrice = {
+                    ...discountedPriceAmount,
+                    amount: discountedPriceAmount.amount,
                 };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
@@ -191,7 +202,7 @@ export class OrderService {
 
             const exchangeRates = await this.exchangeRateService.findAll("", "");
 
-            const currency = cartItems[0].variant.cost.currencyCode;
+            const currency = targetCurrency ?? cartItems[0].variant.cost.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
             const shippingCartItems = cartItems.map(item => ({
                 weight: {
@@ -224,14 +235,9 @@ export class OrderService {
                 },
             });
 
-            // Check if coupon exists
-            if (!coupon) {
-                throw new BadRequestException({
-                    error: "Invalid coupon code. Please check and try again."
-                });
+            if (coupon){
+                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
             }
-
-            discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
 
             const total = subTotal + shippingCost - discount;
 
@@ -283,7 +289,7 @@ export class OrderService {
                     }
 
                     // Create transaction record
-                    const referralTransactionDto : CreateTransactionDto = {
+                    const referralTransactionDto: CreateTransactionDto = {
                         amount: commissionAmount,
                         currencyCode: currency,
                         type: TransactionType.Credit,
@@ -350,12 +356,20 @@ export class OrderService {
      *
      * @returns
      */
-    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Order>> {
+    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+            const filter: OrderFilters = {}
+
+            if (status) {
+                filter.status = status;
+            }
 
             return this.orderRepository.find({
+                where: {
+                    ...filter
+                },
                 relations: {
                     orderItems: {
                         product: true,
@@ -382,15 +396,21 @@ export class OrderService {
      * @param customerUuid
      * @returns
      */
-    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Order>> {
+    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
 
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+            const filter: OrderFilters = {}
+
+            if (status) {
+                filter.status = status
+            }
 
             return this.orderRepository.find({
                 where: {
-                    customer: { uuid: customerUuid }
+                    customer: { uuid: customerUuid },
+                    ...filter,
                 },
                 relations: {
                     orderItems: {

@@ -6,6 +6,7 @@ import {
     NotFoundException,
     Logger,
     InternalServerErrorException,
+    Inject,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
@@ -25,11 +26,15 @@ import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { Customer } from "../customers/entities/customer.entity";
 
+import { PricingService } from "../pricing/pricing.service";
+
 import {
     UpdateCartResponse,
     ValidatedCartItem
 } from "./types";
+
 import { ProductStatus } from "src/inventory/enums/ProductStatus.enum";
+import { CurrencyCode } from "src/inventory/enums/CurrencyCode.enum";
 
 @Injectable()
 export class CartItemsService {
@@ -39,7 +44,7 @@ export class CartItemsService {
         @InjectRepository(CartItem) private readonly cartRepository: Repository<CartItem>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
-        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+        @Inject(PricingService) private readonly pricingService: PricingService,
     ) { }
 
     /**
@@ -48,7 +53,7 @@ export class CartItemsService {
      * @param customer
      * @returns
      */
-    async create(dto: CreateCartItemDto, customer: Customer): Promise<CartItem> {
+    async create(dto: CreateCartItemDto, customer: Customer, currency: CurrencyCode = CurrencyCode.QAR): Promise<CartItem> {
         try {
             const { productUuid, variantUuid, quantity } = dto;
 
@@ -102,7 +107,8 @@ export class CartItemsService {
                 });
             }
 
-            const price = variant?.cost?.amount || 0.0;
+            const price = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, false);
+            const discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, true);
 
             // check if the variant alreadu exists
             const existing = await this.cartRepository.findOne({
@@ -119,15 +125,18 @@ export class CartItemsService {
 
                 if (availableStock < updatedQuantity) {
                     throw new BadRequestException({
-                        error: 'Not enough stock available',
+                        error: `Not enough stock available, Stock:${availableStock}`,
                     });
                 }
 
-                const updatedPrice = price * updatedQuantity;
                 existing.quantity = updatedQuantity;
                 existing.subTotal = {
-                    amount: updatedPrice,
-                    currencyCode: variant.cost.currencyCode
+                    ...price,
+                    amount: price.amount * updatedQuantity,
+                };
+                existing.discountedSubTotal = {
+                    ...discountedPrice,
+                    amount: discountedPrice.amount * updatedQuantity,
                 };
                 return this.cartRepository.save(existing);
             } else {
@@ -138,8 +147,12 @@ export class CartItemsService {
                 cartItem.variant = variant;
                 cartItem.quantity = quantity;
                 cartItem.subTotal = {
-                    amount: price * quantity,
-                    currencyCode: variant.cost.currencyCode
+                    ...price,
+                    amount: price.amount * quantity
+                };
+                cartItem.discountedSubTotal = {
+                    ...discountedPrice,
+                    amount: discountedPrice.amount * quantity
                 };
                 return this.cartRepository.save(cartItem);
             }
@@ -172,6 +185,7 @@ export class CartItemsService {
                 relations: {
                     product: true,
                     variant: true,
+                    customer: true
                 },
                 order: { id: 'DESC' },
                 skip: skip,
@@ -250,7 +264,7 @@ export class CartItemsService {
      * @param customer
      * @returns
      */
-    async update(uuid: string, dto: UpdateCartItemDto, customer: Customer): Promise<UpdateCartResponse> {
+    async update(uuid: string, dto: UpdateCartItemDto, customer: Customer, currency: CurrencyCode = CurrencyCode.QAR): Promise<UpdateCartResponse> {
         try {
             const { productUuid, variantUuid, quantity } = dto;
 
@@ -332,6 +346,8 @@ export class CartItemsService {
             })
 
             const pricePerUnit = variant?.cost?.amount || 0.0;
+            const price = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, false);
+            const discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, true);
 
             // merge the dupliate variant and remove the old one
             if (existingItem && existingItem.uuid !== cartItem.uuid) {
@@ -340,14 +356,18 @@ export class CartItemsService {
 
                 if (availableStock < mergedQuantity) {
                     throw new BadRequestException({
-                        error: 'Insufficient stock after merge',
+                        error: `Insufficient stock after merge. Item already exists with quantity ${existingItem.quantity}`,
                     });
                 }
 
                 existingItem.quantity = mergedQuantity;
                 existingItem.subTotal = {
-                    amount: pricePerUnit * mergedQuantity,
-                    currencyCode: existingItem.subTotal.currencyCode
+                    ...price,
+                    amount: price.amount * mergedQuantity,
+                };
+                existingItem.discountedSubTotal = {
+                    ...discountedPrice,
+                    amount: discountedPrice.amount * mergedQuantity,
                 };
                 existingItem.variant = variant;
 
@@ -375,8 +395,12 @@ export class CartItemsService {
             cartItem.variant = variant;
             cartItem.quantity = finalQuantity;
             cartItem.subTotal = {
-                amount: pricePerUnit * finalQuantity,
-                currencyCode: variant.cost.currencyCode
+                ...price,
+                amount: price.amount * finalQuantity,
+            };
+            cartItem.discountedSubTotal = {
+                ...discountedPrice,
+                amount: discountedPrice.amount * finalQuantity,
             };
 
             const savedItem = await this.cartRepository.save(cartItem);

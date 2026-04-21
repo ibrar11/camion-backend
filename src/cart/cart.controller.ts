@@ -22,6 +22,7 @@ import { Roles } from '../auth/roles.decorator';
 import { CustomerRole } from '../customers/enums/CustomerRole';
 
 import { UserRole } from '../users/enums/UserRole';
+import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
@@ -51,8 +52,9 @@ export class CartItemsController {
     addToCart(
         @Body() dto: CreateCartItemDto,
         @GetCustomer() customer: Customer,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<CartItem> {
-        return this.cartService.create(dto, customer);
+        return this.cartService.create(dto, customer, currency);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
@@ -75,8 +77,9 @@ export class CartItemsController {
         @Param('uuid') uuid: string,
         @Body() dto: UpdateCartItemDto,
         @GetCustomer() customer: Customer,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<UpdateCartResponse> {
-        return this.cartService.update(uuid, dto, customer);
+        return this.cartService.update(uuid, dto, customer, currency);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)

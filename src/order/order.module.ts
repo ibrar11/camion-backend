@@ -38,6 +38,9 @@ import { Affiliate } from '../referral/entities/affiliate.entity';
 import { Transaction } from '../referral/entities/transaction.entity';
 import { TransactionsService } from '../referral/transactions.service';
 
+import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
+import { PricingService } from '../pricing/pricing.service';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -54,7 +57,8 @@ import { TransactionsService } from '../referral/transactions.service';
             Coupon,
             Wallet,
             Affiliate,
-            Transaction
+            Transaction,
+            KeyValuePair,
         ]),
         ClientsModule,
     ],
@@ -67,6 +71,7 @@ import { TransactionsService } from '../referral/transactions.service';
         PaymentStrategyFactory,
         ExchangeRateService,
         TransactionsService,
+        PricingService
     ],
     controllers: [
         OrderController

@@ -48,6 +48,7 @@ type Banner {
 }
 
 type CartItem {
+  discountedSubTotal: Money!
   product: Product!
   quantity: Int!
   subTotal: Money!
@@ -160,6 +161,7 @@ type Order {
 }
 
 type OrderItem {
+  discountedPrice: Money!
   order: Order!
   price: Money!
   product: Product!
@@ -286,7 +288,7 @@ type Query {
   getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
   getCurrentCustomerOrder(uuid: String!): Order!
-  getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
+  getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1, status: String! = "pending"): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getCustomerCart(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!

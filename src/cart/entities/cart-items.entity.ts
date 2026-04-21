@@ -1,7 +1,7 @@
-import { 
+import {
     Field,
     Int,
-    ObjectType 
+    ObjectType
 } from "@nestjs/graphql";
 
 import {
@@ -17,9 +17,9 @@ import { Exclude } from "class-transformer";
 
 import { Product } from "../../inventory/entities/product.entity";
 
-import { 
-    Money, 
-    ProductVariant 
+import {
+    Money,
+    ProductVariant
 } from "../../inventory/entities/product-variant.entity";
 
 import { Customer } from "../../customers/entities/customer.entity";
@@ -54,6 +54,10 @@ export class CartItem {
     @Field(() => Money)
     @Column(() => Money)
     subTotal: Money;
+
+    @Field(() => Money)
+    @Column(() => Money)
+    discountedSubTotal: Money;
 
     @Exclude()
     @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })

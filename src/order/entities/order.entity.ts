@@ -20,7 +20,7 @@ import { Customer } from "../../customers/entities/customer.entity";
 import { OrderItem } from "./order-item.entity";
 
 import { Money } from "../../inventory/entities/product-variant.entity";
-import { PaymentTransaction } from "src/payments/entities/payment-transaction.entity";
+import { PaymentTransaction } from "../../payments/entities/payment-transaction.entity";
 
 @ObjectType()
 @Entity({ name: 'orders', })

@@ -7188,8 +7188,8 @@ Get Current Customer Orders
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
-    getCurrentCustomerOrders(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $status: OrderStatus) {
+    getCurrentCustomerOrders(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage, status: $status) {
         uuid
         status
         subTotal {
@@ -7212,6 +7212,10 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
         orderItems {
             uuid
             price {
+                amount
+                currencyCode
+            }
+            discountedPrice {
                 amount
                 currencyCode
             }
@@ -7254,6 +7258,14 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
 }
 ```
 
+### GraphQL Variables
+
+```json
+{
+    "status": "pending" | "confirmed" | "cancelled" | "delivered" | "payment_pending" | "payment_successful"|  "payment_rejected" ,
+}
+```
+
 ### Response
 
 ```json
@@ -7284,6 +7296,10 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
                     {
                         "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                         "price": {
+                            "amount": 688,
+                            "currencyCode": "USD"
+                        },
+                        "discountedPrice": {
                             "amount": 688,
                             "currencyCode": "USD"
                         },
@@ -7362,6 +7378,10 @@ query GetCurrentCustomerOrder($uuid: string) {
                 amount
                 currencyCode
             }
+            discountedPrice {
+                amount
+                currencyCode
+            }
             quantity
             total {
                 amount
@@ -7430,6 +7450,10 @@ query GetCurrentCustomerOrder($uuid: string) {
                 {
                     "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                     "price": {
+                        "amount": 688,
+                        "currencyCode": "USD"
+                    },
+                    "discountedPrice": {
                         "amount": 688,
                         "currencyCode": "USD"
                     },
@@ -7590,6 +7614,10 @@ query GetCustomerCart($language: String) {
             amount
             currencyCode
         }
+        discountedSubTotal {
+            amount
+            currencyCode
+        }
     }
 }
 ```
@@ -7641,6 +7669,10 @@ query GetCustomerCart($language: String) {
                 },
                 "quantity": 1,
                 "subTotal": {
+                    "amount": 688,
+                    "currencyCode": "USD"
+                },
+                "discountedSubTotal": {
                     "amount": 688,
                     "currencyCode": "USD"
                 }

@@ -18,6 +18,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { CustomerRole } from '../customers/enums/CustomerRole';
+import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 
 import { GetCustomer } from '../customers/customer.decorator';
 
@@ -44,8 +45,9 @@ export class OrderController {
     create(
         @GetCustomer() customer: Customer,
         @Body() dto: CreateOrderDto,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<Order> {
-        return this.orderService.create(customer, dto);
+        return this.orderService.create(customer, dto, currency);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
@@ -57,11 +59,12 @@ export class OrderController {
         @Query("sort") sort: string,
         @Query("pageNumber") pageNumber: number,
         @Query("itemsPerPage") itemsPerPage: number,
+        @Query("status") status: OrderStatus,
     ): Promise<Array<Order>> {
         if (customer) {
-            return this.orderService.findAllByCustomer(customer.uuid, filters, sort, pageNumber, itemsPerPage);
+            return this.orderService.findAllByCustomer(customer.uuid, filters, sort, pageNumber, itemsPerPage, status);
         }
-        return this.orderService.findAll(filters, sort, pageNumber, itemsPerPage);
+        return this.orderService.findAll(filters, sort, pageNumber, itemsPerPage, status);
     }
 
 

@@ -20,6 +20,10 @@ import { ClientsModule } from '../clients/clients.module';
 
 import { CartResolver } from './cart.resolver';
 
+import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
+import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
+import { PricingService } from '../pricing/pricing.service';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -28,6 +32,8 @@ import { CartResolver } from './cart.resolver';
             CartItem,
             Product,
             ProductVariant,
+            ExchangeRate,
+            KeyValuePair,
         ]),
         ClientsModule,
     ],
@@ -36,6 +42,7 @@ import { CartResolver } from './cart.resolver';
         UsersService,
         CustomersService,
         CartResolver,
+        PricingService,
     ],
     controllers: [CartItemsController]
 })
