@@ -84,6 +84,8 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { NewsletterModule } from "./newsletter/newsletter.module";
+
 import { PaymentTransaction } from "./payments/entities/payment-transaction.entity";
 import { PaymentsModule } from './payments/payments.module';
 
@@ -258,6 +260,7 @@ import { Promo } from "./promos/entities/promo.entity";
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+        NewsletterModule,
 		CurrenciesModule,
 		LanguagesModule,
 		NotificationsModule,
