@@ -121,7 +121,7 @@ export class PricingService {
 		}
 
 		// Find the pricing factor based on the last category applied on the product
-		let categoryPricingFactor = 1;
+		let categoryPricingFactor: number = 1;
 		if (lastCategory !== null) {
 			categoryPricingFactor = lastCategory.pricingFactor;
 		}
@@ -129,11 +129,25 @@ export class PricingService {
 		// Get the price_multiplier from the key value pairs
 		let priceMultiplier: number = 1;
 		try {
-			priceMultiplier = this.keyValuePairs["price_multiplier"] as number;
-		} catch { }
+			if (this.keyValuePairs["price_multiplier"]) {
+				priceMultiplier = parseFloat((this.keyValuePairs["price_multiplier"] as unknown) as string);
+			}
+		} catch (err) {
+			this.logger.error(err);
+			priceMultiplier = 1;
+		}
+
+		// Calculate exchange rate factor
+		let exchangeRateFactor: number = 1;
+		try {
+			exchangeRateFactor = parseFloat((exchangeRate.factor as unknown) as string);
+		} catch (err) {
+			this.logger.error(err);
+			exchangeRateFactor = 1;
+		}
 
 		// Calculate the base price based on the cost and the exchange rate.
-		const basePrice = variant.cost.amount * exchangeRate.factor * priceMultiplier;
+		const basePrice = variant.cost.amount * exchangeRateFactor * priceMultiplier;
 
 		// Add to the base price, the profit margin based on the category.
 		// The profit margin will be the base price multiplied by the pricing factor of the last category
@@ -142,28 +156,15 @@ export class PricingService {
 		// If discount isn't applied we return early
 		if (!applyDiscount) {
 			return {
-				amount: Math.ceil(totalPrice),
+				amount: Math.ceil(basePrice),
 				currencyCode: currencyCode,
 			};
 		}
 
-		// Apply discount
-		let discountAbove100 = 0, discountBelow100 = 0;
-		try {
-			discountAbove100 = this.keyValuePairs["discount_above_100"] as number;
-			discountBelow100 = this.keyValuePairs["discount_below_100"] as number;
-		} catch { }
-
-		if (totalPrice > 100) {
-			return {
-				amount: Math.ceil(totalPrice - discountAbove100),
-				currencyCode: currencyCode,
-			};
-		} else {
-			return {
-				amount: Math.ceil(totalPrice - discountBelow100),
-				currencyCode: currencyCode,
-			};
-		}
+		// Apply discount and return the price
+		return {
+			amount: Math.ceil(totalPrice),
+			currencyCode: currencyCode,
+		};
 	}
 }
