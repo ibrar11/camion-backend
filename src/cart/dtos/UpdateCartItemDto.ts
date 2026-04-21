@@ -1,17 +1,17 @@
-import { 
-    IsNumber, 
-    Min, 
-    IsOptional, 
-    IsUUID 
+import {
+    IsNumber,
+    Min,
+    IsOptional,
+    IsUUID
 } from "class-validator";
 
 export class UpdateCartItemDto {
 
-    @IsUUID()
+    @IsUUID('4')
     productUuid: string
 
     @IsOptional()
-    @IsUUID()
+    @IsUUID('4')
     variantUuid: string;
 
     @IsOptional()
