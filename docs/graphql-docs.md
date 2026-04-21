@@ -7491,7 +7491,26 @@ query GetCustomerWishlist($language: String) {
             description(language: $language)
             descriptionHtml(language: $language)
             status
-            variants
+            variants {
+                uuid
+                title
+                sku
+                barcode
+                price {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
+            }
         }
     }
 }
