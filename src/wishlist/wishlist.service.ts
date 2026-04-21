@@ -98,7 +98,11 @@ export class WishlistService {
             const items = await this.wishlistRepository.find({
                 where: { customer: { uuid: customer.uuid } },
                 relations: {
-                    product: true
+                    product: {
+                        variants: {
+                            product: true
+                        }
+                    }
                 },
                 order: { id: 'DESC' },
                 skip: skip,
