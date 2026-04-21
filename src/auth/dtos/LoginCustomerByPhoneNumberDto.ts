@@ -1,4 +1,5 @@
 import {
+	IsOptional,
 	IsString,
 	IsUUID,
 	MinLength,
@@ -13,7 +14,8 @@ export class LoginCustomerByPhoneNumberDto {
 	@MinLength(1)
 	phoneNumber: string;
 
+	@IsOptional()
 	@IsString()
 	@IsUUID()
-	guestUUID: string;
+	guestUUID?: string;
 }

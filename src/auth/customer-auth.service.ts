@@ -121,6 +121,12 @@ export class CustomerAuthService {
 			uuid: body.guestUUID.trim(),
 		});
 
+		if (!guestCustomer) {
+			throw new BadRequestException({
+				errors: `Guest customer for guest uuid ${body.guestUUID} does not exists.`,
+			});
+		}
+
 		if (guestCustomer) {
 			const cartItems = await this.cartItemRepository.find({
 				where: {
