@@ -9,6 +9,6 @@ export function smartRoundInt(
 
     // Decide rounding direction
     return decimalPart >= threshold
-        ? integerPart + 1   // ceil
-        : integerPart;      // floor
+        ? integerPart + 1
+        : integerPart === 0 ? 1 : integerPart; 
 }

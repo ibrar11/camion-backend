@@ -84,6 +84,8 @@ import { StoriesModule } from './stories/stories.module';
 import { Banner } from "./banners/entities/banner.entity";
 import { BannersModule } from './banners/banners.module';
 
+import { NewsletterModule } from "./newsletter/newsletter.module";
+
 import { PaymentTransaction } from "./payments/entities/payment-transaction.entity";
 import { PaymentsModule } from './payments/payments.module';
 
@@ -109,6 +111,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 import { WishlistModule } from './wishlist/wishlist.module';
+import { PromosModule } from './promos/promos.module';
 
 
 import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
@@ -116,6 +119,7 @@ import { PricingModule } from './pricing/pricing.module';
 
 import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
+import { Promo } from "./promos/entities/promo.entity";
 
 @Module({
 	imports: [
@@ -215,6 +219,8 @@ import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 					ExchangeRate,
 
 					KeyValuePair,
+
+					Promo,
 				],
 			}),
 		}),
@@ -254,6 +260,7 @@ import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 		ProcurementModule,
 		StoriesModule,
 		BannersModule,
+        NewsletterModule,
 		CurrenciesModule,
 		LanguagesModule,
 		NotificationsModule,
@@ -264,6 +271,8 @@ import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 		WishlistModule,
 		PricingModule,
 		KeyValuePairsModule,
+        WishlistModule,
+        PromosModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

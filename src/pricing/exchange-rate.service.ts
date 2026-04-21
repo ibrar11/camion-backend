@@ -58,6 +58,9 @@ export class ExchangeRateService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.exchangeRateRepository.find({
+			order:{
+				id: "DESC",
+			},
 			skip: skip,
 			take: take,
 		});
