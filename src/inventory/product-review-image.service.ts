@@ -43,7 +43,7 @@ export class ProductReviewImageService {
 		}
 
 		// Upload the file to s3
-		const params = await this.s3Service.uploadFile("review", file);
+		const params = await this.s3Service.uploadFile("reviews", file);
 
 		// Create a review image
 		const image = new ProductReviewImage();

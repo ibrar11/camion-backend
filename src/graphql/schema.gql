@@ -61,7 +61,7 @@ type Category {
   nameAr: String!
   nameEn: String!
   slug: String!
-  thumbnailUrl: String
+  thumbnailUrl: String!
   uuid: String!
 }
 
