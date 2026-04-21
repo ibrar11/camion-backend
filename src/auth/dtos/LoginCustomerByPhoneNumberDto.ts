@@ -16,6 +16,6 @@ export class LoginCustomerByPhoneNumberDto {
 
 	@IsOptional()
 	@IsString()
-	@IsUUID()
+	@IsUUID('4')
 	guestUUID?: string;
 }

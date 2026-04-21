@@ -165,10 +165,8 @@ export class CartItemsService {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-            const where = { customer: { uuid: customer.uuid } };
-
-            const items = await this.cartRepository.find({
-                where,
+            const cartItems = await this.cartRepository.find({
+                where: { customer: { uuid: customer.uuid } },
                 relations: {
                     product: true,
                     variant: {
@@ -183,10 +181,9 @@ export class CartItemsService {
 
             const validatedItems: ValidatedCartItem[] = [];
 
-            for (const item of items) {
-
+            for (const cartItem of cartItems) {
                 const product = await this.productRepository.findOne({
-                    where: { uuid: item.product.uuid },
+                    where: { uuid: cartItem.product.uuid },
                     relations: {
                         variants: {
                             inventoryItem: {
@@ -199,7 +196,7 @@ export class CartItemsService {
 
                 if (!product || product.status !== ProductStatus.ACTIVE) continue;
 
-                const variant = product.variants.find(v => v.uuid === item.variant.uuid);
+                const variant = product.variants.find(v => v.uuid === cartItem.variant.uuid);
 
                 if (!variant) continue;
 
@@ -207,7 +204,7 @@ export class CartItemsService {
 
                 validatedItems.push(
                     {
-                        ...item,
+                        ...cartItem,
                         availableStock: stock,
                         isAvailable: stock > 0,
                     }

@@ -37,7 +37,7 @@ export class ProductReviewService {
 	 * @returns
 	 */
 	async createProductReview(customer: Customer, productUUID: string, body: CreateReviewDto): Promise<ProductReview> {
-		this.logger.log(`Attempting to create product variant for product: ${productUUID}`);
+		this.logger.log(`Attempting to create product review for product: ${productUUID}`);
 
 		// Find the product
 		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
@@ -47,12 +47,57 @@ export class ProductReviewService {
 			});
 		}
 
+		// Clamp the rating between 0 and 5
+		const rating = Math.floor(Math.min(Math.max(0, body.rating), 5));
+		switch (rating) {
+			case 1:
+				product.countOneStar += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 1;
+				product.ratingCount += 1;
+				break;
+			case 2:
+				product.countTwoStar += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 2;
+				product.ratingCount += 1;
+				break;
+			case 3:
+				product.countThreeStar += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 3;
+				product.ratingCount += 1;
+				break;
+			case 4:
+				product.countFourStar += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 4;
+				product.ratingCount += 1;
+				break;
+			case 5:
+				product.countFiveStar += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 5;
+				product.ratingCount += 1;
+				break;
+			default: // do nothing
+				break;
+		}
+
+		// Calculate the new rating
+		if (product.ratingSum !== 0 && product.ratingCount !== 0) {
+			product.ratingAvg = product.ratingSum / product.ratingCount;
+		}
+
+		// Save the product after updating the rating.
+		await this.productRepository.save(product);
+
 		// Create the product review
 		const productReview = new ProductReview();
 		productReview.uuid = crypto.randomUUID();
 		productReview.customer = customer;
 		productReview.product = product;
-		productReview.rating = body.rating;
+		productReview.rating = rating;
 		productReview.comment = body.comment.trim();
 		return this.reviewRepository.save(productReview);
 	}

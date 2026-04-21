@@ -26,6 +26,6 @@ export class RegisterCustomerDto {
 
 	@IsOptional()
 	@IsString()
-	@IsUUID()
+	@IsUUID('4')
 	guestUUID?: string;
 }

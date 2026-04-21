@@ -32,7 +32,7 @@ export class GetCustomerOrdersArgs {
 @ArgsType()
 export class GetCustomerOrderArgs {
     @Field(() => String)
-    @IsUUID()
+    @IsUUID('4')
     uuid: string;
 }
 

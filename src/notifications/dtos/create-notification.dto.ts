@@ -3,7 +3,7 @@ import { NotificationType } from "../enums/notification-type.enum";
 import { NotificationPriority } from "../enums/notification-priority.enum";
 
 export class CreateNotificationDto {
-	@IsUUID()
+	@IsUUID('4')
 	customerUUID: string;
 
 	@IsEnum(NotificationType)

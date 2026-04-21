@@ -11,6 +11,6 @@ export class LoginCustomerByEmailAddressDto {
 
 	@IsOptional()
 	@IsString()
-	@IsUUID()
+	@IsUUID('4')
 	guestUUID?: string;
 }
