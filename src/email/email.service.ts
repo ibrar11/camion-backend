@@ -45,6 +45,7 @@ export class EmailService {
 	private readonly logger = new Logger(EmailService.name);
 	private readonly emailEnabled: boolean;
 	private readonly from: string;
+	private readonly devMagicCode: string | null;
 
 	// SendGrid dynamic template IDs — set these in your .env
 	private readonly templateIds: Record<string, string>;
@@ -54,6 +55,11 @@ export class EmailService {
 			this.configService.get<string>("EMAIL_ENABLED") === "true";
 
 		this.from = this.configService.get<string>("EMAIL_FROM") as string;
+
+		const isDev = this.configService.get<string>("NODE_ENV") === "local";
+		this.devMagicCode = isDev
+			? (this.configService.get<string>("DEV_OTP_CODE") ?? "123456")
+			: null;
 
 		this.templateIds = {
 			otp: this.configService.get<string>("SENDGRID_TEMPLATE_OTP") as string,
@@ -82,6 +88,10 @@ export class EmailService {
 	}
 
 	async sendOtpEmail(to: string, data: OtpTemplateData): Promise<void> {
+		if (this.devMagicCode) {
+			this.logger.debug(`[DEV] Magic OTP for ${to}: ${this.devMagicCode}`);
+			return;
+		}
 		await this.send(to, this.templateIds.otp, data);
 	}
 

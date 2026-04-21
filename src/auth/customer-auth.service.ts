@@ -40,6 +40,7 @@ import { EmailService } from "src/email/email.service";
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
+	private readonly devMagicCode: string | null;
 
 	constructor(
 		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
@@ -49,6 +50,10 @@ export class CustomerAuthService {
 		private readonly jwtService: JwtService,
 		private readonly emailService: EmailService,
 	) {
+		const isDev = this.configService.get<string>('NODE_ENV') === 'local';
+		this.devMagicCode = isDev
+			? (this.configService.get<string>('DEV_OTP_CODE') ?? '123456')
+			: null;
 	}
 
 	/**
@@ -171,10 +176,7 @@ export class CustomerAuthService {
 		}
 
 		// Generate a random secret to verify customer email address
-		let secret = crypto.randomInt(100000, 1000000).toString();
-		if (this.configService.get<string>("ENABLE_MAGIC_OTP") === "Yes") {
-			secret = this.configService.get<string>("MAGIC_OTP") as string;
-		}
+		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
 
 		// Create a login request
 		const request = new LoginRequest();
@@ -221,10 +223,7 @@ export class CustomerAuthService {
 		}
 
 		// Generate a random secret to verify customer email address
-		let secret = crypto.randomInt(100000, 1000000).toString();
-		if (this.configService.get<string>("ENABLE_MAGIC_OTP") === "Yes") {
-			secret = this.configService.get<string>("MAGIC_OTP") as string;
-		}
+		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
 
 		// Create a login request
 		const request = new LoginRequest();
