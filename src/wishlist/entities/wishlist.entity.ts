@@ -2,6 +2,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
     Unique,
@@ -36,7 +37,7 @@ export class WishlistItem {
     customer: Customer;
 
     @Field(() => Product)
-    @ManyToOne(() => Product, {onDelete: 'CASCADE',})
+    @ManyToOne(() => Product, { onDelete: 'CASCADE', })
     product: Product;
 
     @Exclude()

@@ -59,9 +59,9 @@ export class WishlistController {
     @HttpCode(HttpStatus.OK)
     async getOne(
         @GetCustomer() customer: Customer,
-        @Param('uuid') uuid: string,
+        @Param('uuid') wishlistItemUUID: string,
     ): Promise<WishlistItem> {
-        return await this.wishlistService.getWishlistItem(customer, uuid);
+        return await this.wishlistService.getWishlistItem(customer, wishlistItemUUID);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
@@ -69,9 +69,9 @@ export class WishlistController {
     @HttpCode(HttpStatus.OK)
     async remove(
         @GetCustomer() customer: Customer,
-        @Param('uuid') productUuid: string,
+        @Param('uuid') wishlistItemUUID: string,
     ): Promise<void> {
-        return await this.wishlistService.removeFromWishlist(customer, productUuid);
+        return await this.wishlistService.removeFromWishlist(customer, wishlistItemUUID);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
