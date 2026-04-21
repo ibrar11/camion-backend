@@ -35,7 +35,7 @@ export class ProductReview {
 	product: Product;
 
 	@Field(() => Int)
-	@Column({ type: "numeric", default: 1, })
+	@Column({ type: "integer", default: 1, })
 	rating: number;
 
 	@Field()

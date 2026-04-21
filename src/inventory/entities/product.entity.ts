@@ -97,6 +97,36 @@ export class Product {
 	@Column({ type: "integer", nullable: false, default: 0, })
 	salesCount: number;
 
+	@Column({ type: "integer", nullable: false, default: 0, })
+	likesCount: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	reviewsCount: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingSum: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingCount: number;
+
+	@Column({ type: "numeric", nullable: false, default: 0, })
+	ratingAvg: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	countOneStar: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	countTwoStar: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	countThreeStar: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	countFourStar: number;
+
+	@Column({ type: "integer", nullable: false, default: 0, })
+	countFiveStar: number;
+
 	@Field(() => [ProductOption])
 	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, })
 	options: Array<ProductOption>;
