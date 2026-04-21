@@ -236,7 +236,7 @@ export class ProcurementService {
                     stock: sku.amountOnSale,
                     attributes,
                     image:
-                        sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? null,
+                        sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0],
                 };
             });
 
