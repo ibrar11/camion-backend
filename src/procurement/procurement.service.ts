@@ -341,7 +341,7 @@ export class ProcurementService {
                             const productDetails = await this.getProductDetail(id);
 
                             // 2. create product in database and
-                            const product = await this.productService.createProduct({
+                            const productCreated = await this.productService.createProduct({
                                 slug: productDetails.slug,
                                 title: {
                                     en: productDetails.title,
@@ -361,6 +361,8 @@ export class ProcurementService {
                                 },
                                 categories: dto.categories //need to add categories through admin dashboard
                             });
+
+                            const product = await this.productService.updateProductStatus(productCreated.uuid, { status: 'active' });
 
                             const optionValuesUuids: string[] = []
 
@@ -437,7 +439,7 @@ export class ProcurementService {
                                                     barcode: variant.skuId?.toString() || '',
                                                     quantity: variant.stock || 0,
                                                     cost: {
-                                                        amount: variant.price || 0,
+                                                        amount: smartRoundInt(variant.price) || 0,
                                                         currencyCode: productDetails.currencyCode,
                                                     },
                                                     weight: {
