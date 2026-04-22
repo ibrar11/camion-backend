@@ -35,9 +35,10 @@ export class GetCustomerOrdersArgs {
     @Field(() => Int, { defaultValue: 100, })
     itemsPerPage: number;
 
-    @Field({ defaultValue: OrderStatus.PENDING, })
+    @Field(() => String, { nullable: true })
     @IsOptional()
-    status: OrderStatus;
+    @IsEnum(OrderStatus)
+    status?: OrderStatus;
 }
 @ArgsType()
 export class VariantArgs {
