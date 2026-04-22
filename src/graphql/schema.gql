@@ -49,7 +49,6 @@ type Banner {
 
 type CartItem {
   availableStock: Int!
-  discountedSubTotal: Money!
   isAvailable: Boolean!
   product: Product!
   quantity: Int!
