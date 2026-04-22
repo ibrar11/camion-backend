@@ -8,13 +8,15 @@ export class TwilioService {
     private readonly client: ReturnType<typeof Twilio> | null = null;
     private readonly verifyServiceSid: string;
     private readonly smsEnabled: boolean;
+    private readonly isLocal: boolean;
     private readonly devMagicCode: string | null;
 
     constructor(private readonly configService: ConfigService) {
         this.smsEnabled = this.configService.get<string>('TWILIO_SMS_ENABLED') === 'true';
-        const isDev = this.configService.get<string>('NODE_ENV') === 'local';
-        this.devMagicCode = isDev
-            ? (this.configService.get<string>('DEV_OTP_CODE') ?? '123456')
+        this.isLocal = this.configService.get<string>('NODE_ENV') === 'local';
+        const magicOtpEnabled = this.configService.get<string>('ENABLE_MAGIC_OTP') === 'Yes';
+        this.devMagicCode = magicOtpEnabled
+            ? (this.configService.get<string>('MAGIC_OTP') ?? '123456')
             : null;
         this.verifyServiceSid = this.configService.get<string>('TWILIO_VERIFY_SERVICE_SID') ?? '';
 
@@ -30,8 +32,8 @@ export class TwilioService {
      * Does nothing when TWILIO_SMS_ENABLED is not "true".
      */
     async sendVerification(to: string): Promise<void> {
-        if (this.devMagicCode) {
-            this.logger.debug(`[DEV] Magic OTP for ${to}: ${this.devMagicCode}`);
+        if (this.isLocal) {
+            this.logger.debug(`[LOCAL] Skipping SMS to ${to}, magic OTP: ${this.devMagicCode}`);
             return;
         }
 
@@ -51,17 +53,13 @@ export class TwilioService {
         }
     }
 
-    /**
-     * Check a verification code via Twilio Verify.
-     * In dev mode (SMS disabled), falls back to MAGIC_OTP comparison.
-     */
     async checkVerification(to: string, code: string): Promise<boolean> {
-        if (this.devMagicCode) {
-            return code === this.devMagicCode;
+        if (this.devMagicCode && code === this.devMagicCode) {
+            return true;
         }
 
         if (!this.smsEnabled) {
-            return true;
+            return false;
         }
 
         try {

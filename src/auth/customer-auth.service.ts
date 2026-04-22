@@ -46,6 +46,7 @@ import { calculateStock } from "../common/calculateStock";
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
+	private readonly isLocal: boolean;
 	private readonly devMagicCode: string | null;
 
 	constructor(
@@ -58,9 +59,10 @@ export class CustomerAuthService {
 		private readonly twilioService: TwilioService,
 		private readonly emailService: EmailService,
 	) {
-		const isDev = this.configService.get<string>('NODE_ENV') === 'local';
-		this.devMagicCode = isDev
-			? (this.configService.get<string>('DEV_OTP_CODE') ?? '123456')
+		this.isLocal = this.configService.get<string>('NODE_ENV') === 'local';
+		const magicOtpEnabled = this.configService.get<string>('ENABLE_MAGIC_OTP') === 'Yes';
+		this.devMagicCode = magicOtpEnabled
+			? (this.configService.get<string>('MAGIC_OTP') ?? '123456')
 			: null;
 	}
 
@@ -417,8 +419,10 @@ export class CustomerAuthService {
 			}
 		}
 
-		// Generate a random secret to verify customer email address
-		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
+		// In local env use the magic code so no real email is needed; otherwise generate a real OTP
+		const secret = this.isLocal
+			? (this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString())
+			: crypto.randomInt(100000, 1000000).toString();
 
 		// Create a login request
 		const request = new LoginRequest();
@@ -552,8 +556,9 @@ export class CustomerAuthService {
 			});
 		}
 
-		// Match the secret against the login request
-		if (!bcrypt.compareSync(body.secret, request.secret)) {
+		// Accept magic OTP or the real OTP stored in the login request
+		const magicMatch = this.devMagicCode !== null && body.secret === this.devMagicCode;
+		if (!magicMatch && !bcrypt.compareSync(body.secret, request.secret)) {
 			throw new BadRequestException({
 				error: "We weren't able to log you in. Give your email address another look and try again.",
 			});
