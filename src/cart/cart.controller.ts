@@ -32,11 +32,6 @@ import { CartItemsService } from './cart.service';
 import { Customer } from '../customers/entities/customer.entity';
 import { GetCustomer } from '../customers/customer.decorator';
 
-import {
-    UpdateCartResponse,
-    ValidatedCartItem
-} from './types';
-
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/cart-items')
 export class CartItemsController {
@@ -49,10 +44,10 @@ export class CartItemsController {
     @Post()
     @HttpCode(HttpStatus.CREATED)
     addToCart(
-        @Body() dto: CreateCartItemDto,
+        @Body() body: CreateCartItemDto,
         @GetCustomer() customer: Customer,
     ): Promise<CartItem> {
-        return this.cartService.create(dto, customer);
+        return this.cartService.create(customer, body);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
@@ -64,7 +59,7 @@ export class CartItemsController {
         @Query("sort") sort: string,
         @Query("pageNumber") pageNumber: number,
         @Query("itemsPerPage") itemsPerPage: number,
-    ): Promise<Array<ValidatedCartItem>> {
+    ): Promise<Array<CartItem>> {
         return this.cartService.findCart(customer, filters, sort, pageNumber, itemsPerPage);
     }
 
@@ -72,20 +67,20 @@ export class CartItemsController {
     @Patch(':uuid')
     @HttpCode(HttpStatus.OK)
     updateCart(
-        @Param('uuid') uuid: string,
-        @Body() dto: UpdateCartItemDto,
         @GetCustomer() customer: Customer,
-    ): Promise<UpdateCartResponse> {
-        return this.cartService.update(uuid, dto, customer);
+        @Param('uuid') cartItemUUID: string,
+        @Body() body: UpdateCartItemDto,
+    ): Promise<CartItem> {
+        return this.cartService.update(customer, cartItemUUID, body);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
     @Delete(':uuid')
     @HttpCode(HttpStatus.OK)
     async removeFromCart(
-        @Param('uuid') uuid: string,
+        @Param('uuid') cartItemUUID: string,
     ): Promise<void> {
-        return this.cartService.removeItem(uuid);
+        return this.cartService.removeItem(cartItemUUID);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)

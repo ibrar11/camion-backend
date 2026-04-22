@@ -19,6 +19,7 @@ import { ProductVariant } from '../inventory/entities/product-variant.entity';
 import { ClientsModule } from '../clients/clients.module';
 
 import { CartResolver } from './cart.resolver';
+import { PricingModule } from 'src/pricing/pricing.module';
 
 @Module({
     imports: [
@@ -30,6 +31,7 @@ import { CartResolver } from './cart.resolver';
             ProductVariant,
         ]),
         ClientsModule,
+        PricingModule,
     ],
     providers: [
         CartItemsService,
