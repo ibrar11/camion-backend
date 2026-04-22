@@ -6918,37 +6918,37 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             ratingThreeStarCount
             ratingFourStarCount
             ratingFiveStarCount
-            variants {
+        }
+        variant {
+            uuid
+            title
+            sku
+            barcode
+            price(currency: $currency) {
+                amount
+                currencyCode
+            }
+            discountedPrice(currency: $currency) {
+                amount
+                currencyCode
+            }
+            weight {
+                amount
+                unit
+            }
+            dimensions {
+                width
+                height
+                length
+                unit
+            }
+            images {
                 uuid
-                title
-                sku
-                barcode
-                price(currency: $currency) {
-                    amount
-                    currencyCode
-                }
-                discountedPrice(currency: $currency) {
-                    amount
-                    currencyCode
-                }
-                weight {
-                    amount
-                    unit
-                }
-                dimensions {
-                    width
-                    height
-                    length
-                    unit
-                }
-                images {
-                    uuid
-                    imageUrl
-                    thumbnailUrl
-                    alt
-                    isFeatured
-                    position
-                }
+                imageUrl
+                thumbnailUrl
+                alt
+                isFeatured
+                position
             }
         }
     }
@@ -6972,7 +6972,7 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
     "data": {
         "getCustomerWishlist": [
             {
-                "uuid": "ffc0889c-dc10-4a8f-b67b-48834a723598",
+                "uuid": "056c1bcc-f421-47f9-8a4c-a95a6e8c98e8",
                 "product": {
                     "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
                     "slug": "iphone-22",
@@ -6983,47 +6983,45 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                     "status": "active",
                     "salesCount": 0,
                     "likesCount": 0,
-                    "reviewsCount": 0,
-                    "ratingAvg": 0,
+                    "reviewsCount": 1,
+                    "ratingAvg": 5,
                     "ratingOneStarCount": 0,
                     "ratingTwoStarCount": 0,
                     "ratingThreeStarCount": 0,
                     "ratingFourStarCount": 0,
-                    "ratingFiveStarCount": 0,
-                    "variants": [
+                    "ratingFiveStarCount": 0
+                },
+                "variant": {
+                    "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+                    "title": "iPhone 20 RED 1 TB",
+                    "sku": "iphone-20-red-1tb",
+                    "barcode": "10000",
+                    "price": {
+                        "amount": 7500,
+                        "currencyCode": "qar"
+                    },
+                    "discountedPrice": {
+                        "amount": 6750,
+                        "currencyCode": "qar"
+                    },
+                    "weight": {
+                        "amount": 1,
+                        "unit": "kg"
+                    },
+                    "dimensions": {
+                        "width": 1000,
+                        "height": 1000,
+                        "length": 1000,
+                        "unit": "in"
+                    },
+                    "images": [
                         {
-                            "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
-                            "title": "iPhone 20 RED 1 TB",
-                            "sku": "iphone-20-red-1tb",
-                            "barcode": "10000",
-                            "price": {
-                                "amount": 7500,
-                                "currencyCode": "qar"
-                            },
-                            "discountedPrice": {
-                                "amount": 7500,
-                                "currencyCode": "qar"
-                            },
-                            "weight": {
-                                "amount": 1,
-                                "unit": "kg"
-                            },
-                            "dimensions": {
-                                "width": 1000,
-                                "height": 1000,
-                                "length": 1000,
-                                "unit": "in"
-                            },
-                            "images": [
-                                {
-                                    "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
-                                    "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                                    "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                                    "alt": "",
-                                    "isFeatured": false,
-                                    "position": 0
-                                }
-                            ]
+                            "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "alt": "",
+                            "isFeatured": false,
+                            "position": 0
                         }
                     ]
                 }
@@ -7060,8 +7058,8 @@ Get Customer Cart
 ### GraphQL Query
 
 ```graphql
-query GetCustomerCart($language: String) {
-    getCustomerCart(language: $language) {
+query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $itemsPerPage: Int) {
+    getCustomerCart(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
         uuid
         product {
             uuid
@@ -7071,13 +7069,26 @@ query GetCustomerCart($language: String) {
             description(language: $language)
             descriptionHtml(language: $language)
             status
+            salesCount
+            likesCount
+            reviewsCount
+            ratingAvg
+            ratingOneStarCount
+            ratingTwoStarCount
+            ratingThreeStarCount
+            ratingFourStarCount
+            ratingFiveStarCount
         }
         variant {
             uuid
-            title(language: $language)
+            title
             sku
             barcode
-            price {
+            price(currency: $currency) {
+                amount
+                currencyCode
+            }
+            discountedPrice(currency: $currency) {
                 amount
                 currencyCode
             }
@@ -7091,12 +7102,16 @@ query GetCustomerCart($language: String) {
                 length
                 unit
             }
+            images {
+                uuid
+                imageUrl
+                thumbnailUrl
+                alt
+                isFeatured
+                position
+            }
         }
-        quantity
-        subTotal {
-            amount
-            currencyCode
-        }
+        availableStock
     }
 }
 ```
@@ -7106,6 +7121,9 @@ query GetCustomerCart($language: String) {
 ```json
 {
     "language": "en",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 1
 }
 ```
 
@@ -7116,41 +7134,60 @@ query GetCustomerCart($language: String) {
     "data": {
         "getCustomerCart": [
             {
-                "uuid": "3fe6f35d-f6be-4c93-81f6-36372de8ee76",
+                "uuid": "8c534e15-673f-440e-b548-04424cc92363",
                 "product": {
-                    "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
-                    "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
-                    "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
-                    "brief": "",
-                    "description": "Get you bike",
-                    "descriptionHtml": "",
-                    "status": "ACTIVE"
+                    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+                    "slug": "iphone-22",
+                    "title": "iPhone 22",
+                    "brief": "From $799 or $33.29/mo. per month for 24 months",
+                    "description": "Your new iPhone awaits. Make it yours.",
+                    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                    "status": "active",
+                    "salesCount": 0,
+                    "likesCount": 0,
+                    "reviewsCount": 1,
+                    "ratingAvg": 5,
+                    "ratingOneStarCount": 0,
+                    "ratingTwoStarCount": 0,
+                    "ratingThreeStarCount": 0,
+                    "ratingFourStarCount": 0,
+                    "ratingFiveStarCount": 0
                 },
                 "variant": {
-                    "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
-                    "title": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
-                    "sku": "5627530595058",
-                    "barcode": "5627530595058",
+                    "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+                    "title": "iPhone 20 RED 1 TB",
+                    "sku": "iphone-20-red-1tb",
+                    "barcode": "10000",
                     "price": {
-                        "amount": 688,
-                        "currencyCode": "USD"
+                        "amount": 7500,
+                        "currencyCode": "qar"
+                    },
+                    "discountedPrice": {
+                        "amount": 7500,
+                        "currencyCode": "qar"
                     },
                     "weight": {
-                        "amount": 16,
+                        "amount": 1,
                         "unit": "kg"
                     },
                     "dimensions": {
-                        "width": 36,
-                        "height": 57,
-                        "length": 88,
-                        "unit": "cm"
-                    }
+                        "width": 1000,
+                        "height": 1000,
+                        "length": 1000,
+                        "unit": "in"
+                    },
+                    "images": [
+                        {
+                            "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "alt": "",
+                            "isFeatured": false,
+                            "position": 0
+                        }
+                    ]
                 },
-                "quantity": 1,
-                "subTotal": {
-                    "amount": 688,
-                    "currencyCode": "USD"
-                }
+                "availableStock": 100
             }
         ]
     }

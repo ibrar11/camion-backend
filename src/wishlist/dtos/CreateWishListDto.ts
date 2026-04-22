@@ -1,6 +1,11 @@
-import { IsUUID } from 'class-validator';
+import {
+    IsUUID,
+} from 'class-validator';
 
 export class CreateWishlistDto {
     @IsUUID('4')
-    productUuid: string;
+    productUUID: string;
+
+    @IsUUID('4')
+    variantUUID: string;
 }

@@ -31,6 +31,7 @@ import { InventoryItem } from "./inventory-item.entity";
 import { CartItem } from "../../cart/entities/cart-items.entity";
 
 import { OrderItem } from "../../order/entities/order-item.entity";
+import { WishlistItem } from "src/wishlist/entities/wishlist.entity";
 
 @ObjectType()
 export class Money {
@@ -159,6 +160,9 @@ export class ProductVariant {
 
 	@OneToMany(() => OrderItem, (orderItem) => orderItem.variant)
 	orderItems: Array<OrderItem>;
+
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.variant)
+	wishlistItems: Array<WishlistItem>;
 
 	@Exclude()
 	@UpdateDateColumn({

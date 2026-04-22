@@ -38,13 +38,13 @@ export class WishlistService {
      * @returns
      */
     async addToWishlist(customer: Customer, body: CreateWishlistDto): Promise<WishlistItem> {
-        this.logger.log(`Adding ${body.productUuid} to customer: ${customer.uuid} cart`);
+        this.logger.log(`Adding ${body.productUUID} to customer: ${customer.uuid} cart`);
 
         // check if product exits
         const existing = await this.wishlistRepository.findOne({
             where: {
                 customer: { uuid: customer.uuid },
-                product: { uuid: body.productUuid },
+                product: { uuid: body.productUUID },
             },
         });
 
@@ -56,7 +56,7 @@ export class WishlistService {
 
         // find the prodcut to add to wish list
         const product = await this.productRepository.findOne({
-            where: { uuid: body.productUuid },
+            where: { uuid: body.productUUID },
             relations: {
                 variants: true
             },
@@ -69,17 +69,30 @@ export class WishlistService {
             });
         }
 
+        // Make sure the product is available
         if (product.status !== ProductStatus.ACTIVE) {
             throw new BadRequestException({
                 error: "The product you selected is not available anymore. Please add another product to your cart.",
             });
         }
 
+        // Check if the variant exists
+        const variant = product.variants.find((variant) => variant.uuid === body.variantUUID);
+        if (variant === undefined || variant === null) {
+            throw new NotFoundException({
+                error: "Failed to find the variant. Please check and try again.",
+            });
+        }
+
+        // Reset the variants on the wishlist
+        product.variants = [];
+
+        // Create a new wishlist item.
         const wishlistItem = new WishlistItem();
         wishlistItem.uuid = crypto.randomUUID();
         wishlistItem.customer = customer;
         wishlistItem.product = product;
-
+        wishlistItem.variant = variant;
         return this.wishlistRepository.save(wishlistItem);
     }
 
@@ -89,25 +102,26 @@ export class WishlistService {
      * @param customer
      * @returns
      */
-    async getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
+    getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
         // Get pagination params
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-        const items = await this.wishlistRepository.find({
-            where: { customer: { uuid: customer.uuid } },
+        return this.wishlistRepository.find({
+            where: { customer: { id: customer.id, } },
             relations: {
                 product: {
-                    variants: {
-                        images: true,
+                    productCategories: {
+                        category: true,
                     },
+                },
+                variant: {
+                    images: true,
                 },
             },
             order: { id: 'DESC' },
             skip: skip,
             take: take,
         });
-
-        return items;
     }
 
     /**
@@ -123,7 +137,10 @@ export class WishlistService {
                 uuid: wishlistItemUUID,
             },
             relations: {
-                product: true
+                product: true,
+                variant: {
+                    images: true,
+                },
             },
         });
 

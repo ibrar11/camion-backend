@@ -36,57 +36,86 @@ Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 productUuid | Yes | UUID | UUID of the product
 variantUuid | Yes | UUID | UUID of the product variant
-quantity | Yes | Number | Quantity to add (minimum 1
+quantity | Yes | Number | Quantity to add (minimum 1)
+currencyCode | Yes | CurrencyCode | The desired currency code
 
 ### Request Body
 ```json
 {
-	"productUuid": "c023bd4c-e8ce-453e-b41b-07b42c7f0d6d",
-	"variantUuid": "45078e0a-7637-48e5-a7d5-a8645b1ae66f",
-	"quantity": 2
+	"productUuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+	"variantUuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+	"quantity": 1,
+	"currencyCode": "qar"
 }
 ```
 
 ### Response Body
 ```json
 {
-	"uuid": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
-	"userId": "a023bd4c-e8ce-453e-b41b-07b42c7f0d7d",
-	"product": {
-		"uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
-		"slug": "iphone-17",
-		"title": "iPhone 17",
-		"titleAr": "آيفون 17",
-		"brief": "From $799 or $33.29/mo. per month for 24 months",
-		"briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-		"description": "Your new iPhone awaits. Make it yours.",
-		"descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-		"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-		"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
-		"status": "DRAFT",
-	},
-	"variant": {
-		"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-		"title": "iPhone 17 Lavender 256 GB",
-		"titleAr": "iPhone 17 Lavender 256 GB",
-		"sku": "iphone-17-lavender-256",
-		"barcode": "10000",
-		"price": {
-			"amount": "1000",
-			"currencyCode": "QAR"
-		},
-		"weight": {
-			"amount": "1",
-			"unit": "KILOGRAMS"
-		},
-		"dimensions": {
-			"width": "1000",
-			"height": "1000",
-			"length": "1000"
-		}
-	},
-	"quantity": "2",
-	"subTotal": "240"
+    "uuid": "8c534e15-673f-440e-b548-04424cc92363",
+    "product": {
+        "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+        "slug": "iphone-22",
+        "titleEn": "iPhone 22",
+        "titleAr": "آيفون 22",
+        "briefEn": "From $799 or $33.29/mo. per month for 24 months",
+        "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+        "descriptionEn": "Your new iPhone awaits. Make it yours.",
+        "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+        "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
+        "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+        "status": "active",
+        "salesCount": 0,
+        "likesCount": 0,
+        "reviewsCount": 1,
+        "ratingSum": 5,
+        "ratingCount": 1,
+        "ratingAvg": "5",
+        "ratingOneStarCount": 0,
+        "ratingTwoStarCount": 0,
+        "ratingThreeStarCount": 0,
+        "ratingFourStarCount": 0,
+        "ratingFiveStarCount": 0,
+        "variants": [],
+        "productCategories": []
+    },
+    "variant": {
+        "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+        "inventoryItem": {
+            "uuid": "244e61b7-939a-47f6-8a1d-e44ab5559078",
+            "sku": "iphone-20-red-1tb",
+            "levels": [
+                {
+                    "uuid": "b2372332-e52e-4751-a270-ddf2f7a3743e",
+                    "quantity": 100
+                }
+            ]
+        },
+        "titleEn": "iPhone 20 RED 1 TB",
+        "titleAr": "iPhone 20 RED 1 TB",
+        "sku": "iphone-20-red-1tb",
+        "barcode": "10000",
+        "cost": {
+            "amount": 2000,
+            "currencyCode": "qar"
+        },
+        "weight": {
+            "amount": 1,
+            "unit": "kg"
+        },
+        "dimensions": {
+            "width": 1000,
+            "height": 1000,
+            "length": 1000,
+            "unit": "in"
+        },
+        "salesCount": 0
+    },
+    "quantity": 1,
+    "subTotal": {
+        "amount": 7500,
+        "currencyCode": "qar"
+    }
 }
 ```
 
@@ -100,46 +129,88 @@ GET /v1/cart-items HTTP/1.1
 ### Response Body
 ```json
 [
-	{
-		"uuid": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
-		"product": {
-			"uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
-			"slug": "iphone-17",
-			"title": "iPhone 17",
-			"titleAr": "آيفون 17",
-			"brief": "From $799 or $33.29/mo. per month for 24 months",
-			"briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-			"description": "Your new iPhone awaits. Make it yours.",
-			"descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-			"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-			"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
-			"status": "DRAFT",
-		},
-		"quantity": "2",
-		"variation": {
-			"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-			"title": "iPhone 17 Lavender 256 GB",
-			"titleAr": "iPhone 17 Lavender 256 GB",
-			"sku": "iphone-17-lavender-256",
-			"barcode": "10000",
-			"price": {
-				"amount": "1000",
-				"currencyCode": "QAR"
-			},
-			"weight": {
-				"amount": "1",
-				"unit": "KILOGRAMS"
-			},
-			"dimensions": {
-				"width": "1000",
-				"height": "1000",
-				"length": "1000"
-			}
-		},
-		"totalPrice": "345",
-		"availableStock": "5",
-		"isAvailable": "true"
-	}
+    {
+        "uuid": "8c534e15-673f-440e-b548-04424cc92363",
+        "product": {
+            "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+            "slug": "iphone-22",
+            "titleEn": "iPhone 22",
+            "titleAr": "آيفون 22",
+            "briefEn": "From $799 or $33.29/mo. per month for 24 months",
+            "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+            "descriptionEn": "Your new iPhone awaits. Make it yours.",
+            "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+            "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
+            "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+            "status": "active",
+            "salesCount": 0,
+            "likesCount": 0,
+            "reviewsCount": 1,
+            "ratingSum": 5,
+            "ratingCount": 1,
+            "ratingAvg": "5",
+            "ratingOneStarCount": 0,
+            "ratingTwoStarCount": 0,
+            "ratingThreeStarCount": 0,
+            "ratingFourStarCount": 0,
+            "ratingFiveStarCount": 0,
+            "variants": [],
+            "productCategories": []
+        },
+        "variant": {
+            "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+            "inventoryItem": {
+                "uuid": "244e61b7-939a-47f6-8a1d-e44ab5559078",
+                "sku": "iphone-20-red-1tb",
+                "levels": [
+                    {
+                        "uuid": "b2372332-e52e-4751-a270-ddf2f7a3743e",
+                        "quantity": 100
+                    }
+                ]
+            },
+            "titleEn": "iPhone 20 RED 1 TB",
+            "titleAr": "iPhone 20 RED 1 TB",
+            "sku": "iphone-20-red-1tb",
+            "barcode": "10000",
+            "cost": {
+                "amount": 2000,
+                "currencyCode": "qar"
+            },
+            "weight": {
+                "amount": 1,
+                "unit": "kg"
+            },
+            "dimensions": {
+                "width": 1000,
+                "height": 1000,
+                "length": 1000,
+                "unit": "in"
+            },
+            "salesCount": 0,
+            "images": [
+                {
+                    "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                    "imageUrl": "s3://product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                    "thumbnailUrl": "s3://product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                    "alt": "",
+                    "isFeatured": false,
+                    "position": 0,
+                    "dimensions": {
+                        "width": 1000,
+                        "height": 1000
+                    }
+                }
+            ]
+        },
+        "quantity": 1,
+        "subTotal": {
+            "amount": 7500,
+            "currencyCode": "qar"
+        },
+        "availableStock": 100,
+        "isAvailable": true
+    }
 ]
 ```
 
@@ -154,56 +225,120 @@ Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 productUuid | Yes | UUID | UUID of the product
 variantUuid | Yes | UUID | New variant UUID
-quantity | Yes | Number | Updated quantity (min 1)
+quantity | Yes | Number | Updated quantity (minimum 1)
+currencyCode | Yes | CurrencyCode | The desired currency code
 
 ### Request Body
 ```json
 {
-	"productUuId": "4b4bf00f-11cf-4ddf-9262-c5b4006cabcf",
-	"variantUuId": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-	"quantity": 3
+	"productUuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+	"variantUuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+	"quantity": 2,
+	"currencyCode": "qar"
 }
 ```
 
 ### Response Body
 ```json
 {
-	"uuid": "a993e4c3-76d2-482d-adc3-e55945ebc8b4",
-	"product": {
-		"uuid": "60b9ec90-0875-4319-b471-14153f9e5835",
-		"slug": "iphone-17",
-		"title": "iPhone 17",
-		"titleAr": "آيفون 17",
-		"brief": "From $799 or $33.29/mo. per month for 24 months",
-		"briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-		"description": "Your new iPhone awaits. Make it yours.",
-		"descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-		"descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-		"descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
-		"status": "DRAFT",
-	},
-	"variant": {
-		"uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-		"title": "iPhone 17 Lavender 256 GB",
-		"titleAr": "iPhone 17 Lavender 256 GB",
-		"sku": "iphone-17-lavender-256",
-		"barcode": "10000",
-		"price": {
-			"amount": "1000",
-			"currencyCode": "QAR"
-		},
-		"weight": {
-			"amount": "1",
-			"unit": "KILOGRAMS"
-		},
-		"dimensions": {
-			"width": "1000",
-			"height": "1000",
-			"length": "1000"
-		}
-	},
-	"quantity": 3,
-	"subTotal": 597
+    "uuid": "8c534e15-673f-440e-b548-04424cc92363",
+    "product": {
+        "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+        "slug": "iphone-22",
+        "titleEn": "iPhone 22",
+        "titleAr": "آيفون 22",
+        "briefEn": "From $799 or $33.29/mo. per month for 24 months",
+        "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+        "descriptionEn": "Your new iPhone awaits. Make it yours.",
+        "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+        "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
+        "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+        "status": "active",
+        "salesCount": 0,
+        "likesCount": 0,
+        "reviewsCount": 1,
+        "ratingSum": 5,
+        "ratingCount": 1,
+        "ratingAvg": "5",
+        "ratingOneStarCount": 0,
+        "ratingTwoStarCount": 0,
+        "ratingThreeStarCount": 0,
+        "ratingFourStarCount": 0,
+        "ratingFiveStarCount": 0,
+        "variants": [],
+        "productCategories": [
+            {
+                "id": 13,
+                "category": {
+                    "uuid": "a095966a-95f1-4e75-88ff-572478d08ae9",
+                    "slug": "iphones-three",
+                    "nameEn": "iphones",
+                    "nameAr": "أحذية رياضية",
+                    "pricingFactor": "0.9",
+                    "thumbnailUrl": "s3://categories/1ec99def-36a4-4b7c-bc82-c06771e51f71.jpg"
+                }
+            },
+            {
+                "id": 12,
+                "category": {
+                    "uuid": "70bcc216-2fc3-4dc2-bd65-642dccdd141a",
+                    "slug": "iphones-two",
+                    "nameEn": "iphones",
+                    "nameAr": "أحذية رياضية",
+                    "pricingFactor": "0.9",
+                    "thumbnailUrl": "s3://categories/1ec99def-36a4-4b7c-bc82-c06771e51f71.jpg"
+                }
+            },
+            {
+                "id": 11,
+                "category": {
+                    "uuid": "d66ec8b3-2201-4cfc-bbdb-85274efb7bba",
+                    "slug": "iphones",
+                    "nameEn": "iphones",
+                    "nameAr": "أحذية رياضية",
+                    "pricingFactor": "0.9",
+                    "thumbnailUrl": "s3://categories/1ec99def-36a4-4b7c-bc82-c06771e51f71.jpg"
+                }
+            }
+        ]
+    },
+    "variant": {
+        "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+        "inventoryItem": {
+            "uuid": "244e61b7-939a-47f6-8a1d-e44ab5559078",
+            "sku": "iphone-20-red-1tb",
+            "levels": [
+                {
+                    "uuid": "b2372332-e52e-4751-a270-ddf2f7a3743e",
+                    "quantity": 100
+                }
+            ]
+        },
+        "titleEn": "iPhone 20 RED 1 TB",
+        "titleAr": "iPhone 20 RED 1 TB",
+        "sku": "iphone-20-red-1tb",
+        "barcode": "10000",
+        "cost": {
+            "amount": 2000,
+            "currencyCode": "qar"
+        },
+        "weight": {
+            "amount": 1,
+            "unit": "kg"
+        },
+        "dimensions": {
+            "width": 1000,
+            "height": 1000,
+            "length": 1000,
+            "unit": "in"
+        },
+        "salesCount": 0
+    },
+    "quantity": 2,
+    "subTotal": {
+        "amount": 15000,
+        "currencyCode": "qar"
+    }
 }
 ```
 

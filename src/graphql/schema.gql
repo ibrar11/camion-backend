@@ -48,6 +48,8 @@ type Banner {
 }
 
 type CartItem {
+  availableStock: Int!
+  isAvailable: Boolean!
   product: Product!
   quantity: Int!
   subTotal: Money!
@@ -297,7 +299,7 @@ type Query {
   getCurrentCustomerOrder(uuid: String!): Order!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
-  getCustomerCart(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
+  getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!
   getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
@@ -386,4 +388,5 @@ type Weight {
 type WishlistItem {
   product: Product!
   uuid: String!
+  variant: ProductVariant!
 }
