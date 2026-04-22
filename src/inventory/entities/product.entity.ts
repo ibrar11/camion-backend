@@ -94,12 +94,15 @@ export class Product {
 	})
 	status: ProductStatus;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	salesCount: number;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	likesCount: number;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	reviewsCount: number;
 
@@ -109,21 +112,27 @@ export class Product {
 	@Column({ type: "integer", nullable: false, default: 0, })
 	ratingCount: number;
 
+	@Field()
 	@Column({ type: "numeric", nullable: false, default: 0, })
 	ratingAvg: number;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	countOneStar: number;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	countTwoStar: number;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	countThreeStar: number;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	countFourStar: number;
 
+	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	countFiveStar: number;
 
