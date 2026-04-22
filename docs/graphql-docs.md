@@ -7514,6 +7514,14 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                     length
                     unit
                 }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
             }
         }
     }
@@ -7541,9 +7549,9 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                 "product": {
                     "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
                     "slug": "iphone-22",
-                    "title": "آيفون 22",
-                    "brief": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-                    "description": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+                    "title": "iPhone 22",
+                    "brief": "From $799 or $33.29/mo. per month for 24 months",
+                    "description": "Your new iPhone awaits. Make it yours.",
                     "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                     "status": "active",
                     "variants": [
@@ -7569,7 +7577,17 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                                 "height": 1000,
                                 "length": 1000,
                                 "unit": "in"
-                            }
+                            },
+                            "images": [
+                                {
+                                    "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                                    "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                    "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                    "alt": "",
+                                    "isFeatured": false,
+                                    "position": 0
+                                }
+                            ]
                         }
                     ]
                 }
