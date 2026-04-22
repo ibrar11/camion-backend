@@ -99,7 +99,7 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currencyCode, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, false);
 
         // check if the variant alreadu exists
         const existing = await this.cartRepository.findOne({
@@ -293,14 +293,14 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currencyCode, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
 
         // Update the cart item
         cartItem.product.variants = [];
         cartItem.quantity = body.quantity;
         cartItem.subTotal = {
             amount: price.amount * body.quantity,
-            currencyCode: body.currencyCode,
+            currencyCode: body.currency,
         };
 
         return this.cartRepository.save(cartItem);

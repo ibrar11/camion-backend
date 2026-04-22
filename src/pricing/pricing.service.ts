@@ -78,12 +78,12 @@ export class PricingService {
 	 *
 	 * @param product
 	 * @param variant
-	 * @param currencyCode
+	 * @param currency
 	 * @param applyDiscount
 	 * @returns
 	 */
-	async applyPriceOnProductVariant(product: Product, variant: ProductVariant, currencyCode: CurrencyCode, applyDiscount: boolean): Promise<Money> {
-		this.logger.log(`Calculating the price of product: ${product.uuid}, variant: ${variant.uuid}, currencyCode: ${currencyCode}`);
+	async applyPriceOnProductVariant(product: Product, variant: ProductVariant, currency: CurrencyCode, applyDiscount: boolean): Promise<Money> {
+		this.logger.log(`Calculating the price of product: ${product.uuid}, variant: ${variant.uuid}, currencyCode: ${currency}`);
 
 		// Reinitialize the exchange rates after every 5 minutes
 		const now = new Date();
@@ -93,24 +93,24 @@ export class PricingService {
 
 		// Make sure we have an exchange rate
 		if (!Array.isArray(this.exchangeRates)) {
-			this.logger.error(`Failed to find the exchange rates. Please create exchange rates for target currency code: ${currencyCode}`);
+			this.logger.error(`Failed to find the exchange rates. Please create exchange rates for target currency code: ${currency}`);
 			return {
 				amount: -1,
-				currencyCode: currencyCode,
+				currencyCode: currency,
 			};
 		}
 
 		// Find the exchange rate for the request currency code
 		let exchangeRate = this.exchangeRates.filter(
-			(exchangeRate) => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currencyCode.toLowerCase().trim()
+			(exchangeRate) => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim()
 		).at(0) ?? null;
 
 		// If there is no exchange rate, we will no longer continue
 		if (exchangeRate === null) {
-			this.logger.error(`Failed to find the exchange rate for currency code: ${currencyCode}`);
+			this.logger.error(`Failed to find the exchange rate for currency code: ${currency}`);
 			return {
 				amount: -1,
-				currencyCode: currencyCode,
+				currencyCode: currency,
 			};
 		}
 
@@ -157,14 +157,14 @@ export class PricingService {
 		if (!applyDiscount) {
 			return {
 				amount: Math.ceil(basePrice),
-				currencyCode: currencyCode,
+				currencyCode: currency,
 			};
 		}
 
 		// Apply discount and return the price
 		return {
 			amount: Math.ceil(totalPrice),
-			currencyCode: currencyCode,
+			currencyCode: currency,
 		};
 	}
 }

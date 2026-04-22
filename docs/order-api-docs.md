@@ -39,19 +39,19 @@ paymentMethod | Yes | String | The payment method selected by the customer (e.g.
     "status": "payment_pending",
     "subTotal": {
         "amount": 688,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "shippingCost": {
         "amount": 321,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "discount": {
         "amount": 0,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "total": {
         "amount": 1009,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "eta": "6-10 working days",
     "orderItems": [
@@ -76,7 +76,7 @@ paymentMethod | Yes | String | The payment method selected by the customer (e.g.
                 "barcode": "5627530595058",
                 "price": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "weight": {
                     "amount": 16,
@@ -91,12 +91,12 @@ paymentMethod | Yes | String | The payment method selected by the customer (e.g.
             },
             "price": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             },
             "quantity": 1,
             "total": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             }
         }
     ]
@@ -118,19 +118,19 @@ GET /v1/orders HTTP/1.1
         "status": "payment_pending",
         "subTotal": {
             "amount": 688,
-            "currencyCode": "USD"
+            "currencyCode": "usd"
         },
         "shippingCost": {
             "amount": 321,
-            "currencyCode": "USD"
+            "currencyCode": "usd"
         },
         "discount": {
             "amount": 0,
-            "currencyCode": "USD"
+            "currencyCode": "usd"
         },
         "total": {
             "amount": 1009,
-            "currencyCode": "USD"
+            "currencyCode": "usd"
         },
         "eta": "6-10 working days",
         "orderItems": [
@@ -155,7 +155,7 @@ GET /v1/orders HTTP/1.1
                     "barcode": "5627530595058",
                     "price": {
                         "amount": 688,
-                        "currencyCode": "USD"
+                        "currencyCode": "usd"
                     },
                     "weight": {
                         "amount": 16,
@@ -170,12 +170,12 @@ GET /v1/orders HTTP/1.1
                 },
                 "price": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "quantity": 1,
                 "total": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 }
             }
         ]
@@ -228,7 +228,7 @@ GET /v1/orders/order-preview HTTP/1.1
                 "barcode": "5627530595058",
                 "price": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "weight": {
                     "amount": 16,
@@ -314,19 +314,19 @@ GET /v1/orders/<order-uuid> HTTP/1.1
     "status": "payment_pending",
     "subTotal": {
         "amount": 688,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "shippingCost": {
         "amount": 321,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "discount": {
         "amount": 0,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "total": {
         "amount": 1009,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "eta": "6-10 working days",
     "orderItems": [
@@ -351,7 +351,7 @@ GET /v1/orders/<order-uuid> HTTP/1.1
                 "barcode": "5627530595058",
                 "price": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "weight": {
                     "amount": 16,
@@ -366,12 +366,12 @@ GET /v1/orders/<order-uuid> HTTP/1.1
             },
             "price": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             },
             "quantity": 1,
             "total": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             }
         }
     ]
@@ -403,19 +403,19 @@ status | Yes | String | new status for order
     "status": "payment_successful",
     "subTotal": {
         "amount": 688,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "shippingCost": {
         "amount": 321,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "discount": {
         "amount": 0,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "total": {
         "amount": 1009,
-        "currencyCode": "USD"
+        "currencyCode": "usd"
     },
     "eta": "6-10 working days",
     "orderItems": [
@@ -440,7 +440,7 @@ status | Yes | String | new status for order
                 "barcode": "5627530595058",
                 "price": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "weight": {
                     "amount": 16,
@@ -455,12 +455,12 @@ status | Yes | String | new status for order
             },
             "price": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             },
             "quantity": 1,
             "total": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             }
         }
     ]

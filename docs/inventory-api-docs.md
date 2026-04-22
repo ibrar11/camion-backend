@@ -433,7 +433,7 @@ Example Product Document
             "barcode": "10000",
             "price": {
                 "amount": "1000",
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "weight": {
                 "amount": "1",
@@ -1091,7 +1091,7 @@ optionValues | No | List[UUID] | A list of UUIDs of option-values
     "barcode": "10000",
     "price": {
         "amount": 1000,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "weight": {
         "amount": 1,
@@ -1119,7 +1119,7 @@ optionValues | No | List[UUID] | A list of UUIDs of option-values
     "barcode": "10000",
     "price": {
         "amount": 1000,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "weight": {
         "amount": 1,
@@ -1176,7 +1176,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "barcode": "10000",
         "price": {
             "amount": "1000",
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "weight": {
             "amount": "1",
@@ -1212,7 +1212,7 @@ GET /v1/products/<product-uuid>/variants/<variant-uuid> HTTP/1.1
 	"barcode": "10000",
 	"price": {
 		"amount": "1000",
-		"currencyCode": "QAR"
+		"currencyCode": "qar"
 	},
 	"weight": {
 		"amount": "1",
@@ -1263,7 +1263,7 @@ dimensions.unit | Yes | String | The unit of measurement for dimensions. A value
     "barcode": "1212321",
     "price": {
         "amount": 1000,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "weight": {
         "amount": 1,
@@ -1288,7 +1288,7 @@ dimensions.unit | Yes | String | The unit of measurement for dimensions. A value
     "barcode": "1212321",
     "price": {
         "amount": 1000,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "weight": {
         "amount": 1,
@@ -1346,7 +1346,7 @@ curl --location --request POST 'http://localhost:8000/v1/products/d0bd2ed9-81b2-
         "barcode": "10000",
         "price": {
             "amount": 4000,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "weight": {
             "amount": 1,
