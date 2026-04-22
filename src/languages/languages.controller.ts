@@ -25,7 +25,7 @@ import { Language } from "./entities/language.entity";
 @UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/languages")
 export class LanguagesController {
-	constructor(@Inject(LanguagesService) private readonly languagesService: LanguagesService) {}
+	constructor(@Inject(LanguagesService) private readonly languagesService: LanguagesService) { }
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Post()
@@ -34,6 +34,7 @@ export class LanguagesController {
 		return this.languagesService.create(body);
 	}
 
+	@Roles()
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionFindAll(): Promise<Language[]> {
