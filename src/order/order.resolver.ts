@@ -1,4 +1,4 @@
-import { IsUUID } from "class-validator";
+import { IsEnum, IsOptional, IsUUID } from "class-validator";
 
 import {
     Args,
@@ -25,6 +25,7 @@ import { OrderService } from "./order.service";
 import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
+import { OrderStatus } from "./enums/OrderStatus";
 
 @ArgsType()
 export class GetCustomerOrdersArgs {
@@ -33,22 +34,32 @@ export class GetCustomerOrdersArgs {
 
     @Field(() => Int, { defaultValue: 100, })
     itemsPerPage: number;
+
+    @Field({ defaultValue: OrderStatus.PENDING, })
+    @IsOptional()
+    status: OrderStatus;
 }
 @ArgsType()
 export class VariantArgs {
-	slug: string;
+    slug: string;
 
-	@Field({ defaultValue: "en", })
-	language: string;
+    @Field({ defaultValue: "en", })
+    language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+    @Field({ defaultValue: "usd", })
+    currency: string;
 }
 @ArgsType()
 export class GetCustomerOrderArgs {
     @Field(() => String)
     @IsUUID('4')
     uuid: string;
+
+    @Field({ defaultValue: "en", })
+    language: string;
+
+    @Field({ defaultValue: "usd", })
+    currency: string;
 }
 
 @UseGuards(GqlAuthGuard)
@@ -63,7 +74,7 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer orders. Please check and try again.",
             });
         }
-        return this.orderService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage);
+        return this.orderService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage, args.status);
     }
 
     @Query(() => Order)

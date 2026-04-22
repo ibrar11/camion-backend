@@ -22,6 +22,7 @@ import { Roles } from '../auth/roles.decorator';
 import { CustomerRole } from '../customers/enums/CustomerRole';
 
 import { UserRole } from '../users/enums/UserRole';
+import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
@@ -46,6 +47,7 @@ export class CartItemsController {
     addToCart(
         @Body() body: CreateCartItemDto,
         @GetCustomer() customer: Customer,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<CartItem> {
         return this.cartService.create(customer, body);
     }

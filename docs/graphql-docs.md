@@ -6633,6 +6633,10 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 amount
                 currencyCode
             }
+            discountedPrice {
+                amount
+                currencyCode
+            }
             quantity
             total {
                 amount
@@ -6675,6 +6679,18 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
 }
 ```
 
+### GraphQL Variables
+
+```json
+{
+    "status": "pending" | "confirmed" | "cancelled" | "delivered" | "payment_pending" | "payment_successful"|  "payment_rejected" ,
+    "language":"en",
+    "currency": "qar",
+    "pageNumber":1,
+    "itemsPerPage": 10,
+}
+```
+
 ### Response
 
 ```json
@@ -6707,6 +6723,10 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                         "price": {
                             "amount": 688,
                             "currencyCode": "usd"
+                        },
+                        "discountedPrice": {
+                            "amount": 688,
+                            "currencyCode": "USD"
                         },
                         "quantity": 1,
                         "total": {
@@ -6756,7 +6776,7 @@ Get Current Customer Order
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: String) {
+query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: String) {
     getCurrentCustomerOrder(uuid: $uuid) {
         uuid
         status
@@ -6780,6 +6800,10 @@ query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: Stri
         orderItems {
             uuid
             price {
+                amount
+                currencyCode
+            }
+            discountedPrice {
                 amount
                 currencyCode
             }
@@ -6825,6 +6849,16 @@ query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: Stri
 }
 ```
 
+### GraphQL Variables
+
+```json
+{
+    "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9" ,
+    "language":"en",
+    "currency": "qar",
+}
+```
+
 ### Response
 
 ```json
@@ -6856,6 +6890,10 @@ query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: Stri
                     "price": {
                         "amount": 688,
                         "currencyCode": "usd"
+                    },
+                    "discountedPrice": {
+                        "amount": 688,
+                        "currencyCode": "USD"
                     },
                     "quantity": 1,
                     "total": {

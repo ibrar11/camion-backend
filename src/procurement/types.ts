@@ -1,3 +1,5 @@
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+
 import { Product } from "../inventory/entities/product.entity";
 
 export interface SearchProductItem {
@@ -109,6 +111,8 @@ export interface ProductAttributeFormatted {
 
 export interface ProductDetail {
     externalId: number;
+    shopId: string;
+    shopName: string;
     slug: string;
     title: string;
     description: string;
@@ -119,6 +123,7 @@ export interface ProductDetail {
     video?: string;
 
     price: number;
+    currencyCode: CurrencyCode,
     minOrderQuantity: number;
 
     variants: ProductVariant[];

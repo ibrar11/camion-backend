@@ -4,6 +4,8 @@ import { WeightUnit } from 'src/inventory/enums/WeightUnit.enum';
 
 import shippingRatesData from 'src/data/shipping-rates.json';
 
+import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
+
 export interface WeightRange {
     min: number;
     max: number;
@@ -35,7 +37,7 @@ export interface HandlingFeeRange {
 }
 
 export interface ShippingCalculationInput {
-    exchangeRates: ExchageRate;
+    exchangeRates: CurrencyExchageRate;
     countryCode: string;
     totalWeightKg: number;
     declaredValue?: number;
@@ -86,7 +88,7 @@ export interface CartItemForShipping {
     quantity: number;
 }
 
-export interface ExchageRate {
+export interface CurrencyExchageRate {
     cnyToTarget: number;
     usdToTarget: number;
     currency: string;
@@ -129,27 +131,33 @@ export function calculateCartShipping(
     cartItems: CartItemForShipping[],
     countryCode: string,
     currency: string,
+    rates: ExchangeRate[],
     declaredValue?: number
 ): ShippingCalculationResult {
+    try {
+        // Todo: exchage rate imeplementation (CNY -> target and USD -> target)
+        const cnyToTarget = rates?.find(rate => rate.srcCurrencyCode === 'cny' && rate.targetCurrencyCode === currency);
+        const usdToTarget = rates?.find(rate => rate.srcCurrencyCode === 'usd' && rate.targetCurrencyCode === currency);
 
-    // Todo: exchage rate imeplementation (CNY -> target and USD -> target)
+        const exchangeRates = {
+            cnyToTarget: cnyToTarget?.factor ?? 0.54, // default converting CNY → QAR
+            usdToTarget: usdToTarget?.factor ?? 0.15, // default target = QAR
+            currency: currency,
+        };
 
-    const exchangeRates = {
-        cnyToTarget: 0.15, // converting CNY → USD
-        usdToTarget: 1, // target = USD
-        currency: "USD",
-    };
+        const totalWeightKg = calculateTotalWeightFromCart(cartItems);
+        const totalDeclaredValue = declaredValue || 0;
 
-    const totalWeightKg = calculateTotalWeightFromCart(cartItems);
-    const totalDeclaredValue = declaredValue || 0;
-
-    return calculateShipping({
-        exchangeRates,
-        countryCode,
-        totalWeightKg,
-        declaredValue: totalDeclaredValue,
-        customsDuty: 0,
-    });
+        return calculateShipping({
+            exchangeRates,
+            countryCode,
+            totalWeightKg,
+            declaredValue: totalDeclaredValue,
+            customsDuty: 0,
+        });
+    } catch (error) {
+        throw error;
+    }
 }
 
 
@@ -196,103 +204,107 @@ export function convertWeightToKg(amount: number, unit: string): number {
 * @param input
 */
 export function calculateShipping(input: ShippingCalculationInput): ShippingCalculationResult {
-    const { exchangeRates, countryCode, totalWeightKg, declaredValue = 0, customsDuty = 0 } = input;
+    try {
+        const { exchangeRates, countryCode, totalWeightKg, declaredValue = 0, customsDuty = 0 } = input;
 
-    if (!exchangeRates?.cnyToTarget || !exchangeRates?.usdToTarget) {
-        throw new BadRequestException({
-            error: 'Exchange rates are required'
-        });
-    }
-
-    const { cnyToTarget, usdToTarget, currency } = exchangeRates;
-
-    if (!countryCode) {
-        throw new BadRequestException({
-            error: 'Country code is required.'
-        });
-    }
-
-    if (totalWeightKg <= 0) {
-        throw new BadRequestException({
-            error: 'Total weight must be greater than 0'
-        });
-    }
-
-    // Get shipping rate
-    const rateData = getShippingRate(countryCode, totalWeightKg);
-
-    if (!rateData) {
-        throw new BadRequestException({
-            error: `No shipping rate found for ${countryCode} with weight ${totalWeightKg}kg`
-        });
-    }
-
-    const { rate, countryData } = rateData;
-
-    // Calculate base shipping fee
-    const weightChargeCNY = rate.ratePerKg * totalWeightKg;
-    const shippingFeeCNY = weightChargeCNY + rate.fixedFee;
-
-    const shippingFee = convertCNYToTarget(shippingFeeCNY, cnyToTarget);
-
-    // Calculate handling fee
-    const handlingFeeRaw = calculateHandlingFee(totalWeightKg);
-    const handlingFee = convertUSDToTarget(handlingFeeRaw.amountUSD, usdToTarget);
-
-    // Calculate taxes and fees
-    const vat = countryData.taxesAndFees?.vat
-        && calculateVAT(countryData, declaredValue, customsDuty);
-
-    const vatAmount = vat?.amount ?? 0;
-
-    const isClearanceExist = countryData.taxesAndFees?.customsClearanceFee !== undefined;
-    const customsFee = isClearanceExist ?
-        {
-            ...calculateCustomsFee(countryData),
-            amount: convertCNYToTarget(
-                calculateCustomsFee(countryData).amount,
-                cnyToTarget
-            ),
+        if (!exchangeRates?.cnyToTarget || !exchangeRates?.usdToTarget) {
+            throw new BadRequestException({
+                error: 'Exchange rates are required'
+            });
         }
-        : null;
 
-    const customsFeeAmount = customsFee ? customsFee.amount : 0;
+        const { cnyToTarget, usdToTarget, currency } = exchangeRates;
 
-    // Calculate total shipping cost (base shipping + handling + taxes)
-    const totalShippingCost =
-        shippingFee +
-        handlingFee +
-        vatAmount +
-        customsFeeAmount;
+        if (!countryCode) {
+            throw new BadRequestException({
+                error: 'Country code is required.'
+            });
+        }
 
-    return {
-        shippingFee: {
-            amount: shippingFee,
-            currency,
-            breakdown: {
-                weightCharge: convertCNYToTarget(weightChargeCNY, cnyToTarget),
-                fixedFee: convertCNYToTarget(rate.fixedFee, cnyToTarget),
-                ratePerKg: convertCNYToTarget(rate.ratePerKg, cnyToTarget),
+        if (totalWeightKg <= 0) {
+            throw new BadRequestException({
+                error: 'Total weight must be greater than 0'
+            });
+        }
+
+        // Get shipping rate
+        const rateData = getShippingRate(countryCode, totalWeightKg);
+
+        if (!rateData) {
+            throw new BadRequestException({
+                error: `No shipping rate found for ${countryCode} with weight ${totalWeightKg}kg`
+            });
+        }
+
+        const { rate, countryData } = rateData;
+
+        // Calculate base shipping fee
+        const weightChargeCNY = rate.ratePerKg * totalWeightKg;
+        const shippingFeeCNY = weightChargeCNY + rate.fixedFee;
+
+        const shippingFee = convertCNYToTarget(shippingFeeCNY, cnyToTarget);
+
+        // Calculate handling fee
+        const handlingFeeRaw = calculateHandlingFee(totalWeightKg);
+        const handlingFee = convertUSDToTarget(handlingFeeRaw.amountUSD, usdToTarget);
+
+        // Calculate taxes and fees
+        const vat = countryData.taxesAndFees?.vat
+            && calculateVAT(countryData, declaredValue, customsDuty);
+
+        const vatAmount = vat?.amount ?? 0;
+
+        const isClearanceExist = countryData.taxesAndFees?.customsClearanceFee !== undefined;
+        const customsFee = isClearanceExist ?
+            {
+                ...calculateCustomsFee(countryData),
+                amount: convertCNYToTarget(
+                    calculateCustomsFee(countryData).amount,
+                    cnyToTarget
+                ),
+            }
+            : null;
+
+        const customsFeeAmount = customsFee ? customsFee.amount : 0;
+
+        // Calculate total shipping cost (base shipping + handling + taxes)
+        const totalShippingCost =
+            shippingFee +
+            handlingFee +
+            vatAmount +
+            customsFeeAmount;
+
+        return {
+            shippingFee: {
+                amount: shippingFee,
+                currency,
+                breakdown: {
+                    weightCharge: convertCNYToTarget(weightChargeCNY, cnyToTarget),
+                    fixedFee: convertCNYToTarget(rate.fixedFee, cnyToTarget),
+                    ratePerKg: convertCNYToTarget(rate.ratePerKg, cnyToTarget),
+                },
             },
-        },
-        handlingFee: {
-            amount: handlingFee,
+            handlingFee: {
+                amount: handlingFee,
+                currency,
+            },
+            transitTime: {
+                minDays: countryData.transitDays.min,
+                maxDays: countryData.transitDays.max,
+                estimatedRange: `${countryData.transitDays.min}-${countryData.transitDays.max} working days`,
+            },
+            taxesAndFees: {
+                ...(vat && { vat }),
+                ...(customsFee && { customsClearanceFee: customsFee }),
+            },
+            totalShippingCost,
             currency,
-        },
-        transitTime: {
-            minDays: countryData.transitDays.min,
-            maxDays: countryData.transitDays.max,
-            estimatedRange: `${countryData.transitDays.min}-${countryData.transitDays.max} working days`,
-        },
-        taxesAndFees: {
-            ...(vat && { vat }),
-            ...(customsFee && { customsClearanceFee: customsFee }),
-        },
-        totalShippingCost,
-        currency,
-        country: countryData.country,
-        countryCode: countryData.countryCode,
-    };
+            country: countryData.country,
+            countryCode: countryData.countryCode,
+        };
+    } catch (error) {
+        throw error;
+    }
 }
 
 /**
@@ -314,8 +326,14 @@ export function getShippingRate(countryCode: string, weightKg: number): Shipping
     );
 
     if (!weightRange) {
+        let maxWeight = 0;
+        countryData.weightRanges.forEach((range) => {
+            if(range.max > maxWeight) {
+                maxWeight = range.max;
+            }
+        })
         throw new BadRequestException({
-            error: `No shipping rate for ${countryCode} at weight ${weightKg}kg`
+            error: `No shipping rate for ${countryCode} at weight ${weightKg}kg, weight should not be more than ${maxWeight}kg`
         });
     }
 

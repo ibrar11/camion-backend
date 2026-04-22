@@ -6,6 +6,7 @@ import {
     NotFoundException,
     Logger,
     InternalServerErrorException,
+    Inject,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,34 +16,57 @@ import {
 } from 'typeorm';
 
 import { OrderStatus } from "./enums/OrderStatus";
+import { PaymentProvider } from "../payments/enums/PaymentProvider";
+import { TransactionType } from "../referral/enums/TransactionType.enum";
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
+
+import { CreateTransactionDto } from "../referral/dtos/CreateTransactionDto";
 
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 
-import { Customer } from 'src/customers/entities/customer.entity';
+import { Customer } from '../customers/entities/customer.entity';
 
-import { ProductVariant } from 'src/inventory/entities/product-variant.entity';
+import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 
-import { InventoryItem } from 'src/inventory/entities/inventory-item.entity';
+import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
 
-import { InventoryLevel } from "src/inventory/entities/inventory-level.entity";
+import { CartItem } from "../cart/entities/cart-items.entity";
 
-import { CartItem } from "src/cart/entities/cart-items.entity";
+import { CustomerAddress } from "../customers/entities/customer-address.entity";
 
-import { CustomerAddress } from "src/customers/entities/customer-address.entity";
+import { PaymentsService } from "../payments/payments.service";
 
-import { calculateStock } from "src/common/calculateStock";
+import { ExchangeRateService } from "../pricing/exchange-rate.service";
+
+import { calculateStock } from "../common/calculateStock";
+
+import { Coupon } from "../referral/entities/coupon.entity";
+
+import { Wallet } from "../referral/entities/wallet.entity";
+
+import { TransactionsService } from "../referral/transactions.service";
+
+import { Affiliate } from "../referral/entities/affiliate.entity";
+
+import { PricingService } from "../pricing/pricing.service";
 
 import {
     calculateCartShipping,
     ShippingCalculationResult
-} from "src/common/calculateShipping";
+} from "../common/calculateShipping";
 
-import { getSkipAndTake } from "src/common/pagination";
+import { getSkipAndTake } from "../common/pagination";
 
 import {
+    calculateAffiliateCommission,
+    calculateCouponDiscount
+} from "../common/calculateCouponDiscount";
+
+import {
+    OrderFilters,
     OrderPreviewResponse,
 } from "./types";
 
@@ -53,12 +77,17 @@ export class OrderService {
     constructor(
         @InjectRepository(Order) private orderRepository: Repository<Order>,
         @InjectRepository(OrderItem) private orderItemRepository: Repository<OrderItem>,
-        @InjectRepository(Customer) private customerRepository: Repository<Customer>,
-        @InjectRepository(ProductVariant) private variantRepository: Repository<ProductVariant>,
         @InjectRepository(InventoryItem) private inventoryRepository: Repository<InventoryItem>,
         @InjectRepository(InventoryLevel) private inventoryLevelRepository: Repository<InventoryLevel>,
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
         @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
+        @InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
+        @InjectRepository(Wallet) private readonly walletRepository: Repository<Wallet>,
+        @InjectRepository(Affiliate) private readonly affiliateRepository: Repository<Affiliate>,
+        @Inject(TransactionsService) private readonly transactionsService: TransactionsService,
+        @Inject(PaymentsService) private readonly paymentService: PaymentsService,
+        @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
+        @Inject(PricingService) private readonly pricingService: PricingService,
     ) { }
 
     /**
@@ -68,8 +97,21 @@ export class OrderService {
      * @param dto
      * @returns
      */
-    async create(customer: Customer, dto: CreateOrderDto): Promise<Order> {
+    async create(customer: Customer, dto: CreateOrderDto, targetCurrency: CurrencyCode = CurrencyCode.QAR): Promise<Order> {
         try {
+            this.logger.log(`Attempting to create order for customer: ${customer.fullName}`);
+            const address = await this.addressRepository.findOne({
+                where: {
+                    customer: { id: customer.id },
+                    isDefault: true,
+                },
+            });
+
+            if (!address) {
+                throw new BadRequestException({
+                    error: 'User address cannot be found.'
+                });
+            }
             // get cart items
             const cartItems = await this.cartRepository.find({
                 where: {
@@ -117,17 +159,19 @@ export class OrderService {
                 );
 
                 if (!level) {
-                    throw new BadRequestException(
-                        `Insufficient stock for ${variant.sku}`
-                    );
+                    throw new BadRequestException({
+                        error: `Insufficient stock for ${variant.sku}`
+                    });
                 }
 
                 // Deduct
                 level.quantity -= cart.quantity;
                 await this.inventoryLevelRepository.save(level);
 
-                const priceAmount = Number(variant.cost.amount);
-                const totalAmount = priceAmount * cart.quantity;
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, targetCurrency, false);
+                const discountedPriceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, targetCurrency, true);
+                // const priceAmount = Number(variant.cost.amount);
+                const totalAmount = discountedPriceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
 
@@ -138,8 +182,12 @@ export class OrderService {
                 orderItem.variant = variant;
                 orderItem.warehouse = level.warehouse;
                 orderItem.price = {
-                    amount: priceAmount,
-                    currencyCode: variant.cost.currencyCode,
+                    ...priceAmount,
+                    amount: priceAmount.amount,
+                };
+                orderItem.discountedPrice = {
+                    ...discountedPriceAmount,
+                    amount: discountedPriceAmount.amount,
                 };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
@@ -152,21 +200,10 @@ export class OrderService {
                 orderItems.push(orderItem)
             }
 
-            const currency = cartItems[0].variant.cost.currencyCode;
+            const exchangeRates = await this.exchangeRateService.findAll("", "");
+
+            const currency = targetCurrency ?? cartItems[0].variant.cost.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
-
-            const address = await this.addressRepository.findOne({
-                where: {
-                    customer: { id: customer.id },
-                    isDefault: true,
-                },
-            });
-
-            if (!address) {
-                throw new BadRequestException({
-                    error: 'User address cannot be found.'
-                });
-            }
             const shippingCartItems = cartItems.map(item => ({
                 weight: {
                     amount: item.variant.weight.amount,
@@ -179,16 +216,30 @@ export class OrderService {
             const shippingCalculation = calculateCartShipping(
                 shippingCartItems,
                 address.country,
-                "USD", // Todo make currency dynamic
+                currency, // Todo make currency dynamic
+                exchangeRates,
                 subTotal
             );
             const shippingCost = Math.floor(shippingCalculation.totalShippingCost);
             const eta = shippingCalculation.transitTime.estimatedRange
 
-            const discount = 0;
-            const total = subTotal + shippingCost - discount;
+            // COUPON VALIDATION & DISCOUNT
+            let discount = 0;
+            const coupon = await this.couponRepository.findOne({
+                where: { code: dto.couponCode?.toLowerCase().trim() },
+                relations: {
+                    affiliate: {
+                        customer: true,
+                        wallet: true,
+                    },
+                },
+            });
 
-            // payment service needs to integrated here
+            if (coupon){
+                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+            }
+
+            const total = subTotal + shippingCost - discount;
 
             // create a order
             const order = new Order();
@@ -216,6 +267,75 @@ export class OrderService {
 
             await this.orderRepository.save(order);
 
+            // RECORD AFFILIATE COMMISSION
+            if (coupon?.affiliate && coupon.code && discount >= 0) {
+                const commissionAmount = calculateAffiliateCommission(
+                    coupon.affiliate,
+                    total,
+                    discount
+                );
+
+                if (commissionAmount > 0 && coupon.affiliate.wallet?.id) {
+                    const walletId = coupon.affiliate.wallet.id
+                    const wallet = await this.walletRepository.findOne({
+                        where: { id: walletId },
+                        relations: { affiliate: true },
+                    });
+
+                    if (!wallet) {
+                        throw new BadRequestException({
+                            error: `Wallet not found: ${walletId}`
+                        });
+                    }
+
+                    // Create transaction record
+                    const referralTransactionDto: CreateTransactionDto = {
+                        amount: commissionAmount,
+                        currencyCode: currency,
+                        type: TransactionType.Credit,
+                        description: `Commission from order #${order.uuid} using coupon ${coupon.code}`
+                    }
+                    await this.transactionsService.createTransaction(wallet.uuid, referralTransactionDto)
+
+                    // Update wallet balance
+                    wallet.amount.amount += commissionAmount;
+                    wallet.amountAvailable.amount += commissionAmount;
+                    await this.walletRepository.save(wallet);
+
+                    // // Update affiliate's total commission and remaining balance
+                    const affiliate = wallet.affiliate;
+                    affiliate.totalCommission.amount += commissionAmount;
+                    affiliate.remainingBalance.amount += commissionAmount;
+                    affiliate.couponsUsed += 1;
+                    await this.affiliateRepository.save(affiliate);
+
+                    await this.couponRepository.increment({ id: coupon.id }, 'ordersCount', 1);
+                }
+            }
+
+            const customerName: Array<string> = customer.fullName.split(" ");
+            const provider = dto.paymentMethod === "default" ? PaymentProvider.SKIPCASH : PaymentProvider[dto.paymentMethod]
+            // payment service needs to integrated here
+            const paymentPayload = {
+                provider: provider,
+                amount: total,
+                currency: currency,
+                orderUUID: order.uuid,
+                firstName: customerName[0],
+                lastName: customerName[1] ?? customerName[0],
+                emailAddress: customer.emailAddress,
+                phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
+                street: address.streetAddress,
+                city: address.city,
+                state: address.state,
+                country: address.country,
+                postalCode: address.zipCode,
+            }
+
+            const payment = await this.paymentService.createPayment(paymentPayload)
+            order.paymentTransaction = payment;
+            await this.orderRepository.save(order);
+
             // clear the cart
             await this.cartRepository.delete({
                 uuid: In(dto.cartItemUuids)
@@ -226,7 +346,7 @@ export class OrderService {
             this.logger.error(`Error placing order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to place order',
-                details: error.message || error,
+                details: error?.response?.error || error?.message || error,
             });
         }
     }
@@ -236,12 +356,20 @@ export class OrderService {
      *
      * @returns
      */
-    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Order>> {
+    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+            const filter: OrderFilters = {}
+
+            if (status) {
+                filter.status = status;
+            }
 
             return this.orderRepository.find({
+                where: {
+                    ...filter
+                },
                 relations: {
                     orderItems: {
                         product: true,
@@ -268,15 +396,21 @@ export class OrderService {
      * @param customerUuid
      * @returns
      */
-    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Order>> {
+    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
 
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+            const filter: OrderFilters = {}
+
+            if (status) {
+                filter.status = status
+            }
 
             return this.orderRepository.find({
                 where: {
-                    customer: { uuid: customerUuid }
+                    customer: { uuid: customerUuid },
+                    ...filter,
                 },
                 relations: {
                     orderItems: {
@@ -494,11 +628,15 @@ export class OrderService {
                 quantity: item.quantity,
             }));
 
+            const exchangeRates = await this.exchangeRateService.findAll("", "");
+            const currency = cartItems[0].variant.cost.currencyCode;
+
             // Calculate shipping fee using utility function
             const shippingCalculation = calculateCartShipping(
                 shippingCartItems,
                 address.country,
-                "USD", // Todo make currency dynamic
+                currency, // Todo make currency dynamic
+                exchangeRates,
                 subtotal
             );
 

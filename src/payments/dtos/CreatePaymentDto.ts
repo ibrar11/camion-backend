@@ -2,9 +2,9 @@ import {
     IsEmail,
     IsEnum,
     IsNumber,
-    IsOptional,
     IsString,
-    MinLength
+    MinLength, 
+    IsUUID
 } from "class-validator";
 
 import { PaymentProvider } from "../enums/PaymentProvider";
@@ -20,11 +20,10 @@ export class CreatePaymentDto {
     @MinLength(1)
     currency: string;
 
-    // Temporary reference (later → orderId)
-    @IsOptional()
     @IsString()
+    @IsUUID()
     @MinLength(1)
-    orderId?: string;
+    orderUUID: string;
 
     // Customer info (needed by SkipCash)
     @IsString()

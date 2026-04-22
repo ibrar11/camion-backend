@@ -4,12 +4,15 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
+    OneToOne,
 } from "typeorm";
 
 import { Exclude } from "class-transformer";
 
 import { PaymentProvider } from "../enums/PaymentProvider";
 import { PaymentStatus } from "../enums/PaymentStatus";
+
+import { Order } from "../../order/entities/order.entity";
 
 @Entity("payment_transactions")
 export class PaymentTransaction {
@@ -21,9 +24,6 @@ export class PaymentTransaction {
         enum: PaymentProvider,
     })
     provider: PaymentProvider;
-
-    @Column({})
-    orderId: string;
 
     @Column({ nullable: true })
     transactionId: string;
@@ -40,6 +40,9 @@ export class PaymentTransaction {
         default: PaymentStatus.PENDING,
     })
     status: PaymentStatus;
+
+    @OneToOne(() => Order, (order) => order.paymentTransaction)
+    order: Order;
 
     @Column({ type: "jsonb", nullable: true })
     rawResponse: any;

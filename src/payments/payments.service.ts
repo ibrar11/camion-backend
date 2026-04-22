@@ -1,6 +1,5 @@
-import { 
-    Injectable, 
-    InternalServerErrorException, 
+import {
+    Injectable,
     Logger
 } from "@nestjs/common";
 
@@ -15,8 +14,6 @@ import { PaymentStrategyFactory } from "./factories/PaymentStrategyFactory";
 
 import { PaymentStatus } from "./enums/PaymentStatus";
 
-import { InitiatePaymentResponse } from "./types";
-
 @Injectable()
 export class PaymentsService {
     private readonly logger = new Logger(PaymentsService.name);
@@ -27,17 +24,18 @@ export class PaymentsService {
     ) {}
     
     /**
-	 * Creates new payment
-	 *
-	 * @param dto
-	 * @returns
-	 */
-    async createPayment(dto: CreatePaymentDto): Promise<InitiatePaymentResponse> {
+     * Creates new payment
+     *
+     * @param dto
+     * @returns
+     */
+    async createPayment(dto: CreatePaymentDto): Promise<PaymentTransaction> {
         try {
+            this.logger.log(`Attempting to create payment for order ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
+
             // Create payment transaction
             const transaction = this.paymentTransactionRepository.create({
                 provider: dto.provider,
-                orderId: dto.orderId,
                 amount: dto.amount,
                 currency: dto.currency,
                 status: PaymentStatus.PENDING
@@ -53,15 +51,12 @@ export class PaymentsService {
             transaction.transactionId = result.transactionId;
             transaction.rawResponse = result.raw;
 
-            await this.paymentTransactionRepository.save(transaction);
+            this.logger.log(`Completed create payment for order ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
+            return await this.paymentTransactionRepository.save(transaction);
 
-            return result;
         } catch (error: any) {
-            this.logger.error(`Error creating payment: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to create payment',
-                details: error.response?.data || error.message,
-            });
+            this.logger.error(`Error creating payment: ${error?.response?.data || error.message}`);
+            throw error;
         }
     }
 }

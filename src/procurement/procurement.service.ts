@@ -260,8 +260,10 @@ export class ProcurementService {
             const slug = generateSlug(product.subjectTrans || product.subject);
             const title = product.subjectTrans || product.subject;
             // Format the Product
-            const formattedProduct = {
+            const formattedProduct: ProductDetail = {
                 externalId: product.offerId,
+                shopId: product.sellerOpenId,
+                shopName: product.companyName,
                 slug: slug,
                 title: title.slice(0, 128),
                 description: description,
@@ -273,6 +275,7 @@ export class ProcurementService {
                 price: parseFloat(
                     product.productSaleInfo?.priceRangeList?.[0]?.price || '0'
                 ),
+                currencyCode: CurrencyCode.CNY,
                 minOrderQuantity: product.minOrderQuantity,
                 variants,
                 options,
@@ -435,7 +438,7 @@ export class ProcurementService {
                                                     quantity: variant.stock || 0,
                                                     cost: {
                                                         amount: variant.price || 0,
-                                                        currencyCode: CurrencyCode.USD,
+                                                        currencyCode: productDetails.currencyCode,
                                                     },
                                                     weight: {
                                                         amount: variant.shipping?.weight || 0,

@@ -54,6 +54,10 @@ export class OrderItem {
     @Column(() => Money)
     price: Money;
 
+    @Field(() => Money)
+    @Column(() => Money)
+    discountedPrice: Money;
+
     @Field(() => Int)
     @Column()
     quantity: number;

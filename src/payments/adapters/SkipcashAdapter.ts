@@ -6,7 +6,7 @@ import {
     Logger,
 } from "@nestjs/common";
 
-import { generateSignature } from "src/common/skipcash";
+import { generateSignature } from "../../common/skipcash";
 
 import { CreatePaymentDto } from "../dtos/CreatePaymentDto";
 
@@ -29,10 +29,9 @@ export class SkipCashAdapter {
      */
     async createPayment(dto: CreatePaymentDto): Promise<InitiatePaymentResponse> {
         try {
+            this.logger.log(`Attempting to create skipcash payment for order ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
 
-            // note: reference id should be replaced with order id
-            const orderId = dto.orderId || '';
-
+            const orderId = dto.orderUUID || '';
 
             // note: payment logic needs to be reviewed once payment integration starts
 
@@ -81,35 +80,19 @@ export class SkipCashAdapter {
                     error: message,
                 });
             }
+            this.logger.log(`Completed create skipcash payment for order ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
 
             return {
                 provider: "skipcash",
                 transactionId: data.resultObj.transactionId,
                 paymentUrl: data.resultObj.payUrl,
-                orderId: orderId,
                 raw: data,
             };
         } catch (error: any) {
-            this.logger.error(`SkipCash payment failed: ${error.message}`);
-
-            let customMessage = 'Please check your information and try again';
-
-            if (error.response?.status === 400) {
-                if (error.response?.data?.errorMessage?.includes('Signature')) {
-                    customMessage = 'Payment verification failed. Please review your details and try again';
-                } else {
-                    customMessage = 'Invalid payment details. Please check your information and try again';
-                }
-            } else if (error.response?.status === 401) {
-                customMessage = 'Payment authentication failed. Please try again';
-            } else if (error.response?.status === 422) {
-                customMessage = 'Payment information is incomplete. Please fill all required fields';
-            } else if (error.response?.status === 500) {
-                customMessage = 'Payment service temporarily unavailable. Please try again in a few minutes';
-            }
-
+            this.logger.error(`SkipCash payment failed: ${JSON.stringify(error?.response?.data || error.message)}`);
             throw new InternalServerErrorException({
-                error: customMessage,
+                error: "SkipCash payment failed",
+                details: error?.response?.data || error?.message || error,
             });
         }
     }

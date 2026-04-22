@@ -6,6 +6,7 @@ import {
     Entity,
     ManyToOne,
     OneToMany,
+    OneToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn
 } from "typeorm";
@@ -19,6 +20,7 @@ import { Customer } from "../../customers/entities/customer.entity";
 import { OrderItem } from "./order-item.entity";
 
 import { Money } from "../../inventory/entities/product-variant.entity";
+import { PaymentTransaction } from "../../payments/entities/payment-transaction.entity";
 
 @ObjectType()
 @Entity({ name: 'orders', })
@@ -66,6 +68,9 @@ export class Order {
     @Field(() => [OrderItem])
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
     orderItems: Array<OrderItem>;
+
+    @OneToOne(() => PaymentTransaction, (transaction) => transaction.order, { cascade: true })
+    paymentTransaction: PaymentTransaction;
 
     @Exclude()
     @UpdateDateColumn({

@@ -13,13 +13,14 @@ import {
     UseGuards
 } from '@nestjs/common';
 
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 
-import { RolesGuard } from 'src/auth/roles.guard';
-import { Roles } from 'src/auth/roles.decorator';
-import { CustomerRole } from 'src/customers/enums/CustomerRole';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { CustomerRole } from '../customers/enums/CustomerRole';
+import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 
-import { GetCustomer } from 'src/customers/customer.decorator';
+import { GetCustomer } from '../customers/customer.decorator';
 
 import { OrderStatus } from './enums/OrderStatus';
 
@@ -28,8 +29,8 @@ import { CreateOrderDto } from './dtos/CreateOrderDto';
 import { Order } from './entities/order.entity';
 import { OrderService } from './order.service';
 
-import { Customer } from 'src/customers/entities/customer.entity';
-import { UserRole } from 'src/users/enums/UserRole';
+import { Customer } from '../customers/entities/customer.entity';
+import { UserRole } from '../users/enums/UserRole';
 
 import { OrderPreviewResponse } from './types';
 
@@ -44,8 +45,9 @@ export class OrderController {
     create(
         @GetCustomer() customer: Customer,
         @Body() dto: CreateOrderDto,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<Order> {
-        return this.orderService.create(customer, dto);
+        return this.orderService.create(customer, dto, currency);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
@@ -57,11 +59,12 @@ export class OrderController {
         @Query("sort") sort: string,
         @Query("pageNumber") pageNumber: number,
         @Query("itemsPerPage") itemsPerPage: number,
+        @Query("status") status: OrderStatus,
     ): Promise<Array<Order>> {
         if (customer) {
-            return this.orderService.findAllByCustomer(customer.uuid, filters, sort, pageNumber, itemsPerPage);
+            return this.orderService.findAllByCustomer(customer.uuid, filters, sort, pageNumber, itemsPerPage, status);
         }
-        return this.orderService.findAll(filters, sort, pageNumber, itemsPerPage);
+        return this.orderService.findAll(filters, sort, pageNumber, itemsPerPage, status);
     }
 
 
