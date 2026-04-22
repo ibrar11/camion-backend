@@ -55,7 +55,7 @@ export class SkipCashAdapter {
             const signature = generateSignature(payload);
 
             // create skipcash payment
-            const res = await fetch(`https://skipcashtest.azurewebsites.net/api/v1/payments`, {
+            const res = await fetch(`https://api.skipcash.app/api/v1/payments`, {
                 method: "POST",
                 headers: {
                     Authorization: signature,
