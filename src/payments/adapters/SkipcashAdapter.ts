@@ -65,6 +65,7 @@ export class SkipCashAdapter {
                 body: JSON.stringify(payload),
             });
             const data = await res.json();
+            this.logger.log(`After hitting skipcash api ${data}`);
 
             if (!res.ok || data.hasError) {
                 let message = "Payment creation failed";
@@ -91,7 +92,7 @@ export class SkipCashAdapter {
             };
         } catch (error: any) {
             console.log("SkipCash payment failed:",error)
-            this.logger.error(`SkipCash payment failed: ${JSON.stringify(error?.response?.data || error.message)}`);
+            this.logger.error(`SkipCash payment failed: ${error}`);
             throw new InternalServerErrorException({
                 error: "SkipCash payment failed",
                 details: error?.response?.data || error?.message || error,
