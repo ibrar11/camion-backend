@@ -52,6 +52,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "speakeasy": "^2.0.0",
+    "twilio": "^5.13.1",
     "typeorm": "^0.3.28",
     "typeorm-naming-strategies": "^4.1.0"
   },
@@ -68,6 +69,7 @@
     "@types/node": "^22.10.7",
     "@types/speakeasy": "^2.0.10",
     "@types/supertest": "^6.0.2",
+    "@types/twilio": "^3.19.2",
     "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",

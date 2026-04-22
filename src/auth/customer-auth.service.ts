@@ -35,6 +35,8 @@ import { CustomerAuthVerificationResponse } from "./response/CustomerAuthVerific
 import { CustomerAuthResponse } from "./response/CustomerAuthResponse";
 
 import { CustomerRole } from "src/customers/enums/CustomerRole";
+import { TwilioService } from "src/common/twilio.service";
+
 import { EmailService } from "src/email/email.service";
 
 import { CartItem } from "../cart/entities/cart-items.entity";
@@ -53,6 +55,7 @@ export class CustomerAuthService {
 		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 		private readonly configService: ConfigService,
 		private readonly jwtService: JwtService,
+		private readonly twilioService: TwilioService,
 		private readonly emailService: EmailService,
 	) {
 		const isDev = this.configService.get<string>('NODE_ENV') === 'local';
@@ -292,11 +295,11 @@ export class CustomerAuthService {
 		const request = new LoginRequest();
 		request.uuid = crypto.randomUUID();
 		request.customer = customer;
-		request.secret = await bcrypt.hash(secret, 10);
+		request.secret = '';
 		await this.loginRequestRepository.save(request);
 
-		// TODO: Send the secret to the customer using their email address
-		console.log(secret);
+		// Send OTP via Twilio Verify (Branded Sender ID)
+		await this.twilioService.sendVerification(customer.phoneNumber);
 
 		// Create a payload for the session token
 		const payload = {
@@ -480,10 +483,11 @@ export class CustomerAuthService {
 			});
 		}
 
-		// Match the secret against the login request
-		if (!bcrypt.compareSync(body.secret, request.secret)) {
+		// Verify the OTP code via Twilio Verify
+		const verified = await this.twilioService.checkVerification(request.customer.phoneNumber, body.secret);
+		if (!verified) {
 			throw new BadRequestException({
-				error: "We weren't able to log you in. Give your phon number another look and try again.",
+				error: "We weren't able to log you in. Give your phone number another look and try again.",
 			});
 		}
 
