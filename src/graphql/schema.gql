@@ -184,14 +184,23 @@ type Product {
   brief(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   briefAr: String!
   briefEn: String!
+  countFiveStar: Float!
+  countFourStar: Float!
+  countOneStar: Float!
+  countThreeStar: Float!
+  countTwoStar: Float!
   description(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionAr: String!
   descriptionEn: String!
   descriptionHtml(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
+  likesCount: Float!
   options: [ProductOption!]!
+  ratingAvg: Float!
   reviews: [ProductReview!]!
+  reviewsCount: Float!
+  salesCount: Float!
   slug: String!
   status: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
