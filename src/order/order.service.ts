@@ -185,10 +185,10 @@ export class OrderService {
                     ...priceAmount,
                     amount: priceAmount.amount,
                 };
-                orderItem.discountedPrice = {
-                    ...discountedPriceAmount,
-                    amount: discountedPriceAmount.amount,
-                };
+                // orderItem.discountedPrice = {
+                //     ...discountedPriceAmount,
+                //     amount: discountedPriceAmount.amount,
+                // };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
                     amount: totalAmount,
