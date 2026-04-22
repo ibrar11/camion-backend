@@ -184,11 +184,6 @@ type Product {
   brief(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   briefAr: String!
   briefEn: String!
-  countFiveStar: Float!
-  countFourStar: Float!
-  countOneStar: Float!
-  countThreeStar: Float!
-  countTwoStar: Float!
   description(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionAr: String!
   descriptionEn: String!
@@ -198,6 +193,11 @@ type Product {
   likesCount: Float!
   options: [ProductOption!]!
   ratingAvg: Float!
+  ratingFiveStarCount: Float!
+  ratingFourStarCount: Float!
+  ratingOneStarCount: Float!
+  ratingThreeStarCount: Float!
+  ratingTwoStarCount: Float!
   reviews: [ProductReview!]!
   reviewsCount: Float!
   salesCount: Float!
