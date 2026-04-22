@@ -6606,7 +6606,7 @@ Get Current Customer Orders
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
+query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: String,  $language: String) {
     getCurrentCustomerOrders(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
         uuid
         status
@@ -6641,18 +6641,22 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
             product {
                 uuid
                 slug
-                title
-                brief
-                description
-                descriptionHtml
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
                 status
             }
-            variant {
+            variant { 
                 uuid
-                title
+                title(language: $language)
                 sku
                 barcode
-                price {
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
                     amount
                     currencyCode
                 }
@@ -6664,7 +6668,6 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int) {
                     width
                     height
                     length
-                    unit
                 }
             }
         }
@@ -6753,7 +6756,7 @@ Get Current Customer Order
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrder($uuid: string) {
+query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: String) {
     getCurrentCustomerOrder(uuid: $uuid) {
         uuid
         status
@@ -6788,18 +6791,22 @@ query GetCurrentCustomerOrder($uuid: string) {
             product {
                 uuid
                 slug
-                title
-                brief
-                description
-                descriptionHtml
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
                 status
             }
             variant {
                 uuid
-                title
+                title(language: $language)
                 sku
                 barcode
-                price {
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
                     amount
                     currencyCode
                 }
@@ -6811,7 +6818,6 @@ query GetCurrentCustomerOrder($uuid: string) {
                     width
                     height
                     length
-                    unit
                 }
             }
         }

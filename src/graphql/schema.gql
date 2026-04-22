@@ -166,7 +166,7 @@ type OrderItem {
   quantity: Int!
   total: Money!
   uuid: String!
-  variant: ProductVariant!
+  variant(currency: String! = "usd", language: String! = "en"): ProductVariant!
 }
 
 type PollElement {
