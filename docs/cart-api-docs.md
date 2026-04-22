@@ -37,7 +37,7 @@ Parameter Name | Required | Type | Description
 productUuid | Yes | UUID | UUID of the product
 variantUuid | Yes | UUID | UUID of the product variant
 quantity | Yes | Number | Quantity to add (minimum 1)
-currencyCode | Yes | CurrencyCode | The desired currency code
+currency | Yes | CurrencyCode | The desired currency code
 
 ### Request Body
 ```json
@@ -45,7 +45,7 @@ currencyCode | Yes | CurrencyCode | The desired currency code
 	"productUuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
 	"variantUuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
 	"quantity": 1,
-	"currencyCode": "qar"
+	"currency": "qar"
 }
 ```
 
@@ -226,7 +226,7 @@ Parameter Name | Required | Type | Description
 productUuid | Yes | UUID | UUID of the product
 variantUuid | Yes | UUID | New variant UUID
 quantity | Yes | Number | Updated quantity (minimum 1)
-currencyCode | Yes | CurrencyCode | The desired currency code
+currency | Yes | CurrencyCode | The desired currency code
 
 ### Request Body
 ```json
@@ -234,7 +234,7 @@ currencyCode | Yes | CurrencyCode | The desired currency code
 	"productUuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
 	"variantUuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
 	"quantity": 2,
-	"currencyCode": "qar"
+	"currency": "qar"
 }
 ```
 

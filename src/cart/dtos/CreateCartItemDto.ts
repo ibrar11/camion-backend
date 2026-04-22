@@ -21,5 +21,5 @@ export class CreateCartItemDto {
 
     @IsString()
     @IsEnum(CurrencyCode)
-    currencyCode: CurrencyCode;
+    currency: CurrencyCode;
 }

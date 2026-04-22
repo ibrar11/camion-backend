@@ -6384,15 +6384,15 @@ If the current customer is not an affiliate, this method should return null.
             "status": "rejected",
             "totalCommission": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "totalPaid": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "remainingBalance": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "couponsCreated": 18,
             "couponsUsed": 0,
@@ -6406,7 +6406,7 @@ If the current customer is not an affiliate, this method should return null.
                 "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
                 "amount": {
                     "amount": 200,
-                    "currencyCode": "QAR"
+                    "currencyCode": "qar"
                 }
             },
             "createdAt": "2026-04-14T06:44:14.229Z"
@@ -6445,7 +6445,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "804f8446-cb10-4997-bfac-d7e0487aba93",
                 "amount": {
                     "amount": 100,
-                    "currencyCode": "QAR"
+                    "currencyCode": "qar"
                 },
                 "type": "credit",
                 "description": "Your commission for the month of July",
@@ -6455,7 +6455,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
                 "amount": {
                     "amount": 100,
-                    "currencyCode": "QAR"
+                    "currencyCode": "qar"
                 },
                 "type": "debit",
                 "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93",
@@ -6465,7 +6465,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
                 "amount": {
                     "amount": 100,
-                    "currencyCode": "QAR"
+                    "currencyCode": "qar"
                 },
                 "type": "credit",
                 "description": "Your commission for the month of July",
@@ -6475,7 +6475,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
                 "amount": {
                     "amount": 100,
-                    "currencyCode": "QAR"
+                    "currencyCode": "qar"
                 },
                 "type": "credit",
                 "description": "Your commission for the month of July",
@@ -6485,7 +6485,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "32a41b95-25dd-4024-beea-5858633d034a",
                 "amount": {
                     "amount": 100,
-                    "currencyCode": "QAR"
+                    "currencyCode": "qar"
                 },
                 "type": "credit",
                 "description": "Your commission for the month of July",
@@ -6495,7 +6495,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "72b2d69c-aa4b-44ff-b61e-920c7947e909",
                 "amount": {
                     "amount": 100,
-                    "currencyCode": "QAR"
+                    "currencyCode": "qar"
                 },
                 "type": "debit",
                 "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93",
@@ -6647,7 +6647,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 descriptionHtml(language: $language)
                 status
             }
-            variant { 
+            variant {
                 uuid
                 title(language: $language)
                 sku
@@ -6686,19 +6686,19 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 "status": "payment_pending",
                 "subTotal": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "shippingCost": {
                     "amount": 0,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "discount": {
                     "amount": 0,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "total": {
                     "amount": 688,
-                    "currencyCode": "USD"
+                    "currencyCode": "usd"
                 },
                 "eta": "6-10 working days",
                 "orderItems": [
@@ -6706,12 +6706,12 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                         "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                         "price": {
                             "amount": 688,
-                            "currencyCode": "USD"
+                            "currencyCode": "usd"
                         },
                         "quantity": 1,
                         "total": {
                             "amount": 688,
-                            "currencyCode": "USD"
+                            "currencyCode": "usd"
                         },
                         "product": {
                             "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
@@ -6729,7 +6729,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                             "barcode": "10000",
                             "price": {
                                 "amount": 1000,
-                                "currencyCode": "QAR"
+                                "currencyCode": "qar"
                             },
                             "weight": {
                                 "amount": 1,
@@ -6835,19 +6835,19 @@ query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: Stri
             "status": "payment_pending",
             "subTotal": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             },
             "shippingCost": {
                 "amount": 0,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             },
             "discount": {
                 "amount": 0,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             },
             "total": {
                 "amount": 688,
-                "currencyCode": "USD"
+                "currencyCode": "usd"
             },
             "eta": "6-10 working days",
             "orderItems": [
@@ -6855,12 +6855,12 @@ query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: Stri
                     "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                     "price": {
                         "amount": 688,
-                        "currencyCode": "USD"
+                        "currencyCode": "usd"
                     },
                     "quantity": 1,
                     "total": {
                         "amount": 688,
-                        "currencyCode": "USD"
+                        "currencyCode": "usd"
                     },
                     "product": {
                         "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
@@ -6878,7 +6878,7 @@ query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: Stri
                         "barcode": "10000",
                         "price": {
                             "amount": 1000,
-                            "currencyCode": "QAR"
+                            "currencyCode": "qar"
                         },
                         "weight": {
                             "amount": 1,

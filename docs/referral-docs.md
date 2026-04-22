@@ -55,15 +55,15 @@ bio | No | String | Your bio line
     "status": "accepted",
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "totalPaid": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "remainingBalance": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "couponsCreated": 17,
     "couponsUsed": 0,
@@ -71,15 +71,15 @@ bio | No | String | Your bio line
         "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
         "amount": {
             "amount": 200,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountPending": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountAvailable": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         }
     }
 }
@@ -123,15 +123,15 @@ bio | No | String | Your bio line
     "status": "accepted",
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "totalPaid": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "remainingBalance": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "couponsCreated": 17,
     "couponsUsed": 0,
@@ -139,15 +139,15 @@ bio | No | String | Your bio line
         "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
         "amount": {
             "amount": 200,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountPending": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountAvailable": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         }
     }
 }
@@ -187,15 +187,15 @@ GET /v1/referral/affiliates HTTP/1.1
         "status": "accepted",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0,
@@ -203,15 +203,15 @@ GET /v1/referral/affiliates HTTP/1.1
             "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
             "amount": {
                 "amount": 200,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "amountPending": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "amountAvailable": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             }
         }
     }
@@ -246,15 +246,15 @@ GET /v1/referral/affiliates?filters={"type":"influencer"} HTTP/1.1
         "status": "accepted",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0,
@@ -262,15 +262,15 @@ GET /v1/referral/affiliates?filters={"type":"influencer"} HTTP/1.1
             "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
             "amount": {
                 "amount": 200,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "amountPending": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "amountAvailable": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             }
         }
     }
@@ -304,15 +304,15 @@ GET /v1/referral/affiliates/<affiliate-uuid> HTTP/1.1
     "status": "accepted",
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "totalPaid": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "remainingBalance": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "couponsCreated": 18,
     "couponsUsed": 0,
@@ -320,15 +320,15 @@ GET /v1/referral/affiliates/<affiliate-uuid> HTTP/1.1
         "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
         "amount": {
             "amount": 200,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountPending": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountAvailable": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         }
     }
 }
@@ -365,15 +365,15 @@ PUT /v1/referral/affiliates/<affiliate-uuid> HTTP/1.1
     "status": "accepted",
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "totalPaid": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "remainingBalance": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "couponsCreated": 18,
     "couponsUsed": 0
@@ -408,15 +408,15 @@ PATCH /v1/referral/affiliates/<affiliate-uuid>/status HTTP/1.1
     "status": "rejected",
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "totalPaid": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "remainingBalance": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "couponsCreated": 18,
     "couponsUsed": 0
@@ -451,15 +451,15 @@ PATCH /v1/referral/affiliates/<Affiliate-uuid>/type HTTP/1.1
     "status": "rejected",
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "totalPaid": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "remainingBalance": {
         "amount": 0,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "couponsCreated": 18,
     "couponsUsed": 0
@@ -498,7 +498,7 @@ description | No | String | Your bio line
 ```json
 {
     "amount": 100,
-    "currencyCode": "QAR",
+    "currencyCode": "qar",
     "type": "credit",
     "description": "Your commission for the month of July"
 }
@@ -513,20 +513,20 @@ description | No | String | Your bio line
         "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
         "amount": {
             "amount": 300,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountPending": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountAvailable": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         }
     },
     "amount": {
         "amount": 100,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "type": "credit",
     "description": "Your commission for the month of July"
@@ -548,7 +548,7 @@ GET /v1/referral/wallets/<wallet-uuid>/transactions HTTP/1.1
         "uuid": "32a41b95-25dd-4024-beea-5858633d034a",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -557,7 +557,7 @@ GET /v1/referral/wallets/<wallet-uuid>/transactions HTTP/1.1
         "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -566,7 +566,7 @@ GET /v1/referral/wallets/<wallet-uuid>/transactions HTTP/1.1
         "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -575,7 +575,7 @@ GET /v1/referral/wallets/<wallet-uuid>/transactions HTTP/1.1
         "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "debit",
         "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
@@ -584,7 +584,7 @@ GET /v1/referral/wallets/<wallet-uuid>/transactions HTTP/1.1
         "uuid": "804f8446-cb10-4997-bfac-d7e0487aba93",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -606,7 +606,7 @@ GET /v1/referral/wallets/<wallet-uuid>/transactions/<transaction-uuid> HTTP/1.1
     "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
     "amount": {
         "amount": 100,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "type": "debit",
     "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
@@ -629,20 +629,20 @@ PATCH /v1/referral/wallets/<wallet-uuid>/transactions/<transaction-uuid>/reverse
         "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
         "amount": {
             "amount": 200,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountPending": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "amountAvailable": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         }
     },
     "amount": {
         "amount": 100,
-        "currencyCode": "QAR"
+        "currencyCode": "qar"
     },
     "type": "debit",
     "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
@@ -670,7 +670,7 @@ GET /v1/referral/wallets/c807c0a1-152d-4348-a7b1-b2320eabf9fc/transactions HTTP/
         "uuid": "804f8446-cb10-4997-bfac-d7e0487aba93",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -679,7 +679,7 @@ GET /v1/referral/wallets/c807c0a1-152d-4348-a7b1-b2320eabf9fc/transactions HTTP/
         "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "debit",
         "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
@@ -688,7 +688,7 @@ GET /v1/referral/wallets/c807c0a1-152d-4348-a7b1-b2320eabf9fc/transactions HTTP/
         "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -697,7 +697,7 @@ GET /v1/referral/wallets/c807c0a1-152d-4348-a7b1-b2320eabf9fc/transactions HTTP/
         "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -706,7 +706,7 @@ GET /v1/referral/wallets/c807c0a1-152d-4348-a7b1-b2320eabf9fc/transactions HTTP/
         "uuid": "32a41b95-25dd-4024-beea-5858633d034a",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "credit",
         "description": "Your commission for the month of July"
@@ -715,7 +715,7 @@ GET /v1/referral/wallets/c807c0a1-152d-4348-a7b1-b2320eabf9fc/transactions HTTP/
         "uuid": "72b2d69c-aa4b-44ff-b61e-920c7947e909",
         "amount": {
             "amount": 100,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "type": "debit",
         "description": "Reversed transaction # 804f8446-cb10-4997-bfac-d7e0487aba93"
@@ -767,15 +767,15 @@ expiresAt | Yes | String | The expiry code of the coupon
         "status": "accepted",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0
@@ -835,15 +835,15 @@ GET /v1/referral/coupons/<coupon-uuid> HTTP/1.1
         "status": "rejected",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0
@@ -899,15 +899,15 @@ expiresAt | Yes | String | The expiry code of the coupon
         "status": "rejected",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0
@@ -961,15 +961,15 @@ GET /v1/referral/coupons HTTP/1.1
             "status": "rejected",
             "totalCommission": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "totalPaid": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "remainingBalance": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "couponsCreated": 18,
             "couponsUsed": 0
@@ -1054,15 +1054,15 @@ swiftCode | Yes | String | The SWIFT code of your bank
         "status": "rejected",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0
@@ -1155,15 +1155,15 @@ GET /v1/referral/bank-accounts/<bank-account-uuid> HTTP/1.1
         "status": "rejected",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0
@@ -1226,15 +1226,15 @@ swiftCode | Yes | String | The SWIFT code of your bank
         "status": "rejected",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0
@@ -1285,15 +1285,15 @@ PATCH /v1/referral/bank-accounts/<bank-account-uuid> HTTP/1.1
         "status": "rejected",
         "totalCommission": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "totalPaid": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "remainingBalance": {
             "amount": 0,
-            "currencyCode": "QAR"
+            "currencyCode": "qar"
         },
         "couponsCreated": 18,
         "couponsUsed": 0
@@ -1343,15 +1343,15 @@ GET /v1/referral/bank-accounts HTTP/1.1
             "status": "rejected",
             "totalCommission": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "totalPaid": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "remainingBalance": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "couponsCreated": 18,
             "couponsUsed": 0
@@ -1382,15 +1382,15 @@ GET /v1/referral/bank-accounts HTTP/1.1
             "status": "rejected",
             "totalCommission": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "totalPaid": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "remainingBalance": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "couponsCreated": 18,
             "couponsUsed": 0
@@ -1421,15 +1421,15 @@ GET /v1/referral/bank-accounts HTTP/1.1
             "status": "rejected",
             "totalCommission": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "totalPaid": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "remainingBalance": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "couponsCreated": 18,
             "couponsUsed": 0
@@ -1460,15 +1460,15 @@ GET /v1/referral/bank-accounts HTTP/1.1
             "status": "rejected",
             "totalCommission": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "totalPaid": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "remainingBalance": {
                 "amount": 0,
-                "currencyCode": "QAR"
+                "currencyCode": "qar"
             },
             "couponsCreated": 18,
             "couponsUsed": 0
