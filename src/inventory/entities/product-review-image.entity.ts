@@ -29,11 +29,11 @@ export class ProductReviewImage {
 
 	@Field()
 	@Column({ type: "varchar", length: 256, nullable: true, })
-	thumbnailUrl: string;
+	imageUrl: string;
 
 	@Field()
 	@Column({ type: "varchar", length: 256, nullable: true, })
-	imageUrl: string;
+	thumbnailUrl: string;
 
 	@Exclude()
 	@UpdateDateColumn({

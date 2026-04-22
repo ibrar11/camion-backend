@@ -6,7 +6,9 @@ import {
     Context,
     Field,
     Int,
+    Parent,
     Query,
+    ResolveField,
     Resolver,
 } from "@nestjs/graphql";
 
@@ -17,7 +19,10 @@ import {
 } from "@nestjs/common";
 
 import { Order } from "./entities/order.entity";
+import { OrderItem } from "./entities/order-item.entity";
 import { OrderService } from "./order.service";
+
+import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { OrderStatus } from "./enums/OrderStatus";
@@ -35,9 +40,19 @@ export class GetCustomerOrdersArgs {
     status: OrderStatus;
 }
 @ArgsType()
+export class VariantArgs {
+	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+}
+@ArgsType()
 export class GetCustomerOrderArgs {
     @Field(() => String)
-    @IsUUID()
+    @IsUUID('4')
     uuid: string;
 }
 
@@ -64,5 +79,19 @@ export class OrderResolver {
             });
         }
         return this.orderService.findOne(args.uuid);
+    }
+}
+
+@Resolver(() => OrderItem)
+export class OrderItemResolver {
+    @ResolveField("variant", () => ProductVariant)
+    getVariant(@Parent() orderItem: OrderItem, @Args() args: VariantArgs): ProductVariant {
+        if (orderItem.variant && orderItem.product) {
+            return {
+                ...orderItem.variant,
+                product: orderItem.product
+            };
+        }
+        return orderItem.variant;
     }
 }

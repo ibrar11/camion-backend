@@ -6,7 +6,10 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
-import { OrderResolver } from './order.resolver';
+import { 
+    OrderItemResolver, 
+    OrderResolver 
+} from './order.resolver';
 
 import { ClientsModule } from '../clients/clients.module';
 
@@ -67,6 +70,7 @@ import { PricingService } from '../pricing/pricing.service';
         UsersService,
         CustomersService,
         OrderResolver,
+        OrderItemResolver,
         PaymentsService,
         PaymentStrategyFactory,
         ExchangeRateService,

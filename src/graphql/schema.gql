@@ -48,6 +48,8 @@ type Banner {
 }
 
 type CartItem {
+  availableStock: Int!
+  isAvailable: Boolean!
   discountedSubTotal: Money!
   product: Product!
   quantity: Int!
@@ -62,7 +64,7 @@ type Category {
   nameAr: String!
   nameEn: String!
   slug: String!
-  thumbnailUrl: String
+  thumbnailUrl: String!
   uuid: String!
 }
 
@@ -168,7 +170,7 @@ type OrderItem {
   quantity: Int!
   total: Money!
   uuid: String!
-  variant: ProductVariant!
+  variant(currency: String! = "usd", language: String! = "en"): ProductVariant!
 }
 
 type PollElement {
@@ -192,8 +194,17 @@ type Product {
   descriptionHtml(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
+  likesCount: Float!
   options: [ProductOption!]!
+  ratingAvg: Float!
+  ratingFiveStarCount: Float!
+  ratingFourStarCount: Float!
+  ratingOneStarCount: Float!
+  ratingThreeStarCount: Float!
+  ratingTwoStarCount: Float!
   reviews: [ProductReview!]!
+  reviewsCount: Float!
+  salesCount: Float!
   slug: String!
   status: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
@@ -290,9 +301,9 @@ type Query {
   getCurrentCustomerOrder(uuid: String!): Order!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1, status: String! = "pending"): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
-  getCustomerCart(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
+  getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!
-  getCustomerWishlist(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
+  getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
@@ -379,4 +390,5 @@ type Weight {
 type WishlistItem {
   product: Product!
   uuid: String!
+  variant: ProductVariant!
 }

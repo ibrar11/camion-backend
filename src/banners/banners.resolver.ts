@@ -48,6 +48,22 @@ export class BannersResolver {
 		return titleMap[language] ?? banner.titleEn;
 	}
 
+	@ResolveField("imageUrl", () => String)
+	getImageUrl(@Parent() banner: Banner): string {
+		if (banner === null || banner.imageUrl === null) {
+			return "";
+		}
+
+		const segments = banner.imageUrl.split("/");
+		if (banner.imageUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (banner.imageUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
 	@Query(() => [Banner])
 	getBanners(@Args() args: GetBannersArgs): Promise<Array<Banner>> {
 		return this.bannersService.findAll("", "", args.pageNumber, args.itemsPerPage);

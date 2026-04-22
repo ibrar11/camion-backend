@@ -8,7 +8,7 @@ import { Story } from './entities/story.entity';
 import { StoryFrame } from './entities/story-frame.entity';
 import { StoriesService } from './stories.service';
 import { StoriesController } from './stories.controller';
-import { StoriesResolver } from './stories.resolver';
+import { FramesResolver, StoriesResolver } from './stories.resolver';
 
 import { Customer } from '../customers/entities/customer.entity';
 import { CustomersService } from '../customers/customers.service';
@@ -34,6 +34,7 @@ import { ClientsModule } from '../clients/clients.module';
 		CustomersService,
 		StoriesService,
 		StoriesResolver,
+		FramesResolver,
 	],
 	controllers: [StoriesController],
 })

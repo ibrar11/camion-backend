@@ -59,6 +59,17 @@ export class CartItem {
     @Column(() => Money)
     discountedSubTotal: Money;
 
+    // <!--
+    // These fields are not part of the schema. Please don't add them to the database.
+
+    @Field(() => Int)
+    availableStock: number;
+
+    @Field()
+    isAvailable: boolean;
+
+    // -->
+
     @Exclude()
     @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
     updatedAt: Date;

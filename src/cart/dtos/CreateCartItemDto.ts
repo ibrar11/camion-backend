@@ -1,17 +1,25 @@
-import { 
-    IsUUID, 
-    IsNumber, 
-    Min 
+import {
+    IsUUID,
+    IsNumber,
+    Min,
+    IsString,
+    IsEnum
 } from "class-validator";
 
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
+
 export class CreateCartItemDto {
-    @IsUUID()
+    @IsUUID('4')
     productUuid: string;
 
-    @IsUUID()
+    @IsUUID('4')
     variantUuid: string;
 
     @IsNumber()
     @Min(1)
     quantity: number;
+
+    @IsString()
+    @IsEnum(CurrencyCode)
+    currencyCode: CurrencyCode;
 }

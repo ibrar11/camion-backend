@@ -243,7 +243,7 @@ import { Promo } from "./promos/entities/promo.entity";
 		}),
 		GraphQLModule.forRoot<ApolloDriverConfig>({
 			driver: ApolloDriver,
-			graphiql: true,
+			graphiql: false,
 			autoSchemaFile: path.join(process.cwd(), "src/graphql/schema.gql"),
 			sortSchema: true,
 			context: ({ req }) => ({ req }),

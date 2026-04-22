@@ -42,4 +42,4 @@ EXPOSE 8000
 ENV PORT=8000
 
 # Run the app
-CMD ["node", "dist/main.js"]
+CMD ["node", "--max-old-space-size=4096", "dist/main.js"]

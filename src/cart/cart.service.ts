@@ -5,7 +5,6 @@ import {
     BadRequestException,
     NotFoundException,
     Logger,
-    InternalServerErrorException,
     Inject,
 } from "@nestjs/common";
 
@@ -18,23 +17,14 @@ import { getSkipAndTake } from "../common/pagination";
 import { CreateCartItemDto } from "./dtos/CreateCartItemDto";
 import { UpdateCartItemDto } from "./dtos/UpdateCartItemDto";
 
+import { ProductStatus } from "src/inventory/enums/ProductStatus.enum";
+
 import { CartItem } from "./entities/cart-items.entity";
-
 import { Product } from "../inventory/entities/product.entity";
-
 import { ProductVariant } from "../inventory/entities/product-variant.entity";
-
 import { Customer } from "../customers/entities/customer.entity";
 
-import { PricingService } from "../pricing/pricing.service";
-
-import {
-    UpdateCartResponse,
-    ValidatedCartItem
-} from "./types";
-
-import { ProductStatus } from "src/inventory/enums/ProductStatus.enum";
-import { CurrencyCode } from "src/inventory/enums/CurrencyCode.enum";
+import { PricingService } from "src/pricing/pricing.service";
 
 @Injectable()
 export class CartItemsService {
@@ -44,123 +34,117 @@ export class CartItemsService {
         @InjectRepository(CartItem) private readonly cartRepository: Repository<CartItem>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
+        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
         @Inject(PricingService) private readonly pricingService: PricingService,
     ) { }
 
     /**
      * Add the product to cart
-     * @param dto
      * @param customer
+     * @param body
      * @returns
      */
-    async create(dto: CreateCartItemDto, customer: Customer, currency: CurrencyCode = CurrencyCode.QAR): Promise<CartItem> {
-        try {
-            const { productUuid, variantUuid, quantity } = dto;
+    async create(customer: Customer, body: CreateCartItemDto): Promise<CartItem> {
+        this.logger.log(`Attempting to add to cart for product: ${body.productUuid}`);
 
-            this.logger.log(`Attempting to add to cart for product: ${productUuid}`);
+        // find the product needs to be added
+        const product = await this.productRepository.findOne({
+            where: { uuid: body.productUuid, },
+            relations: {
+                variants: {
+                    inventoryItem: {
+                        levels: true,
+                    },
+                },
+                productCategories: {
+                    category: true,
+                },
+            },
+        });
 
-            if (!productUuid) {
-                throw new BadRequestException({
-                    error: 'productUuid is required',
-                });
-            }
-
-            // find the product needs to be added
-            const product = await this.productRepository.findOne({
-                where: { uuid: productUuid },
-                relations: {
-                    variants: {
-                        inventoryItem: {
-                            levels: true
-                        }
-                    }
-                }
+        // Make sure the product exists and is available for sale.
+        if (!product || product.status !== ProductStatus.ACTIVE) {
+            throw new BadRequestException({
+                error: 'Product not available',
             });
-
-            if (!product || product.status !== ProductStatus.ACTIVE) {
-                throw new BadRequestException({
-                    error: 'Product not available',
-                });
-            }
-
-            // find the specific variant from the product
-            const variant = product?.variants?.find((item) => (item.uuid === variantUuid));
-
-            if (!variant) {
-                throw new NotFoundException({
-                    error: 'Variant not found',
-                });
-            }
-
-            // check the variant stock availability
-            const availableStock = calculateStock(variant);
-
-            if (availableStock <= 0) {
-                throw new BadRequestException({
-                    error: 'Product is out of stock',
-                });
-            }
-
-            if (availableStock < quantity) {
-                throw new BadRequestException({
-                    error: 'Insufficient stock',
-                });
-            }
-
-            const price = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, false);
-            const discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, true);
-
-            // check if the variant alreadu exists
-            const existing = await this.cartRepository.findOne({
-                where: {
-                    product: { uuid: productUuid },
-                    variant: { uuid: variantUuid },
-                    customer: { uuid: customer.uuid }
-                }
-            })
-
-            // handles add to cart
-            if (existing) {
-                const updatedQuantity = existing.quantity + quantity;
-
-                if (availableStock < updatedQuantity) {
-                    throw new BadRequestException({
-                        error: `Not enough stock available, Stock:${availableStock}`,
-                    });
-                }
-
-                existing.quantity = updatedQuantity;
-                existing.subTotal = {
-                    ...price,
-                    amount: price.amount * updatedQuantity,
-                };
-                existing.discountedSubTotal = {
-                    ...discountedPrice,
-                    amount: discountedPrice.amount * updatedQuantity,
-                };
-                return this.cartRepository.save(existing);
-            } else {
-                const cartItem = new CartItem();
-                cartItem.uuid = crypto.randomUUID();
-                cartItem.customer = customer;
-                cartItem.product = product;
-                cartItem.variant = variant;
-                cartItem.quantity = quantity;
-                cartItem.subTotal = {
-                    ...price,
-                    amount: price.amount * quantity
-                };
-                cartItem.discountedSubTotal = {
-                    ...discountedPrice,
-                    amount: discountedPrice.amount * quantity
-                };
-                return this.cartRepository.save(cartItem);
-            }
-
-        } catch (err) {
-            this.logger.error("Error while adding item in cart: ", err);
-            throw err;
         }
+
+        if (!product.variants || !Array.isArray(product.variants)) {
+            throw new BadRequestException({
+                error: "Failed to find any variant of the product. Please check and try again.",
+            });
+        }
+
+        // find the specific variant from the product
+        const variant = product.variants.find((variant) => (variant.uuid === body.variantUuid));
+        if (!variant) {
+            throw new NotFoundException({
+                error: "Faild to find the requested variant. Please check and try again.",
+            });
+        }
+
+        // check the variant stock availability
+        const availableStock = calculateStock(variant);
+        if (availableStock <= 0) {
+            throw new BadRequestException({
+                error: 'Product is out of stock',
+            });
+        }
+
+        // Make sure the product is in sufficient quantity
+        if (availableStock < body.quantity) {
+            throw new BadRequestException({
+                error: 'Insufficient stock',
+            });
+        }
+
+        // Calculate the price of the product/variant
+        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currencyCode, false);
+
+        // check if the variant alreadu exists
+        const existing = await this.cartRepository.findOne({
+            where: {
+                customer: { uuid: customer.uuid },
+                product: { uuid: body.productUuid, },
+                variant: { uuid: body.variantUuid, },
+            },
+        })
+
+        // Update the existing cart item if it exists
+        if (existing) {
+            const updatedQuantity = existing.quantity + body.quantity;
+
+            if (availableStock < updatedQuantity) {
+                throw new BadRequestException({
+                    error: 'Not enough stock available',
+                });
+            }
+
+            const updatedPrice = price.amount * updatedQuantity;
+            existing.quantity = updatedQuantity;
+            existing.subTotal = {
+                amount: updatedPrice,
+                currencyCode: price.currencyCode,
+            };
+            return this.cartRepository.save(existing);
+        }
+
+        // Reset prodcut variants
+        product.variants = [];
+        product.productCategories = [];
+
+        // Create a new cart item
+        const cartItem = new CartItem();
+        cartItem.uuid = crypto.randomUUID();
+        cartItem.customer = customer;
+        cartItem.product = product;
+        cartItem.variant = variant;
+        cartItem.quantity = body.quantity;
+        cartItem.subTotal = {
+            amount: price.amount * body.quantity,
+            currencyCode: variant.cost.currencyCode
+        };
+        return this.cartRepository.save(cartItem);
     }
 
     /**
@@ -172,64 +156,58 @@ export class CartItemsService {
      * @param itemsPerPage
      * @returns
      */
-    async findCart(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ValidatedCartItem>> {
-        try {
+    async findCart(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<CartItem>> {
+        this.logger.log(`Retrieving cart items for customer: ${customer.uuid}`);
 
-            // Get pagination params
-            const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+        // Get pagination params
+        const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-            const where = { customer: { uuid: customer.uuid } };
-
-            const items = await this.cartRepository.find({
-                where,
-                relations: {
-                    product: true,
-                    variant: true,
-                    customer: true
+        // Find the items in the customer cart
+        const cartItems = await this.cartRepository.find({
+            where: { customer: { uuid: customer.uuid } },
+            relations: {
+                product: {
+                    productCategories: {
+                        category: true,
+                    },
                 },
-                order: { id: 'DESC' },
-                skip: skip,
-                take: take,
+                variant: {
+                    inventoryItem: {
+                        levels: true,
+                    },
+                    images: true,
+                },
+            },
+            order: { id: 'DESC' },
+            skip: skip,
+            take: take,
+        });
+
+        return cartItems
+            .map((cartItem) => {
+                // Ignore if the product isn't available for sale
+                if (!cartItem.product || cartItem.product.status !== ProductStatus.ACTIVE) {
+                    return null;
+                }
+
+                // Ignore if the cart item has no variant
+                if (!cartItem.variant) {
+                    return null;
+                }
+
+                // Calculate the stock of the variant.
+                const stock = calculateStock(cartItem.variant);
+
+                // Update the stock entries of each cart item.
+                cartItem.product.variants = [];
+                cartItem.product.productCategories = [];
+                cartItem.availableStock = stock;
+                cartItem.isAvailable = stock > 0;
+                return cartItem;
+            })
+            .filter((cartItem) => {
+                return cartItem !== null && cartItem !== undefined;
             });
-
-            const validatedItems: ValidatedCartItem[] = [];
-
-            for (const item of items) {
-
-                const product = await this.productRepository.findOne({
-                    where: { uuid: item.product.uuid },
-                    relations: {
-                        variants: {
-                            inventoryItem: {
-                                levels: true
-                            },
-                            images: true
-                        }
-                    }
-                });
-
-                if (!product || product.status !== ProductStatus.ACTIVE) continue;
-
-                const variant = product.variants.find(v => v.uuid === item.variant.uuid);
-
-                if (!variant) continue;
-
-                const stock = calculateStock(variant);
-
-                validatedItems.push(
-                    {
-                        ...item,
-                        availableStock: stock,
-                        isAvailable: stock > 0,
-                    }
-                );
-            }
-
-            return validatedItems;
-        } catch (err) {
-            this.logger.error("Error while fetching cart: ", err);
-            throw err;
-        }
     }
 
     /**
@@ -239,209 +217,117 @@ export class CartItemsService {
      * @returns
      */
     async getCartCount(customer: Customer): Promise<number> {
-        try {
-            const count = await this.cartRepository.count({
-                where: {
-                    customer: { uuid: customer.uuid },
-                },
-            });
+        this.logger.log(`Retrieving the cart item count for customer: ${customer.uuid}`);
 
-            return count;
-
-        } catch (error: any) {
-            this.logger.error(`Error getting cart count: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to get cart count',
-                details: error.response?.data || error.message,
-            });
-        }
+        return this.cartRepository.count({
+            where: {
+                customer: { uuid: customer.uuid },
+            },
+        });
     }
 
     /**
      * Update the cart item
-     * @param uuid
-     * @param dto
      * @param customer
+     * @param cartItemUUID
+     * @param body
      * @returns
      */
-    async update(uuid: string, dto: UpdateCartItemDto, customer: Customer, currency: CurrencyCode = CurrencyCode.QAR): Promise<UpdateCartResponse> {
-        try {
-            const { productUuid, variantUuid, quantity } = dto;
+    async update(customer: Customer, cartItemUUID: string, body: UpdateCartItemDto): Promise<CartItem> {
+        this.logger.log(`Updating the cart item: ${cartItemUUID}`);
 
-            // find the cart item to update
-            const cartItem = await this.cartRepository.findOne({
-                where: {
-                    product: { uuid: productUuid },
-                    uuid: uuid
+        // find the cart item to update
+        const cartItem = await this.cartRepository.findOne({
+            where: {
+                uuid: cartItemUUID,
+            },
+            relations: {
+                product: {
+                    productCategories: {
+                        category: true,
+                    },
                 },
-                relations: {
-                    product: true,
-                    variant: true,
-                    customer: true
-                }
-            });
-
-            if (!cartItem) {
-                throw new NotFoundException({
-                    error: "Cart item not found",
-                });
-            }
-
-            const finalVariantUuid = variantUuid ?? cartItem.variant.uuid;
-            const finalQuantity = quantity ?? cartItem.quantity;
-
-            // find the cart item product
-            const product = await this.productRepository.findOne({
-                where: { id: cartItem.product.id },
-            });
-
-            if (!product || product.status !== ProductStatus.ACTIVE) {
-                throw new BadRequestException({
-                    error: 'Product not available',
-                });
-            }
-
-            // find the cart item product's variant
-            const variant = await this.variantRepository.findOne({
-                where: {
-                    uuid: finalVariantUuid,
-                    product: {
-                        id: cartItem.product.id
-                    }
-                },
-                relations: {
+                variant: {
                     inventoryItem: {
-                        levels: true
-                    }
-                }
-            });
-
-            if (!variant) {
-                throw new NotFoundException({
-                    error: 'Variant not found',
-                });
-            }
-
-            // check the variant stock availability
-            const availableStock = calculateStock(variant);
-
-            if (availableStock <= 0) {
-                throw new BadRequestException({
-                    error: 'Product is out of stock',
-                });
-            }
-
-            //Check if a cart item with the target variant already exists
-            const existingItem = await this.cartRepository.findOne({
-                where: {
-                    customer: { id: customer.id },
-                    product: { id: product.id },
-                    variant: { id: variant.id }
+                        levels: true,
+                    },
                 },
-                relations: {
-                    product: true,
-                    variant: true,
-                    customer: true
-                }
-            })
+                customer: true,
+            },
+        });
 
-            const pricePerUnit = variant?.cost?.amount || 0.0;
-            const price = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, false);
-            const discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, variant, currency, true);
-
-            // merge the dupliate variant and remove the old one
-            if (existingItem && existingItem.uuid !== cartItem.uuid) {
-
-                const mergedQuantity = existingItem.quantity + finalQuantity;
-
-                if (availableStock < mergedQuantity) {
-                    throw new BadRequestException({
-                        error: `Insufficient stock after merge. Item already exists with quantity ${existingItem.quantity}`,
-                    });
-                }
-
-                existingItem.quantity = mergedQuantity;
-                existingItem.subTotal = {
-                    ...price,
-                    amount: price.amount * mergedQuantity,
-                };
-                existingItem.discountedSubTotal = {
-                    ...discountedPrice,
-                    amount: discountedPrice.amount * mergedQuantity,
-                };
-                existingItem.variant = variant;
-
-                const savedItem = await this.cartRepository.save(existingItem);
-
-                // remove duplicate item
-                await this.cartRepository.remove(cartItem);
-
-                return {
-                    uuid: savedItem.uuid,
-                    product: savedItem.product,
-                    variant: savedItem.variant,
-                    quantity: savedItem.quantity,
-                    subTotal: savedItem.subTotal
-                };
-            }
-
-            if (availableStock < finalQuantity) {
-                throw new BadRequestException({
-                    error: 'Insufficient stock',
-                });
-            }
-
-
-            cartItem.variant = variant;
-            cartItem.quantity = finalQuantity;
-            cartItem.subTotal = {
-                ...price,
-                amount: price.amount * finalQuantity,
-            };
-            cartItem.discountedSubTotal = {
-                ...discountedPrice,
-                amount: discountedPrice.amount * finalQuantity,
-            };
-
-            const savedItem = await this.cartRepository.save(cartItem);
-            return {
-                uuid: savedItem.uuid,
-                product: savedItem.product,
-                variant: savedItem.variant,
-                quantity: savedItem.quantity,
-                subTotal: savedItem.subTotal
-            };
-        } catch (err) {
-            this.logger.error("Error while updating cart item: ", err);
-            throw err;
+        // Make sure the cart item exists
+        if (!cartItem) {
+            throw new NotFoundException({
+                error: "Cart item not found. Please check and try again.",
+            });
         }
+
+        // Make sure the product exists and is available for sale.
+        if (!cartItem.product || cartItem.product.status !== ProductStatus.ACTIVE) {
+            throw new BadRequestException({
+                error: 'Product not available. Please check and try again.',
+            });
+        }
+
+        // Make sure the variant exists
+        if (!cartItem.variant) {
+            throw new NotFoundException({
+                error: 'Variant not found. Please check and try again.',
+            });
+        }
+
+        // check the variant stock availability
+        const availableStock = calculateStock(cartItem.variant);
+        if (availableStock <= 0) {
+            throw new BadRequestException({
+                error: 'Product is out of stock. Please try again later.',
+            });
+        }
+
+        // Make sure the product is in sufficient quantity
+        if (availableStock < body.quantity) {
+            throw new BadRequestException({
+                error: 'Insufficient stock. Please try again later.',
+            });
+        }
+
+        // Calculate the price of the product/variant
+        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currencyCode, false);
+
+        // Update the cart item
+        cartItem.product.variants = [];
+        cartItem.quantity = body.quantity;
+        cartItem.subTotal = {
+            amount: price.amount * body.quantity,
+            currencyCode: body.currencyCode,
+        };
+
+        return this.cartRepository.save(cartItem);
     }
 
     /**
      * Remove the cart item
      *
-     * @param uuid
+     * @param cartItemUUID
      * @returns
      */
-    async removeItem(uuid: string): Promise<void> {
-        try {
-            const cartItem = await this.cartRepository.findOne({
-                where: {
-                    uuid: uuid
-                }
+    async removeItem(cartItemUUID: string): Promise<void> {
+        this.logger.log(`Removing item ${cartItemUUID} from cart.`);
+
+        const cartItem = await this.cartRepository.findOne({
+            where: {
+                uuid: cartItemUUID,
+            },
+        });
+
+        if (!cartItem) {
+            throw new NotFoundException({
+                error: "Cart item not found",
             });
-
-            if (!cartItem) {
-                throw new NotFoundException({
-                    error: "Cart item not found",
-                });
-            }
-
-            await this.cartRepository.remove(cartItem);
-        } catch (err) {
-            this.logger.error("Error while removing cart item: ", err);
-            throw err;
         }
+
+        await this.cartRepository.remove(cartItem);
     }
 
     /**
@@ -450,13 +336,10 @@ export class CartItemsService {
      * @returns
      */
     async clearCart(customer: Customer): Promise<void> {
-        try {
-            await this.cartRepository.delete({
-                customer: { id: customer.id }
-            });
-        } catch (err) {
-            this.logger.error("Error while clearing cart: ", err);
-            throw err;
-        }
+        this.logger.log(`Clearing the customer cart: ${customer.uuid}`);
+
+        await this.cartRepository.delete({
+            customer: { id: customer.id, }
+        });
     }
 }

@@ -20,12 +20,15 @@ import { Product } from "./entities/product.entity";
 import { ProductOption } from "./entities/product-option.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
 import { Money, ProductVariant } from "./entities/product-variant.entity";
+import { ProductVariantImage } from "./entities/product-variant-image.entity";
 
 import { ProductsService } from "./products.service";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { PricingService } from "src/pricing/pricing.service";
 import { CurrencyCode } from "./enums/CurrencyCode.enum";
+import { ProductReview } from "./entities/product-review.entity";
+import { ProductReviewImage } from "./entities/product-review-image.entity";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -346,5 +349,75 @@ export class ProductVariantResolver {
 		};
 
 		return titleMap[language] ?? productVariant.titleEn;
+	}
+}
+
+@Resolver(() => ProductVariantImage)
+export class ProductVariantImageResolver {
+	@ResolveField("imageUrl", () => String)
+	getImageUrl(@Parent() productVariantImage: ProductVariantImage): string {
+		if (productVariantImage === null || productVariantImage.imageUrl === null) {
+			return "";
+		}
+
+		const segments = productVariantImage.imageUrl.split("/");
+		if (productVariantImage.imageUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (productVariantImage.imageUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
+	@ResolveField("thumbnailUrl", () => String)
+	getThumbnailUrl(@Parent() productVariantImage: ProductVariantImage): string {
+		if (productVariantImage === null || productVariantImage.thumbnailUrl === null) {
+			return "";
+		}
+
+		const segments = productVariantImage.thumbnailUrl.split("/");
+		if (productVariantImage.thumbnailUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (productVariantImage.thumbnailUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+}
+
+@Resolver(() => ProductReviewImage)
+export class ProductReviewImageResolver {
+	@ResolveField("imageUrl", () => String)
+	getImageUrl(@Parent() reviewImage: ProductReviewImage): string {
+		if (reviewImage === null || reviewImage.imageUrl === null) {
+			return "";
+		}
+
+		const segments = reviewImage.imageUrl.split("/");
+		if (reviewImage.imageUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (reviewImage.imageUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
+	@ResolveField("thumbnailUrl", () => String)
+	getThumbnailUrl(@Parent() reviewImage: ProductReviewImage): string {
+		if (reviewImage === null || reviewImage.thumbnailUrl === null) {
+			return "";
+		}
+
+		const segments = reviewImage.thumbnailUrl.split("/");
+		if (reviewImage.thumbnailUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (reviewImage.thumbnailUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
 	}
 }

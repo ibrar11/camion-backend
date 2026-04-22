@@ -18,6 +18,8 @@ import { Story } from "./entities/story.entity";
 import { StoriesService } from "./stories.service";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
+import { StoryFrame } from "./entities/story-frame.entity";
+import { retry } from "rxjs";
 
 @ArgsType()
 export class GetStoriesArgs {
@@ -51,5 +53,41 @@ export class StoriesResolver {
 	@Query(() => [Story])
 	getStories(@Args() args: GetStoriesArgs): Promise<Array<Story>> {
 		return this.storiesService.findAll("", "", args.pageNumber, args.itemsPerPage);
+	}
+}
+
+@UseGuards(GqlAuthGuard)
+@Resolver(() => StoryFrame)
+export class FramesResolver {
+	@ResolveField("mediaUrl", () => String)
+	getMediaUrl(@Parent() frame: StoryFrame): string {
+		if (frame === null || frame.mediaUrl === null) {
+			return "";
+		}
+
+		const segments = frame.mediaUrl.split("/");
+		if (frame.mediaUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (frame.mediaUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
+	@ResolveField("thumbnailUrl", () => String)
+	getThumbnailUrl(@Parent() frame: StoryFrame): string {
+		if (frame === null || frame.thumbnailUrl === null) {
+			return "";
+		}
+
+		const segments = frame.thumbnailUrl.split("/");
+		if (frame.thumbnailUrl.startsWith("https://")) {
+			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+		} else if (frame.thumbnailUrl.startsWith("s3://")) {
+			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
 	}
 }

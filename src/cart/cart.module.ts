@@ -19,6 +19,7 @@ import { ProductVariant } from '../inventory/entities/product-variant.entity';
 import { ClientsModule } from '../clients/clients.module';
 
 import { CartResolver } from './cart.resolver';
+import { PricingModule } from 'src/pricing/pricing.module';
 
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
@@ -36,6 +37,7 @@ import { PricingService } from '../pricing/pricing.service';
             KeyValuePair,
         ]),
         ClientsModule,
+        PricingModule,
     ],
     providers: [
         CartItemsService,

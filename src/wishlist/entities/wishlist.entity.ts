@@ -2,6 +2,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
     Unique,
@@ -18,6 +19,7 @@ import {
     Field,
     ObjectType
 } from "@nestjs/graphql";
+import { ProductVariant } from "src/inventory/entities/product-variant.entity";
 
 @ObjectType()
 @Entity({ name: 'wishlist_items' })
@@ -36,8 +38,12 @@ export class WishlistItem {
     customer: Customer;
 
     @Field(() => Product)
-    @ManyToOne(() => Product, {onDelete: 'CASCADE',})
+    @ManyToOne(() => Product, { onDelete: 'CASCADE', })
     product: Product;
+
+    @Field(() => ProductVariant)
+    @ManyToOne(() => ProductVariant, { onDelete: 'CASCADE', })
+    variant: ProductVariant;
 
     @Exclude()
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz', nullable: false })

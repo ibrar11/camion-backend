@@ -12,20 +12,27 @@ import {
     Field,
     Int,
     ArgsType,
+    ResolveField,
+    Parent,
 } from "@nestjs/graphql";
-
-import { GqlAuthGuard } from "../auth/gql.guard";
 
 import { Customer } from "../customers/entities/customer.entity";
 
 import { WishlistItem } from "./entities/wishlist.entity";
 import { WishlistService } from "./wishlist.service";
 
+import { ProductVariant } from "../inventory/entities/product-variant.entity";
+
+import { GqlAuthGuard } from "../auth/gql.guard";
+
 @ArgsType()
 export class GetCustomerWishListArgs {
     @Field({ defaultValue: "en", })
-	language: string;
-    
+    language: string;
+
+    @Field({ defaultValue: "usd", })
+    currency: string;
+
     @Field(() => Int, { defaultValue: 1, })
     pageNumber: number;
 
@@ -37,41 +44,39 @@ export class GetCustomerWishListArgs {
 @Resolver(() => WishlistItem)
 export class WishListResolver {
     constructor(
-        @Inject(WishlistService) private readonly wishListService: WishlistService,
+        @Inject(WishlistService) private readonly wishlistService: WishlistService,
     ) { }
+
+    @ResolveField("variant", () => ProductVariant)
+    getVariant(@Parent() wishlistItem: WishlistItem): ProductVariant {
+        wishlistItem.variant.product = wishlistItem.product;
+        return wishlistItem.variant;
+    }
 
     @Query(() => [WishlistItem])
     async getCustomerWishlist(
         @Context() context: any,
         @Args() args: GetCustomerWishListArgs
     ): Promise<Array<WishlistItem>> {
-
         const customer: Customer = context.req.customer;
-
         if (!customer) {
             throw new NotFoundException({
                 error: "Failed to find the customer. Please check and try again.",
             });
         }
-
-        return this.wishListService.getWishlist(customer, "", "", args.pageNumber, args.itemsPerPage);
-
+        return this.wishlistService.getWishlist(customer, "", "", args.pageNumber, args.itemsPerPage);
     }
 
     @Query(() => Number)
     async getCustomerWishlistCount(
         @Context() context: any,
     ): Promise<number> {
-
         const customer: Customer = context.req.customer;
-
         if (!customer) {
             throw new NotFoundException({
                 error: "Failed to find the customer. Please check and try again.",
             });
         }
-
-        return this.wishListService.getWishlistCount(customer);
-
+        return this.wishlistService.getWishlistCount(customer);
     }
 }

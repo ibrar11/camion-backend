@@ -5144,6 +5144,15 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     description(language: $language)
     descriptionHtml(language: $language)
     status
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    ratingOneStarCount
+    ratingTwoStarCount
+    ratingThreeStarCount
+    ratingFourStarCount
+    ratingFiveStarCount
     options {
       uuid
       name(language: $language)
@@ -5201,7 +5210,7 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     "language": "en",
     "currency": "qar",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 1
 }
 ```
 
@@ -5212,335 +5221,43 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     "data": {
         "getProducts": [
             {
-                "uuid": "3d5202d2-271f-4179-9764-caf3c88074ae",
-                "slug": "iphone-20",
-                "title": "iPhone 20",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "draft",
-                "options": [
-                    {
-                        "uuid": "ad7a28b9-9ab8-43dd-b340-cd904ec1430c",
-                        "name": "Storage",
-                        "position": 1,
-                        "values": [
-                            {
-                                "uuid": "aa4cffd3-f7fa-45e4-b1ab-6d2b41a2e3e6",
-                                "value": "512 GB",
-                                "position": 1
-                            },
-                            {
-                                "uuid": "60d356eb-5151-48aa-a4fc-074202703c27",
-                                "value": "256 GB",
-                                "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "9166e4f3-51e1-4bc0-9ff9-d35eb3898462",
-                        "name": "Color",
-                        "position": 0,
-                        "values": [
-                            {
-                                "uuid": "54584521-c118-4741-a437-7f9f453de210",
-                                "value": "Red",
-                                "position": 0
-                            },
-                            {
-                                "uuid": "f0104183-5a90-4292-8b70-7f9e9fb5027e",
-                                "value": "Blue",
-                                "position": 1
-                            }
-                        ]
-                    }
-                ],
-                "variants": [
-                    {
-                        "uuid": "91b0f3ef-fefa-4ab3-839e-9b110ab0f478",
-                        "title": "iPhone 20 Blue 512 GB",
-                        "sku": "iphone-20-blue-512gb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 16800,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 16780,
-                            "currencyCode": "qar"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "aa4cffd3-f7fa-45e4-b1ab-6d2b41a2e3e6"
-                                }
-                            },
-                            {
-                                "optionValue": {
-                                    "uuid": "f0104183-5a90-4292-8b70-7f9e9fb5027e"
-                                }
-                            }
-                        ],
-                         "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "490e2328-9a03-4b94-b6e6-85ade2de2cc4",
-                        "title": "iPhone 20 Red 256 GB",
-                        "sku": "iphone-20-red-256gb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 8400,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 8380,
-                            "currencyCode": "qar"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "54584521-c118-4741-a437-7f9f453de210"
-                                }
-                            },
-                            {
-                                "optionValue": {
-                                    "uuid": "60d356eb-5151-48aa-a4fc-074202703c27"
-                                }
-                            }
-                        ],
-                         "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "412abb25-6192-4fdd-baa9-2ccb03726b59",
-                        "title": "iPhone 20 Red 512 GB",
-                        "sku": "iphone-20-red-512gb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 16800,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 16780,
-                            "currencyCode": "qar"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "54584521-c118-4741-a437-7f9f453de210"
-                                }
-                            },
-                            {
-                                "optionValue": {
-                                    "uuid": "aa4cffd3-f7fa-45e4-b1ab-6d2b41a2e3e6"
-                                }
-                            }
-                        ],
-                         "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "5a8553ae-9a45-4b15-b561-93caeeef9394",
-                        "title": "iPhone 20 Blue 256 GB",
-                        "sku": "iphone-20-blue-256gb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 8400,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 8380,
-                            "currencyCode": "qar"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "f0104183-5a90-4292-8b70-7f9e9fb5027e"
-                                }
-                            },
-                            {
-                                "optionValue": {
-                                    "uuid": "60d356eb-5151-48aa-a4fc-074202703c27"
-                                }
-                            }
-                        ],
-                         "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "uuid": "0727fea5-f7ac-42e6-a23b-ff59246974d0",
+                "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
                 "slug": "iphone-22",
                 "title": "iPhone 22",
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "status": "draft",
+                "status": "active",
+                "salesCount": 0,
+                "likesCount": 0,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "ratingOneStarCount": 0,
+                "ratingTwoStarCount": 0,
+                "ratingThreeStarCount": 0,
+                "ratingFourStarCount": 0,
+                "ratingFiveStarCount": 0,
                 "options": [
                     {
-                        "uuid": "59938e9d-4f3a-4a69-8c16-ca9ad77c60a8",
+                        "uuid": "d8dbb95c-ad90-475c-afe0-c3ac9b059542",
                         "name": "Color",
                         "position": 0,
                         "values": [
                             {
-                                "uuid": "d93e6a1c-a71f-4f46-bb4a-e6d574d09648",
+                                "uuid": "7dc2f302-9094-4130-8917-299fa8df6528",
                                 "value": "Red",
                                 "position": 0
-                            },
-                            {
-                                "uuid": "146f4b42-78da-498b-bd14-ef1cb2061045",
-                                "value": "Blue",
-                                "position": 1
                             }
                         ]
                     },
                     {
-                        "uuid": "f52f6480-9f2d-4a5e-842e-f24c185b6344",
+                        "uuid": "ea319224-05e3-4977-af3b-66ca1ca5d15c",
                         "name": "Storage",
                         "position": 1,
                         "values": [
                             {
-                                "uuid": "ebd1ab5d-c219-4c66-aec8-2171cf4e127d",
+                                "uuid": "94c267ba-aaf0-4a14-8d28-e1ed2a1d5240",
                                 "value": "1 TB",
-                                "position": 0
-                            },
-                            {
-                                "uuid": "d84c7032-ed22-4839-aa17-5de2898b19ac",
-                                "value": "2 TB",
                                 "position": 1
                             }
                         ]
@@ -5548,16 +5265,16 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                 ],
                 "variants": [
                     {
-                        "uuid": "d7574604-47e2-4a18-a535-ed81b92418dc",
-                        "title": "iPhone 22 Red 1 TB",
-                        "sku": "iphone-22-red-1tb",
+                        "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+                        "title": "iPhone 20 RED 1 TB",
+                        "sku": "iphone-20-red-1tb",
                         "barcode": "10000",
                         "price": {
-                            "amount": 29400,
+                            "amount": 7500,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
-                            "amount": 29380,
+                            "amount": 6750,
                             "currencyCode": "qar"
                         },
                         "weight": {
@@ -5572,221 +5289,22 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                         "optionValues": [
                             {
                                 "optionValue": {
-                                    "uuid": "d93e6a1c-a71f-4f46-bb4a-e6d574d09648"
+                                    "uuid": "7dc2f302-9094-4130-8917-299fa8df6528"
                                 }
                             },
                             {
                                 "optionValue": {
-                                    "uuid": "ebd1ab5d-c219-4c66-aec8-2171cf4e127d"
+                                    "uuid": "94c267ba-aaf0-4a14-8d28-e1ed2a1d5240"
                                 }
                             }
                         ],
-                         "images": [
+                        "images": [
                             {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
+                                "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                                 "alt": "",
                                 "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "050e3dcd-1b1f-42a9-8068-a7611e563415",
-                        "title": "iPhone 22 Red 2 TB",
-                        "sku": "iphone-22-red-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 36750,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 36730,
-                            "currencyCode": "qar"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "d93e6a1c-a71f-4f46-bb4a-e6d574d09648"
-                                }
-                            },
-                            {
-                                "optionValue": {
-                                    "uuid": "d84c7032-ed22-4839-aa17-5de2898b19ac"
-                                }
-                            }
-                        ],
-                         "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "b07f8dbb-1339-4a4e-a155-80bbb406b43b",
-                        "title": "iPhone 22 Blue 1 TB",
-                        "sku": "iphone-22-blue-1tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 29400,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 29380,
-                            "currencyCode": "qar"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "146f4b42-78da-498b-bd14-ef1cb2061045"
-                                }
-                            },
-                            {
-                                "optionValue": {
-                                    "uuid": "ebd1ab5d-c219-4c66-aec8-2171cf4e127d"
-                                }
-                            }
-                        ],
-                         "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                    },
-                    {
-                        "uuid": "10f1c470-66eb-4878-bb44-bef7bca59d62",
-                        "title": "iPhone 22 Blue 2 TB",
-                        "sku": "iphone-22-blue-2tb",
-                        "barcode": "10000",
-                        "price": {
-                            "amount": 36750,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 36730,
-                            "currencyCode": "qar"
-                        },
-                        "weight": {
-                            "amount": 1,
-                            "unit": "kg"
-                        },
-                        "dimensions": {
-                            "width": 1000,
-                            "height": 1000,
-                            "length": 1000
-                        },
-                        "optionValues": [
-                            {
-                                "optionValue": {
-                                    "uuid": "146f4b42-78da-498b-bd14-ef1cb2061045"
-                                }
-                            },
-                            {
-                                "optionValue": {
-                                    "uuid": "d84c7032-ed22-4839-aa17-5de2898b19ac"
-                                }
-                            }
-                        ],
-                         "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
                                 "position": 0
                             }
                         ]
@@ -6193,6 +5711,15 @@ query GetProduct($slug: String, $language: String, $currency: String) {
     description(language: $language)
     descriptionHtml(language: $language)
     status
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    ratingOneStarCount
+    ratingTwoStarCount
+    ratingThreeStarCount
+    ratingFourStarCount
+    ratingFiveStarCount
     options {
       uuid
       name(language: $language)
@@ -6286,44 +5813,43 @@ query GetProduct($slug: String, $language: String, $currency: String) {
 {
     "data": {
         "getProduct": {
-            "uuid": "0727fea5-f7ac-42e6-a23b-ff59246974d0",
+            "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
             "slug": "iphone-22",
             "title": "iPhone 22",
             "brief": "From $799 or $33.29/mo. per month for 24 months",
             "description": "Your new iPhone awaits. Make it yours.",
             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-            "status": "draft",
+            "status": "active",
+            "salesCount": 0,
+            "likesCount": 0,
+            "reviewsCount": 0,
+            "ratingAvg": 0,
+            "ratingOneStarCount": 0,
+            "ratingTwoStarCount": 0,
+            "ratingThreeStarCount": 0,
+            "ratingFourStarCount": 0,
+            "ratingFiveStarCount": 0,
             "options": [
                 {
-                    "uuid": "59938e9d-4f3a-4a69-8c16-ca9ad77c60a8",
+                    "uuid": "d8dbb95c-ad90-475c-afe0-c3ac9b059542",
                     "name": "Color",
                     "position": 0,
                     "values": [
                         {
-                            "uuid": "d93e6a1c-a71f-4f46-bb4a-e6d574d09648",
+                            "uuid": "7dc2f302-9094-4130-8917-299fa8df6528",
                             "value": "Red",
                             "position": 0
-                        },
-                        {
-                            "uuid": "146f4b42-78da-498b-bd14-ef1cb2061045",
-                            "value": "Blue",
-                            "position": 1
                         }
                     ]
                 },
                 {
-                    "uuid": "f52f6480-9f2d-4a5e-842e-f24c185b6344",
+                    "uuid": "ea319224-05e3-4977-af3b-66ca1ca5d15c",
                     "name": "Storage",
                     "position": 1,
                     "values": [
                         {
-                            "uuid": "ebd1ab5d-c219-4c66-aec8-2171cf4e127d",
+                            "uuid": "94c267ba-aaf0-4a14-8d28-e1ed2a1d5240",
                             "value": "1 TB",
-                            "position": 0
-                        },
-                        {
-                            "uuid": "d84c7032-ed22-4839-aa17-5de2898b19ac",
-                            "value": "2 TB",
                             "position": 1
                         }
                     ]
@@ -6331,16 +5857,16 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             ],
             "variants": [
                 {
-                    "uuid": "d7574604-47e2-4a18-a535-ed81b92418dc",
-                    "title": "iPhone 22 Red 1 TB",
-                    "sku": "iphone-22-red-1tb",
+                    "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+                    "title": "iPhone 20 RED 1 TB",
+                    "sku": "iphone-20-red-1tb",
                     "barcode": "10000",
                     "price": {
-                        "amount": 29400,
+                        "amount": 7500,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
-                        "amount": 29380,
+                        "amount": 6750,
                         "currencyCode": "qar"
                     },
                     "weight": {
@@ -6356,245 +5882,137 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "optionValues": [
                         {
                             "optionValue": {
-                                "uuid": "d93e6a1c-a71f-4f46-bb4a-e6d574d09648"
+                                "uuid": "7dc2f302-9094-4130-8917-299fa8df6528"
                             }
                         },
                         {
                             "optionValue": {
-                                "uuid": "ebd1ab5d-c219-4c66-aec8-2171cf4e127d"
+                                "uuid": "94c267ba-aaf0-4a14-8d28-e1ed2a1d5240"
                             }
                         }
                     ],
-                     "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                },
-                {
-                    "uuid": "050e3dcd-1b1f-42a9-8068-a7611e563415",
-                    "title": "iPhone 22 Red 2 TB",
-                    "sku": "iphone-22-red-2tb",
-                    "barcode": "10000",
-                    "price": {
-                        "amount": 36750,
-                        "currencyCode": "qar"
-                    },
-                    "discountedPrice": {
-                        "amount": 36730,
-                        "currencyCode": "qar"
-                    },
-                    "weight": {
-                        "amount": 1,
-                        "unit": "kg"
-                    },
-                    "dimensions": {
-                        "width": 1000,
-                        "height": 1000,
-                        "length": 1000,
-                        "unit": "in"
-                    },
-                    "optionValues": [
+                    "images": [
                         {
-                            "optionValue": {
-                                "uuid": "d93e6a1c-a71f-4f46-bb4a-e6d574d09648"
-                            }
-                        },
-                        {
-                            "optionValue": {
-                                "uuid": "d84c7032-ed22-4839-aa17-5de2898b19ac"
-                            }
+                            "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "alt": "",
+                            "isFeatured": false,
+                            "position": 0
                         }
-                    ],
-                     "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                },
-                {
-                    "uuid": "b07f8dbb-1339-4a4e-a155-80bbb406b43b",
-                    "title": "iPhone 22 Blue 1 TB",
-                    "sku": "iphone-22-blue-1tb",
-                    "barcode": "10000",
-                    "price": {
-                        "amount": 29400,
-                        "currencyCode": "qar"
-                    },
-                    "discountedPrice": {
-                        "amount": 29380,
-                        "currencyCode": "qar"
-                    },
-                    "weight": {
-                        "amount": 1,
-                        "unit": "kg"
-                    },
-                    "dimensions": {
-                        "width": 1000,
-                        "height": 1000,
-                        "length": 1000,
-                        "unit": "in"
-                    },
-                    "optionValues": [
-                        {
-                            "optionValue": {
-                                "uuid": "146f4b42-78da-498b-bd14-ef1cb2061045"
-                            }
-                        },
-                        {
-                            "optionValue": {
-                                "uuid": "ebd1ab5d-c219-4c66-aec8-2171cf4e127d"
-                            }
-                        }
-                    ],
-                     "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
-                },
-                {
-                    "uuid": "10f1c470-66eb-4878-bb44-bef7bca59d62",
-                    "title": "iPhone 22 Blue 2 TB",
-                    "sku": "iphone-22-blue-2tb",
-                    "barcode": "10000",
-                    "price": {
-                        "amount": 36750,
-                        "currencyCode": "qar"
-                    },
-                    "discountedPrice": {
-                        "amount": 36730,
-                        "currencyCode": "qar"
-                    },
-                    "weight": {
-                        "amount": 1,
-                        "unit": "kg"
-                    },
-                    "dimensions": {
-                        "width": 1000,
-                        "height": 1000,
-                        "length": 1000,
-                        "unit": "in"
-                    },
-                    "optionValues": [
-                        {
-                            "optionValue": {
-                                "uuid": "146f4b42-78da-498b-bd14-ef1cb2061045"
-                            }
-                        },
-                        {
-                            "optionValue": {
-                                "uuid": "d84c7032-ed22-4839-aa17-5de2898b19ac"
-                            }
-                        }
-                    ],
-                     "images": [
-                            {
-                                "uuid": "feb8f0da-32db-46d6-a132-69cfdd23e29d",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "2321d5c9-0b93-4ef4-a4f5-5dd4f48f7946",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
-                                "alt": "",
-                                "isFeatured": false,
-                                "position": 0
-                            },
-                            {
-                                "uuid": "c9066b08-aa75-4947-8c21-a9aa7d1d77d1",
-                                "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
-                                "alt": "iPhone Photo",
-                                "isFeatured": true,
-                                "position": 0
-                            }
-                        ]
+                    ]
                 }
             ],
             "reviews": [
                 {
-                    "uuid": "7887b00a-b74a-4621-8e8b-0e5233643b4f",
+                    "uuid": "be21cb1a-ad7f-4b2c-a1c4-027691226575",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
-                        "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
                         "fullName": "Your Name"
                     },
-                    "images": [
-                        {
-                            "uuid": "cb9eb5bd-7165-47fa-96c8-e3f85a27e890",
-                            "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg",
-                            "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/review/66329c2f-38d5-4e63-b559-1124c3cc7560.jpg"
-                        }
-                    ]
+                    "images": []
+                },
+                {
+                    "uuid": "337579b9-bf12-456a-89f4-d8c1e85507e7",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "22f6cf78-ae91-45ff-ae3b-5d2e78975466",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "4e6945a6-b07f-4c30-9ec2-d26ed87c37d7",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "4edf8ed8-0fa2-44fc-92d5-a3dc33a69671",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "e6b53b10-5411-40a4-bff7-f26d3c48c062",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "e6621c3b-2c57-49f3-a037-0e4eb451669c",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "60e2b636-ec57-486d-9a50-13a7e9a49e58",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "1f85c097-065c-4dab-9f16-b75b5d8453c3",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "029ad3a7-5fb0-4281-9fae-147849f16167",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "55f8b095-8e46-45c1-b01f-4dedf6556d31",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
                 }
             ]
         }
@@ -7188,8 +6606,8 @@ Get Current Customer Orders
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $status: OrderStatus) {
-    getCurrentCustomerOrders(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage, status: $status) {
+query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: String,  $language: String) {
+    getCurrentCustomerOrders(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
         uuid
         status
         subTotal {
@@ -7227,18 +6645,22 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $status: Or
             product {
                 uuid
                 slug
-                title
-                brief
-                description
-                descriptionHtml
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
                 status
             }
-            variant {
+            variant { 
                 uuid
-                title
+                title(language: $language)
                 sku
                 barcode
-                price {
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
                     amount
                     currencyCode
                 }
@@ -7250,7 +6672,6 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $status: Or
                     width
                     height
                     length
-                    unit
                 }
             }
         }
@@ -7351,7 +6772,7 @@ Get Current Customer Order
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrder($uuid: string) {
+query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: String) {
     getCurrentCustomerOrder(uuid: $uuid) {
         uuid
         status
@@ -7390,18 +6811,22 @@ query GetCurrentCustomerOrder($uuid: string) {
             product {
                 uuid
                 slug
-                title
-                brief
-                description
-                descriptionHtml
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
                 status
             }
             variant {
                 uuid
-                title
+                title(language: $language)
                 sku
                 barcode
-                price {
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
                     amount
                     currencyCode
                 }
@@ -7413,7 +6838,6 @@ query GetCurrentCustomerOrder($uuid: string) {
                     width
                     height
                     length
-                    unit
                 }
             }
         }
@@ -7504,8 +6928,8 @@ Get Current Customer WishList
 ### GraphQL Query
 
 ```graphql
-query GetCustomerWishlist($language: String) {
-    getCustomerWishlist(language: $language) {
+query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int, $itemsPerPage: Int) {
+    getCustomerWishlist(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
         uuid
         product {
             uuid
@@ -7515,6 +6939,47 @@ query GetCustomerWishlist($language: String) {
             description(language: $language)
             descriptionHtml(language: $language)
             status
+            salesCount
+            likesCount
+            reviewsCount
+            ratingAvg
+            ratingOneStarCount
+            ratingTwoStarCount
+            ratingThreeStarCount
+            ratingFourStarCount
+            ratingFiveStarCount
+        }
+        variant {
+            uuid
+            title
+            sku
+            barcode
+            price(currency: $currency) {
+                amount
+                currencyCode
+            }
+            discountedPrice(currency: $currency) {
+                amount
+                currencyCode
+            }
+            weight {
+                amount
+                unit
+            }
+            dimensions {
+                width
+                height
+                length
+                unit
+            }
+            images {
+                uuid
+                imageUrl
+                thumbnailUrl
+                alt
+                isFeatured
+                position
+            }
         }
     }
 }
@@ -7523,7 +6988,10 @@ query GetCustomerWishlist($language: String) {
 
 ```json
 {
-    "language": "en",
+    "language": "ar",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 1
 }
 ```
 
@@ -7534,15 +7002,58 @@ query GetCustomerWishlist($language: String) {
     "data": {
         "getCustomerWishlist": [
             {
-                "uuid": "f0fdab43-b693-4762-a997-cc9d3817ba85",
+                "uuid": "056c1bcc-f421-47f9-8a4c-a95a6e8c98e8",
                 "product": {
-                    "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
-                    "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
-                    "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
-                    "brief": "",
-                    "description": "",
-                    "descriptionHtml": "",
-                    "status": "ACTIVE"
+                    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+                    "slug": "iphone-22",
+                    "title": "iPhone 22",
+                    "brief": "From $799 or $33.29/mo. per month for 24 months",
+                    "description": "Your new iPhone awaits. Make it yours.",
+                    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                    "status": "active",
+                    "salesCount": 0,
+                    "likesCount": 0,
+                    "reviewsCount": 1,
+                    "ratingAvg": 5,
+                    "ratingOneStarCount": 0,
+                    "ratingTwoStarCount": 0,
+                    "ratingThreeStarCount": 0,
+                    "ratingFourStarCount": 0,
+                    "ratingFiveStarCount": 0
+                },
+                "variant": {
+                    "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+                    "title": "iPhone 20 RED 1 TB",
+                    "sku": "iphone-20-red-1tb",
+                    "barcode": "10000",
+                    "price": {
+                        "amount": 7500,
+                        "currencyCode": "qar"
+                    },
+                    "discountedPrice": {
+                        "amount": 6750,
+                        "currencyCode": "qar"
+                    },
+                    "weight": {
+                        "amount": 1,
+                        "unit": "kg"
+                    },
+                    "dimensions": {
+                        "width": 1000,
+                        "height": 1000,
+                        "length": 1000,
+                        "unit": "in"
+                    },
+                    "images": [
+                        {
+                            "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "alt": "",
+                            "isFeatured": false,
+                            "position": 0
+                        }
+                    ]
                 }
             }
         ]
@@ -7577,8 +7088,8 @@ Get Customer Cart
 ### GraphQL Query
 
 ```graphql
-query GetCustomerCart($language: String) {
-    getCustomerCart(language: $language) {
+query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $itemsPerPage: Int) {
+    getCustomerCart(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
         uuid
         product {
             uuid
@@ -7588,13 +7099,26 @@ query GetCustomerCart($language: String) {
             description(language: $language)
             descriptionHtml(language: $language)
             status
+            salesCount
+            likesCount
+            reviewsCount
+            ratingAvg
+            ratingOneStarCount
+            ratingTwoStarCount
+            ratingThreeStarCount
+            ratingFourStarCount
+            ratingFiveStarCount
         }
         variant {
             uuid
-            title(language: $language)
+            title
             sku
             barcode
-            price {
+            price(currency: $currency) {
+                amount
+                currencyCode
+            }
+            discountedPrice(currency: $currency) {
                 amount
                 currencyCode
             }
@@ -7608,16 +7132,16 @@ query GetCustomerCart($language: String) {
                 length
                 unit
             }
+            images {
+                uuid
+                imageUrl
+                thumbnailUrl
+                alt
+                isFeatured
+                position
+            }
         }
-        quantity
-        subTotal {
-            amount
-            currencyCode
-        }
-        discountedSubTotal {
-            amount
-            currencyCode
-        }
+        availableStock
     }
 }
 ```
@@ -7627,6 +7151,9 @@ query GetCustomerCart($language: String) {
 ```json
 {
     "language": "en",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 1
 }
 ```
 
@@ -7637,45 +7164,60 @@ query GetCustomerCart($language: String) {
     "data": {
         "getCustomerCart": [
             {
-                "uuid": "3fe6f35d-f6be-4c93-81f6-36372de8ee76",
+                "uuid": "8c534e15-673f-440e-b548-04424cc92363",
                 "product": {
-                    "uuid": "a383097d-1555-4c85-a388-84eb864225c4",
-                    "slug": "cross-border-variable-speed-bicycle-foldableable-aluminum-alloy",
-                    "title": "Cross-Border Variable Speed Bicycle Foldableable Aluminum Alloy Lightweight Commuter Foldableing Bicycle 20inch Bicycle",
-                    "brief": "",
-                    "description": "Get you bike",
-                    "descriptionHtml": "",
-                    "status": "ACTIVE"
+                    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+                    "slug": "iphone-22",
+                    "title": "iPhone 22",
+                    "brief": "From $799 or $33.29/mo. per month for 24 months",
+                    "description": "Your new iPhone awaits. Make it yours.",
+                    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                    "status": "active",
+                    "salesCount": 0,
+                    "likesCount": 0,
+                    "reviewsCount": 1,
+                    "ratingAvg": 5,
+                    "ratingOneStarCount": 0,
+                    "ratingTwoStarCount": 0,
+                    "ratingThreeStarCount": 0,
+                    "ratingFourStarCount": 0,
+                    "ratingFiveStarCount": 0
                 },
                 "variant": {
-                    "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
-                    "title": "Technology gray [aluminum alloy spoke wheel] 20inch [price for each of 5 to 19 vehicles]",
-                    "sku": "5627530595058",
-                    "barcode": "5627530595058",
+                    "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
+                    "title": "iPhone 20 RED 1 TB",
+                    "sku": "iphone-20-red-1tb",
+                    "barcode": "10000",
                     "price": {
-                        "amount": 688,
-                        "currencyCode": "USD"
+                        "amount": 7500,
+                        "currencyCode": "qar"
+                    },
+                    "discountedPrice": {
+                        "amount": 7500,
+                        "currencyCode": "qar"
                     },
                     "weight": {
-                        "amount": 16,
+                        "amount": 1,
                         "unit": "kg"
                     },
                     "dimensions": {
-                        "width": 36,
-                        "height": 57,
-                        "length": 88,
-                        "unit": "cm"
-                    }
+                        "width": 1000,
+                        "height": 1000,
+                        "length": 1000,
+                        "unit": "in"
+                    },
+                    "images": [
+                        {
+                            "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "alt": "",
+                            "isFeatured": false,
+                            "position": 0
+                        }
+                    ]
                 },
-                "quantity": 1,
-                "subTotal": {
-                    "amount": 688,
-                    "currencyCode": "USD"
-                },
-                "discountedSubTotal": {
-                    "amount": 688,
-                    "currencyCode": "USD"
-                }
+                "availableStock": 100
             }
         ]
     }

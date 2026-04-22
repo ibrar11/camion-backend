@@ -4,7 +4,6 @@ import {
     BadRequestException,
     ConflictException,
     Injectable,
-    InternalServerErrorException,
     Logger,
     NotFoundException
 } from '@nestjs/common';
@@ -25,6 +24,7 @@ import { Product } from '../inventory/entities/product.entity';
 @Injectable()
 export class WishlistService {
     private readonly logger = new Logger(WishlistService.name);
+
     constructor(
         @InjectRepository(WishlistItem) private readonly wishlistRepository: Repository<WishlistItem>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
@@ -34,53 +34,66 @@ export class WishlistService {
      * Creates a new wish list item
      *
      * @param customer
-     * @param dto
+     * @param body
      * @returns
      */
-    async addToWishlist(customer: Customer, dto: CreateWishlistDto): Promise<WishlistItem> {
-        try {
-            // check if product exits
-            const existing = await this.wishlistRepository.findOne({
-                where: {
-                    customer: { uuid: customer.uuid },
-                    product: { uuid: dto.productUuid },
-                },
-            });
+    async addToWishlist(customer: Customer, body: CreateWishlistDto): Promise<WishlistItem> {
+        this.logger.log(`Adding ${body.productUUID} to customer: ${customer.uuid} cart`);
 
-            if (existing) {
-                throw new ConflictException({
-                    error: "A product already exists in wish list",
-                });
-            }
+        // check if product exits
+        const existing = await this.wishlistRepository.findOne({
+            where: {
+                customer: { uuid: customer.uuid },
+                product: { uuid: body.productUUID },
+            },
+        });
 
-            // find the prodcut to add to wish list
-            const product = await this.productRepository.findOne({
-                where: { uuid: dto.productUuid },
-                relations: {
-                    variants: true
-                }
-            });
-
-            if (!product || product.status !== ProductStatus.ACTIVE) {
-                throw new BadRequestException({
-                    error: 'Product not available'
-                });
-            }
-
-            const wishlistItem = new WishlistItem();
-            wishlistItem.uuid = crypto.randomUUID();
-            wishlistItem.customer = customer;
-            wishlistItem.product = product;
-
-            return this.wishlistRepository.save(wishlistItem);
-
-        } catch (error: any) {
-            this.logger.error(`Error adding to wish list: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to add to wish list',
-                details: error.response?.data || error.message,
+        if (existing) {
+            throw new ConflictException({
+                error: "A product already exists in wish list",
             });
         }
+
+        // find the prodcut to add to wish list
+        const product = await this.productRepository.findOne({
+            where: { uuid: body.productUUID },
+            relations: {
+                variants: true
+            },
+        });
+
+        // Check if the product exists
+        if (product === null) {
+            throw new NotFoundException({
+                error: "Failed to find the product. Please check and try again.",
+            });
+        }
+
+        // Make sure the product is available
+        if (product.status !== ProductStatus.ACTIVE) {
+            throw new BadRequestException({
+                error: "The product you selected is not available anymore. Please add another product to your cart.",
+            });
+        }
+
+        // Check if the variant exists
+        const variant = product.variants.find((variant) => variant.uuid === body.variantUUID);
+        if (variant === undefined || variant === null) {
+            throw new NotFoundException({
+                error: "Failed to find the variant. Please check and try again.",
+            });
+        }
+
+        // Reset the variants on the wishlist
+        product.variants = [];
+
+        // Create a new wishlist item.
+        const wishlistItem = new WishlistItem();
+        wishlistItem.uuid = crypto.randomUUID();
+        wishlistItem.customer = customer;
+        wishlistItem.product = product;
+        wishlistItem.variant = variant;
+        return this.wishlistRepository.save(wishlistItem);
     }
 
     /**
@@ -89,67 +102,55 @@ export class WishlistService {
      * @param customer
      * @returns
      */
-    async getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
-        try {
+    getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
+        // Get pagination params
+        const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-            // Get pagination params
-            const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
-
-            const items = await this.wishlistRepository.find({
-                where: { customer: { uuid: customer.uuid } },
-                relations: {
-                    product: true
+        return this.wishlistRepository.find({
+            where: { customer: { id: customer.id, } },
+            relations: {
+                product: {
+                    productCategories: {
+                        category: true,
+                    },
                 },
-                order: { id: 'DESC' },
-                skip: skip,
-                take: take,
-            });
-
-            return items;
-
-        } catch (error: any) {
-            this.logger.error(`Error getting wish list: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to get wish list',
-                details: error.response?.data || error.message,
-            });
-        }
+                variant: {
+                    images: true,
+                },
+            },
+            order: { id: 'DESC' },
+            skip: skip,
+            take: take,
+        });
     }
 
     /**
      * Fetch wish list
      *
      * @param customer
-     * @param uuid
+     * @param wishlistItemUUID
      * @returns
      */
-    async getWishlistItem(customer: Customer, uuid: string): Promise<WishlistItem> {
-        try {
-            const item = await this.wishlistRepository.findOne({
-                where: {
-                    uuid: uuid,
-                    customer: { uuid: customer.uuid }
+    async getWishlistItem(customer: Customer, wishlistItemUUID: string): Promise<WishlistItem> {
+        const wishlistItem = await this.wishlistRepository.findOne({
+            where: {
+                uuid: wishlistItemUUID,
+            },
+            relations: {
+                product: true,
+                variant: {
+                    images: true,
                 },
-                relations: {
-                    product: true
-                },
-            });
+            },
+        });
 
-            if (!item) {
-                throw new NotFoundException({
-                    error: "Wishlist item not found. Please check and try again.",
-                });
-            }
-
-            return item;
-
-        } catch (error: any) {
-            this.logger.error(`Error getting wish list item: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to get wish list item',
-                details: error.response?.data || error.message,
+        if (wishlistItem === null) {
+            throw new NotFoundException({
+                error: "Wishlist item not found. Please check and try again.",
             });
         }
+
+        return wishlistItem;
     }
 
     /**
@@ -159,55 +160,32 @@ export class WishlistService {
      * @returns
      */
     async getWishlistCount(customer: Customer): Promise<number> {
-        try {
-            const count = await this.wishlistRepository.count({
-                where: {
-                    customer: { uuid: customer.uuid },
-                },
-            });
-
-            return count;
-
-        } catch (error: any) {
-            this.logger.error(`Error getting wish list count: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to get wish list count',
-                details: error.response?.data || error.message,
-            });
-        }
+        const count = await this.wishlistRepository.count({
+            where: {
+                customer: { uuid: customer.uuid, },
+            },
+        });
+        return count;
     }
 
     /**
      * Remove from wish list
      * @param customer
-     * @param productUuid
+     * @param wishlistItemUUID
      * @returns
      */
-    async removeFromWishlist(customer: Customer, productUuid: string): Promise<void> {
-        try {
-            const item = await this.wishlistRepository.findOne({
-                where: {
-                    customer: { uuid: customer.uuid },
-                    product: { uuid: productUuid },
-                }
+    async removeFromWishlist(customer: Customer, wishlistItemUUID: string): Promise<void> {
+        const item = await this.wishlistRepository.findOneBy({
+            uuid: wishlistItemUUID,
+        });
+
+        if (!item) {
+            throw new NotFoundException({
+                error: "Wishlist item not found. Please check and try again.",
             });
+        };
 
-            if (!item) {
-                throw new NotFoundException({
-                    error: "Wishlist item not found. Please check and try again.",
-                });
-            };
-
-            await this.wishlistRepository.remove(item);
-
-
-        } catch (error: any) {
-            this.logger.error(`Error removing from wish list: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to remove from wish list',
-                details: error.response?.data || error.message,
-            });
-        }
+        await this.wishlistRepository.remove(item);
     }
 
     /**
@@ -216,16 +194,8 @@ export class WishlistService {
      * @returns
      */
     async clearWishList(customer: Customer): Promise<void> {
-        try {
-            await this.wishlistRepository.delete({
-                customer: { id: customer.id }
-            });
-        } catch (error: any) {
-            this.logger.error(`Error clearing wish list: ${error?.message}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to clear wish list',
-                details: error.response?.data || error.message,
-            });
-        }
+        await this.wishlistRepository.delete({
+            customer: { id: customer.id }
+        });
     }
 }
