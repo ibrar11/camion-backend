@@ -37,7 +37,7 @@ export class SkipCashAdapter {
 
             const payload: SignaturePayload = {
                 Uid: crypto.randomUUID(),
-                KeyId: process.env.SKIPCASH_KEY_ID,
+                KeyId: "c7bf659a-1a74-41a7-8231-0982f576d761",
                 Amount: dto.amount.toFixed(2),
                 FirstName: dto.firstName,
                 LastName: dto.lastName,
@@ -54,6 +54,7 @@ export class SkipCashAdapter {
 
             const signature = generateSignature(payload);
 
+            console.log("before hitting the skipcash api")
             // create skipcash payment
             const res = await fetch(`https://api.skipcash.app/api/v1/payments`, {
                 method: "POST",
@@ -89,6 +90,7 @@ export class SkipCashAdapter {
                 raw: data,
             };
         } catch (error: any) {
+            console.log("SkipCash payment failed:",error)
             this.logger.error(`SkipCash payment failed: ${JSON.stringify(error?.response?.data || error.message)}`);
             throw new InternalServerErrorException({
                 error: "SkipCash payment failed",
