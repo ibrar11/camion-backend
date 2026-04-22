@@ -118,23 +118,23 @@ export class Product {
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
-	countOneStar: number;
+	ratingOneStarCount: number;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
-	countTwoStar: number;
+	ratingTwoStarCount: number;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
-	countThreeStar: number;
+	ratingThreeStarCount: number;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
-	countFourStar: number;
+	ratingFourStarCount: number;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
-	countFiveStar: number;
+	ratingFiveStarCount: number;
 
 	@Field(() => [ProductOption])
 	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, })

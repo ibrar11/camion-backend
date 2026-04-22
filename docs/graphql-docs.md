@@ -5148,11 +5148,11 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     likesCount
     reviewsCount
     ratingAvg
-    countOneStar
-    countTwoStar
-    countThreeStar
-    countFourStar
-    countFiveStar
+    ratingOneStarCount
+    ratingTwoStarCount
+    ratingThreeStarCount
+    ratingFourStarCount
+    ratingFiveStarCount
     options {
       uuid
       name(language: $language)
@@ -5232,11 +5232,11 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                 "likesCount": 0,
                 "reviewsCount": 0,
                 "ratingAvg": 0,
-                "countOneStar": 0,
-                "countTwoStar": 0,
-                "countThreeStar": 0,
-                "countFourStar": 0,
-                "countFiveStar": 0,
+                "ratingOneStarCount": 0,
+                "ratingTwoStarCount": 0,
+                "ratingThreeStarCount": 0,
+                "ratingFourStarCount": 0,
+                "ratingFiveStarCount": 0,
                 "options": [
                     {
                         "uuid": "d8dbb95c-ad90-475c-afe0-c3ac9b059542",
@@ -5715,11 +5715,11 @@ query GetProduct($slug: String, $language: String, $currency: String) {
     likesCount
     reviewsCount
     ratingAvg
-    countOneStar
-    countTwoStar
-    countThreeStar
-    countFourStar
-    countFiveStar
+    ratingOneStarCount
+    ratingTwoStarCount
+    ratingThreeStarCount
+    ratingFourStarCount
+    ratingFiveStarCount
     options {
       uuid
       name(language: $language)
@@ -5824,11 +5824,11 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             "likesCount": 0,
             "reviewsCount": 0,
             "ratingAvg": 0,
-            "countOneStar": 0,
-            "countTwoStar": 0,
-            "countThreeStar": 0,
-            "countFourStar": 0,
-            "countFiveStar": 0,
+            "ratingOneStarCount": 0,
+            "ratingTwoStarCount": 0,
+            "ratingThreeStarCount": 0,
+            "ratingFourStarCount": 0,
+            "ratingFiveStarCount": 0,
             "options": [
                 {
                     "uuid": "d8dbb95c-ad90-475c-afe0-c3ac9b059542",
@@ -6909,6 +6909,15 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             description(language: $language)
             descriptionHtml(language: $language)
             status
+            salesCount
+            likesCount
+            reviewsCount
+            ratingAvg
+            ratingOneStarCount
+            ratingTwoStarCount
+            ratingThreeStarCount
+            ratingFourStarCount
+            ratingFiveStarCount
             variants {
                 uuid
                 title
@@ -6972,6 +6981,15 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                     "description": "Your new iPhone awaits. Make it yours.",
                     "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                     "status": "active",
+                    "salesCount": 0,
+                    "likesCount": 0,
+                    "reviewsCount": 0,
+                    "ratingAvg": 0,
+                    "ratingOneStarCount": 0,
+                    "ratingTwoStarCount": 0,
+                    "ratingThreeStarCount": 0,
+                    "ratingFourStarCount": 0,
+                    "ratingFiveStarCount": 0,
                     "variants": [
                         {
                             "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",

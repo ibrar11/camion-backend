@@ -51,31 +51,31 @@ export class ProductReviewService {
 		const rating = Math.floor(Math.min(Math.max(0, body.rating), 5));
 		switch (rating) {
 			case 1:
-				product.countOneStar += 1;
+				product.ratingOneStarCount += 1;
 				product.reviewsCount += 1;
 				product.ratingSum += 1;
 				product.ratingCount += 1;
 				break;
 			case 2:
-				product.countTwoStar += 1;
+				product.ratingTwoStarCount += 1;
 				product.reviewsCount += 1;
 				product.ratingSum += 2;
 				product.ratingCount += 1;
 				break;
 			case 3:
-				product.countThreeStar += 1;
+				product.ratingThreeStarCount += 1;
 				product.reviewsCount += 1;
 				product.ratingSum += 3;
 				product.ratingCount += 1;
 				break;
 			case 4:
-				product.countFourStar += 1;
+				product.ratingFourStarCount += 1;
 				product.reviewsCount += 1;
 				product.ratingSum += 4;
 				product.ratingCount += 1;
 				break;
 			case 5:
-				product.countFiveStar += 1;
+				product.ratingFiveStarCount += 1;
 				product.reviewsCount += 1;
 				product.ratingSum += 5;
 				product.ratingCount += 1;
