@@ -34,26 +34,32 @@ export class GetCustomerOrdersArgs {
 
     @Field(() => Int, { defaultValue: 100, })
     itemsPerPage: number;
-    
+
     @Field({ defaultValue: OrderStatus.PENDING, })
     @IsOptional()
     status: OrderStatus;
 }
 @ArgsType()
 export class VariantArgs {
-	slug: string;
+    slug: string;
 
-	@Field({ defaultValue: "en", })
-	language: string;
+    @Field({ defaultValue: "en", })
+    language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+    @Field({ defaultValue: "usd", })
+    currency: string;
 }
 @ArgsType()
 export class GetCustomerOrderArgs {
     @Field(() => String)
     @IsUUID('4')
     uuid: string;
+
+    @Field({ defaultValue: "en", })
+    language: string;
+
+    @Field({ defaultValue: "usd", })
+    currency: string;
 }
 
 @UseGuards(GqlAuthGuard)

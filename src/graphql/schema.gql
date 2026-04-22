@@ -49,8 +49,8 @@ type Banner {
 
 type CartItem {
   availableStock: Int!
-  isAvailable: Boolean!
   discountedSubTotal: Money!
+  isAvailable: Boolean!
   product: Product!
   quantity: Int!
   subTotal: Money!
@@ -298,7 +298,7 @@ type Query {
   getCurrentAffiliateCoupons(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Coupon!]!
   getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
-  getCurrentCustomerOrder(uuid: String!): Order!
+  getCurrentCustomerOrder(currency: String! = "usd", language: String! = "en", uuid: String!): Order!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1, status: String! = "pending"): [Order!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!

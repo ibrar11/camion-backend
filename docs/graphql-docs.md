@@ -6684,6 +6684,10 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
 ```json
 {
     "status": "pending" | "confirmed" | "cancelled" | "delivered" | "payment_pending" | "payment_successful"|  "payment_rejected" ,
+    "language":"en",
+    "currency": "qar",
+    "pageNumber":1,
+    "itemsPerPage": 10,
 }
 ```
 
@@ -6772,7 +6776,7 @@ Get Current Customer Order
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: String) {
+query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: String) {
     getCurrentCustomerOrder(uuid: $uuid) {
         uuid
         status
@@ -6842,6 +6846,16 @@ query GetCurrentCustomerOrder($uuid: string, $currency: String,  $language: Stri
             }
         }
     }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9" ,
+    "language":"en",
+    "currency": "qar",
 }
 ```
 
