@@ -97,7 +97,9 @@ export class WishlistService {
             where: { customer: { uuid: customer.uuid } },
             relations: {
                 product: {
-                    variants: true,
+                    variants: {
+                        images: true,
+                    },
                 },
             },
             order: { id: 'DESC' },
