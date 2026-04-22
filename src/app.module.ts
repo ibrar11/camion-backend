@@ -113,6 +113,7 @@ import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 import { WishlistModule } from './wishlist/wishlist.module';
 import { PromosModule } from './promos/promos.module';
 
+import { EmailModule } from './email/email.module';
 
 import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
 import { PricingModule } from './pricing/pricing.module';
@@ -264,6 +265,7 @@ import { Promo } from "./promos/entities/promo.entity";
 		CurrenciesModule,
 		LanguagesModule,
 		NotificationsModule,
+		EmailModule,
 		ScheduleModule.forRoot(),
 		OrderModule,
 		PaymentsModule,
