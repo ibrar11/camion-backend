@@ -55,10 +55,6 @@ export class CartItem {
     @Column(() => Money)
     subTotal: Money;
 
-    @Field(() => Money)
-    @Column(() => Money)
-    discountedSubTotal: Money;
-
     // <!--
     // These fields are not part of the schema. Please don't add them to the database.
 
