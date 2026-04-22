@@ -317,7 +317,7 @@ export class OrderService {
             const provider = dto.paymentMethod === "default" ? PaymentProvider.SKIPCASH : PaymentProvider[dto.paymentMethod]
             // payment service needs to integrated here
             const paymentPayload = {
-                provider: provider,
+                provider: PaymentProvider.SKIPCASH,
                 amount: total,
                 currency: currency,
                 orderUUID: order.uuid,
