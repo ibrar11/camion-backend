@@ -199,7 +199,7 @@ export class ProductsService {
 			.orderBy("product.id", "DESC")
 			.skip(skip)
 			.take(take)
-			.getRawMany();
+			.getMany();
 	}
 
 	/**
@@ -331,7 +331,7 @@ export class ProductsService {
 					.orderBy('least_expensive_variant_price', 'ASC')
 					.take(take)
 					.skip(skip)
-					.getRawMany();
+					.getMany();
 
 			case ProductSort.PriceHighToLow:
 				const mostExpensiveVariantQuery = this.productRepository
@@ -365,7 +365,7 @@ export class ProductsService {
 					.orderBy('most_expensive_variant_price', 'DESC')
 					.take(take)
 					.skip(skip)
-					.getRawMany();
+					.getMany();
 
 			default: // do nothing
 				break;
@@ -452,7 +452,7 @@ export class ProductsService {
 			.distinct(true)
 			.skip(skip)
 			.take(take)
-			.getRawMany();
+			.getMany();
 
 		// Return the related product
 		if (recommendedProducts.length !== 0) {
@@ -638,7 +638,7 @@ export class ProductsService {
 			.distinct(true)
 			.skip(skip)
 			.take(take)
-			.getRawMany();
+			.getMany();
 
 		// Return the related product
 		if (relatedProducts.length !== 0) {
