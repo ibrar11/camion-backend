@@ -163,6 +163,7 @@ type Order {
 }
 
 type OrderItem {
+  discountedPrice: Money!
   order: Order!
   price: Money!
   product: Product!
