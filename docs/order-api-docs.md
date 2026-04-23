@@ -192,6 +192,11 @@ Order Preview
 GET /v1/orders/order-preview HTTP/1.1
 ```
 
+### Query Parameters
+Name | Description | Default
+-----|-------------|--------
+couponCode | coupon code to apply customer promo. | ``
+
 ### Response Body
 ```json
 {
@@ -210,7 +215,7 @@ GET /v1/orders/order-preview HTTP/1.1
                 "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
                 "descriptionHtmlEn": "<b>Your new bike awaits. Make it yours</b>",
                 "descriptionHtmlAr": "<b>Your new bike awaits. Make it yours</b>",
-                "status": "ACTIVE"
+                "status": "active"
             },
             "variant": {
                 "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
@@ -249,7 +254,7 @@ GET /v1/orders/order-preview HTTP/1.1
             "createdAt": "2026-04-15T07:16:09.379Z"
         }
     ],
-    "address": {
+    "shippingAddress": {
         "uuid": "91600fd1-52e9-4d1f-906f-cc560f11545f",
         "fullName": "Fahad Al-Saud",
         "phoneNumber": "+966 51 234 5678",
@@ -262,6 +267,7 @@ GET /v1/orders/order-preview HTTP/1.1
         "isDefault": true
     },
     "cart_total": 688,
+    "discount": 250,
     "shipping": {
         "shippingFee": {
             "amount": 209.4,
@@ -298,7 +304,8 @@ GET /v1/orders/order-preview HTTP/1.1
         "countryCode": "SA"
     },
     "shippingTotal": 321.3325,
-    "grand_total": 1009.3325
+    "grand_total": 1009.3325,
+    "eta": "6-10 working days",
 }
 ```
 

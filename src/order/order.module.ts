@@ -51,6 +51,7 @@ import { PricingService } from '../pricing/pricing.service';
             OrderItem,
             User,
             Customer,
+            CustomerAddress,
             InventoryItem,
             InventoryLevel,
             CartItem,

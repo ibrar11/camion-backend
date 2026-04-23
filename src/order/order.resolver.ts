@@ -26,6 +26,7 @@ import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { OrderStatus } from "./enums/OrderStatus";
+import { OrderPreviewResponse } from "./types";
 
 @ArgsType()
 export class GetCustomerOrdersArgs {
@@ -62,6 +63,18 @@ export class GetCustomerOrderArgs {
     @Field({ defaultValue: "usd", })
     currency: string;
 }
+@ArgsType()
+export class GetCustomerOrderPreviewArgs {
+    @Field({ defaultValue: "en", })
+    language: string;
+
+    @Field({ defaultValue: "usd", })
+    currency: string;
+
+    @Field(() => String, { nullable: true })
+    @IsOptional()
+    couponCode?: string;
+}
 
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Order)
@@ -86,6 +99,16 @@ export class OrderResolver {
             });
         }
         return this.orderService.findOne(args.uuid);
+    }
+
+    @Query(() => OrderPreviewResponse)
+    getCurrentCustomerOrderPreview(@Context() context, @Args() args: GetCustomerOrderPreviewArgs): Promise<OrderPreviewResponse> {
+        if (!context.req || !context.req.customer || !context.req.customer.uuid) {
+            throw new ForbiddenException({
+                error: "You're not allowed to retrieve customer order. Please check and try again.",
+            });
+        }
+        return this.orderService.orderPreview(context.req.customer, args.couponCode);
     }
 }
 
