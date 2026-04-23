@@ -58,10 +58,10 @@ export class Category {
 	parentId: number | null;
 
 	@Field(() => [Category])
-	@OneToMany(() => Category, (category) => category.parent, { eager: false, })
+	@OneToMany(() => Category, (category) => category.parent)
 	children: Array<Category>;
 
-	@OneToMany(() => ProductCategory, (productCategory) => productCategory.category, { eager: false, })
+	@OneToMany(() => ProductCategory, (productCategory) => productCategory.category)
 	productCategories: Array<ProductCategory>;
 
 	@Exclude()
