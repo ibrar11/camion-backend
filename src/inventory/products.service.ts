@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException
@@ -10,20 +11,26 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 
+import { plainToInstance } from "class-transformer";
+
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+
+import { ConfigService } from "@nestjs/config";
+
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
+import { generateCacheKey, generateSearchCacheKey } from "../common/cache";
 
 import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
 import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 
-import { Product } from './entities/product.entity';
-
 import { ProductStatus } from './enums/ProductStatus.enum';
 import { ProductSort } from "./enums/ProductSort.enum";
 
 import { Category } from "./entities/category.entity";
+import { Product } from './entities/product.entity';
 import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
 
@@ -35,6 +42,7 @@ export class ProductsService {
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
+		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 	) { }
 
 	/**
@@ -48,8 +56,11 @@ export class ProductsService {
 
 		// Check if a product already exists by the same slug
 		if (body.slug !== null) {
-			const productBySlug = await this.productRepository.findOneBy({
-				slug: body.slug.trim().toLowerCase(),
+			const productBySlug = await this.productRepository.findOne({
+				relationLoadStrategy: "query",
+				where: {
+					slug: body.slug.trim().toLowerCase(),
+				},
 			});
 
 			// Make sure we don't create another product with the same slug
@@ -135,6 +146,7 @@ export class ProductsService {
 		}
 
 		return this.productRepository.find({
+			relationLoadStrategy: "query",
 			relations: {
 				options: {
 					values: true,
@@ -168,6 +180,15 @@ export class ProductsService {
 	async findAllByCategory(categorySlug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products by category slug: ${categorySlug}`);
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("products", categorySlug, [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the products exist
+		const productsInCache = await this.cacheManager.get<Array<Product>>(cacheKey);
+		if (productsInCache) {
+			return productsInCache;
+		}
+
 		// Find the category, return empty array if there is not category
 		const category = await this.categoryRepository.findOneBy({ slug: categorySlug, });
 		if (category === null) {
@@ -178,7 +199,11 @@ export class ProductsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Find the products in the desired category
-		return this.productRepository.createQueryBuilder("product")
+		const products = await this.productRepository.createQueryBuilder("product")
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
 			.leftJoinAndSelect('variants.images', 'images')
@@ -194,6 +219,11 @@ export class ProductsService {
 			.skip(skip)
 			.take(take)
 			.getMany();
+
+		// Save the products in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, products), 900000);
+
+		return products;
 	}
 
 	/**
@@ -207,10 +237,20 @@ export class ProductsService {
 	async getRecentlyViewedProducts(customerUUID: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of recenty viewed products`);
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("products", `recently-viewed:${customerUUID}`, [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the products exist
+		const productsInCache = await this.cacheManager.get<Array<Product>>(cacheKey);
+		if (productsInCache) {
+			return productsInCache;
+		}
+
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
+			relationLoadStrategy: "query",
 			relations: {
 				variants: {
 					images: true,
@@ -225,6 +265,11 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		// Save the products in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, products), 900000);
+
+		return products;
 	}
 
 	/**
@@ -239,6 +284,15 @@ export class ProductsService {
 	 */
 	async searchProducts(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Searching for products, query: ${query}, language: ${language}`);
+
+		// Generate a cache key
+		const cacheKey = generateSearchCacheKey("products", query, [sort, pageNumber, itemsPerPage]);
+
+		// Check in the cache if the products exist
+		const productsInCache = await this.cacheManager.get<Array<Product>>(cacheKey);
+		if (productsInCache) {
+			return productsInCache;
+		}
 
 		// Language to column name mapping
 		const columnMap: Record<string, string> = {
@@ -262,9 +316,13 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
+		// The search results
+		let products: Array<Product> = [];
+
 		switch (sort) {
 			case ProductSort.BestMatch:
-				return this.productRepository.find({
+				products = await this.productRepository.find({
+					relationLoadStrategy: "query",
 					where: {
 						[columnMap[language]]: ILike(`%${query}%`),
 					},
@@ -291,7 +349,7 @@ export class ProductsService {
 					.where('v.product_id = product.id')
 					.getQuery();
 
-				return this.productRepository.createQueryBuilder('product')
+				products = await this.productRepository.createQueryBuilder('product')
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
 					.leftJoinAndSelect('variants.images', 'images')
@@ -319,7 +377,11 @@ export class ProductsService {
 					.where('v.product_id = product.id')
 					.getQuery();
 
-				return this.productRepository.createQueryBuilder('product')
+				products = await this.productRepository.createQueryBuilder('product')
+					.setFindOptions({
+						relationLoadStrategy: "query",
+					})
+
 					// Populate variants and their specific option value mappings
 					.leftJoinAndSelect('product.variants', 'variants')
 					.leftJoinAndSelect('variants.images', 'images')
@@ -343,7 +405,11 @@ export class ProductsService {
 			default: // do nothing
 				break;
 		}
-		return [];
+
+		// Save the products in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, products), 900000);
+
+		return products;
 	}
 
 	/**
@@ -357,8 +423,18 @@ export class ProductsService {
 	async getRecommendedProducts(slug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of recommended products for product: ${slug}`);
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("products", `recommended:${slug.toLowerCase().trim()}`, [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the products exist
+		const productsInCache = await this.cacheManager.get<Array<Product>>(cacheKey);
+		if (productsInCache) {
+			return productsInCache;
+		}
+
 		// Find the source product with its categories
 		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
 			where: {
 				slug: slug.toLowerCase().trim(),
 			},
@@ -376,9 +452,34 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
+		let products: Array<Product> = [];
+
 		// As a fallback return all the products, if the product has been added but no category applied on it.
-		if (product.productCategories.length === 0 || product.productCategories[0].category === null) {
-			return this.productRepository.find({
+		if (product.productCategories.length !== 0 || product.productCategories[0].category !== null) {
+			// Find the products in the same category
+			products = await this.productRepository.createQueryBuilder("product")
+				// Populate variants and their specific option value mappings
+				.leftJoinAndSelect('product.variants', 'variants')
+				.leftJoinAndSelect('variants.images', 'images')
+
+				// Many-to-many join
+				.innerJoin("product.productCategories", "productCategory")
+				.innerJoin("productCategory.category", "category")
+
+				.where("category.id = :id", {
+					id: product.productCategories[0].category.id,
+				})
+				.andWhere('product.id != :productId', {
+					productId: product.id,
+				})
+				.distinct(true)
+				.skip(skip)
+				.take(take)
+				.getMany();
+		} else {
+			// As a fallback find some products
+			products = await this.productRepository.find({
+				relationLoadStrategy: "query",
 				relations: {
 					variants: {
 						images: true,
@@ -395,48 +496,10 @@ export class ProductsService {
 			});
 		}
 
-		// Find the products in the same category
-		const recommendedProducts = await this.productRepository.createQueryBuilder("product")
-			// Populate variants and their specific option value mappings
-			.leftJoinAndSelect('product.variants', 'variants')
-			.leftJoinAndSelect('variants.images', 'images')
+		// Save the products in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, products), 900000);
 
-			// Many-to-many join
-			.innerJoin("product.productCategories", "productCategory")
-			.innerJoin("productCategory.category", "category")
-
-			.where("category.id = :id", {
-				id: product.productCategories[0].category.id,
-			})
-			.andWhere('product.id != :productId', {
-				productId: product.id,
-			})
-			.distinct(true)
-			.skip(skip)
-			.take(take)
-			.getMany();
-
-		// Return the related product
-		if (recommendedProducts.length !== 0) {
-			return recommendedProducts;
-		}
-
-		// As a fallback, we return all the products in the inventory, if there are no products in the same category
-		return this.productRepository.find({
-			relations: {
-				variants: {
-					images: true,
-				},
-				productCategories: {
-					category: true,
-				},
-			},
-			order: {
-				id: "DESC",
-			},
-			skip: skip,
-			take: take,
-		});
+		return products;
 	}
 
 	/**
@@ -449,12 +512,22 @@ export class ProductsService {
 	async getFeaturedProducts(pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of featured products`);
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("products", "featured", [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the products exist
+		const productsInCache = await this.cacheManager.get<Array<Product>>(cacheKey);
+		if (productsInCache) {
+			return productsInCache;
+		}
+
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// TODO: Return a list of featured products
 
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
+			relationLoadStrategy: "query",
 			relations: {
 				variants: {
 					images: true,
@@ -469,6 +542,11 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		// Save the products in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, products), 900000);
+
+		return products;
 	}
 
 	/**
@@ -483,10 +561,20 @@ export class ProductsService {
 
 		// TODO: Return a list of popular products
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("products", "popular", [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the products exist
+		const productsInCache = await this.cacheManager.get<Array<Product>>(cacheKey);
+		if (productsInCache) {
+			return productsInCache;
+		}
+
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
+			relationLoadStrategy: "query",
 			relations: {
 				variants: {
 					images: true,
@@ -501,6 +589,11 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		// Save the products in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, products), 900000);
+
+		return products;
 	}
 
 	/**
@@ -514,8 +607,18 @@ export class ProductsService {
 	async getRelatedProducts(slug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving related products, product: ${slug}`);
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("products", `related:${slug.toLowerCase().trim()}`, [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the products exist
+		const productsInCache = await this.cacheManager.get<Array<Product>>(cacheKey);
+		if (productsInCache) {
+			return productsInCache;
+		}
+
 		// Find the source product
 		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
 			where: {
 				slug: slug.toLowerCase().trim(),
 			},
@@ -533,9 +636,32 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		// As a fallback return all the products, if the product has been added but no category applied on it.
-		if (product.productCategories.length === 0 || product.productCategories[0].category === null) {
-			return this.productRepository.find({
+		let products: Array<Product> = [];
+
+		// Find the products in the same category
+		if (product.productCategories.length !== 0 || product.productCategories[0].category !== null) {
+			products = await this.productRepository.createQueryBuilder("product")
+				// Populate variants and their specific option value mappings
+				.leftJoinAndSelect('product.variants', 'variants')
+				.leftJoinAndSelect('variants.images', 'images')
+
+				// Many-to-many join
+				.innerJoin("product.productCategories", "productCategory")
+				.innerJoin("productCategory.category", "category")
+				.where("category.id = :id", {
+					id: product.productCategories[0].category.id,
+				})
+				.andWhere('product.id != :productId', {
+					productId: product.id,
+				})
+				.distinct(true)
+				.skip(skip)
+				.take(take)
+				.getMany();
+		} else {
+			// As a fallback return all the products, if the product has been added but no category applied on it.
+			products = await this.productRepository.find({
+				relationLoadStrategy: "query",
 				relations: {
 					variants: {
 						images: true,
@@ -552,47 +678,10 @@ export class ProductsService {
 			});
 		}
 
-		// Find the products in the same category
-		const relatedProducts = await this.productRepository.createQueryBuilder("product")
-			// Populate variants and their specific option value mappings
-			.leftJoinAndSelect('product.variants', 'variants')
-			.leftJoinAndSelect('variants.images', 'images')
+		// Save the products in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, products), 900000);
 
-			// Many-to-many join
-			.innerJoin("product.productCategories", "productCategory")
-			.innerJoin("productCategory.category", "category")
-			.where("category.id = :id", {
-				id: product.productCategories[0].category.id,
-			})
-			.andWhere('product.id != :productId', {
-				productId: product.id,
-			})
-			.distinct(true)
-			.skip(skip)
-			.take(take)
-			.getMany();
-
-		// Return the related product
-		if (relatedProducts.length !== 0) {
-			return relatedProducts;
-		}
-
-		// As a fallback, we return all the products in the inventory, if there are no products in the same category
-		return this.productRepository.find({
-			relations: {
-				variants: {
-					images: true,
-				},
-				productCategories: {
-					category: true,
-				},
-			},
-			order: {
-				id: "DESC",
-			},
-			skip: skip,
-			take: take,
-		});
+		return products;
 	}
 
 	/**
@@ -604,8 +693,18 @@ export class ProductsService {
 	async findOneByUUID(uuid: string): Promise<Product> {
 		this.logger.log(`Retrieving product by uuid: ${uuid}`);
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("product", uuid, []);
+
+		// Check in the cache if the products exist
+		const productInCache = await this.cacheManager.get<Product>(cacheKey);
+		if (productInCache) {
+			return productInCache;
+		}
+
 		// Find the product
 		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
 			where: { uuid: uuid, },
 			relations: {
 				options: {
@@ -633,6 +732,9 @@ export class ProductsService {
 			});
 		}
 
+		// Save the product in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, product), 900000);
+
 		return product;
 	}
 
@@ -645,8 +747,18 @@ export class ProductsService {
 	async findOneBySlug(slug: string): Promise<Product> {
 		this.logger.log(`Retrieving product by slug: ${slug}`);
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("product", slug, []);
+
+		// Check in the cache if the products exist
+		const productInCache = await this.cacheManager.get<Product>(cacheKey);
+		if (productInCache) {
+			return productInCache;
+		}
+
 		// Find the product
 		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
 			where: { slug: slug, },
 			relations: {
 				options: {
@@ -674,6 +786,9 @@ export class ProductsService {
 			});
 		}
 
+		// Save the product in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Product, product), 900000);
+
 		return product;
 	}
 
@@ -688,7 +803,11 @@ export class ProductsService {
 		this.logger.log(`Updating product: ${uuid}`);
 
 		// Find the product
-		const product = await this.productRepository.findOneBy({ uuid: uuid, });
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
 		if (product === null) {
 			throw new NotFoundException({
 				error: "Failed to find the product. Please check and try again.",
@@ -746,8 +865,11 @@ export class ProductsService {
 
 		// Check if a product already exists by the same slug
 		if (body.slug !== null) {
-			const productBySlug = await this.productRepository.findOneBy({
-				slug: body.slug.trim().toLowerCase(),
+			const productBySlug = await this.productRepository.findOne({
+				relationLoadStrategy: "query",
+				where: {
+					slug: body.slug.trim().toLowerCase(),
+				},
 			});
 
 			// Make sure we don't create another product with the same slug
@@ -761,7 +883,12 @@ export class ProductsService {
 		}
 
 		// Find the product
-		const product = await this.productRepository.findOneBy({ uuid: uuid, });
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: {
+				uuid: uuid,
+			},
+		});
 		if (product === null) {
 			throw new NotFoundException({
 				error: "Failed to find the product. Please check and try again.",
@@ -784,7 +911,10 @@ export class ProductsService {
 		this.logger.log(`Updating product status: ${uuid}`);
 
 		// Find the product
-		const product = await this.productRepository.findOneBy({ uuid: uuid, });
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
 		if (product === null) {
 			throw new NotFoundException({
 				error: "Failed to find the product. Please check and try again.",

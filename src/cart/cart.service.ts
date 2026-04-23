@@ -164,6 +164,7 @@ export class CartItemsService {
 
         // Find the items in the customer cart
         const cartItems = await this.cartRepository.find({
+            relationLoadStrategy: "query",
             where: { customer: { uuid: customer.uuid } },
             relations: {
                 product: {

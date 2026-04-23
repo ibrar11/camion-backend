@@ -137,27 +137,27 @@ export class Product {
 	ratingFiveStarCount: number;
 
 	@Field(() => [ProductOption])
-	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, })
+	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, eager: true, })
 	options: Array<ProductOption>;
 
 	@Field(() => [ProductVariant])
-	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, })
+	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, eager: true, })
 	variants: Array<ProductVariant>;
 
-	@OneToMany(() => ProductCategory, (productCategories) => productCategories.product, { cascade: true, })
+	@OneToMany(() => ProductCategory, (productCategories) => productCategories.product, { cascade: true, eager: true, })
 	productCategories: Array<ProductCategory>;
 
 	@Field(() => [ProductReview])
-	@OneToMany(() => ProductReview, (review) => review.product, { cascade: true, })
+	@OneToMany(() => ProductReview, (review) => review.product, { cascade: true, eager: true, })
 	reviews: Array<ProductReview>;
 
-	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
+	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, eager: true, })
 	cartItems: Array<CartItem>;
 
-	@OneToMany(() => OrderItem, (orderItem) => orderItem.product)
+	@OneToMany(() => OrderItem, (orderItem) => orderItem.product, { cascade: true, eager: true, })
 	orderItems: Array<OrderItem>;
 
-	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product)
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product, { cascade: true, eager: true, })
 	wishlistItems: Array<WishlistItem>;
 
 	@Exclude()

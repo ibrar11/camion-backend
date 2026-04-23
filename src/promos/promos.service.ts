@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -10,8 +11,13 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { plainToInstance } from "class-transformer";
+
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
+
 import { generateSlug } from "../common/slug";
 import { getSkipAndTake } from "../common/pagination";
+import { generateCacheKey } from "../common/cache";
 
 import { CreatePromoDto } from "./dtos/CreatePromoDto";
 import { UpdatePromoDto } from "./dtos/UpdatePromoDto";
@@ -24,6 +30,7 @@ export class PromosService {
 
 	constructor(
 		@InjectRepository(Promo) private readonly promoRepository: Repository<Promo>,
+		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 	) { }
 
 	/**
@@ -65,19 +72,33 @@ export class PromosService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Promo>> {
+	async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Promo>> {
 		this.logger.log(`Retrieving promos`);
+
+		// Generate a cache key
+		const cacheKey = generateCacheKey("promos", "", [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the categories exist
+		const promosInCache = await this.cacheManager.get<Array<Promo>>(cacheKey);
+		if (promosInCache) {
+			return promosInCache;
+		}
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		return this.promoRepository.find({
+		const promos = await this.promoRepository.find({
 			order: {
 				id: "DESC",
 			},
 			skip: skip,
 			take: take,
 		});
+
+		// Save the promos in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Promo, promos), 500000);
+
+		return promos;
 	}
 
 	/**

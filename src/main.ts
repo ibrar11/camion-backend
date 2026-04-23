@@ -1,15 +1,21 @@
+import compression from "compression";
+
 import {
 	NestFactory,
 	Reflector,
 } from '@nestjs/core';
+
 import {
 	BadRequestException,
 	ClassSerializerInterceptor,
 	ValidationPipe,
 } from '@nestjs/common';
 
-import { AppModule } from './app.module';
 import { ValidationError } from 'class-validator';
+
+import { AppModule } from './app.module';
+import { filter } from "rxjs";
+import { Request, Response } from "express";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -70,7 +76,17 @@ async function bootstrap() {
 		},
 	}));
 
-	app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)),);
+	app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+	// Enable compression
+	app.use(compression({
+		filter: (req: Request, res: Response) => {
+			if (req.headers["x-no-compression"]) {
+				return false;
+			}
+			return compression.filter(req, res);
+		},
+	}));
 
 	await app.listen(process.env.PORT ?? 3000);
 }

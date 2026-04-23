@@ -371,6 +371,7 @@ export class OrderService {
             }
 
             return this.orderRepository.find({
+                relationLoadStrategy: "query",
                 where: {
                     ...filter
                 },
@@ -413,6 +414,7 @@ export class OrderService {
             }
 
             return this.orderRepository.find({
+                relationLoadStrategy: "query",
                 where: {
                     customer: { uuid: customerUuid },
                     ...filter,
@@ -447,6 +449,7 @@ export class OrderService {
     async findOne(uuid: string): Promise<Order> {
         try {
             const order = await this.orderRepository.findOne({
+                relationLoadStrategy: "query",
                 where: { uuid },
                 relations: {
                     orderItems: {
