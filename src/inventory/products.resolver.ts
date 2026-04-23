@@ -263,7 +263,7 @@ export class ProductsResolver {
 	}
 
 	@Query(() => [Product])
-	searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
+	async searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
 		return this.productsService.searchProducts(args.query, args.language, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 

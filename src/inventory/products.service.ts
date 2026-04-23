@@ -179,15 +179,9 @@ export class ProductsService {
 
 		// Find the products in the desired category
 		return this.productRepository.createQueryBuilder("product")
-			// Populate options and their values
-			.leftJoinAndSelect('product.options', 'options')
-			.leftJoinAndSelect('options.values', 'optionValues')
-
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
 			.leftJoinAndSelect('variants.images', 'images')
-			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
-			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
 			// Many-to-many join
 			.innerJoin("product.productCategories", "productCategory")
@@ -218,14 +212,11 @@ export class ProductsService {
 
 		return this.productRepository.find({
 			relations: {
-				options: {
-					values: true,
-				},
 				variants: {
-					optionValues: {
-						optionValue: true,
-					},
 					images: true,
+				},
+				productCategories: {
+					category: true,
 				},
 			},
 			order: {
@@ -278,13 +269,7 @@ export class ProductsService {
 						[columnMap[language]]: ILike(`%${query}%`),
 					},
 					relations: {
-						options: {
-							values: true,
-						},
 						variants: {
-							optionValues: {
-								optionValue: true,
-							},
 							images: true,
 						},
 						productCategories: {
@@ -307,19 +292,13 @@ export class ProductsService {
 					.getQuery();
 
 				return this.productRepository.createQueryBuilder('product')
-					// Populate options and their values
-					.leftJoinAndSelect('product.options', 'options')
-					.leftJoinAndSelect('options.values', 'optionValues')
+					// Populate variants and their specific option value mappings
+					.leftJoinAndSelect('product.variants', 'variants')
+					.leftJoinAndSelect('variants.images', 'images')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
 					.leftJoinAndSelect('productCategories.category', 'category')
-
-					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
-					.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
-					.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
 					// Search Filter
 					.where(queryMap[language], { query: `%${query}%`, })
@@ -341,19 +320,13 @@ export class ProductsService {
 					.getQuery();
 
 				return this.productRepository.createQueryBuilder('product')
-					// Populate options and their values
-					.leftJoinAndSelect('product.options', 'options')
-					.leftJoinAndSelect('options.values', 'optionValues')
+					// Populate variants and their specific option value mappings
+					.leftJoinAndSelect('product.variants', 'variants')
+					.leftJoinAndSelect('variants.images', 'images')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
 					.leftJoinAndSelect('productCategories.category', 'category')
-
-					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
-					.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
-					.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
 					// Search Filter
 					.where(queryMap[language], { query: `%${query}%`, })
@@ -407,13 +380,7 @@ export class ProductsService {
 		if (product.productCategories.length === 0 || product.productCategories[0].category === null) {
 			return this.productRepository.find({
 				relations: {
-					options: {
-						values: true,
-					},
 					variants: {
-						optionValues: {
-							optionValue: true,
-						},
 						images: true,
 					},
 					productCategories: {
@@ -430,19 +397,14 @@ export class ProductsService {
 
 		// Find the products in the same category
 		const recommendedProducts = await this.productRepository.createQueryBuilder("product")
-			// Populate options and their values
-			.leftJoinAndSelect('product.options', 'options')
-			.leftJoinAndSelect('options.values', 'optionValues')
-
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
 			.leftJoinAndSelect('variants.images', 'images')
-			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
-			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
 			// Many-to-many join
 			.innerJoin("product.productCategories", "productCategory")
 			.innerJoin("productCategory.category", "category")
+
 			.where("category.id = :id", {
 				id: product.productCategories[0].category.id,
 			})
@@ -462,13 +424,7 @@ export class ProductsService {
 		// As a fallback, we return all the products in the inventory, if there are no products in the same category
 		return this.productRepository.find({
 			relations: {
-				options: {
-					values: true,
-				},
 				variants: {
-					optionValues: {
-						optionValue: true,
-					},
 					images: true,
 				},
 				productCategories: {
@@ -500,13 +456,7 @@ export class ProductsService {
 
 		return this.productRepository.find({
 			relations: {
-				options: {
-					values: true,
-				},
 				variants: {
-					optionValues: {
-						optionValue: true,
-					},
 					images: true,
 				},
 				productCategories: {
@@ -538,13 +488,7 @@ export class ProductsService {
 
 		return this.productRepository.find({
 			relations: {
-				options: {
-					values: true,
-				},
 				variants: {
-					optionValues: {
-						optionValue: true,
-					},
 					images: true,
 				},
 				productCategories: {
@@ -593,13 +537,7 @@ export class ProductsService {
 		if (product.productCategories.length === 0 || product.productCategories[0].category === null) {
 			return this.productRepository.find({
 				relations: {
-					options: {
-						values: true,
-					},
 					variants: {
-						optionValues: {
-							optionValue: true,
-						},
 						images: true,
 					},
 					productCategories: {
@@ -616,15 +554,9 @@ export class ProductsService {
 
 		// Find the products in the same category
 		const relatedProducts = await this.productRepository.createQueryBuilder("product")
-			// Populate options and their values
-			.leftJoinAndSelect('product.options', 'options')
-			.leftJoinAndSelect('options.values', 'optionValues')
-
 			// Populate variants and their specific option value mappings
 			.leftJoinAndSelect('product.variants', 'variants')
 			.leftJoinAndSelect('variants.images', 'images')
-			.leftJoinAndSelect('variants.optionValues', 'variantOptionValueLinks')
-			.leftJoinAndSelect('variantOptionValueLinks.optionValue', 'specificValue')
 
 			// Many-to-many join
 			.innerJoin("product.productCategories", "productCategory")
@@ -648,13 +580,7 @@ export class ProductsService {
 		// As a fallback, we return all the products in the inventory, if there are no products in the same category
 		return this.productRepository.find({
 			relations: {
-				options: {
-					values: true,
-				},
 				variants: {
-					optionValues: {
-						optionValue: true,
-					},
 					images: true,
 				},
 				productCategories: {
