@@ -2248,6 +2248,17 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
             currencyCode
         }
         eta
+        shippingAddress {
+            uuid
+            fullName
+            country
+            city
+            state
+            apartment
+            streetAddress
+            zipCode
+            phoneNumber
+        }
         orderItems {
             uuid
             price {
@@ -2418,6 +2429,17 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
             currencyCode
         }
         eta
+        shippingAddress {
+            uuid
+            fullName
+            country
+            city
+            state
+            apartment
+            streetAddress
+            zipCode
+            phoneNumber
+        }
         orderItems {
             uuid
             price {
@@ -2552,6 +2574,165 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                     }
                 }
             ]
+        }
+    }
+}
+```
+
+Get Current Customer Order Preview
+-----------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $couponCode: String)  {
+    getCurrentCustomerOrderPreview(language: $language, currency: $currency) {
+        items{
+            uuid
+            product {
+                uuid
+                slug
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
+                status
+                salesCount
+                likesCount
+                reviewsCount
+                ratingAvg
+                ratingOneStarCount
+                ratingTwoStarCount
+                ratingThreeStarCount
+                ratingFourStarCount
+                ratingFiveStarCount
+            }
+            variant {
+                uuid
+                title
+                sku
+                barcode
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
+            }
+        }
+        shippingAddress {
+            uuid
+            fullName
+            phoneNumber
+            streetAddress
+            apartment
+            zipCode
+            city
+            state
+            country
+            isDefault
+        }
+        cart_total
+        discount
+        shippingTotal
+        grand_total
+        eta
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language":"en",
+    "currency": "qar",
+    "couponCode"?: "4422"
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerOrderPreview": {
+            "items": [
+                {
+                    "uuid": "628ae1a7-0509-4dd3-ac71-b2ae1ab375fe",
+                    "product": {
+                        "uuid": "6ffa8d28-eaa1-40c9-9978-cfad977a3317",
+                        "slug": "156inch-laptop-i7-quad-core-independent-graphics-gaming-office",
+                        "title": "15.6inch Laptop I7 Quad-Core Independent Graphics Gaming Office Business Learning Online Class Live Broadcast I5 Ultra-Thin Satc",
+                        "brief": "",
+                        "description": "",
+                        "descriptionHtml": "",
+                        "status": "active",
+                        "salesCount": 0,
+                        "likesCount": 0,
+                        "reviewsCount": 0,
+                        "ratingAvg": 0,
+                        "ratingOneStarCount": 0,
+                        "ratingTwoStarCount": 0,
+                        "ratingThreeStarCount": 0,
+                        "ratingFourStarCount": 0,
+                        "ratingFiveStarCount": 0
+                    },
+                    "variant": {
+                        "uuid": "1c2d2fe9-035f-491b-bb69-9a5a2601f18c",
+                        "title": "Configuration 2 recommended for entry-level office",
+                        "sku": "6044512586268",
+                        "barcode": "6044512586268",
+                        "price": {
+                            "amount": 525,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 525,
+                            "currencyCode": "qar"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1,
+                            "height": 1,
+                            "length": 1,
+                            "unit": "cm"
+                        }
+                    }
+                }
+            ],
+            "shippingAddress": {
+                "uuid": "79a96a53-8f78-485c-8424-df092b5d0697",
+                "fullName": "Fahad Al-Saud",
+                "phoneNumber": "+966 51 234 5678",
+                "streetAddress": "King Fahd Road",
+                "apartment": "Apartment 12B, Al Noor Building",
+                "zipCode": "12271",
+                "city": "Riyadh",
+                "state": "RI",
+                "country": "SA",
+                "isDefault": true
+            },
+            "cart_total": 990,
+            "discount": 0,
+            "shippingTotal": 231,
+            "grand_total": 1221,
+            "eta": "6-10 working days"
         }
     }
 }

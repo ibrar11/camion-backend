@@ -185,10 +185,10 @@ export class OrderService {
                     ...priceAmount,
                     amount: priceAmount.amount,
                 };
-                // orderItem.discountedPrice = {
-                //     ...discountedPriceAmount,
-                //     amount: discountedPriceAmount.amount,
-                // };
+                orderItem.discountedPrice = {
+                    ...discountedPriceAmount,
+                    amount: discountedPriceAmount.amount,
+                };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
                     amount: totalAmount,
@@ -235,7 +235,7 @@ export class OrderService {
                 },
             });
 
-            if (coupon){
+            if (coupon) {
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
             }
 
@@ -264,6 +264,7 @@ export class OrderService {
             };
             order.eta = eta;
             order.orderItems = orderItems;
+            order.shippingAddress = address;
 
             await this.orderRepository.save(order);
 
@@ -375,6 +376,7 @@ export class OrderService {
                         product: true,
                         variant: true,
                     },
+                    shippingAddress: true
                 },
                 order: {
                     id: "DESC",
@@ -383,10 +385,10 @@ export class OrderService {
                 take: take,
             });
         } catch (error: any) {
-            this.logger.error(`Error fetching orders: ${error?.message}`);
+            this.logger.error(`Error fetching orders: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch orders',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -417,6 +419,7 @@ export class OrderService {
                         product: true,
                         variant: true,
                     },
+                    shippingAddress: true
                 },
                 order: {
                     id: "DESC",
@@ -425,10 +428,10 @@ export class OrderService {
                 take: take,
             });
         } catch (error: any) {
-            this.logger.error(`Error fetching my orders: ${error?.message}`);
+            this.logger.error(`Error fetching my orders: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch customer orders',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -447,6 +450,7 @@ export class OrderService {
                         product: true,
                         variant: true,
                     },
+                    shippingAddress: true
                 },
             });
 
@@ -456,10 +460,10 @@ export class OrderService {
 
             return order;
         } catch (error: any) {
-            this.logger.error(`Error fetching order: ${error?.message}`);
+            this.logger.error(`Error fetching order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch order',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -478,10 +482,10 @@ export class OrderService {
 
             return this.orderRepository.save(order);
         } catch (error: any) {
-            this.logger.error(`Error updating order status: ${error?.message}`);
+            this.logger.error(`Error updating order status: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to update order status',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -550,10 +554,10 @@ export class OrderService {
             await this.orderRepository.save(order);
 
         } catch (error: any) {
-            this.logger.error(`Error canceling order: ${error?.message}`);
+            this.logger.error(`Error canceling order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to cancel order',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -563,7 +567,7 @@ export class OrderService {
     * @param customer
     * @returns
     */
-    async orderPreview(customer: Customer): Promise<OrderPreviewResponse> {
+    async orderPreview(customer: Customer, couponCode?: string): Promise<OrderPreviewResponse> {
         try {
             // Get cart items with relations
             const cartItems = await this.cartRepository.find({
@@ -599,7 +603,7 @@ export class OrderService {
 
             // Validate cart items and prepare for shipping calculation
             const validatedItems: CartItem[] = [];
-            let subtotal = 0;
+            let subTotal = 0;
 
             for (const item of cartItems) {
                 // Check stock availability
@@ -612,7 +616,7 @@ export class OrderService {
                 }
 
                 const itemTotal = item.variant.cost.amount * item.quantity;
-                subtotal += itemTotal;
+                subTotal += itemTotal;
 
                 validatedItems.push({
                     ...item
@@ -637,26 +641,41 @@ export class OrderService {
                 address.country,
                 currency, // Todo make currency dynamic
                 exchangeRates,
-                subtotal
+                subTotal
             );
 
-            if ('error' in shippingCalculation) {
-                throw new BadRequestException({
-                    error: shippingCalculation.error
-                });
+            const shippingCost = Math.floor(shippingCalculation.totalShippingCost);
+            const eta = shippingCalculation.transitTime.estimatedRange
+
+            // COUPON VALIDATION & DISCOUNT
+            let discount = 0;
+            const coupon = await this.couponRepository.findOne({
+                where: { code: couponCode?.toLowerCase().trim() },
+                relations: {
+                    affiliate: {
+                        customer: true,
+                        wallet: true,
+                    },
+                },
+            });
+
+            if (coupon) {
+                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
             }
 
             // Calculate total order amount
-            const totalAmount = subtotal + (shippingCalculation as ShippingCalculationResult).totalShippingCost;
+            const totalAmount = subTotal + shippingCost - discount;
 
             // Return complete order preview
             const orderPreview = {
-                cart: validatedItems,
-                address,
-                cart_total: subtotal,
+                items: validatedItems,
+                shippingAddress: address,
+                cart_total: subTotal,
+                discount: discount,
                 shipping: shippingCalculation,
-                shippingTotal: (shippingCalculation as ShippingCalculationResult).totalShippingCost,
+                shippingTotal: shippingCost,
                 grand_total: totalAmount,
+                eta: eta,
             };
 
             return orderPreview;

@@ -35,7 +35,7 @@ export class OrderItem {
     uuid: string;
 
     @Field(() => Order)
-    @ManyToOne(() => Order, (order) => order.orderItems)
+    @ManyToOne(() => Order, (order) => order.orderItems, { onDelete: "CASCADE", })
     order: Order;
 
     @Field(() => Product)
@@ -54,9 +54,9 @@ export class OrderItem {
     @Column(() => Money)
     price: Money;
 
-    // @Field(() => Money)
-    // @Column(() => Money)
-    // discountedPrice: Money;
+    @Field(() => Money)
+    @Column(() => Money)
+    discountedPrice: Money;
 
     @Field(() => Int)
     @Column()

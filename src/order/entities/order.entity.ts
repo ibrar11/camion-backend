@@ -16,6 +16,7 @@ import { Exclude } from "class-transformer";
 import { OrderStatus } from "../enums/OrderStatus";
 
 import { Customer } from "../../customers/entities/customer.entity";
+import { CustomerAddress } from "../../customers/entities/customer-address.entity";
 
 import { OrderItem } from "./order-item.entity";
 
@@ -36,6 +37,10 @@ export class Order {
     @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.orders)
     customer: Customer;
+
+    @Field(() => CustomerAddress)
+    @ManyToOne(() => CustomerAddress, (customerAddress) => customerAddress.orders)
+    shippingAddress: CustomerAddress;
 
     @Field()
     @Column({

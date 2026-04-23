@@ -6,13 +6,35 @@ import { ShippingCalculationResult } from "../common/calculateShipping";
 
 import { OrderStatus } from "./enums/OrderStatus";
 
-export interface OrderPreviewResponse {
-    cart: CartItem[];
-    address: CustomerAddress;
+import { 
+    Field, 
+    ObjectType 
+} from "@nestjs/graphql";
+
+@ObjectType()
+export class OrderPreviewResponse {
+    @Field(() => [CartItem])
+    items: CartItem[];
+
+    @Field(() => CustomerAddress)
+    shippingAddress: CustomerAddress;
+
+    @Field()
     cart_total: number;
+
+    @Field()
+    discount: number;
+
     shipping: ShippingCalculationResult;
+
+    @Field()
     shippingTotal: number;
+
+    @Field()
     grand_total: number;
+
+    @Field()
+    eta: string;
 }
 
 export interface OrderFilters {
