@@ -10,9 +10,16 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { S3Service } from 'src/common/s3.service';
+import { plainToInstance } from "class-transformer";
 
-import { getSkipAndTake } from 'src/common/pagination';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+
+import { ConfigService } from "@nestjs/config";
+
+import { S3Service } from '../common/s3.service';
+
+import { getSkipAndTake } from '../common/pagination';
+import { generateCacheKey } from "../common/cache";
 
 import { UpdateBannerDto } from './dtos/UpdateBannerDto';
 
@@ -25,6 +32,7 @@ export class BannersService {
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@InjectRepository(Banner) private readonly bannerRepository: Repository<Banner>,
+		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 	) { }
 
 	/**
@@ -62,16 +70,30 @@ export class BannersService {
 	async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Banner>> {
 		this.logger.log("Retrieving a list of banners");
 
+		// Generate a cache key
+		const cacheKey = generateCacheKey("banners", "", [pageNumber, itemsPerPage]);
+
+		// Check in the cache if the banners exist
+		const bannersInCache = await this.cacheManager.get<Array<Banner>>(cacheKey);
+		if (bannersInCache) {
+			return bannersInCache;
+		}
+
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		return this.bannerRepository.find({
+		const banners = await this.bannerRepository.find({
 			order: {
 				id: "DESC",
 			},
 			skip: skip,
 			take: take,
 		});
+
+		// Save the banners in cache
+		await this.cacheManager.set(cacheKey, plainToInstance(Banner, banners), 500000);
+
+		return banners;
 	}
 
 	/**
