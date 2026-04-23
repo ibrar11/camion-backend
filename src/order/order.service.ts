@@ -65,6 +65,8 @@ import {
     calculateCouponDiscount
 } from "../common/calculateCouponDiscount";
 
+import { smartRoundInt } from "../common/smartRound";
+
 import {
     OrderFilters,
     OrderPreviewResponse,
@@ -237,6 +239,7 @@ export class OrderService {
 
             if (coupon) {
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                discount = smartRoundInt(discount);
             }
 
             const total = subTotal + shippingCost - discount;

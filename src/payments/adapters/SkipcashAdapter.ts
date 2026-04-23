@@ -54,7 +54,7 @@ export class SkipCashAdapter {
 
             const signature = generateSignature(payload);
 
-            console.log("before hitting the skipcash api")
+            this.logger.log(`Attempting to hit skipcash payment api ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
             // create skipcash payment
             const res = await fetch(`https://api.skipcash.app/api/v1/payments`, {
                 method: "POST",
