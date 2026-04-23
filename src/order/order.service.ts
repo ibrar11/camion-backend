@@ -185,10 +185,10 @@ export class OrderService {
                     ...priceAmount,
                     amount: priceAmount.amount,
                 };
-                // orderItem.discountedPrice = {
-                //     ...discountedPriceAmount,
-                //     amount: discountedPriceAmount.amount,
-                // };
+                orderItem.discountedPrice = {
+                    ...discountedPriceAmount,
+                    amount: discountedPriceAmount.amount,
+                };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
                     amount: totalAmount,
@@ -385,10 +385,10 @@ export class OrderService {
                 take: take,
             });
         } catch (error: any) {
-            this.logger.error(`Error fetching orders: ${error?.message}`);
+            this.logger.error(`Error fetching orders: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch orders',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -428,10 +428,10 @@ export class OrderService {
                 take: take,
             });
         } catch (error: any) {
-            this.logger.error(`Error fetching my orders: ${error?.message}`);
+            this.logger.error(`Error fetching my orders: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch customer orders',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -460,10 +460,10 @@ export class OrderService {
 
             return order;
         } catch (error: any) {
-            this.logger.error(`Error fetching order: ${error?.message}`);
+            this.logger.error(`Error fetching order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch order',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -482,10 +482,10 @@ export class OrderService {
 
             return this.orderRepository.save(order);
         } catch (error: any) {
-            this.logger.error(`Error updating order status: ${error?.message}`);
+            this.logger.error(`Error updating order status: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to update order status',
-                details: error.message || error,
+                details: error,
             });
         }
     }
@@ -554,10 +554,10 @@ export class OrderService {
             await this.orderRepository.save(order);
 
         } catch (error: any) {
-            this.logger.error(`Error canceling order: ${error?.message}`);
+            this.logger.error(`Error canceling order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to cancel order',
-                details: error.message || error,
+                details: error,
             });
         }
     }
