@@ -2305,6 +2305,14 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                     height
                     length
                 }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
             }
         }
     }
@@ -2393,6 +2401,16 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                                 "length": 1000,
                                 "unit": "in"
                             }
+                            "images": [
+                                {
+                                    "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                                    "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                    "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                    "alt": "",
+                                    "isFeatured": false,
+                                    "position": 0
+                                }
+                            ]
                         }
                     }
                 ]
@@ -2486,6 +2504,14 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                     height
                     length
                 }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
             }
         }
     }
@@ -2571,6 +2597,16 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                             "length": 1000,
                             "unit": "in"
                         }
+                        "images": [
+                            {
+                                "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
                     }
                 }
             ]
@@ -2629,6 +2665,14 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                     height
                     length
                     unit
+                }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
                 }
             }
         }
@@ -2713,6 +2757,16 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                             "length": 1,
                             "unit": "cm"
                         }
+                        "images": [
+                            {
+                                "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
                     }
                 }
             ],
