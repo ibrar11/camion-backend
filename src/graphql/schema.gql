@@ -206,6 +206,7 @@ type Product {
   descriptionHtmlEn: String!
   likesCount: Float!
   options: [ProductOption!]!
+  productCategories: [ProductCategory!]!
   ratingAvg: Float!
   ratingFiveStarCount: Float!
   ratingFourStarCount: Float!
@@ -222,6 +223,10 @@ type Product {
   titleEn: String!
   uuid: String!
   variants(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
+}
+
+type ProductCategory {
+  category: Category!
 }
 
 type ProductOption {

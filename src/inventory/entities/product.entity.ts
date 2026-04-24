@@ -144,6 +144,7 @@ export class Product {
 	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, })
 	variants: Array<ProductVariant>;
 
+	@Field(() => [ProductCategory])
 	@OneToMany(() => ProductCategory, (productCategories) => productCategories.product, { cascade: true, })
 	productCategories: Array<ProductCategory>;
 

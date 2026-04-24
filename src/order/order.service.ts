@@ -99,7 +99,7 @@ export class OrderService {
      * @param dto
      * @returns
      */
-    async create(customer: Customer, dto: CreateOrderDto, targetCurrency: CurrencyCode = CurrencyCode.QAR): Promise<Order> {
+    async create(customer: Customer, dto: CreateOrderDto,): Promise<Order> {
         try {
             this.logger.log(`Attempting to create order for customer: ${customer.fullName}`);
             const address = await this.addressRepository.findOne({
@@ -135,6 +135,7 @@ export class OrderService {
 
             let subTotal = 0;
             const orderItems: OrderItem[] = [];
+            const currency = dto.currency ?? "qar";
 
             for (const cart of cartItems) {
                 const variant = cart.variant;
@@ -170,8 +171,8 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await this.inventoryLevelRepository.save(level);
 
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, targetCurrency, false);
-                const discountedPriceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, targetCurrency, true);
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
+                const discountedPriceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
                 // const priceAmount = Number(variant.cost.amount);
                 const totalAmount = discountedPriceAmount.amount * cart.quantity;
 
@@ -204,7 +205,6 @@ export class OrderService {
 
             const exchangeRates = await this.exchangeRateService.findAll("", "");
 
-            const currency = targetCurrency ?? cartItems[0].variant.cost.currencyCode;
             // shipping and discount needs to be updated after the implementation of shippping and discounts
             const shippingCartItems = cartItems.map(item => ({
                 weight: {
@@ -227,21 +227,23 @@ export class OrderService {
 
             // COUPON VALIDATION & DISCOUNT
             let discount = 0;
-            const coupon = await this.couponRepository.findOne({
-                where: { code: dto.couponCode?.toLowerCase().trim() },
-                relations: {
-                    affiliate: {
-                        customer: true,
-                        wallet: true,
+            let coupon: Coupon | null = null;
+            if (dto.couponCode) {
+                coupon = await this.couponRepository.findOne({
+                    where: { code: dto.couponCode?.toLowerCase().trim() },
+                    relations: {
+                        affiliate: {
+                            customer: true,
+                            wallet: true,
+                        },
                     },
-                },
-            });
+                });
 
-            if (coupon) {
-                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                discount = smartRoundInt(discount);
+                if (coupon) {
+                    discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                    discount = smartRoundInt(discount);
+                }
             }
-
             const total = subTotal + shippingCost - discount;
 
             // create a order
@@ -457,7 +459,11 @@ export class OrderService {
                 where: { uuid },
                 relations: {
                     orderItems: {
-                        product: true,
+                        product: {
+                            productCategories: {
+                                category: true
+                            }
+                        },
                         variant: {
                             images: true,
                         },
@@ -628,7 +634,9 @@ export class OrderService {
                     });
                 }
 
-                const itemTotal = item.variant.cost.amount * item.quantity;
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
+
+                const itemTotal = priceAmount.amount * item.quantity;
                 subTotal += itemTotal;
 
                 validatedItems.push({
@@ -646,7 +654,7 @@ export class OrderService {
             }));
 
             const exchangeRates = await this.exchangeRateService.findAll("", "");
-            const currency = cartItems[0].variant.cost.currencyCode;
+            const currency = cartItems[0].subTotal.currencyCode;
 
             // Calculate shipping fee using utility function
             const shippingCalculation = calculateCartShipping(
@@ -662,18 +670,20 @@ export class OrderService {
 
             // COUPON VALIDATION & DISCOUNT
             let discount = 0;
-            const coupon = await this.couponRepository.findOne({
-                where: { code: couponCode?.toLowerCase().trim() },
-                relations: {
-                    affiliate: {
-                        customer: true,
-                        wallet: true,
+            if (couponCode) {
+                const coupon = await this.couponRepository.findOne({
+                    where: { code: couponCode?.toLowerCase().trim() },
+                    relations: {
+                        affiliate: {
+                            customer: true,
+                            wallet: true,
+                        },
                     },
-                },
-            });
+                });
 
-            if (coupon) {
-                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                if (coupon) {
+                    discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                }
             }
 
             // Calculate total order amount

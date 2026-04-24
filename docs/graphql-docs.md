@@ -2481,6 +2481,16 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                 description(language: $language)
                 descriptionHtml(language: $language)
                 status
+                productCategories {
+                    category {
+                        uuid
+                        slug
+                        name
+                        nameEn
+                        nameAr
+                        thumbnailUrl
+                    }
+                }
             }
             variant {
                 uuid
@@ -2577,6 +2587,18 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                         "description": "Your new iPhone awaits. Make it yours.",
                         "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                         "status": "DRAFT",
+                        "productCategories": [
+                            {
+                                "category": {
+                                    "uuid": "5e012103-2e5a-4f30-af5b-06b8fe6f2628",
+                                    "slug": "electronics-laptops",
+                                    "name": "laptop",
+                                    "nameEn": "laptop",
+                                    "nameAr": "كمبيوتر محمول",
+                                    "thumbnailUrl": ""
+                                }
+                            }
+                        ]
                     },
                     "variant": {
                         "uuid": "c0a7c17f-3f78-45c7-9811-75abb0a46c9a",

@@ -102,7 +102,7 @@ export class PricingService {
 
 		// Find the exchange rate for the request currency code
 		let exchangeRate = this.exchangeRates.filter(
-			(exchangeRate) => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim()
+			(exchangeRate) => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim() && exchangeRate.srcCurrencyCode.toLowerCase().trim() === variant.cost.currencyCode
 		).at(0) ?? null;
 
 		// If there is no exchange rate, we will no longer continue
