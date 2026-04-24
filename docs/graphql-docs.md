@@ -2622,7 +2622,7 @@ Get Current Customer Order Preview
 
 ```graphql
 query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $couponCode: String)  {
-    getCurrentCustomerOrderPreview(language: $language, currency: $currency) {
+    getCurrentCustomerOrderPreview(language: $language, currency: $currency, couponCode: $couponCode) {
         items{
             uuid
             product {

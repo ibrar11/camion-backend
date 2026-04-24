@@ -378,7 +378,9 @@ export class OrderService {
                 relations: {
                     orderItems: {
                         product: true,
-                        variant: true,
+                        variant: {
+                            images: true,
+                        },
                     },
                     shippingAddress: true
                 },
@@ -422,7 +424,9 @@ export class OrderService {
                 relations: {
                     orderItems: {
                         product: true,
-                        variant: true,
+                        variant: {
+                            images: true,
+                        },
                     },
                     shippingAddress: true
                 },
@@ -454,7 +458,9 @@ export class OrderService {
                 relations: {
                     orderItems: {
                         product: true,
-                        variant: true,
+                        variant: {
+                            images: true,
+                        },
                     },
                     shippingAddress: true
                 },
@@ -583,7 +589,8 @@ export class OrderService {
                     variant: {
                         inventoryItem: {
                             levels: true
-                        }
+                        },
+                        images: true
                     }
                 }
             });
