@@ -164,6 +164,8 @@ export class TransactionsService {
 
 		// Find the customer with affiliate wallet
 		const customer = await this.customerRepository.findOne({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				uuid: customerUUID,
 			},
@@ -188,6 +190,8 @@ export class TransactionsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.transactionRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				wallet: {
 					id: customer.affiliate.wallet.id,

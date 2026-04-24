@@ -11,16 +11,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { plainToInstance } from "class-transformer";
-
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-
-import { ConfigService } from "@nestjs/config";
 
 import { S3Service } from "../common/s3.service";
 
 import { getSkipAndTake } from "../common/pagination";
-import { generateCacheKey } from "../common/cache";
 
 import { CreateStoryDto } from './dtos/CreateStoryDto';
 import { UpdateStoryDto } from "./dtos/UpdateStoryDto";
@@ -71,19 +66,12 @@ export class StoriesService {
 	async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Story>> {
 		this.logger.log(`Retrieving stories`);
 
-		// Generate a cache key
-		const cacheKey = generateCacheKey("stories", "", [pageNumber, itemsPerPage]);
-
-		// Check in the cache if the stories exist
-		const storiesInCache = await this.cacheManager.get<Array<Story>>(cacheKey);
-		if (storiesInCache) {
-			return storiesInCache;
-		}
-
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		const stories = await this.storyRepository.find({
+		return this.storyRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
 			relations: {
 				frames: true,
 			},
@@ -93,11 +81,6 @@ export class StoriesService {
 			skip: skip,
 			take: take,
 		});
-
-		// Save the stories in cache
-		await this.cacheManager.set(cacheKey, plainToInstance(Story, stories), 500000);
-
-		return stories;
 	}
 
 	/**

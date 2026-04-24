@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 
 import {
 	ConflictException,
-	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -10,12 +9,6 @@ import {
 
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-
-import { plainToInstance } from "class-transformer";
-
-import { CACHE_MANAGER, Cache } from "@nestjs/cache-manager";
-
-import { generateCacheKey } from "../common/cache";
 
 import { CreateCurrencyDto } from "./dtos/CreateCurrencyDto";
 import { UpdateCurrencyDto } from "./dtos/UpdateCurrencyDto";
@@ -28,7 +21,6 @@ export class CurrenciesService {
 
 	constructor(
 		@InjectRepository(Currency) private readonly currencyRepository: Repository<Currency>,
-		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 	) { }
 
 	/**
@@ -58,27 +50,14 @@ export class CurrenciesService {
 	 * Retrieve all currencies
 	 * @returns Currency[]
 	 */
-	async findAllCurrencies(): Promise<Currency[]> {
+	findAllCurrencies(): Promise<Currency[]> {
 		this.logger.log(`Retrieving currencies`);
 
-		// Generate a cache key
-		const cacheKey = generateCacheKey("currencies", "", []);
-
-		// Check in the cache if the currencies exist
-		const currenciesInCache = await this.cacheManager.get<Array<Currency>>(cacheKey);
-		if (currenciesInCache) {
-			return currenciesInCache;
-		}
-
 		// Find the currencies
-		const currencies = await this.currencyRepository.find({
+		return this.currencyRepository.find({
+			cache: true,
 			order: { name: "ASC" },
 		});
-
-		// Save the currencies in cache
-		await this.cacheManager.set(cacheKey, plainToInstance(Currency, currencies), 500000);
-
-		return currencies;
 	}
 
 	/**

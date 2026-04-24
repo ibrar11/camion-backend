@@ -360,7 +360,7 @@ export class OrderService {
      *
      * @returns
      */
-    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
+    findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
@@ -404,7 +404,7 @@ export class OrderService {
      * @param customerUuid
      * @returns
      */
-    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
+    findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
 
             // Get pagination params

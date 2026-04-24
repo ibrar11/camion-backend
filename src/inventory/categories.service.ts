@@ -11,17 +11,10 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Repository } from "typeorm";
 
-import { plainToInstance } from "class-transformer";
-
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-
-import { ConfigService } from "@nestjs/config";
-
 import { S3Service } from "../common/s3.service";
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
-import { generateCacheKey } from "../common/cache";
 
 import { CreateCategoryDto } from "./dtos/CreateCategoryDto";
 import { UpdateCategoryDto } from "./dtos/UpdateCategoryDto";
@@ -35,7 +28,6 @@ export class CategoriesService {
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
-		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 	) { }
 
 	/**
@@ -121,22 +113,15 @@ export class CategoriesService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Category>> {
+	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Category>> {
 		this.logger.log(`Retrieving product categories`);
-
-		// Generate a cache key
-		const cacheKey = generateCacheKey("categories", "", [pageNumber, itemsPerPage]);
-
-		// Check in the cache if the categories exist
-		const categoriesInCache = await this.cacheManager.get<Array<Category>>(cacheKey);
-		if (categoriesInCache) {
-			return categoriesInCache;
-		}
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		const categories = await this.categoryRepository.find({
+		return this.categoryRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				parentId: IsNull(),
 			},
@@ -151,11 +136,6 @@ export class CategoriesService {
 			skip: skip,
 			take: take,
 		});
-
-		// Save the categories in cache
-		await this.cacheManager.set(cacheKey, plainToInstance(Category, categories), 500000);
-
-		return categories;
 	}
 
 	/**

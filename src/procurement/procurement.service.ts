@@ -40,6 +40,7 @@ import {
     CreateOrderResponse,
     BulkCreateOrderResponse,
 } from './types';
+import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
@@ -346,7 +347,7 @@ export class ProcurementService {
                             const productDetails = await this.getProductDetail(id);
 
                             // 2. create product in database and
-                            const productCreated = await this.productService.createProduct({
+                            const product = await this.productService.createProduct({
                                 slug: productDetails.slug,
                                 title: {
                                     en: productDetails.title,
@@ -367,7 +368,8 @@ export class ProcurementService {
                                 categories: dto.categories //need to add categories through admin dashboard
                             });
 
-                            const product = await this.productService.updateProductStatus(productCreated.uuid, { status: 'active' });
+                            // The product is imported as active now.
+                            // const product = await this.productService.updateProductStatus(productCreated.uuid, { status: ProductStatus.ACTIVE, });
 
                             const optionValuesUuids: string[] = []
 

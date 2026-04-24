@@ -54,7 +54,7 @@ export class WishListResolver {
     }
 
     @Query(() => [WishlistItem])
-    async getCustomerWishlist(
+    getCustomerWishlist(
         @Context() context: any,
         @Args() args: GetCustomerWishListArgs
     ): Promise<Array<WishlistItem>> {
@@ -68,7 +68,7 @@ export class WishListResolver {
     }
 
     @Query(() => Number)
-    async getCustomerWishlistCount(
+    getCustomerWishlistCount(
         @Context() context: any,
     ): Promise<number> {
         const customer: Customer = context.req.customer;

@@ -11,12 +11,6 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { plainToInstance } from "class-transformer";
-
-import { CACHE_MANAGER, Cache } from "@nestjs/cache-manager";
-
-import { generateCacheKey } from "../common/cache";
-
 import { CreateLanguageDto } from "./dtos/CreateLanguageDto";
 import { UpdateLanguageDto } from "./dtos/UpdateLanguageDto";
 
@@ -28,7 +22,6 @@ export class LanguagesService {
 
 	constructor(
 		@InjectRepository(Language) private readonly languageRepository: Repository<Language>,
-		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 	) { }
 
 	/**
@@ -65,25 +58,10 @@ export class LanguagesService {
 	async getAllLanguages(): Promise<Language[]> {
 		this.logger.log(`Retrieving languages`);
 
-		// Generate a cache key
-		const cacheKey = generateCacheKey("languages", "", []);
-		console.log({ cacheKey });
-
-		// Check in the cache if the stories exist
-		const languagesInCache = await this.cacheManager.get<Array<Language>>(cacheKey);
-		if (languagesInCache) {
-			return languagesInCache;
-		}
-
-		// Find the languages
-		const languages = await this.languageRepository.find({
+		return this.languageRepository.find({
+			cache: true,
 			order: { name: "ASC" },
 		});
-
-		// Save the languages in cache
-		await this.cacheManager.set(cacheKey, plainToInstance(Language, languages), 500000);
-
-		return languages;
 	}
 
 	/**

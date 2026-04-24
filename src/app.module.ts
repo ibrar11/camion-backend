@@ -160,6 +160,11 @@ import { Promo } from "./promos/entities/promo.entity";
 				database: configService.get<string>("DB_DATABASE"),
 				synchronize: true,
 				namingStrategy: new SnakeNamingStrategy(),
+				cache: {
+					type: "ioredis",
+					options: configService.get<string>("REDIS_URI"),
+					duration: 500000,
+				},
 				entities: [
 					User,
 

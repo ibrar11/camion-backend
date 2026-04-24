@@ -115,6 +115,8 @@ export class BankAccountsService {
 
 		// Find the customer
 		const customer = await this.customerRepository.findOne({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				uuid: customerUUID,
 			},
@@ -134,6 +136,8 @@ export class BankAccountsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.bankAccountRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				affiliate: {
 					id: customer.affiliate.id,
