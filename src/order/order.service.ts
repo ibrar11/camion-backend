@@ -459,7 +459,11 @@ export class OrderService {
                 where: { uuid },
                 relations: {
                     orderItems: {
-                        product: true,
+                        product: {
+                            productCategories: {
+                                category: true
+                            }
+                        },
                         variant: {
                             images: true,
                         },

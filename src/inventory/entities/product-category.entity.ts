@@ -2,7 +2,12 @@ import { Exclude } from "class-transformer";
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
 import { Product } from "./product.entity";
 import { Category } from "./category.entity";
+import { 
+	Field, 
+	ObjectType 
+} from "@nestjs/graphql";
 
+@ObjectType()
 @Entity({ name: "product_categories" })
 @Unique(["product", "category"])
 export class ProductCategory {
@@ -12,6 +17,7 @@ export class ProductCategory {
 	@ManyToOne(() => Product, (product) => product.productCategories, { onDelete: "CASCADE", })
 	product: Product;
 
+	@Field(() => Category)
 	@ManyToOne(() => Category, (category) => category.productCategories, { onDelete: "CASCADE" })
 	category: Category;
 
