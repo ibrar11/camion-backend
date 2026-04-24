@@ -152,3 +152,19 @@ export interface importedProduct {
     externalId: string,
     product: Product
 }
+
+export interface GulltransOrderResult {
+    order_id: string | number;
+    [key: string]: any;
+}
+
+export interface CreateOrderResponse {
+    success: boolean;
+    orderId: string | number;
+    raw: GulltransOrderResult;
+}
+
+export interface BulkCreateOrderResponse {
+    success: { shopId: string | undefined; orderId: string | number; raw: GulltransOrderResult }[];
+    failed: { shopId: string | undefined; reason: string }[];
+}

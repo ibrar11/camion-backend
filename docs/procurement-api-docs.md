@@ -201,3 +201,257 @@ warehouseUUID | Yes | String | uuid of waregouse
     ]
 }
 ```
+
+Create Order
+------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+Creates a single Gulltrans daigou order for one shop. `shop_id` and `shop_name` are obtained from the `supplier` field of the product detail response (`GET /v1/procurement/<product-id>`). `warehouse_id` and `user_id` are injected server-side from environment variables and must not be sent in the request.
+
+```http
+POST /v1/procurement/order HTTP/1.1
+```
+
+### Request Body
+```json
+{
+    "shop_id": "BBBZSESFJBTCxhL370nJnRUjQ",
+    "shop_name": "BBBZSESFJBTCxhL370nJnRUjQ",
+    "platform": "1688",
+    "platform_url": "https://detail.1688.com/offer/682292125022.html",
+    "name": "Wedding Dress 2025",
+    "title_cn": "抖音主婚纱2025新款",
+    "goods_amount": "480",
+    "freight_fee": "8",
+    "remark": "Optional order note",
+    "skus": [
+        {
+            "price": "120",
+            "platform_sku": "4881544500911",
+            "quantity": "2",
+            "freight_fee": "8",
+            "sku_info": {
+                "shop_id": "BBBZSESFJBTCxhL370nJnRUjQ",
+                "shop_name": "BBBZSESFJBTCxhL370nJnRUjQ",
+                "sku_img": "https://example.com/image.jpg",
+                "spec_id": "7f74e9dcb448177df9404cb65f6bad1e",
+                "min_order_quantity": "2",
+                "batch_number": "1",
+                "imgs": [
+                    "https://example.com/image1.jpg",
+                    "https://example.com/image2.jpg"
+                ],
+                "specs": [
+                    { "label": "颜色", "value": "白色" },
+                    { "label": "尺码", "value": "XL" }
+                ],
+                "priceRangeList": [
+                    { "startQuantity": "2", "price": "99" }
+                ]
+            }
+        }
+    ],
+    "address": {
+        "address": "广东省深圳市龙华区XX公寓",
+        "province": "广东省",
+        "city": "深圳市",
+        "company": "集运公司",
+        "district": "龙华区",
+        "street": "XX公寓",
+        "postcode": "518054",
+        "phone": "18512345678",
+        "receiver_name": "丁XX",
+        "email": "18512345678@163.com",
+        "country_name": "中国",
+        "country": {
+            "country_code": "CN",
+            "name": "中国"
+        }
+    }
+}
+```
+
+### Request Body Fields
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+shop_id | No | String | 1688 shop ID — from `supplier.id` in product detail response
+shop_name | No | String | 1688 shop name — from `supplier.name` in product detail response
+platform | No | String | Platform identifier. Defaults to `1688`
+platform_url | Yes | String | Product URL on 1688
+name | Yes | String | Product name
+title_cn | No | String | Product name in Chinese
+goods_amount | Yes | String | Total goods price (sum of all SKUs)
+freight_fee | No | String | Shipping fee
+remark | No | String | Order note
+skus | Yes | Array | At least one SKU required
+address | Yes | Object | Delivery address
+
+### Response Body
+```json
+{
+    "success": true,
+    "orderId": "123456789",
+    "raw": {}
+}
+```
+
+---
+
+Bulk Create Orders
+------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+Creates multiple Gulltrans daigou orders in a single request. Products are automatically grouped by `shop_id` (falls back to `shop_name`) — all products from the same shop are merged into one Gulltrans order with their SKUs combined and `goods_amount` summed. The `address` is shared across all orders.
+
+Orders are processed in parallel batches of 3. Failures are collected per shop and returned alongside successes — a single shop failure does not abort the rest.
+
+```http
+POST /v1/procurement/order/bulk HTTP/1.1
+```
+
+### Request Body
+```json
+{
+    "orders": [
+        {
+            "shop_id": "ShopA123",
+            "shop_name": "Shop A",
+            "platform": "1688",
+            "platform_url": "https://detail.1688.com/offer/111.html",
+            "name": "Product A",
+            "goods_amount": "240",
+            "freight_fee": "8",
+            "skus": [
+                {
+                    "price": "120",
+                    "platform_sku": "4881544500911",
+                    "quantity": "2",
+                    "sku_info": {
+                        "spec_id": "abc123",
+                        "specs": [
+                            { "label": "颜色", "value": "白色" },
+                            { "label": "尺码", "value": "XL" }
+                        ],
+                        "priceRangeList": [
+                            { "startQuantity": "2", "price": "120" }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "shop_id": "ShopA123",
+            "shop_name": "Shop A",
+            "platform": "1688",
+            "platform_url": "https://detail.1688.com/offer/222.html",
+            "name": "Product B",
+            "goods_amount": "300",
+            "freight_fee": "10",
+            "skus": [
+                {
+                    "price": "150",
+                    "platform_sku": "4881544500912",
+                    "quantity": "2",
+                    "sku_info": {
+                        "spec_id": "def456",
+                        "specs": [
+                            { "label": "尺码", "value": "XXL" }
+                        ],
+                        "priceRangeList": [
+                            { "startQuantity": "2", "price": "150" }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "shop_id": "ShopB456",
+            "shop_name": "Shop B",
+            "platform": "1688",
+            "platform_url": "https://detail.1688.com/offer/333.html",
+            "name": "Product C",
+            "goods_amount": "180",
+            "skus": [
+                {
+                    "price": "90",
+                    "platform_sku": "4881544500913",
+                    "quantity": "2",
+                    "sku_info": {
+                        "spec_id": "ghi789",
+                        "specs": [
+                            { "label": "颜色", "value": "黑色" }
+                        ],
+                        "priceRangeList": [
+                            { "startQuantity": "2", "price": "90" }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "address": {
+        "address": "广东省深圳市龙华区XX公寓",
+        "province": "广东省",
+        "city": "深圳市",
+        "company": "集运公司",
+        "district": "龙华区",
+        "street": "XX公寓",
+        "postcode": "518054",
+        "phone": "18512345678",
+        "receiver_name": "丁XX",
+        "email": "18512345678@163.com",
+        "country_name": "中国",
+        "country": {
+            "country_code": "CN",
+            "name": "中国"
+        }
+    }
+}
+```
+
+> [!NOTE]
+> The example above sends 3 products: Product A and Product B share `shop_id: "ShopA123"`, so they are merged into **one** Gulltrans order call. Product C from `ShopB456` becomes a separate order. Result: **2 Gulltrans API calls**, not 3.
+
+### Request Body Fields
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+orders | Yes | Array | At least one order item required
+orders[].shop_id | No | String | 1688 shop ID — used as grouping key
+orders[].shop_name | No | String | 1688 shop name — used as fallback grouping key if shop_id is absent
+orders[].platform | No | String | Platform identifier. Defaults to `1688`
+orders[].platform_url | Yes | String | Product URL on 1688
+orders[].name | Yes | String | Product name
+orders[].title_cn | No | String | Product name in Chinese
+orders[].goods_amount | Yes | String | Goods price for this product
+orders[].freight_fee | No | String | Shipping fee for this product
+orders[].remark | No | String | Order note for this product
+orders[].skus | Yes | Array | At least one SKU required
+address | Yes | Object | Shared delivery address applied to all orders
+
+### Response Body
+```json
+{
+    "success": [
+        {
+            "shopId": "ShopA123",
+            "orderId": "987654321",
+            "raw": {}
+        },
+        {
+            "shopId": "ShopB456",
+            "orderId": "987654322",
+            "raw": {}
+        }
+    ],
+    "failed": [
+        {
+            "shopId": "ShopC789",
+            "reason": "Insufficient balance"
+        }
+    ]
+}
+```
