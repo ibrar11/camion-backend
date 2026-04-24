@@ -407,9 +407,8 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		// As a fallback return all the products, if the product has been added but no category applied on it.
-		if (product.productCategories.length !== 0 || product.productCategories[0].category !== null) {
-			// Find the products in the same category
+		// Find the products in the same category
+		if (Array.isArray(product.productCategories) && product.productCategories.length !== 0 && product.productCategories[0].category !== null) {
 			return this.productRepository.createQueryBuilder("product")
 				.cache(true)
 				.setFindOptions({
@@ -557,7 +556,7 @@ export class ProductsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Find the products in the same category
-		if (product.productCategories.length !== 0 || product.productCategories[0].category !== null) {
+		if (Array.isArray(product.productCategories) && product.productCategories.length !== 0 && product.productCategories[0].category !== null) {
 			return this.productRepository.createQueryBuilder("product")
 				.cache(true)
 				.setFindOptions({
@@ -571,6 +570,7 @@ export class ProductsService {
 				// Many-to-many join
 				.innerJoin("product.productCategories", "productCategory")
 				.innerJoin("productCategory.category", "category")
+
 				.where("category.id = :id", {
 					id: product.productCategories[0].category.id,
 				})
