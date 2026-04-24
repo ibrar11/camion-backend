@@ -142,7 +142,7 @@ export class CartItemsService {
         cartItem.quantity = body.quantity;
         cartItem.subTotal = {
             amount: price.amount * body.quantity,
-            currencyCode: variant.cost.currencyCode
+            currencyCode: price.currencyCode,
         };
         return this.cartRepository.save(cartItem);
     }

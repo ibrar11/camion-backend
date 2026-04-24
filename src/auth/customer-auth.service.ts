@@ -424,7 +424,8 @@ export class CustomerAuthService {
 			? (this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString())
 			: crypto.randomInt(100000, 1000000).toString();
 
-		// Create a login request
+		console.log("secretsecretsecretsecretsecret",secret)
+			// Create a login request
 		const request = new LoginRequest();
 		request.uuid = crypto.randomUUID();
 		request.customer = customer;

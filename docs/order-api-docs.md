@@ -21,6 +21,7 @@ Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 cartItems | Yes | Array<String> |list of cart items to be ordered
 paymentMethod | Yes | String | The payment method selected by the customer (e.g., COD, CARD, default(skipcash will be used) etc.)
+currency | Yes | String | target currency code
 couponCode | No | String | coupon code to apply
 
 ### Request Body
@@ -30,6 +31,7 @@ couponCode | No | String | coupon code to apply
         "f7b2a1d0-5c91-4d3e-a2f1-123456789abc"
     ],
     "paymentMethod": "default",
+    "currency": "qar",
     "couponCode": "rvse23"
 }
 ```
@@ -41,19 +43,19 @@ couponCode | No | String | coupon code to apply
     "status": "payment_pending",
     "subTotal": {
         "amount": 688,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "shippingCost": {
         "amount": 321,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "discount": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "total": {
         "amount": 1009,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "eta": "6-10 working days",
     "orderItems": [
@@ -78,7 +80,7 @@ couponCode | No | String | coupon code to apply
                 "barcode": "5627530595058",
                 "price": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "weight": {
                     "amount": 16,
@@ -93,12 +95,12 @@ couponCode | No | String | coupon code to apply
             },
             "price": {
                 "amount": 688,
-                "currencyCode": "usd"
+                "currencyCode": "qar"
             },
             "quantity": 1,
             "total": {
                 "amount": 688,
-                "currencyCode": "usd"
+                "currencyCode": "qar"
             }
         }
     ]

@@ -45,9 +45,8 @@ export class OrderController {
     create(
         @GetCustomer() customer: Customer,
         @Body() dto: CreateOrderDto,
-        @Query("currency") currency: CurrencyCode,
     ): Promise<Order> {
-        return this.orderService.create(customer, dto, currency);
+        return this.orderService.create(customer, dto);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
