@@ -1344,6 +1344,13 @@ query GetProduct($slug: String, $language: String, $currency: String) {
     ratingThreeStarCount
     ratingFourStarCount
     ratingFiveStarCount
+    productCategories {
+        category {
+            uuid
+            slug
+            name(language: $language)
+        }
+    }
     options {
       uuid
       name(language: $language)
@@ -1446,13 +1453,36 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             "status": "active",
             "salesCount": 0,
             "likesCount": 0,
-            "reviewsCount": 0,
-            "ratingAvg": 0,
+            "reviewsCount": 1,
+            "ratingAvg": 5,
             "ratingOneStarCount": 0,
             "ratingTwoStarCount": 0,
             "ratingThreeStarCount": 0,
             "ratingFourStarCount": 0,
             "ratingFiveStarCount": 0,
+            "productCategories": [
+                {
+                    "category": {
+                        "uuid": "d66ec8b3-2201-4cfc-bbdb-85274efb7bba",
+                        "slug": "iphones",
+                        "name": "iphones"
+                    }
+                },
+                {
+                    "category": {
+                        "uuid": "70bcc216-2fc3-4dc2-bd65-642dccdd141a",
+                        "slug": "iphones-two",
+                        "name": "iphones"
+                    }
+                },
+                {
+                    "category": {
+                        "uuid": "a095966a-95f1-4e75-88ff-572478d08ae9",
+                        "slug": "iphones-three",
+                        "name": "iphones"
+                    }
+                }
+            ],
             "options": [
                 {
                     "uuid": "d8dbb95c-ad90-475c-afe0-c3ac9b059542",
@@ -1486,11 +1516,11 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "sku": "iphone-20-red-1tb",
                     "barcode": "10000",
                     "price": {
-                        "amount": 7500,
+                        "amount": -1,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
-                        "amount": 6750,
+                        "amount": -1,
                         "currencyCode": "qar"
                     },
                     "weight": {
@@ -1529,27 +1559,7 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             ],
             "reviews": [
                 {
-                    "uuid": "be21cb1a-ad7f-4b2c-a1c4-027691226575",
-                    "rating": 1,
-                    "comment": "This was very bad",
-                    "customer": {
-                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
-                        "fullName": "Your Name"
-                    },
-                    "images": []
-                },
-                {
                     "uuid": "337579b9-bf12-456a-89f4-d8c1e85507e7",
-                    "rating": 1,
-                    "comment": "This was very bad",
-                    "customer": {
-                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
-                        "fullName": "Your Name"
-                    },
-                    "images": []
-                },
-                {
-                    "uuid": "22f6cf78-ae91-45ff-ae3b-5d2e78975466",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
@@ -1569,7 +1579,17 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "images": []
                 },
                 {
-                    "uuid": "4edf8ed8-0fa2-44fc-92d5-a3dc33a69671",
+                    "uuid": "e6621c3b-2c57-49f3-a037-0e4eb451669c",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "55f8b095-8e46-45c1-b01f-4dedf6556d31",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
@@ -1589,7 +1609,7 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "images": []
                 },
                 {
-                    "uuid": "e6621c3b-2c57-49f3-a037-0e4eb451669c",
+                    "uuid": "029ad3a7-5fb0-4281-9fae-147849f16167",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
@@ -1599,7 +1619,17 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "images": []
                 },
                 {
-                    "uuid": "60e2b636-ec57-486d-9a50-13a7e9a49e58",
+                    "uuid": "22f6cf78-ae91-45ff-ae3b-5d2e78975466",
+                    "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "4edf8ed8-0fa2-44fc-92d5-a3dc33a69671",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
@@ -1619,7 +1649,7 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "images": []
                 },
                 {
-                    "uuid": "029ad3a7-5fb0-4281-9fae-147849f16167",
+                    "uuid": "be21cb1a-ad7f-4b2c-a1c4-027691226575",
                     "rating": 1,
                     "comment": "This was very bad",
                     "customer": {
@@ -1629,8 +1659,18 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "images": []
                 },
                 {
-                    "uuid": "55f8b095-8e46-45c1-b01f-4dedf6556d31",
+                    "uuid": "60e2b636-ec57-486d-9a50-13a7e9a49e58",
                     "rating": 1,
+                    "comment": "This was very bad",
+                    "customer": {
+                        "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
+                        "fullName": "Your Name"
+                    },
+                    "images": []
+                },
+                {
+                    "uuid": "77b2744e-3675-4c8f-ac4f-954a3b8bafb6",
+                    "rating": 5,
                     "comment": "This was very bad",
                     "customer": {
                         "uuid": "9c2dcd9d-ec6f-4bfe-839c-21d4f47a4051",
