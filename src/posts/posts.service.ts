@@ -20,10 +20,10 @@ export class PostsService {
      * Creates a post
      *
      * @param body - The payload to create a post
-     * @param author - The user creating the post
+     * @param createdBy - The user creating the post
      * @returns The created post entity
      */
-    async create(body: CreatePostDto, author: User): Promise<Post> {
+    async create(body: CreatePostDto, createdBy: User): Promise<Post> {
         const post: Post = this.postRepository.create({
             uuid: randomUUID(),
             slug: body.slug,
@@ -31,7 +31,7 @@ export class PostsService {
             brief: body.brief,
             content: body.content,
             enabled: body.enabled ?? true,
-            author: author,
+            createdBy: createdBy,
         });
 
         return this.postRepository.save(post);
@@ -44,7 +44,7 @@ export class PostsService {
      */
     async findAll(): Promise<Post[]> {
         return this.postRepository.find({
-            relations: ['author'],
+            relations: ['createdBy'],
             order: { createdAt: 'DESC' },
         });
     }
@@ -58,7 +58,7 @@ export class PostsService {
     async findOne(uuid: string): Promise<Post> {
         const post = await this.postRepository.findOne({
             where: { uuid: uuid },
-            relations: ['author'],
+            relations: ['createdBy'],
         });
 
         if (post === null) {

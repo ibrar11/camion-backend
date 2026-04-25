@@ -195,6 +195,22 @@ type PollOptionElement {
   en: String!
 }
 
+type Post {
+  brief: String
+  content: String!
+  createdBy: PostAuthor!
+  enabled: Boolean!
+  images: [String!]
+  slug: String!
+  title: String!
+  uuid: String!
+}
+
+type PostAuthor {
+  fullName: String!
+  uuid: String!
+}
+
 type Product {
   brief(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   briefAr: String!
@@ -326,6 +342,8 @@ type Query {
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getPost(uuid: String!): Post!
+  getPosts: [Post!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
   getProductsByCategory(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!, sort: String! = "best-match"): [Product!]!

@@ -11,6 +11,7 @@ This document includes the documentation of GraphQL support for the following it
 - Products
 - Notifications
 - Orders
+- CMS Pages
 
 > [!IMPORTANT]
 > You must include your access token as a `Bearer` token in the Authorization header. Your must have a Customer account to use the GraphQL APIs.
@@ -45,6 +46,8 @@ The following features are currently supported by the GraphQL API.
 - Get Current Customer Addresses
 - Get Banners
 - Get Stories
+- Get CMS Pages
+- Get CMS Page
 - Search Products (Best Match)
 - Search Products (Price: Low-to-high)
 - Search Products (Price: High-to-low)
@@ -3214,6 +3217,100 @@ query Promos($pageNumber: Int, $itemsPerPage: Int) {
                 "callToActionLink": "https://app.dev.camiontrading.com/fr/shop"
             }
         ]
+    }
+}
+```
+
+Get CMS Pages
+-------------
+
+Returns all CMS pages (e.g. Privacy Policy, Refund Policy), sorted by creation date descending.
+
+```graphql
+query {
+    getPosts {
+        uuid
+        slug
+        title
+        brief
+        content
+        enabled
+        images
+        createdBy {
+            uuid
+            fullName
+        }
+    }
+}
+```
+
+```json
+{
+    "data": {
+        "getPosts": [
+            {
+                "uuid": "b3f1a2c4-1234-4abc-9def-000000000001",
+                "slug": "privacy-policy",
+                "title": "Privacy Policy",
+                "brief": "How we handle your data.",
+                "content": "Full privacy policy content...",
+                "enabled": true,
+                "images": null,
+                "createdBy": {
+                    "uuid": "user-uuid",
+                    "fullName": "Admin Name"
+                }
+            }
+        ]
+    }
+}
+```
+
+Get CMS Page
+------------
+
+Returns a single CMS page by UUID.
+
+```graphql
+query GetPost($uuid: String!) {
+    getPost(uuid: $uuid) {
+        uuid
+        slug
+        title
+        brief
+        content
+        enabled
+        images
+        createdBy {
+            uuid
+            fullName
+        }
+    }
+}
+```
+
+```json
+{
+    "uuid": "b3f1a2c4-1234-4abc-9def-000000000001"
+}
+```
+
+```json
+{
+    "data": {
+        "getPost": {
+            "uuid": "b3f1a2c4-1234-4abc-9def-000000000001",
+            "slug": "privacy-policy",
+            "title": "Privacy Policy",
+            "brief": "How we handle your data.",
+            "content": "Full privacy policy content...",
+            "enabled": true,
+            "images": null,
+            "createdBy": {
+                "uuid": "user-uuid",
+                "fullName": "Admin Name"
+            }
+        }
     }
 }
 ```
