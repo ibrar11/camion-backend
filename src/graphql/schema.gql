@@ -37,6 +37,7 @@ type BankAccount {
 }
 
 type Banner {
+  color: String!
   imageUrl: String!
   isActive: Boolean!
   linkUrl: String!
