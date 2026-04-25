@@ -107,7 +107,7 @@ GET /v1/banners/<banner-uuid> HTTP/1.1
     "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
     "linkUrl": "",
     "placement": "",
-    "color": "",
+    "color": "#000000",
     "isActive": true
 }
 ```
