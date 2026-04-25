@@ -165,6 +165,15 @@ import { Promo } from "./promos/entities/promo.entity";
 					options: configService.get<string>("REDIS_URI"),
 					duration: 500000,
 				},
+				keepConnectionAlive: true,
+				extra: {
+					max: 20,
+					idleTimeoutMillis: 30000,
+					connectionTimeoutMillis: 5000,
+					keepAlive: true,
+					keepAliveInitialDelayMillis: 10000,
+				},
+				poolSize: 10,
 				entities: [
 					User,
 
