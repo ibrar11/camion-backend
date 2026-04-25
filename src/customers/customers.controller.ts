@@ -77,13 +77,6 @@ export class CustomersController {
 		return this.customersService.updatePassword(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
-	@Delete(':uuid')
-	@HttpCode(HttpStatus.OK)
-	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
-		return this.customersService.delete(uuid);
-	}
-
     @Roles(CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Delete('me')
     @HttpCode(HttpStatus.OK)
@@ -107,5 +100,12 @@ export class CustomersController {
             message: 'Account deletion cancelled',
         };
     }
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Delete(':uuid')
+	@HttpCode(HttpStatus.OK)
+	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
+		return this.customersService.delete(uuid);
+	}
 
 }
