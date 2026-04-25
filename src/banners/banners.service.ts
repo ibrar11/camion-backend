@@ -48,6 +48,7 @@ export class BannersService {
 		banner.linkUrl = "";
 		banner.isActive = true;
 		banner.placement = "";
+		banner.color = "";
 		return this.bannerRepository.save(banner);
 	}
 
@@ -119,6 +120,7 @@ export class BannersService {
 		banner.titleAr = body.title.ar.trim();
 		banner.linkUrl = body.linkUrl.trim();
 		banner.placement = body.placement.trim();
+		banner.color = body.color.trim();
 		banner.isActive = body.isActive;
 		return this.bannerRepository.save(banner);
 	}
