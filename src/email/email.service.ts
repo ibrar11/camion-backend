@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import * as sgMail from "@sendgrid/mail";
+import sgMail from "@sendgrid/mail";
 
 // ─── Per-template data shapes ────────────────────────────────────────────────
 // Each interface maps 1-to-1 with the {{variable}} placeholders defined in the

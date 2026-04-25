@@ -128,27 +128,29 @@ export class CustomerAuthService {
 		customer.isActive = true;
 		await this.customerRepository.save(customer);
 
-		// merge the customer gurst cart
-		const guestCustomer = await this.customerRepository.findOneBy({
-			uuid: body.guestUUID?.trim(),
-		});
-
-		if (guestCustomer) {
-			const cartItems = await this.cartItemRepository.find({
-				where: {
-					customer: { id: guestCustomer.id }
-				}
+		// merge the customer guest cart
+		if (body.guestUUID) {
+			const guestCustomer = await this.customerRepository.findOneBy({
+				uuid: body.guestUUID.trim(),
 			});
 
-			for (const item of cartItems) {
-				item.customer = customer;
+			if (guestCustomer) {
+				const cartItems = await this.cartItemRepository.find({
+					where: {
+						customer: { id: guestCustomer.id }
+					}
+				});
+
+				for (const item of cartItems) {
+					item.customer = customer;
+				}
+
+				await this.cartItemRepository.save(cartItems);
+
+				// deactivate the guest user after merge
+				guestCustomer.isActive = false;
+				await this.customerRepository.save(guestCustomer);
 			}
-
-			await this.cartItemRepository.save(cartItems);
-
-			// deactivate the guest user after after merge
-			guestCustomer.isActive = false;
-			await this.customerRepository.save(guestCustomer);
 		}
 
 		// Create the payload
@@ -162,7 +164,7 @@ export class CustomerAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in the cache so we can invalidate the customer session later.
-		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,
@@ -205,6 +207,12 @@ export class CustomerAuthService {
 				errors: {
 					phoneNumber: "Customer not found with the provided phone number.",
 				},
+			});
+		}
+
+		if (!customer.isActive) {
+			throw new UnauthorizedException({
+				error: "Account is deactivated.",
 			});
 		}
 
@@ -334,6 +342,12 @@ export class CustomerAuthService {
 				errors: {
 					emailAddress: "Customer not found with the provided email address.",
 				},
+			});
+		}
+
+		if (!customer.isActive) {
+			throw new UnauthorizedException({
+				error: "Account is deactivated.",
 			});
 		}
 
@@ -510,7 +524,7 @@ export class CustomerAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in cache so we can invalidate the customer session later.
-		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,
@@ -579,7 +593,7 @@ export class CustomerAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in cache so we can invalidate the customer session later.
-		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,

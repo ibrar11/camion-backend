@@ -20,6 +20,7 @@ import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
 import { UpdatePasswordDto } from './dtos/UpdatePasswordDto';
 
 import { UserRole } from '../users/enums/UserRole';
+import { CustomerRole } from './enums/CustomerRole';
 
 import { Customer } from './entities/customer.entity';
 import { CustomersService } from './customers.service';
@@ -83,8 +84,8 @@ export class CustomersController {
 		return this.customersService.delete(uuid);
 	}
 
+    @Roles(CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Delete('me')
-    @UseGuards(AuthGuard)
     @HttpCode(HttpStatus.OK)
     async deleteMyAccount(
         @Req() req: Request & { customer: Customer },
@@ -96,9 +97,10 @@ export class CustomersController {
         };
     }
 
+    @Roles(CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Patch('me/cancel-deletion')
-    @UseGuards(AuthGuard)
-    async cancelDeletion(@Req() req: Request & { customer: any }) {
+    @HttpCode(HttpStatus.OK)
+    async cancelDeletion(@Req() req: Request & { customer: Customer }) {
         await this.customersService.cancelDeletion(req.customer.uuid);
 
         return {
