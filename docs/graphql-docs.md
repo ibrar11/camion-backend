@@ -178,6 +178,7 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
     imageUrl
     linkUrl
     placement
+    banner
     isActive
   }
 }
@@ -205,6 +206,7 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1bd64a8f-dd34-4b49-adb5-659bf2b7a151.jpg",
                 "linkUrl": "New Products",
                 "placement": "homepage",
+                "banner": "",
                 "isActive": true
             },
             {
@@ -213,6 +215,7 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
                 "linkUrl": "",
                 "placement": "",
+                "banner": "",
                 "isActive": true
             }
         ]
