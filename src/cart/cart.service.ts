@@ -164,7 +164,7 @@ export class CartItemsService {
 
         // Find the items in the customer cart
         const cartItems = await this.cartRepository.find({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 customer: {
@@ -226,7 +226,7 @@ export class CartItemsService {
         this.logger.log(`Retrieving the cart item count for customer: ${customer.uuid}`);
 
         return this.cartRepository.count({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 customer: { uuid: customer.uuid },
