@@ -27,8 +27,8 @@ import { ProductsService } from "./products.service";
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { PricingService } from "src/pricing/pricing.service";
 import { CurrencyCode } from "./enums/CurrencyCode.enum";
-import { ProductReview } from "./entities/product-review.entity";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
+import { Category } from "./entities/category.entity";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -290,6 +290,21 @@ export class ProductsResolver {
 	@Query(() => [Product])
 	getRecentlyViewedProducts(@Args() args: GetRecentlyViewedProductsArgs): Promise<Array<Product>> {
 		return this.productsService.getRecentlyViewedProducts("", args.pageNumber, args.itemsPerPage);
+	}
+}
+
+@Resolver(() => Category)
+export class CategoryResolver {
+	@ResolveField("name", () => String)
+	getName(@Parent() category: Category, @Args() args: GetProductArgs): string {
+		const language = args.language.toLowerCase() || "en";
+
+		const nameMap = {
+			"en": category.nameEn,
+			"ar": category.nameAr,
+		};
+
+		return nameMap[language] ?? category.nameEn;
 	}
 }
 
