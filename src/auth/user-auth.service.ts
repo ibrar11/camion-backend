@@ -91,7 +91,7 @@ export class UserAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in cache so we can invalidate the user session later.
-		await this.cacheManager.set(`auth:user-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:user-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,
@@ -135,7 +135,7 @@ export class UserAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in cache so we can invalidate the user session later.
-		await this.cacheManager.set(`auth:user-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:user-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,
