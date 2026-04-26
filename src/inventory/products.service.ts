@@ -139,13 +139,7 @@ export class ProductsService {
 		return this.productRepository.find({
 			relationLoadStrategy: "query",
 			relations: {
-				options: {
-					values: true,
-				},
 				variants: {
-					optionValues: {
-						optionValue: true,
-					},
 					images: true,
 				},
 				productCategories: {
