@@ -6,19 +6,14 @@ import Twilio from 'twilio';
 export class TwilioService {
     private readonly logger = new Logger(TwilioService.name);
     private readonly client: ReturnType<typeof Twilio> | null = null;
-    private readonly verifyServiceSid: string;
+    private readonly messagingServiceSid: string;
     private readonly smsEnabled: boolean;
     private readonly isLocal: boolean;
-    private readonly devMagicCode: string | null;
 
     constructor(private readonly configService: ConfigService) {
         this.smsEnabled = this.configService.get<string>('TWILIO_SMS_ENABLED') === 'true';
         this.isLocal = this.configService.get<string>('NODE_ENV') === 'local';
-        const magicOtpEnabled = this.configService.get<string>('ENABLE_MAGIC_OTP') === 'Yes';
-        this.devMagicCode = magicOtpEnabled
-            ? (this.configService.get<string>('MAGIC_OTP') ?? '123456')
-            : null;
-        this.verifyServiceSid = this.configService.get<string>('TWILIO_VERIFY_SERVICE_SID') ?? '';
+        this.messagingServiceSid = this.configService.get<string>('TWILIO_MESSAGING_SERVICE_SID') ?? '';
 
         if (this.smsEnabled) {
             const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
@@ -28,48 +23,30 @@ export class TwilioService {
     }
 
     /**
-     * Send a verification code via Twilio Verify (Branded Sender ID).
-     * Does nothing when TWILIO_SMS_ENABLED is not "true".
+     * Send an OTP via Twilio Messaging Service.
+     * Does nothing when TWILIO_SMS_ENABLED is not "true" or in local env.
      */
-    async sendVerification(to: string): Promise<void> {
+    async sendOtp(to: string, otp: string): Promise<void> {
         if (this.isLocal) {
-            this.logger.debug(`[LOCAL] Skipping SMS to ${to}, magic OTP: ${this.devMagicCode}`);
+            this.logger.debug(`[LOCAL] Skipping SMS to ${to}`);
             return;
         }
 
         if (!this.smsEnabled) {
-            this.logger.debug(`SMS disabled — skipping verification to ${to}`);
+            this.logger.debug(`SMS disabled — skipping OTP to ${to}`);
             return;
         }
 
         try {
-            await this.client!.verify.v2
-                .services(this.verifyServiceSid)
-                .verifications.create({ to, channel: 'sms' });
-            this.logger.log(`Verification sent to ${to}`);
+            await this.client!.messages.create({
+                to,
+                messagingServiceSid: this.messagingServiceSid,
+                body: `Your verification code is: ${otp}`,
+            });
+            this.logger.log(`OTP sent to ${to}`);
         } catch (err) {
-            this.logger.error(`Failed to send verification to ${to}: ${(err as Error).message}`);
+            this.logger.error(`Failed to send OTP to ${to}: ${(err as Error).message}`);
             throw err;
-        }
-    }
-
-    async checkVerification(to: string, code: string): Promise<boolean> {
-        if (this.devMagicCode && code === this.devMagicCode) {
-            return true;
-        }
-
-        if (!this.smsEnabled) {
-            return false;
-        }
-
-        try {
-            const check = await this.client!.verify.v2
-                .services(this.verifyServiceSid)
-                .verificationChecks.create({ to, code });
-            return check.status === 'approved';
-        } catch (err) {
-            this.logger.error(`Failed to check verification for ${to}: ${(err as Error).message}`);
-            return false;
         }
     }
 }
