@@ -60,6 +60,7 @@ type CartItem {
 
 type Category {
   children: [Category!]!
+  isFeatured: Boolean!
   name(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
   nameAr: String!
   nameEn: String!
@@ -338,6 +339,7 @@ type Query {
   getCustomerCartCount: Float!
   getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
+  getFeaturedCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
