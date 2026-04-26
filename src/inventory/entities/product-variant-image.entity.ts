@@ -8,6 +8,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -40,6 +41,7 @@ export class ProductVariantImage {
 	uuid: string;
 
 	@ManyToOne(() => ProductVariant, (variant) => variant.images, { onDelete: "CASCADE", })
+	@Index()
 	variant: ProductVariant;
 
 	@Field()

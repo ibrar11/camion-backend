@@ -4,6 +4,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     ManyToOne,
     OneToMany,
     OneToOne,
@@ -36,10 +37,12 @@ export class Order {
 
     @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.orders)
+    @Index()
     customer: Customer;
 
     @Field(() => CustomerAddress)
     @ManyToOne(() => CustomerAddress, (customerAddress) => customerAddress.orders)
+    @Index()
     shippingAddress: CustomerAddress;
 
     @Field()

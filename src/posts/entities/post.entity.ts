@@ -2,6 +2,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
@@ -49,6 +50,7 @@ export class Post {
     images: string[];
 
     @ManyToOne(() => User, { nullable: false })
+    @Index()
     createdBy: User;
 
     @Exclude()

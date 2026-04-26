@@ -33,6 +33,7 @@ export class Category {
 	uuid: string;
 
 	@ManyToOne(() => Category, (category) => category.children, { onDelete: "SET NULL", })
+	@Index()
 	parent: Category | null;
 
 	@Field()

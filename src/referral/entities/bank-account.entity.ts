@@ -4,6 +4,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	JoinColumn,
 	ManyToOne,
 	PrimaryGeneratedColumn,
@@ -28,6 +29,7 @@ export class BankAccount {
 
 	@ManyToOne(() => Affiliate, (affiliate) => affiliate.wallet, { onDelete: "CASCADE" })
 	@JoinColumn()
+	@Index()
 	affiliate: Affiliate;
 
 	@Field()

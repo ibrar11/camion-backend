@@ -114,6 +114,7 @@ export class Affiliate {
 	@Field(() => Product, { nullable: true })
 	@ManyToOne(() => Product, { nullable: true, onDelete: "SET NULL", })
 	@JoinColumn()
+	@Index()
 	topProduct: Product;
 
 	@OneToMany(() => Coupon, (coupon) => coupon.affiliate, { cascade: true, })

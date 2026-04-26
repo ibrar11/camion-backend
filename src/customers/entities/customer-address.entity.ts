@@ -4,6 +4,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	OneToMany,
 	PrimaryGeneratedColumn,
@@ -28,6 +29,7 @@ export class CustomerAddress {
 	uuid: string;
 
 	@ManyToOne(() => Customer, (customer) => customer.addresses, { onDelete: "CASCADE", })
+	@Index()
 	customer: Customer;
 
 	@Field()
