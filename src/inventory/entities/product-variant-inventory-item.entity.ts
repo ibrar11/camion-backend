@@ -44,7 +44,7 @@ export class ProductVariantInventoryItem {
 	unitCost: Money;
 
 	@OneToOne(() => ProductVariant, (variant) => variant.inventoryItem, { cascade: true, })
-	@JoinColumn({ name: "variantId", })
+	@JoinColumn()
 	variant: ProductVariant;
 
 	@Exclude()
