@@ -106,6 +106,10 @@ import { Order } from "./order/entities/order.entity";
 import { OrderItem } from "./order/entities/order-item.entity";
 import { OrderModule } from './order/order.module';
 
+import { ReturnRequest } from "./returns/entities/return-request.entity";
+import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
+import { ReturnsModule } from './returns/returns.module';
+
 import { Notification } from "./notifications/entities/notification.entity";
 import { NotificationsModule } from './notifications/notifications.module';
 
@@ -236,6 +240,9 @@ import { Promo } from "./promos/entities/promo.entity";
 					KeyValuePair,
 
 					Promo,
+
+					ReturnRequest,
+					ReturnEvidence,
 				],
 			}),
 		}),
@@ -289,6 +296,7 @@ import { Promo } from "./promos/entities/promo.entity";
 		KeyValuePairsModule,
 		WishlistModule,
 		PromosModule,
+		ReturnsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
