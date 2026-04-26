@@ -1,4 +1,5 @@
 import {
+	IsBoolean,
 	IsNumber,
 	IsOptional,
 	IsString,
@@ -37,4 +38,7 @@ export class CreateCategoryDto {
 	@IsNumber()
 	@Min(0)
 	pricingFactor: number;
+
+	@IsBoolean()
+	isFeatured: boolean;
 }

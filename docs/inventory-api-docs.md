@@ -211,6 +211,7 @@ slug | Yes | String | A unique string that identifies the category
 name.en | Yes | String | The name of the category in English
 name.ar | Yes | String | The name of the category in Arabic
 pricingFactor | Yes | Number | The pricing factor of the category
+isFeatured | Yes | Boolean | Determines if the category is featured.
 
 ### Request Body
 ```json
@@ -221,7 +222,8 @@ pricingFactor | Yes | Number | The pricing factor of the category
         "en": "Sneakers",
         "ar": "أحذية رياضية"
     },
-    "pricingFactor": 1.2
+    "pricingFactor": 1.2,
+    "isFeatured": true
 }
 ```
 
@@ -233,6 +235,7 @@ pricingFactor | Yes | Number | The pricing factor of the category
     "nameEn": "sneakers",
     "nameAr": "أحذية رياضية",
     "pricingFactor": 1.2,
+    "isFeatured": true,
     "parent": null
 }
 ```
@@ -264,6 +267,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "nameEn": "sneakers",
         "nameAr": "أحذية رياضية",
         "pricingFactor": "1.2",
+        "isFeatured": true,
         "children": [
             {
                 "uuid": "f5d519fa-9b21-435c-97ab-8c06e1fb782c",
@@ -271,6 +275,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
                 "nameEn": "sneakers-shoes",
                 "nameAr": "أحذية رياضية",
                 "pricingFactor": "1.2",
+                "isFeatured": true,
                 "children": []
             }
         ]
@@ -295,7 +300,8 @@ GET /v1/categories/<category-uuid> HTTP/1.1
     "slug": "sneakers",
     "nameEn": "sneakers",
     "nameAr": "sneakers",
-    "pricingFactor": 1.4
+    "pricingFactor": 1.4,
+    "isFeatured": true
 }
 ```
 
@@ -314,6 +320,8 @@ Parameter Name | Required | Type | Description
 slug | Yes | String | A unique string that identifies the category
 name.en | Yes | String | The name of the category in English
 name.ar | Yes | String | The name of the category in Arabic
+pricingFactor | Yes | Number | The pricing factor of the category
+isFeatured | Yes | Boolean | Determines if the category is featured.
 
 ### Request Body
 ```json
@@ -323,7 +331,8 @@ name.ar | Yes | String | The name of the category in Arabic
         "en": "Sneakers",
         "ar": "أحذية رياضية"
     },
-    "pricingFactor": 1.4
+    "pricingFactor": 1.4,
+    "isFeatured": true
 }
 ```
 
@@ -334,7 +343,8 @@ name.ar | Yes | String | The name of the category in Arabic
     "slug": "sneakers",
     "nameEn": "Sneakers",
     "nameAr": "أحذية رياضية",
-    "pricingFactor": 1.4
+    "pricingFactor": 1.4,
+    "isFeatured": true
 }
 ```
 

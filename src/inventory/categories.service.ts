@@ -75,6 +75,7 @@ export class CategoriesService {
 		category.nameEn = body.name.en.trim().toLowerCase();
 		category.nameAr = body.name.ar.trim().toLowerCase();
 		category.pricingFactor = body.pricingFactor;
+		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
 
@@ -129,6 +130,36 @@ export class CategoriesService {
 				children: {
 					children: true,
 				},
+			},
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Returns the featured categories
+	 *
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	findAllFeatured(pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Category>> {
+		this.logger.log(`Retrieving product categories = featured`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.categoryRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
+			// where: {
+			// 	isFeatured: true,
+			// },
+			where: {
+				isFeatured: true,
 			},
 			order: {
 				id: "DESC",
@@ -196,6 +227,7 @@ export class CategoriesService {
 		category.nameEn = body.name.en.trim().toLowerCase();
 		category.nameAr = body.name.ar.trim().toLowerCase();
 		category.pricingFactor = body.pricingFactor;
+		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
 

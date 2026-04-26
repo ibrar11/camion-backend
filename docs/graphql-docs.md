@@ -1751,6 +1751,52 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 }
 ```
 
+Get Featured Categories
+-----------------------
+
+### Request Body
+
+```graphql
+query GetFeaturedCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getFeaturedCategories(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    name(language: $language)
+    isFeatured
+    thumbnailUrl
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en",
+    "pageNumber": 1,
+    "itemsPerPage": 100
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getFeaturedCategories": [
+            {
+                "uuid": "d4f136cf-8df0-4978-be32-ba8e2b967ba6",
+                "slug": "iphones-six",
+                "name": "iphones",
+                "isFeatured": true,
+                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/c87816c4-2abb-4224-9ff3-3793d615001d.jpg"
+            }
+        ]
+    }
+}
+```
+
+
 Get Languages
 -------------
 
