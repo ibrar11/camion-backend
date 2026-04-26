@@ -334,6 +334,8 @@ type Query {
   getCurrentCustomerOrder(currency: String! = "usd", language: String! = "en", uuid: String!): Order!
   getCurrentCustomerOrderPreview(couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
   getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1, status: String): [Order!]!
+  getCurrentCustomerReturnRequest(uuid: String!): ReturnRequest!
+  getCurrentCustomerReturnRequests(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!
@@ -342,8 +344,6 @@ type Query {
   getFeaturedCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
-  getMyReturnRequest(uuid: String!): ReturnRequest!
-  getMyReturnRequests(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!
   getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getPost(uuid: String!): Post!

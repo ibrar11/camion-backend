@@ -3360,3 +3360,334 @@ query GetPost($uuid: String!) {
     }
 }
 ```
+
+Get Current Customer Return Requests
+-------------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerReturnRequests($currency: String,  $language: String) {
+    getCurrentCustomerReturnRequests {
+        uuid
+        order {
+            uuid
+            status
+            subTotal {
+                amount
+                currencyCode
+            }
+            shippingCost {
+                amount
+                currencyCode
+            }
+            discount {
+                amount
+                currencyCode
+            }
+            total {
+                amount
+                currencyCode
+            }
+        }
+        orderItem {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            discountedPrice {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+            product {
+                uuid
+                slug
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
+                status
+                productCategories {
+                    category {
+                        uuid
+                        slug
+                        name
+                        nameEn
+                        nameAr
+                        thumbnailUrl
+                    }
+                }
+            }
+            variant {
+                uuid
+                title(language: $language)
+                sku
+                barcode
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
+            }
+        }
+        reason
+        reasonDetail
+        status
+        adminNote
+        refundAmount {
+            amount
+            currencyCode
+        }
+        evidence {
+            uuid
+            url
+            mimeType
+        }
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language":"en",
+    "currency": "qar",
+    "pageNumber":1,
+    "itemsPerPage": 10,
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerReturnRequests": [
+            {
+                "uuid": "bb14d554-63d6-4f85-a6b2-7070063dace4",
+                "order": {
+                    "uuid": "685b81a1-127f-4ce6-868e-7df33012a738",
+                    "status": "return_requested",
+                    "subTotal": {
+                        "amount": 525,
+                        "currencyCode": "qar"
+                    },
+                    "shippingCost": {
+                        "amount": 165,
+                        "currencyCode": "qar"
+                    },
+                    "discount": {
+                        "amount": 53,
+                        "currencyCode": "qar"
+                    },
+                    "total": {
+                        "amount": 637,
+                        "currencyCode": "qar"
+                    }
+                },
+                "orderItem": null,
+                "reason": "wrong_variation",
+                "reasonDetail": "order small size",
+                "status": "pending",
+                "adminNote": null,
+                "refundAmount": {
+                    "amount": 637,
+                    "currencyCode": "qar"
+                },
+                "evidence": []
+            }
+        ]
+    }
+}
+```
+
+Get Current Customer Return Request
+-------------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerReturnRequest($uuid: String!,$currency: String,  $language: String) {
+    getCurrentCustomerReturnRequest(uuid: $uuid) {
+        uuid
+        order {
+            uuid
+            status
+            subTotal {
+                amount
+                currencyCode
+            }
+            shippingCost {
+                amount
+                currencyCode
+            }
+            discount {
+                amount
+                currencyCode
+            }
+            total {
+                amount
+                currencyCode
+            }
+        }
+        orderItem {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            discountedPrice {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+            product {
+                uuid
+                slug
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
+                status
+                productCategories {
+                    category {
+                        uuid
+                        slug
+                        name
+                        nameEn
+                        nameAr
+                        thumbnailUrl
+                    }
+                }
+            }
+            variant {
+                uuid
+                title(language: $language)
+                sku
+                barcode
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
+            }
+        }
+        reason
+        reasonDetail
+        status
+        adminNote
+        refundAmount {
+            amount
+            currencyCode
+        }
+        evidence {
+            uuid
+            url
+            mimeType
+        }
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+  "uuid": "bb14d554-63d6-4f85-a6b2-7070063dace4",
+  "language": "en",
+  "currency": "qar"
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerReturnRequest": {
+            "uuid": "bb14d554-63d6-4f85-a6b2-7070063dace4",
+            "order": {
+                "uuid": "685b81a1-127f-4ce6-868e-7df33012a738",
+                "status": "return_requested",
+                "subTotal": {
+                    "amount": 525,
+                    "currencyCode": "qar"
+                },
+                "shippingCost": {
+                    "amount": 165,
+                    "currencyCode": "qar"
+                },
+                "discount": {
+                    "amount": 53,
+                    "currencyCode": "qar"
+                },
+                "total": {
+                    "amount": 637,
+                    "currencyCode": "qar"
+                }
+            },
+            "orderItem": null,
+            "reason": "wrong_variation",
+            "reasonDetail": "order small size",
+            "status": "pending",
+            "adminNote": null,
+            "refundAmount": {
+                "amount": 637,
+                "currencyCode": "qar"
+            },
+            "evidence": []
+        }
+    }
+}
+```

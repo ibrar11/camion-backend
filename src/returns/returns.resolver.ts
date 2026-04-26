@@ -51,7 +51,7 @@ export class ReturnsResolver {
     constructor(@Inject(ReturnsService) private readonly returnsService: ReturnsService) {}
 
     @Query(() => [ReturnRequest])
-    getMyReturnRequests(
+    getCurrentCustomerReturnRequests(
         @Context() context,
         @Args() args: GetMyReturnRequestsArgs,
     ): Promise<ReturnRequest[]> {
@@ -69,7 +69,7 @@ export class ReturnsResolver {
     }
 
     @Query(() => ReturnRequest)
-    getMyReturnRequest(
+    getCurrentCustomerReturnRequest(
         @Context() context,
         @Args() args: GetMyReturnRequestArgs,
     ): Promise<ReturnRequest> {
