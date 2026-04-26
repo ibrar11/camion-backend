@@ -8,6 +8,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -30,9 +31,11 @@ export class InventoryLevel {
 	uuid: string;
 
 	@ManyToOne(() => InventoryItem, (item) => item.levels)
+	@Index()
 	inventoryItem: InventoryItem;
 
 	@ManyToOne(() => Warehouse, (warehouse) => warehouse.levels)
+	@Index()
 	warehouse: Warehouse;
 
 	@Field(() => Int)

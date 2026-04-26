@@ -4,6 +4,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	OneToMany,
 	PrimaryGeneratedColumn,
@@ -29,9 +30,11 @@ export class ProductReview {
 
 	@Field(() => Customer)
 	@ManyToOne(() => Customer, (customer) => customer.reviews, { onDelete: "CASCADE", })
+	@Index()
 	customer: Customer;
 
 	@ManyToOne(() => Product, (product) => product.reviews, { onDelete: "CASCADE", })
+	@Index()
 	product: Product;
 
 	@Field(() => Int)

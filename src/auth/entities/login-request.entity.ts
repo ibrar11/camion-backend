@@ -2,6 +2,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -21,6 +22,7 @@ export class LoginRequest {
 	uuid: string;
 
 	@ManyToOne(() => Customer, (customer) => customer.loginRequests, { onDelete: "CASCADE", })
+	@Index()
 	customer: Customer;
 
 	@Column({ type: "varchar", length: 64, default: "", })

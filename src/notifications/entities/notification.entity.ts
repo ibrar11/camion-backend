@@ -6,6 +6,7 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn,
 	ManyToOne,
+	Index,
 } from "typeorm";
 import { Exclude } from "class-transformer";
 import { NotificationType } from "../enums/notification-type.enum";
@@ -24,6 +25,7 @@ export class Notification {
 	uuid: string;
 
 	@ManyToOne(() => Customer, { nullable: false })
+	@Index()
 	customer: Customer;
 
 	@Field()
