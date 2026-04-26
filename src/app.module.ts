@@ -122,6 +122,12 @@ import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 import { Promo } from "./promos/entities/promo.entity";
 
+import { QueueModule } from "./queue/queue.module";
+
+import { Translation } from "./translation/entities/translation.entity";
+import { TranslationItem } from "./translation/entities/translation-item.entity";
+import { TranslationModule } from './translation/translation.module';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -236,6 +242,9 @@ import { Promo } from "./promos/entities/promo.entity";
 					KeyValuePair,
 
 					Promo,
+
+					Translation,
+					TranslationItem,
 				],
 			}),
 		}),
@@ -287,8 +296,9 @@ import { Promo } from "./promos/entities/promo.entity";
 		WishlistModule,
 		PricingModule,
 		KeyValuePairsModule,
-		WishlistModule,
-		PromosModule,
+        PromosModule,
+		QueueModule,
+		TranslationModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

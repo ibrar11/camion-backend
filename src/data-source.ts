@@ -83,6 +83,10 @@ import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 // promos
 import { Promo } from "./promos/entities/promo.entity";
 
+// translation
+import { Translation } from "./translation/entities/translation.entity";
+import { TranslationItem } from "./translation/entities/translation-item.entity";
+
 export const CamionDataSource = new DataSource({
 	type: "postgres",
 	host: process.env.DB_HOST,
@@ -134,6 +138,8 @@ export const CamionDataSource = new DataSource({
 		ExchangeRate,
 		KeyValuePair,
 		Promo,
+		Translation,
+		TranslationItem,
 	],
 	migrations: [
 		"src/migrations/*",
