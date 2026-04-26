@@ -1,3 +1,5 @@
+import type { Request, Response } from "express";
+
 import compression from "compression";
 
 import {
@@ -13,9 +15,9 @@ import {
 
 import { ValidationError } from 'class-validator';
 
+import { LoggingInterceptor } from "./logging.interceptor";
+
 import { AppModule } from './app.module';
-import { filter } from "rxjs";
-import { Request, Response } from "express";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -87,6 +89,9 @@ async function bootstrap() {
 			return compression.filter(req, res);
 		},
 	}));
+
+	// Add logging interceptor
+	app.useGlobalInterceptors(new LoggingInterceptor());
 
 	await app.listen(process.env.PORT ?? 3000);
 }
