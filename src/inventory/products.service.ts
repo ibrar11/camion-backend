@@ -25,6 +25,7 @@ import { Category } from "./entities/category.entity";
 import { Product } from './entities/product.entity';
 import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
+import { sliceProductVariants } from "src/common/product-variant-filter";
 
 @Injectable()
 export class ProductsService {
@@ -109,7 +110,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAll(filters: string, sort: ProductSort = ProductSort.Desc, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async findAll(filters: string, sort: ProductSort = ProductSort.Desc, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products`);
 
 		// Get pagination params
@@ -136,7 +137,7 @@ export class ProductsService {
 			return this.searchProducts(filtersObject.query, "en", ProductSort.BestMatch, pageNumber, itemsPerPage);
 		}
 
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
 			relationLoadStrategy: "query",
 			relations: {
 				variants: {
@@ -152,6 +153,8 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		return sliceProductVariants(products);
 	}
 
 	/**
@@ -181,7 +184,7 @@ export class ProductsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Find the products in the desired category
-		return this.productRepository.createQueryBuilder("product")
+		const products = await this.productRepository.createQueryBuilder("product")
 			.cache(true)
 			.setFindOptions({
 				relationLoadStrategy: "query",
@@ -202,6 +205,8 @@ export class ProductsService {
 			.skip(skip)
 			.take(take)
 			.getMany();
+
+		return sliceProductVariants(products);
 	}
 
 	/**
@@ -212,13 +217,13 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	getRecentlyViewedProducts(customerUUID: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getRecentlyViewedProducts(customerUUID: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of recenty viewed products`);
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
 			relations: {
@@ -235,6 +240,8 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		return sliceProductVariants(products);
 	}
 
 	/**
@@ -247,7 +254,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	searchProducts(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async searchProducts(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Searching for products, query: ${query}, language: ${language}`);
 
 		// Language to column name mapping
@@ -272,9 +279,11 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
+		let products: Array<Product> = [];
+
 		switch (sort) {
 			case ProductSort.BestMatch:
-				return this.productRepository.find({
+				products = await this.productRepository.find({
 					cache: true,
 					relationLoadStrategy: "query",
 					where: {
@@ -303,7 +312,7 @@ export class ProductsService {
 					.where('v.product_id = product.id')
 					.getQuery();
 
-				return this.productRepository.createQueryBuilder('product')
+				products = await this.productRepository.createQueryBuilder('product')
 					.cache(true)
 					.setFindOptions({
 						relationLoadStrategy: "query",
@@ -336,7 +345,7 @@ export class ProductsService {
 					.where('v.product_id = product.id')
 					.getQuery();
 
-				return this.productRepository.createQueryBuilder('product')
+				products = await this.productRepository.createQueryBuilder('product')
 					.cache(true)
 					.setFindOptions({
 						relationLoadStrategy: "query",
@@ -366,7 +375,7 @@ export class ProductsService {
 				break;
 		}
 
-		return Promise.resolve([]);
+		return sliceProductVariants(products);
 	}
 
 	/**
@@ -401,9 +410,11 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
+		let products: Array<Product> = [];
+
 		// Find the products in the same category
 		if (Array.isArray(product.productCategories) && product.productCategories.length !== 0 && product.productCategories[0].category !== null) {
-			return this.productRepository.createQueryBuilder("product")
+			products = await this.productRepository.createQueryBuilder("product")
 				.cache(true)
 				.setFindOptions({
 					relationLoadStrategy: "query",
@@ -427,26 +438,28 @@ export class ProductsService {
 				.skip(skip)
 				.take(take)
 				.getMany();
+		} else {
+			// As a fallback find some products
+			products = await this.productRepository.find({
+				cache: true,
+				relationLoadStrategy: "query",
+				relations: {
+					variants: {
+						images: true,
+					},
+					productCategories: {
+						category: true,
+					},
+				},
+				order: {
+					id: "DESC",
+				},
+				skip: skip,
+				take: take,
+			});
 		}
 
-		// As a fallback find some products
-		return this.productRepository.find({
-			cache: true,
-			relationLoadStrategy: "query",
-			relations: {
-				variants: {
-					images: true,
-				},
-				productCategories: {
-					category: true,
-				},
-			},
-			order: {
-				id: "DESC",
-			},
-			skip: skip,
-			take: take,
-		});
+		return sliceProductVariants(products);
 	}
 
 	/**
@@ -456,7 +469,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	getFeaturedProducts(pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getFeaturedProducts(pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of featured products`);
 
 		// Get pagination params
@@ -464,7 +477,7 @@ export class ProductsService {
 
 		// TODO: Return a list of featured products
 
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
 			relations: {
@@ -481,6 +494,8 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		return sliceProductVariants(products);
 	}
 
 	/**
@@ -490,7 +505,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	getPopularProducts(pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getPopularProducts(pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving popular products`);
 
 		// Get pagination params
@@ -498,7 +513,7 @@ export class ProductsService {
 
 		// TODO: Return a list of popular products
 
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
 			relations: {
@@ -515,6 +530,8 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		return sliceProductVariants(products);
 	}
 
 	/**
@@ -549,9 +566,11 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
+		let products: Array<Product> = [];
+
 		// Find the products in the same category
 		if (Array.isArray(product.productCategories) && product.productCategories.length !== 0 && product.productCategories[0].category !== null) {
-			return this.productRepository.createQueryBuilder("product")
+			products = await this.productRepository.createQueryBuilder("product")
 				.cache(true)
 				.setFindOptions({
 					relationLoadStrategy: "query",
@@ -575,25 +594,28 @@ export class ProductsService {
 				.skip(skip)
 				.take(take)
 				.getMany();
+		} else {
+			// As a fallback return all the products, if the product has been added but no category applied on it.
+			products = await this.productRepository.find({
+				cache: true,
+				relationLoadStrategy: "query",
+				relations: {
+					variants: {
+						images: true,
+					},
+					productCategories: {
+						category: true,
+					},
+				},
+				order: {
+					id: "DESC",
+				},
+				skip: skip,
+				take: take,
+			});
 		}
-		// As a fallback return all the products, if the product has been added but no category applied on it.
-		return this.productRepository.find({
-			cache: true,
-			relationLoadStrategy: "query",
-			relations: {
-				variants: {
-					images: true,
-				},
-				productCategories: {
-					category: true,
-				},
-			},
-			order: {
-				id: "DESC",
-			},
-			skip: skip,
-			take: take,
-		});
+
+		return sliceProductVariants(products);
 	}
 
 	/**
