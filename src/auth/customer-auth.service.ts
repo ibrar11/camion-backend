@@ -302,18 +302,18 @@ export class CustomerAuthService {
 			}
 		}
 
-		// Generate a random secret to verify customer email address
+		// In local/dev env use the magic code; otherwise generate a real OTP
 		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
 
 		// Create a login request
 		const request = new LoginRequest();
 		request.uuid = crypto.randomUUID();
 		request.customer = customer;
-		request.secret = '';
+		request.secret = await bcrypt.hash(secret, 10);
 		await this.loginRequestRepository.save(request);
 
-		// Send OTP via Twilio Verify (Branded Sender ID)
-		await this.twilioService.sendVerification(customer.phoneNumber);
+		// Send OTP via Twilio Messaging Service
+		await this.twilioService.sendOtp(customer.phoneNumber, secret);
 
 		// Create a payload for the session token
 		const payload = {
@@ -510,9 +510,9 @@ export class CustomerAuthService {
 			});
 		}
 
-		// Verify the OTP code via Twilio Verify
-		const verified = await this.twilioService.checkVerification(request.customer.phoneNumber, body.secret);
-		if (!verified) {
+		// Accept magic OTP or the real OTP stored in the login request
+		const magicMatch = this.devMagicCode !== null && body.secret === this.devMagicCode;
+		if (!magicMatch && !bcrypt.compareSync(body.secret, request.secret)) {
 			throw new BadRequestException({
 				error: "We weren't able to log you in. Give your phone number another look and try again.",
 			});

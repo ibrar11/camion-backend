@@ -106,6 +106,10 @@ import { Order } from "./order/entities/order.entity";
 import { OrderItem } from "./order/entities/order-item.entity";
 import { OrderModule } from './order/order.module';
 
+import { ReturnRequest } from "./returns/entities/return-request.entity";
+import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
+import { ReturnsModule } from './returns/returns.module';
+
 import { Notification } from "./notifications/entities/notification.entity";
 import { NotificationsModule } from './notifications/notifications.module';
 
@@ -166,6 +170,7 @@ import { TranslationModule } from './translation/translation.module';
 				database: configService.get<string>("DB_DATABASE"),
 				synchronize: true,
 				namingStrategy: new SnakeNamingStrategy(),
+				// logging: true,
 				cache: {
 					type: "ioredis",
 					options: configService.get<string>("REDIS_URI"),
@@ -243,6 +248,9 @@ import { TranslationModule } from './translation/translation.module';
 
 					Promo,
 
+					ReturnRequest,
+					ReturnEvidence,
+
 					Translation,
 					TranslationItem,
 				],
@@ -297,6 +305,7 @@ import { TranslationModule } from './translation/translation.module';
 		PricingModule,
 		KeyValuePairsModule,
         PromosModule,
+		ReturnsModule,
 		QueueModule,
 		TranslationModule,
 	],

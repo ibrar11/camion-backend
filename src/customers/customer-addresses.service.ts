@@ -130,7 +130,7 @@ export class CustomerAddressesService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.customerAddressRepository.find({
-			cache: true,
+			// cache: true,
 			where: {
 				customer: {
 					id: customer.id,

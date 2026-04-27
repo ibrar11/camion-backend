@@ -8,6 +8,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	OneToMany,
 	PrimaryGeneratedColumn,
@@ -31,6 +32,7 @@ export class ProductOption {
 	uuid: string;
 
 	@ManyToOne(() => Product, (product) => product.options, { onDelete: "CASCADE", })
+	@Index()
 	product: Product;
 
 	@Field(() => String, { name: "name" })

@@ -6,6 +6,7 @@ import {
 import {
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -24,10 +25,12 @@ export class ProductVariantOptionValue {
 	id: number;
 
 	@ManyToOne(() => ProductVariant, (variant) => variant.optionValues, { onDelete: "CASCADE", })
+	@Index()
 	variant: ProductVariant;
 
 	@Field(() => ProductOptionValue)
 	@ManyToOne(() => ProductOptionValue, (productOptionValue) => productOptionValue.variantLinks)
+	@Index()
 	optionValue: ProductOptionValue;
 
 	@Exclude()

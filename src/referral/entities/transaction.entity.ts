@@ -2,6 +2,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -42,6 +43,7 @@ export class Transaction {
 	uuid: string;
 
 	@ManyToOne(() => Wallet, (wallet) => wallet.transactions, { onDelete: "CASCADE", })
+	@Index()
 	wallet: Wallet;
 
 	@Field()

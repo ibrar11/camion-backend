@@ -83,6 +83,9 @@ import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 // promos
 import { Promo } from "./promos/entities/promo.entity";
 
+import { ReturnRequest } from "./returns/entities/return-request.entity";
+import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
+
 // translation
 import { Translation } from "./translation/entities/translation.entity";
 import { TranslationItem } from "./translation/entities/translation-item.entity";
@@ -138,6 +141,8 @@ export const CamionDataSource = new DataSource({
 		ExchangeRate,
 		KeyValuePair,
 		Promo,
+		ReturnRequest,
+		ReturnEvidence,
 		Translation,
 		TranslationItem,
 	],

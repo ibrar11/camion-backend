@@ -68,4 +68,11 @@ export class CategoriesResolver {
 	getCategories(@Args() args: GetCategoriesArgs): Promise<Array<Category>> {
 		return this.categoriesService.findAll("", "", args.pageNumber, args.itemsPerPage);
 	}
+
+	@Query(() => [Category])
+	getFeaturedCategories(@Args() args: GetCategoriesArgs): Promise<Array<Category>> {
+		return this.categoriesService.findAllFeatured(args.pageNumber, args.itemsPerPage);
+		// console.log(x);
+		// return x;
+	}
 }

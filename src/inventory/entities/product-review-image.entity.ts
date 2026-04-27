@@ -4,6 +4,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -25,6 +26,7 @@ export class ProductReviewImage {
 	uuid: string;
 
 	@ManyToOne(() => ProductReview, (review) => review.images, { onDelete: "CASCADE" })
+	@Index()
 	review: ProductReview;
 
 	@Field()

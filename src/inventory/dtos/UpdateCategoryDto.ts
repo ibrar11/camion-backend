@@ -1,4 +1,5 @@
 import {
+	IsBoolean,
 	IsNumber,
 	IsString,
 	MaxLength,
@@ -31,4 +32,7 @@ export class UpdateCategoryDto {
 	@IsNumber()
 	@Min(0)
 	pricingFactor: number;
+
+	@IsBoolean()
+	isFeatured: boolean;
 }
