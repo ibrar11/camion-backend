@@ -19,6 +19,9 @@ export class TwilioService {
             const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
             const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
             this.client = Twilio(accountSid, authToken);
+            this.logger.log(`Twilio initialised — accountSid: ${accountSid}, messagingServiceSid: ${this.messagingServiceSid || '(not set)'}`);
+        } else {
+            this.logger.warn(`Twilio SMS is disabled (TWILIO_SMS_ENABLED != "true")`);
         }
     }
 
@@ -37,15 +40,16 @@ export class TwilioService {
             return;
         }
 
+        this.logger.log(`Sending OTP via Twilio to ${to}`);
         try {
             await this.client!.messages.create({
                 to,
                 messagingServiceSid: this.messagingServiceSid,
                 body: `Your verification code is: ${otp}`,
             });
-            this.logger.log(`OTP sent to ${to}`);
+            this.logger.log(`OTP sent successfully to ${to}`);
         } catch (err) {
-            this.logger.error(`Failed to send OTP to ${to}: ${(err as Error).message}`);
+            this.logger.error(`Failed to send OTP to ${to}: ${(err as Error).message}`, (err as Error).stack);
             throw err;
         }
     }
