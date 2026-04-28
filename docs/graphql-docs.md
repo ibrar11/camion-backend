@@ -3315,11 +3315,11 @@ query {
 Get CMS Page
 ------------
 
-Returns a single CMS page by UUID.
+Returns a single CMS page by slug.
 
 ```graphql
-query GetPost($uuid: String!) {
-    getPost(uuid: $uuid) {
+query GetPost($slug: String!) {
+    getPost(slug: $slug) {
         uuid
         slug
         title
@@ -3337,7 +3337,7 @@ query GetPost($uuid: String!) {
 
 ```json
 {
-    "uuid": "b3f1a2c4-1234-4abc-9def-000000000001"
+    "slug": "privacy-policy"
 }
 ```
 

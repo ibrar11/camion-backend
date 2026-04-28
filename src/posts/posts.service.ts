@@ -71,6 +71,27 @@ export class PostsService {
     }
 
     /**
+     * Retrieves a post by slug
+     *
+     * @param slug - The slug of the post
+     * @returns The post entity
+     */
+    async findOneBySlug(slug: string): Promise<Post> {
+        const post = await this.postRepository.findOne({
+            where: { slug: slug },
+            relations: ['createdBy'],
+        });
+
+        if (post === null) {
+            throw new NotFoundException({
+                error: 'Failed to find the post. Please check and try again.',
+            });
+        }
+
+        return post;
+    }
+
+    /**
      * Updates a post
      *
      * @param uuid - The UUID of the post

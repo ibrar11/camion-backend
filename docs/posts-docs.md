@@ -113,7 +113,7 @@ GET /v1/posts HTTP/1.1
 ## Retrieve Post
 
 ```http
-GET /v1/posts/<post-uuid> HTTP/1.1
+GET /v1/posts/<post-slug> HTTP/1.1
 ```
 
 ---
@@ -264,7 +264,7 @@ query {
 
 ```graphql
 query {
-    getPost(uuid: "post-uuid") {
+    getPost(slug: "privacy-policy") {
         uuid
         slug
         title
@@ -306,6 +306,6 @@ query {
 # Summary
 
 * Posts are CMS-managed pages (e.g. Privacy Policy, Refund Policy)
-* UUID is used as the public identifier; `slug` provides a human-readable URL key
+* `slug` is used as the public identifier for read endpoints; UUID is used for admin mutations (update/delete)
 * Includes full CRUD via REST and read queries via GraphQL
 * Tracks which admin created the page via `createdBy`

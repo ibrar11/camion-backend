@@ -55,12 +55,12 @@ export class PostsController {
     }
 
     /**
-     * Get single post
+     * Get single post by slug
      */
-    @Get(':uuid')
+    @Get(':slug')
     @HttpCode(HttpStatus.OK)
-    async actionGetPost(@Param('uuid') uuid: string): Promise<PostEntity> {
-        return this.postsService.findOne(uuid);
+    async actionGetPost(@Param('slug') slug: string): Promise<PostEntity> {
+        return this.postsService.findOneBySlug(slug);
     }
 
     /**
