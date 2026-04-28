@@ -80,6 +80,9 @@ export class EmailService {
 			sgMail.setApiKey(
 				this.configService.get<string>("SENDGRID_API_KEY") as string,
 			);
+			this.logger.log(`SendGrid initialised — from: ${this.from}, OTP template: ${this.templateIds.otp || '(not set)'}`);
+		} else {
+			this.logger.warn(`Email is disabled (EMAIL_ENABLED != "true")`);
 		}
 	}
 
@@ -88,6 +91,7 @@ export class EmailService {
 			this.logger.debug(`[LOCAL] Skipping OTP email to ${to}`);
 			return;
 		}
+		this.logger.log(`Sending OTP email to ${to}`);
 		await this.send(to, this.templateIds.otp, data);
 	}
 
