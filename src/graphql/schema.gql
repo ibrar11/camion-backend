@@ -346,7 +346,7 @@ type Query {
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
-  getPost(uuid: String!): Post!
+  getPost(slug: String!): Post!
   getPosts: [Post!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
