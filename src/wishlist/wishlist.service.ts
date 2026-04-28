@@ -107,7 +107,7 @@ export class WishlistService {
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
         return this.wishlistRepository.find({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 customer: {
@@ -139,7 +139,7 @@ export class WishlistService {
      */
     async getWishlistItem(customer: Customer, wishlistItemUUID: string): Promise<WishlistItem> {
         const wishlistItem = await this.wishlistRepository.findOne({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 uuid: wishlistItemUUID,
