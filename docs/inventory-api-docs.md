@@ -1498,6 +1498,38 @@ PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
 }
 ```
 
+Replace Variant Image
+---------------------
+
+```http
+PATCH /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "key": "generated/e5001e9b-1521-490d-b164-44d88460e067.png"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+    "imageUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
+    "thumbnailUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
+    "alt": "",
+    "isFeatured": false,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
 Delete Variant Image
 --------------------
 
