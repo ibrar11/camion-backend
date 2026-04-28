@@ -15,10 +15,10 @@ import { S3Service } from "../common/s3.service";
 import { getSkipAndTake } from "../common/pagination";
 
 import { UpdateProductVariantImageDto } from "./dtos/UpdateProductVariantImageDto";
+import { ReplaceProductVariantImageDto } from "./dtos/ReplaceProductVariantImageDto";
 
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage, ProductVariantImageDimensions } from "./entities/product-variant-image.entity";
-
 
 @Injectable()
 export class ProductVariantImageService {
@@ -145,6 +145,33 @@ export class ProductVariantImageService {
 		variantImage.alt = body.alt.trim();
 		variantImage.position = body.position;
 		variantImage.isFeatured = body.isFeatured;
+		return this.productVariantImageRepository.save(variantImage);
+	}
+
+	/**
+	 * Replaces the product variant image
+	 *
+	 * @param uuid
+	 * @param body
+	 * @returns
+	 */
+	async replaceProductVariantImage(uuid: string, body: ReplaceProductVariantImageDto): Promise<ProductVariantImage> {
+		this.logger.log(`Replacing product variant image: ${uuid}`);
+
+		// Find the variant image
+		const variantImage = await this.productVariantImageRepository.findOneBy({ uuid: uuid, });
+		if (variantImage === null) {
+			throw new NotFoundException({
+				error: "Failed to find the variant image. Please check and try again.",
+			});
+		}
+
+		// Move the file from source to destination
+		const params = await this.s3Service.moveFile("product-images", body.key);
+
+		// Update the image
+		variantImage.imageUrl = params.url;
+		variantImage.thumbnailUrl = params.url;
 		return this.productVariantImageRepository.save(variantImage);
 	}
 
