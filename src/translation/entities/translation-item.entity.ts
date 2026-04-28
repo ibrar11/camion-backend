@@ -49,9 +49,6 @@ export class TranslationItem {
     @Column({type: "text"})
     translatedProductDescription: string;
 
-    @Column({type: "text"})
-    translatedProductDescriptionHtml: string;
-
     @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
     translatedProductVariants: TranslateField[];
 

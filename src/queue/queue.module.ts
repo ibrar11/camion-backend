@@ -30,6 +30,8 @@ import { Language } from '../languages/entities/language.entity';
 
 import { ProductTranslationProvider } from '../translation/providers/product-translation.provider';
 
+import { Category } from '../inventory/entities/category.entity';
+
 @Global()
 @Module({
     imports: [
@@ -65,6 +67,7 @@ import { ProductTranslationProvider } from '../translation/providers/product-tra
             Language,
             Translation,
             TranslationItem,
+            Category,
         ]),
         TranslationModule,
     ],

@@ -75,7 +75,7 @@ export class QueueService {
         };
 
         this.logger.log(
-            `Adding translation job function ${jobData}`,
+            `Adding translation job for ${jobData.productUuids.length} products (jobId=${jobData.jobId})`,
         );
 
         return this.addJob(
@@ -146,5 +146,18 @@ export class QueueService {
             default:
                 throw new Error(`Queue ${queueName} not found`);
         }
+    }
+
+    async clearAllJobs(queueName: QueueName): Promise<void> {
+        const queue = this.getQueue(queueName);
+
+        // remove jobs by state
+        await Promise.all([
+            queue.drain(true),        // removes waiting + delayed
+            queue.clean(0, 1000, 'completed'),
+            queue.clean(0, 1000, 'failed'),
+        ]);
+
+        this.logger.warn(`Cleared all jobs from queue ${queueName}`);
     }
 }
