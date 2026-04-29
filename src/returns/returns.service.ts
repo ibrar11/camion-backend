@@ -47,7 +47,7 @@ export class ReturnsService {
         @InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
         private readonly notificationsService: NotificationsService,
         private readonly s3Service: S3Service,
-    ) {}
+    ) { }
 
     async createReturnRequest(customer: Customer, dto: CreateReturnRequestDto): Promise<ReturnRequest> {
         try {
@@ -143,7 +143,14 @@ export class ReturnsService {
                 });
             }
 
-            const { url } = await this.s3Service.uploadFile("returns", file);
+            let { url } = await this.s3Service.uploadFile("returns", file);
+
+            const segments = url?.split("/");
+            if (url?.startsWith("https://")) {
+                url = `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+            } else if (url?.startsWith("s3://")) {
+                url = `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+            }
 
             const evidence = new ReturnEvidence();
             evidence.uuid = crypto.randomUUID();
