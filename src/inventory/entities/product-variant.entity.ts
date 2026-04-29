@@ -161,6 +161,9 @@ export class ProductVariant {
 	@OneToMany(() => CartItem, (cartItem) => cartItem.variant, { cascade: true, })
 	cartItems: Array<CartItem>;
 
+	@Column({ type: 'jsonb', nullable: true, default: null })
+	skuMeta: Record<string, any> | null;
+
 	@OneToMany(() => OrderItem, (orderItem) => orderItem.variant)
 	orderItems: Array<OrderItem>;
 

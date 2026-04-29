@@ -74,6 +74,9 @@ import { User } from "./users/entities/user.entity";
 //WishList
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 
+// JOP WMS
+import { JopWmsOrder } from "./jop-wms/entities/jop-wms-order.entity";
+
 // pricing
 import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
 
@@ -110,6 +113,7 @@ export const CamionDataSource = new DataSource({
 		CustomerAddress,
 		InventoryItem,
 		InventoryLevel,
+		JopWmsOrder,
 		Language,
 		LoginRequest,
 		Notification,

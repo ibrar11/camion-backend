@@ -165,6 +165,10 @@ export class OrderSkuDto {
 export class CreateProcurementOrderDto {
     @IsOptional()
     @IsString()
+    orderUuid?: string;
+
+    @IsOptional()
+    @IsString()
     shop_id?: string;
 
     @IsOptional()

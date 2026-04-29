@@ -6,6 +6,7 @@ import {
 	IsNotEmptyObject,
 	IsNumber,
 	IsObject,
+	IsOptional,
 	IsString,
 	IsUUID,
 	MaxLength,
@@ -106,4 +107,8 @@ export class CreateProductVariantDto {
 	@IsArray()
 	@IsUUID('4', { each: true, })
 	optionValues: Array<string>;
+
+	@IsOptional()
+	@IsObject()
+	skuMeta?: Record<string, any>;
 }

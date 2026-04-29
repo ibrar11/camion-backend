@@ -78,6 +78,9 @@ export class ProductsService {
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
 		product.status = ProductStatus.ACTIVE;
 		product.publishedAt = new Date();
+		product.shopId = body.shopId ?? null;
+		product.shopName = body.shopName ?? null;
+		product.procurementId = body.procurementId ?? null;
 		await this.productRepository.save(product);
 
 		// Find the categories and create product categories.

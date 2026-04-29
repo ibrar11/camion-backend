@@ -126,6 +126,9 @@ import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 import { Promo } from "./promos/entities/promo.entity";
 
+import { JopWmsModule } from './jop-wms/jop-wms.module';
+import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -244,6 +247,8 @@ import { Promo } from "./promos/entities/promo.entity";
 
 					ReturnRequest,
 					ReturnEvidence,
+
+					JopWmsOrder,
 				],
 			}),
 		}),
@@ -298,6 +303,7 @@ import { Promo } from "./promos/entities/promo.entity";
 		WishlistModule,
 		PromosModule,
 		ReturnsModule,
+		JopWmsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
