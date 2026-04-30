@@ -3,11 +3,12 @@ import {
     Logger,
 } from '@nestjs/common';
 
-const FETCH_TIMEOUT_MS = 10_000;
-
+import { ConfigService } from "@nestjs/config";
 @Injectable()
 export class ProductTranslationProvider {
     private readonly logger = new Logger(ProductTranslationProvider.name);
+
+    constructor(private readonly configService: ConfigService) { }
 
     async translate(
         texts: string[],
@@ -16,11 +17,12 @@ export class ProductTranslationProvider {
     ): Promise<string[]> {
         if (!texts.length) return [];
 
-        const res = await fetch('http://localhost:3002/api/translate/batch', {
+        const res = await fetch(`${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/batch`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ texts, sourceLanguage, targetLanguage }),
         });
+        console.log("resresresresresres", res)
 
         if (!res.ok) {
             throw new Error(`Translation API responded with ${res.status}`);
