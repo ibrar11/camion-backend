@@ -68,6 +68,8 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 
 import { PricingModule } from '../pricing/pricing.module';
 
+import { Translation } from '../translation/entities/translation.entity';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -88,6 +90,7 @@ import { PricingModule } from '../pricing/pricing.module';
 			InventoryLevel,
 			Warehouse,
 			CartItem,
+			Translation
 		]),
 		ClientsModule,
 		PricingModule,

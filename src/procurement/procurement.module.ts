@@ -44,6 +44,9 @@ import { Order } from '../order/entities/order.entity';
 
 import { S3Service } from '../common/s3.service';
 
+import { QueueService } from '../queue/queue.service';
+import { QueueModule } from '../queue/queue.module';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -63,6 +66,7 @@ import { S3Service } from '../common/s3.service';
 			Order,
 		]),
 		ClientsModule,
+		QueueModule,
 	],
 	providers: [
 		UsersService,
@@ -75,6 +79,7 @@ import { S3Service } from '../common/s3.service';
 		ProductVariantService,
 		ProductVariantImageService,
 		S3Service,
+		QueueService,
 	],
 	controllers: [ProcurementController],
 	exports: [ProcurementService],

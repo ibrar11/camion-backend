@@ -9,6 +9,7 @@ import {
 	Entity,
 	Index,
 	OneToMany,
+	OneToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -27,6 +28,8 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 import { OrderItem } from "../../order/entities/order-item.entity";
 
 import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
+
+import { Translation } from "../../translation/entities/translation.entity";
 
 @ObjectType()
 @Entity({ name: "products", })
@@ -173,6 +176,9 @@ export class Product {
 
 	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product, { cascade: true, })
 	wishlistItems: Array<WishlistItem>;
+
+	@OneToOne(() => Translation, (translation) => translation.product, { cascade: true, })
+	translation: Translation;
 
 	@Exclude()
 	@Column({

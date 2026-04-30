@@ -126,6 +126,12 @@ import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 import { Promo } from "./promos/entities/promo.entity";
 
+import { QueueModule } from "./queue/queue.module";
+
+import { Translation } from "./translation/entities/translation.entity";
+import { TranslationItem } from "./translation/entities/translation-item.entity";
+import { TranslationModule } from './translation/translation.module';
+
 import { JopWmsModule } from './jop-wms/jop-wms.module';
 import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 
@@ -248,6 +254,9 @@ import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 					ReturnRequest,
 					ReturnEvidence,
 
+					Translation,
+					TranslationItem,
+
 					JopWmsOrder,
 				],
 			}),
@@ -300,9 +309,10 @@ import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 		WishlistModule,
 		PricingModule,
 		KeyValuePairsModule,
-		WishlistModule,
-		PromosModule,
+        PromosModule,
 		ReturnsModule,
+		QueueModule,
+		TranslationModule,
 		JopWmsModule,
 	],
 	controllers: [AppController],

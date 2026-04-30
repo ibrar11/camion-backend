@@ -49,6 +49,7 @@ import { Order } from '../order/entities/order.entity';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { QueueService } from 'src/queue/queue.service';
 
 
 @Injectable()
@@ -61,6 +62,7 @@ export class ProcurementService {
         @Inject(ProductOptionService) private readonly optionService: ProductOptionService,
         @Inject(ProductOptionValueService) private readonly optionValueService: ProductOptionValueService,
         @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
+        @Inject(QueueService) private readonly queueService: QueueService,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     ) { }
 
@@ -351,6 +353,7 @@ export class ProcurementService {
             success: [] as importedProduct[],
             failed: [] as { id: string; reason: string }[],
         };
+        const importedProductUuids: string[] = [];
 
         try {
             const ids = [...new Set(dto.externalId || [])];
@@ -396,6 +399,8 @@ export class ProcurementService {
                                 shopName: productDetails.shopName ?? undefined,
                                 procurementId: productDetails.externalId ? String(productDetails.externalId) : undefined,
                             });
+
+                            importedProductUuids.push(product.uuid);
 
                             // The product is imported as active now.
                             // const product = await this.productService.updateProductStatus(productCreated.uuid, { status: ProductStatus.ACTIVE, });
@@ -524,6 +529,13 @@ export class ProcurementService {
                             });
                         }
                     }),
+                );
+            }
+
+            if (importedProductUuids.length) {
+                await this.queueService.addImportedProductsTranslationJob(
+                    importedProductUuids,
+                    1,
                 );
             }
 
