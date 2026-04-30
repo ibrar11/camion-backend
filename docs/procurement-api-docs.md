@@ -151,6 +151,8 @@ Import Products
 > [!IMPORTANT]
 > Required roles: `SuperAdmin`, `Admin`
 
+Imports products from 1688 into the local inventory. After import, the `shopId`, `shopName`, and `procurementId` (1688 product ID) are stored on the `Product` record. Each `ProductVariant` also stores a `skuMeta` JSON object with the raw 1688 SKU metadata (`spec_id`, `sku_img`, `specs`, `shop_id`, `shop_name`, `min_order_quantity`, `batch_number`, `imgs`). Both the product-level fields and `skuMeta` are required by `POST /v1/wms/orders/dispatch` to automatically build Gulltrans procurement orders — variants without `skuMeta` (imported before this field was added) must be re-imported.
+
 ```http
 Post /v1/procurement/import HTTP/1.1
 ```

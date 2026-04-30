@@ -40,13 +40,15 @@ import { InventoryLevel } from '../inventory/entities/inventory-level.entity';
 
 import { Warehouse } from '../inventory/entities/warehouse.entity';
 
+import { Order } from '../order/entities/order.entity';
+
 import { S3Service } from '../common/s3.service';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
 			User,
-			Customer, 
+			Customer,
 			Category,
 			Product,
 			ProductCategory,
@@ -58,6 +60,7 @@ import { S3Service } from '../common/s3.service';
 			InventoryItem,
 			InventoryLevel,
 			Warehouse,
+			Order,
 		]),
 		ClientsModule,
 	],
@@ -73,6 +76,7 @@ import { S3Service } from '../common/s3.service';
 		ProductVariantImageService,
 		S3Service,
 	],
-	controllers: [ProcurementController]
+	controllers: [ProcurementController],
+	exports: [ProcurementService],
 })
 export class ProcurementModule {}

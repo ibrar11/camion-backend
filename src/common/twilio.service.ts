@@ -45,7 +45,7 @@ export class TwilioService {
             await this.client!.messages.create({
                 to,
                 messagingServiceSid: this.messagingServiceSid,
-                body: `Your verification code is: ${otp}`,
+                body: `Your CAMION verification code is: ${otp}`,
             });
             this.logger.log(`OTP sent successfully to ${to}`);
         } catch (err) {
