@@ -169,7 +169,7 @@ export class WishlistService {
      */
     async getWishlistCount(customer: Customer): Promise<number> {
         const count = await this.wishlistRepository.count({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 customer: { uuid: customer.uuid, },
