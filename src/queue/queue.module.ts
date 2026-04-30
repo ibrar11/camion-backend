@@ -38,10 +38,9 @@ import { Category } from '../inventory/entities/category.entity';
         BullModule.forRootAsync({
             useFactory: async (configService: ConfigService) => ({
                 connection: {
-                    host: configService.get('REDIS_HOST', 'localhost'),
-                    port: configService.get('REDIS_PORT', 6379),
-                    password: configService.get('REDIS_PASSWORD'),
-                    db: configService.get('REDIS_QUEUE_DB', 1),
+                    host: configService.get<string>('REDIS_HOST', 'localhost'),
+                    port: configService.get<number>('REDIS_PORT', 6379),
+                    tls: {},
                     retryStrategy: (times) => Math.min(times * 50, 2000),
                 },
                 defaultJobOptions: {
@@ -77,7 +76,7 @@ import { Category } from '../inventory/entities/category.entity';
         TranslationProcessor,
         ProductTranslationProvider,
     ],
-    controllers:[QueueController],
+    controllers: [QueueController],
     exports: [
         QueueService,
         BullModule,  // Export BullModule for other modules to register queues
