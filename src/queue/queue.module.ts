@@ -38,8 +38,8 @@ import { Category } from '../inventory/entities/category.entity';
         BullModule.forRootAsync({
             useFactory: async (configService: ConfigService) => ({
                 connection: {
-                    host: configService.get<string>('REDIS_HOST', 'localhost'),
-                    port: configService.get<number>('REDIS_PORT', 6379),
+                    host: configService.get<string>('BULLMQ_HOST', 'localhost'),
+                    port: configService.get<number>('BULLMQ_PORT', 6379),
                     tls: {},
                     retryStrategy: (times) => Math.min(times * 50, 2000),
                 },
