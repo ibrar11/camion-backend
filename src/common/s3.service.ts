@@ -3,6 +3,8 @@ import crypto from "node:crypto";
 import {
 	S3Client,
 	PutObjectCommand,
+	CopyObjectCommand,
+	DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 
 import { Injectable } from "@nestjs/common";
@@ -30,10 +32,7 @@ export class S3Service {
 	 * @param file
 	 * @returns
 	 */
-	async uploadFile(prefix: string, file: Express.Multer.File): Promise<{
-		key: string,
-		url: string,
-	}> {
+	async uploadFile(prefix: string, file: Express.Multer.File): Promise<{ key: string, url: string, }> {
 		// Generate a unique name for the file being uploaded with the extension of the file
 		const key = `${crypto.randomUUID()}.${file.originalname.substring(file.originalname.lastIndexOf('.') + 1)}`;
 
@@ -49,8 +48,37 @@ export class S3Service {
 		await this.s3.send(command);
 
 		return {
-			key: key,
+			key: `${prefix}/${key}`,
 			url: `s3://${prefix}/${key}`,
+		};
+	}
+
+	/**
+	 * Moves a file from source key to destination key
+	 *
+	 * @param sourceKey
+	 * @returns
+	 */
+	async moveFile(prefix: string, sourceKey: string): Promise<{ key: string, url: string, }> {
+		// Generate a unique name for the file being uploaded with the extension of the file
+		const destKey = `${crypto.randomUUID()}.${sourceKey.substring(sourceKey.lastIndexOf('.') + 1)}`;
+
+		// Move the source file to destination file
+		await this.s3.send(new CopyObjectCommand({
+			Bucket: this.configService.get<string>("AWS_S3_BUCKET"),
+			CopySource: `${this.configService.get<string>("AWS_S3_BUCKET")}/${sourceKey}`,
+			Key: `${prefix}/${destKey}`,
+		}));
+
+		// Delete the source file after moving it to destination
+		await this.s3.send(new DeleteObjectCommand({
+			Bucket: this.configService.get<string>("AWS_S3_BUCKET"),
+			Key: sourceKey,
+		}));
+
+		return {
+			key: `${prefix}/${destKey}`,
+			url: `s3://${prefix}/${destKey}`,
 		};
 	}
 }

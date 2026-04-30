@@ -40,6 +40,8 @@ import { InventoryLevel } from '../inventory/entities/inventory-level.entity';
 
 import { Warehouse } from '../inventory/entities/warehouse.entity';
 
+import { Order } from '../order/entities/order.entity';
+
 import { S3Service } from '../common/s3.service';
 
 import { QueueService } from '../queue/queue.service';
@@ -49,7 +51,7 @@ import { QueueModule } from '../queue/queue.module';
 	imports: [
 		TypeOrmModule.forFeature([
 			User,
-			Customer, 
+			Customer,
 			Category,
 			Product,
 			ProductCategory,
@@ -61,6 +63,7 @@ import { QueueModule } from '../queue/queue.module';
 			InventoryItem,
 			InventoryLevel,
 			Warehouse,
+			Order,
 		]),
 		ClientsModule,
 		QueueModule,
@@ -78,6 +81,7 @@ import { QueueModule } from '../queue/queue.module';
 		S3Service,
 		QueueService,
 	],
-	controllers: [ProcurementController]
+	controllers: [ProcurementController],
+	exports: [ProcurementService],
 })
 export class ProcurementModule {}

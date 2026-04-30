@@ -132,6 +132,9 @@ import { Translation } from "./translation/entities/translation.entity";
 import { TranslationItem } from "./translation/entities/translation-item.entity";
 import { TranslationModule } from './translation/translation.module';
 
+import { JopWmsModule } from './jop-wms/jop-wms.module';
+import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -253,6 +256,8 @@ import { TranslationModule } from './translation/translation.module';
 
 					Translation,
 					TranslationItem,
+
+					JopWmsOrder,
 				],
 			}),
 		}),
@@ -308,6 +313,7 @@ import { TranslationModule } from './translation/translation.module';
 		ReturnsModule,
 		QueueModule,
 		TranslationModule,
+		JopWmsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

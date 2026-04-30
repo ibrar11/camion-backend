@@ -264,7 +264,7 @@ query {
 
 ```graphql
 query {
-    getPost(uuid: "post-uuid") {
+    getPost(slug: "privacy-policy") {
         uuid
         slug
         title

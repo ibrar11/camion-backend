@@ -58,6 +58,10 @@ export class BulkOrderItemDto {
 }
 
 export class BulkCreateProcurementOrderDto {
+    @IsOptional()
+    @IsString()
+    orderUuid?: string;
+
     @IsArray()
     @ArrayMinSize(1)
     @ValidateNested({ each: true })

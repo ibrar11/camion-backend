@@ -96,7 +96,8 @@ export interface ProductVariant {
         width: number;
         height: number;
         origin: string;
-    },
+    };
+    skuMeta: Record<string, any>;
 }
 
 export interface ProductOption {

@@ -1,5 +1,6 @@
 import {
 	IsArray,
+	IsOptional,
 	IsString,
 	IsUUID,
 	MaxLength,
@@ -74,4 +75,16 @@ export class CreateProductDto {
 	@IsArray()
 	@IsUUID('4', { each: true, })
 	categories: Array<string>;
+
+	@IsOptional()
+	@IsString()
+	shopId?: string;
+
+	@IsOptional()
+	@IsString()
+	shopName?: string;
+
+	@IsOptional()
+	@IsString()
+	procurementId?: string;
 }

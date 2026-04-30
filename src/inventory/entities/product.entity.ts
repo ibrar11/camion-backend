@@ -98,6 +98,18 @@ export class Product {
 	})
 	status: ProductStatus;
 
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 128, nullable: true, default: null })
+	shopId: string | null;
+
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 256, nullable: true, default: null })
+	shopName: string | null;
+
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 64, nullable: true, default: null })
+	procurementId: string | null;
+
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	salesCount: number;

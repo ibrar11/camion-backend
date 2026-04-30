@@ -36,11 +36,23 @@ export class Warehouse {
 	@Column()
 	country: string;
 
+	@Column({ nullable: true })
+	countryCode: string;
+
 	@Column()
 	state: string;
 
 	@Column()
 	city: string;
+
+	@Column({ nullable: true })
+	postcode: string;
+
+	@Column({ nullable: true })
+	contactName: string;
+
+	@Column({ nullable: true })
+	phone: string;
 
 	@OneToMany(() => InventoryLevel, (level) => level.warehouse)
 	levels: Array<InventoryLevel>;

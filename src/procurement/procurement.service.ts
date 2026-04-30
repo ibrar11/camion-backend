@@ -42,6 +42,11 @@ import {
 } from './types';
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Order } from '../order/entities/order.entity';
+
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
 import { QueueService } from 'src/queue/queue.service';
@@ -58,7 +63,13 @@ export class ProcurementService {
         @Inject(ProductOptionValueService) private readonly optionValueService: ProductOptionValueService,
         @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
         @Inject(QueueService) private readonly queueService: QueueService,
+        @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     ) { }
+
+    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderId: string | number) {
+        if (!orderUuid) return;
+        await this.orderRepository.update({ uuid: orderUuid }, { gulltransOrderId: String(gulltransOrderId) });
+    }
 
     /**
      * Finds a list of products with specific keyword
@@ -231,7 +242,9 @@ export class ProcurementService {
                 }) ?? [];
 
                 const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
-                const shippingInfo = product.productShippingInfo.skuShippingDetails.find(detail => detail.skuId === sku.skuId.toString());
+                const shippingInfo = product.productShippingInfo.skuShippingDetails.find((detail: any) => detail.skuId === sku.skuId.toString());
+
+                const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0] ?? null;
 
                 return {
                     title: title,
@@ -244,13 +257,26 @@ export class ProcurementService {
                     ),
                     stock: sku.amountOnSale,
                     attributes,
-                    image: sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0],
+                    image: skuImg,
                     shipping: {
                         weight: smartRoundInt(shippingInfo.weight),
                         length: smartRoundInt(shippingInfo.length),
                         width: smartRoundInt(shippingInfo.width),
                         height: smartRoundInt(shippingInfo.height),
                         origin: product.productShippingInfo.sendGoodsAddressText,
+                    },
+                    skuMeta: {
+                        shop_id: product.sellerOpenId,
+                        shop_name: product.companyName,
+                        spec_id: sku.specId,
+                        sku_img: skuImg,
+                        min_order_quantity: String(product.minOrderQuantity ?? 1),
+                        batch_number: '1',
+                        imgs: product.productImage?.images ?? [],
+                        specs: sku.skuAttributes?.map((attr: SkuAttribute) => ({
+                            label: attr.attributeName,
+                            value: attr.value,
+                        })) ?? [],
                     },
                 };
             });
@@ -368,7 +394,10 @@ export class ProcurementService {
                                     en: productDetails.descriptionHtml,
                                     ar: productDetails.descriptionHtml
                                 },
-                                categories: dto.categories //need to add categories through admin dashboard
+                                categories: dto.categories, //need to add categories through admin dashboard
+                                shopId: productDetails.shopId ?? undefined,
+                                shopName: productDetails.shopName ?? undefined,
+                                procurementId: productDetails.externalId ? String(productDetails.externalId) : undefined,
                             });
 
                             importedProductUuids.push(product.uuid);
@@ -465,6 +494,7 @@ export class ProcurementService {
                                                         unit: DimensionsUnit.Centimeter
                                                     },
                                                     optionValues: optionValuesUuids,
+                                                    skuMeta: variant.skuMeta,
                                                 };
 
                                                 // add product variants
@@ -583,7 +613,7 @@ export class ProcurementService {
                         const response = await fetch(
                             `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                             {
-                                method: 'POST',
+                                method: 'PUT',
                                 headers: {
                                     Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
                                     'X-Uuid': process.env.GULLTRANS_UUID || '',
@@ -609,9 +639,14 @@ export class ProcurementService {
                             return;
                         }
 
+                        this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
+                        
+                        const orderId = data?.data?.order_id ?? data?.data?.orderId ?? data?.data?.id;
+                        await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+
                         results.success.push({
                             shopId: order.shop_id,
-                            orderId: data?.data?.order_id,
+                            orderId,
                             raw: data?.data,
                         });
                     } catch (error: any) {
@@ -639,7 +674,7 @@ export class ProcurementService {
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                 {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: {
                         Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
                         'X-Uuid': process.env.GULLTRANS_UUID || '',
@@ -662,9 +697,12 @@ export class ProcurementService {
                 });
             }
 
+            const orderId = data?.data?.order_id;
+            await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+
             return {
                 success: true,
-                orderId: data?.data?.order_id,
+                orderId,
                 raw: data?.data,
             };
         } catch (error: any) {
