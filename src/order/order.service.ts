@@ -466,6 +466,11 @@ export class OrderService {
                         },
                         variant: {
                             images: true,
+                            optionValues: {
+                                optionValue: {
+                                    option: true
+                                }
+                            }
                         },
                     },
                     shippingAddress: true
@@ -475,6 +480,8 @@ export class OrderService {
             if (!order) throw new NotFoundException({
                 error: 'Order not found',
             });
+
+            order.orderPlacementDate = order.createdAt;
 
             return order;
         } catch (error: any) {
@@ -596,7 +603,12 @@ export class OrderService {
                         inventoryItem: {
                             levels: true
                         },
-                        images: true
+                        images: true,
+                        optionValues: {
+                            optionValue: {
+                                option: true
+                            }
+                        }
                     }
                 }
             });

@@ -157,6 +157,7 @@ type Order {
   eta: String!
   gulltransOrderId: String
   orderItems: [OrderItem!]!
+  orderPlacementDate: DateTime!
   shippingAddress: CustomerAddress!
   shippingCost: Money!
   status: String!
@@ -261,6 +262,7 @@ type ProductOption {
 }
 
 type ProductOptionValue {
+  option: ProductOption!
   position: Int!
   uuid: String!
   value(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
