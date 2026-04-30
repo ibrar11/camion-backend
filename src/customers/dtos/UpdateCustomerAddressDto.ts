@@ -1,4 +1,5 @@
 import {
+	IsBoolean,
 	IsString,
 	MaxLength,
 	MinLength,
@@ -41,4 +42,7 @@ export class UpdateCustomerAddressDto {
 	@IsString()
 	@MinLength(1)
 	country: string;
+
+	@IsBoolean()
+	isDefault: boolean = false;
 }

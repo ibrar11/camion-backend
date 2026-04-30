@@ -171,6 +171,7 @@ zipCode | Yes | String | The zip code of the city in which the warehouse is base
 city | Yes | String | The city in which the warehouse is based in
 state | Yes | String | The state in which your location is based in.
 country | Yes | String | The country in which your location is based in.
+isDefault | Yes | String | Determines if the current address is your default shipping address
 
 ### Request Body
 
@@ -184,7 +185,8 @@ country | Yes | String | The country in which your location is based in.
     "zipCode": "12345",
     "city": "Example City",
     "state": "Example State",
-    "country": "Example country"
+    "country": "Example country",
+    "isDefault": true
 }
 ```
 
@@ -208,7 +210,7 @@ country | Yes | String | The country in which your location is based in.
     "city": "Example City",
     "state": "Example State",
     "country": "Example country",
-    "isDefault": false
+    "isDefault": true
 }
 ```
 
