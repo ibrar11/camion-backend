@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -44,7 +46,7 @@ export class CategoriesController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid/thumbnail')
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionUploadThumbnail(@Param('uuid') uuid: string, @UploadedFile() file: Express.Multer.File): Promise<Category> {
 		return this.productCategoryService.updateThumbnail(uuid, file);

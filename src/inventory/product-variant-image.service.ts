@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import {
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException,
 } from "@nestjs/common";
@@ -19,6 +20,7 @@ import { ReplaceProductVariantImageDto } from "./dtos/ReplaceProductVariantImage
 
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage, ProductVariantImageDimensions } from "./entities/product-variant-image.entity";
+import { FileService } from "src/common/file.service";
 
 @Injectable()
 export class ProductVariantImageService {
@@ -26,6 +28,7 @@ export class ProductVariantImageService {
 
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantImage) private readonly productVariantImageRepository: Repository<ProductVariantImage>,
 	) { }
@@ -49,7 +52,18 @@ export class ProductVariantImageService {
 		}
 
 		// Upload the image to s3
-		const params = await this.s3Service.uploadFile("product-images", file);
+		let params: { key: string, url: string } | null = null;
+		try {
+			params = await this.s3Service.uploadFile("product-images", file);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the product variant image. Please try again.",
+			});
+		}
+
+		// Delete the temporary files
+		await this.fileService.deleteFile(file);
 
 		// Create the product variant image
 		const productVariantImage = new ProductVariantImage();
@@ -167,7 +181,15 @@ export class ProductVariantImageService {
 		}
 
 		// Move the file from source to destination
-		const params = await this.s3Service.moveFile("product-images", body.key);
+		let params: { key: string, url: string } | null = null;
+		try {
+			params = await this.s3Service.moveFile("product-images", body.key);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the product variant image. Please try again.",
+			});
+		}
 
 		// Update the image
 		variantImage.imageUrl = params.url;

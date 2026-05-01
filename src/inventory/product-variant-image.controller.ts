@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -38,7 +40,7 @@ export class ProductVariantImageController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Post()
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProductVariantImage(@Param('variantUUID') variantUUID: string, @UploadedFile() file: Express.Multer.File): Promise<ProductVariantImage> {
 		return this.productVariantImageService.createProductVariantImage(variantUUID, file);

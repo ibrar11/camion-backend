@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException,
 } from "@nestjs/common";
@@ -12,6 +13,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Repository } from "typeorm";
 
 import { S3Service } from "../common/s3.service";
+import { FileService } from "../common/file.service";
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
@@ -27,6 +29,7 @@ export class CategoriesService {
 
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 	) { }
 
@@ -90,7 +93,18 @@ export class CategoriesService {
 		this.logger.log(`Attempting to upload a thumbnail for category: ${categoryUUID}`);
 
 		// Update the file to s3
-		const params = await this.s3Service.uploadFile("categories", file);
+		let params: { key: string; url: string; } | null = null;
+		try {
+			params = await this.s3Service.uploadFile("categories", file);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the category image. Please try again.",
+			});
+		}
+
+		// Delete the temporary file
+		await this.fileService.deleteFile(file);
 
 		// Find the category
 		const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });

@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -79,7 +81,7 @@ export class StoriesController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post(':uuid/frames')
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateStoryFrame(@Param('uuid') uuid: string, @UploadedFile() file: Express.Multer.File): Promise<StoryFrame> {
 		return this.storiesService.createStoryFrame(uuid, file);
