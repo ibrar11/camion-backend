@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { S3Service } from '../common/s3.service';
+import { FileService } from '../common/file.service';
 
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -117,7 +118,7 @@ import { Translation } from '../translation/entities/translation.entity';
 		ProductVariantService,
 		ProductVariantService,
 		WarehouseService,
-		S3Service,
+		FileService,
 	],
 	controllers: [
 		CategoriesController,

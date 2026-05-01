@@ -12,6 +12,8 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
+import { getSkipAndTake } from "../common/pagination";
+
 import { ReturnRequest } from "./entities/return-request.entity";
 import { ReturnEvidence } from "./entities/return-evidence.entity";
 import { ReturnStatus } from "./enums/ReturnStatus.enum";
@@ -32,7 +34,7 @@ import { NotificationType } from "../notifications/enums/notification-type.enum"
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
 
 import { S3Service } from "../common/s3.service";
-import { getSkipAndTake } from "../common/pagination";
+import { FileService } from "../common/file.service";
 
 @Injectable()
 export class ReturnsService {
@@ -47,6 +49,7 @@ export class ReturnsService {
         @InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
         private readonly notificationsService: NotificationsService,
         private readonly s3Service: S3Service,
+        private readonly fileService: FileService,
     ) { }
 
     async createReturnRequest(customer: Customer, dto: CreateReturnRequestDto): Promise<ReturnRequest> {
@@ -143,12 +146,22 @@ export class ReturnsService {
                 });
             }
 
-            let { url } = await this.s3Service.uploadFile("returns", file);
+            // Upload the file to s3
+            let params: { key: string; url: string; } | null = null;
+            try {
+                params = await this.s3Service.uploadFile("returns", file);
+            } catch (err) {
+                this.logger.error(err);
+                throw new InternalServerErrorException({
+                    error: "Failed to upload the evidence image. Please try again.",
+                });
+            }
 
-            const segments = url?.split("/");
-            if (url?.startsWith("https://")) {
-                url = `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
-            } else if (url?.startsWith("s3://")) {
+            // Delete the temporary file.
+            await this.fileService.deleteFile(file);
+
+            const segments = params.url?.split("/"); let url = "";
+            if (params.url?.startsWith("s3://")) {
                 url = `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
             }
 

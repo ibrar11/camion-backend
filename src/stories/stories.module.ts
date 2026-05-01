@@ -3,6 +3,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { S3Service } from '../common/s3.service';
+import { FileService } from '../common/file.service';
+import { ImageThumbnailService } from '../common/image-thumbnail.service';
+import { VideoThumbnailService } from '../common/video-thumbnail.service';
 
 import { Story } from './entities/story.entity';
 import { StoryFrame } from './entities/story-frame.entity';
@@ -30,11 +33,14 @@ import { ClientsModule } from '../clients/clients.module';
 	],
 	providers: [
 		S3Service,
+		FileService,
 		UsersService,
 		CustomersService,
 		StoriesService,
 		StoriesResolver,
 		FramesResolver,
+		ImageThumbnailService,
+		VideoThumbnailService,
 	],
 	controllers: [StoriesController],
 })

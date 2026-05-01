@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -61,7 +63,7 @@ export class ProductReviewController {
 
 	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Post(':uuid/images')
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProductReviewImage(
 		@Param('uuid') reviewUUID: string,

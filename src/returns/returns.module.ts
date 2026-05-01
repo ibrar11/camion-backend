@@ -23,6 +23,7 @@ import { Notification } from "../notifications/entities/notification.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 
 import { S3Service } from "../common/s3.service";
+import { FileService } from "../common/file.service";
 
 import { ClientsModule } from "../clients/clients.module";
 
@@ -48,6 +49,7 @@ import { ClientsModule } from "../clients/clients.module";
         UsersService,
         CustomersService,
         S3Service,
+        FileService,
     ],
     controllers: [ReturnsController],
 })

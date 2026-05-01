@@ -43,6 +43,7 @@ import { Warehouse } from '../inventory/entities/warehouse.entity';
 import { Order } from '../order/entities/order.entity';
 
 import { S3Service } from '../common/s3.service';
+import { FileService } from '../common/file.service';
 
 import { QueueService } from '../queue/queue.service';
 import { QueueModule } from '../queue/queue.module';
@@ -79,6 +80,7 @@ import { QueueModule } from '../queue/queue.module';
 		ProductVariantService,
 		ProductVariantImageService,
 		S3Service,
+		FileService,
 		QueueService,
 	],
 	controllers: [ProcurementController],
