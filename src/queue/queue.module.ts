@@ -36,23 +36,29 @@ import { Category } from '../inventory/entities/category.entity';
 @Module({
     imports: [
         BullModule.forRootAsync({
-            useFactory: async (configService: ConfigService) => ({
-                connection: {
-                    host: configService.get<string>('BULLMQ_HOST', 'localhost'),
-                    port: configService.get<number>('BULLMQ_PORT', 6379),
-                    tls: {},
-                    retryStrategy: (times) => Math.min(times * 50, 2000),
-                },
-                defaultJobOptions: {
-                    attempts: 3,
-                    backoff: {
-                        type: 'exponential',
-                        delay: 1000,
+            useFactory: async (configService: ConfigService) => {
+                const host = configService.get<string>('BULLMQ_HOST', 'localhost');
+                const isRemote = host !== 'localhost' && host !== '127.0.0.1';
+                return {
+                    connection: {
+                        host: host,
+                        port: configService.get<number>('BULLMQ_PORT', 6379),
+                        ...(isRemote && {
+                            tls: {},
+                        }),
+                        retryStrategy: (times) => Math.min(times * 50, 2000),
                     },
-                    removeOnComplete: 100,
-                    removeOnFail: 500,
-                },
-            }),
+                    defaultJobOptions: {
+                        attempts: 3,
+                        backoff: {
+                            type: 'exponential',
+                            delay: 1000,
+                        },
+                        removeOnComplete: 100,
+                        removeOnFail: 500,
+                    },
+                }
+            },
             inject: [ConfigService],
         }),
         BullModule.registerQueue(
