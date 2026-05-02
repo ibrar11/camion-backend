@@ -6,7 +6,7 @@ type Affiliate {
   bio: String!
   couponsCreated: Float!
   couponsUsed: Float!
-  createdAt: DateTime!
+  createdAt: String!
   fullName: String!
   gender: String!
   nationality: String!
