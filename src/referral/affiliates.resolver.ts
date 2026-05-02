@@ -1,6 +1,8 @@
 import {
 	Context,
+	Parent,
 	Query,
+	ResolveField,
 	Resolver,
 } from "@nestjs/graphql";
 
@@ -19,6 +21,11 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 @Resolver(() => Affiliate)
 export class AffiliatesResolver {
 	constructor(@Inject(AffiliatesService) private readonly affiliatesService: AffiliatesService) { }
+
+	@ResolveField("createdAt", () => String)
+	getCreatedAt(@Parent() affiliate: Affiliate): String {
+		return new String(affiliate.createdAt);
+	}
 
 	@Query(() => Affiliate, { nullable: true, })
 	async getCurrentAffiliate(@Context() context): Promise<Affiliate | null> {
