@@ -36,7 +36,6 @@ export class CustomersService {
 	async createCustomer(body: CreateCustomerDto) {
 		this.logger.log(`Creating customer: ${body.fullName}`);
 
-
 		// Remove the prefix + sign from the country code
 		let countryCode = body.countryCode;
 		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
