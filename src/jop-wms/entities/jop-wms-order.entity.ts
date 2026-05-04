@@ -13,8 +13,11 @@ export enum JopWmsOrderType {
     RETURN = 'return',
 }
 
-// Terminal statuses — polling stops once an order reaches one of these
-export const JOP_WMS_TERMINAL_STATUSES = ['completed', 'cancelled', 'shelved', 'closed'] as const;
+// Terminal statuses per order type (JOP API returns numeric codes as strings after String() cast)
+// Inbound:  14=Stored, 15=Warehouse closed, 16=Deleted
+// Outbound: 14=Shipped, 15=Invalidated
+// Return:   40=Shelved
+export const JOP_WMS_TERMINAL_STATUSES = ['14', '15', '16', '40'] as const;
 
 @Entity({ name: 'jop_wms_orders' })
 export class JopWmsOrder {
