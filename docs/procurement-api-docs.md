@@ -38,28 +38,36 @@ priceEnd | No | String | Maximum price filter
 
 ### Response Body
 ```json
-[
-    {
-        "externalId": "123456",
-        "title": "Running Shoes",
-        "price": 25.5,
-        "originalPrice": 30,
-        "image": "https://example.com/image.jpg",
-        "productUrl": "https://example.com/product",
-        "monthlySales": 120,
-        "rating": 4.5,
-        "minOrderQuantity": 2,
-        "isDropshipping": true,
-        "supplierType": "manufacturer",
-        "category": {
-            "level1": "1",
-            "level2": "2",
-            "level3": "3"
-        },
-        "createdAt": "2024-01-01",
-        "updatedAt": "2024-01-02"
+{
+    "data": [
+        {
+            "externalId": 530803621189,
+            "title": "15.6inch Laptop I7 Quad-Core Independent Graphics Gaming Office Business Learning Online Class Live Broadcast I5 Ultra-Thin Satc",
+            "price": 430,
+            "originalPrice": 860,
+            "image": "https://cbu01.alicdn.com/img/ibank/O1CN01A4lQkx2NXgmdHWMct_!!1911179973-0-cib.jpg",
+            "productUrl": "https://detail.1688.com/offer/530803621189.html?fromkv=refer:HVCVSVCRJVNFERZUGNLDMTSKKRDUCNCEIFGVUV2HJFMVIQ2PIJNEYNKRLBATESZXI5CTGVCPJZNFURZUGRCEST2CKRDUSM2EJNMDGM2QKU6T2PJ5HVEA1111&kjSource=pc",
+            "monthlySales": 31,
+            "rating": 5,
+            "minOrderQuantity": 1,
+            "isDropshipping": true,
+            "supplierType": "tp_member",
+            "category": {
+                "level1": 7,
+                "level2": 730,
+                "level3": 702
+            },
+            "createdAt": "2025-07-21 21:54:56",
+            "updatedAt": "2026-05-01 02:10:09"
+        }
+    ],
+    "pagination": {
+        "totalProducts": 2000,
+        "totalPage": 2000,
+        "page_size": 1,
+        "currentPage": 1
     }
-]
+}
 ```
 
 Retrieve Product Detail
