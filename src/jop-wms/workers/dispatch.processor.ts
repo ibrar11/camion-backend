@@ -42,9 +42,13 @@ export class DispatchProcessor extends WorkerHost {
 
         this.logger.log(`Processing dispatch shop job: dispatchJobId=${dispatchJobId} shop=${shopId} orders=${orderUuids.length}`);
 
-        // ── Step 1: Idempotency check — skip Gulltrans if already done ────────
+        // ── Step 1: Idempotency check — job data takes precedence (survives DB failures)
+        //    then fall back to DB in case this is a fresh retry on a different worker
         const orders = await this.orderRepository.find({ where: { uuid: In(orderUuids) } });
-        const existingId = orders.find(o => o.gulltransOrderId)?.gulltransOrderId ?? null;
+        const existingId =
+            job.data.gulltransOrderId ??
+            orders.find(o => o.gulltransOrderId)?.gulltransOrderId ??
+            null;
 
         let gulltransOrderId: string;
 
@@ -75,6 +79,9 @@ export class DispatchProcessor extends WorkerHost {
 
             gulltransOrderId = String(shopResult.orderId);
             this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans order ${gulltransOrderId} created`);
+
+            // Checkpoint into job data so retries skip Gulltrans even if the DB write below fails
+            await job.updateData({ ...job.data, gulltransOrderId });
 
             // ── Step 4: Persist gulltransOrderId (all-or-nothing transaction) ─
             const runner = this.dataSource.createQueryRunner();
