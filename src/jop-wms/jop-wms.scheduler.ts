@@ -87,6 +87,11 @@ export class JopWmsScheduler {
 
                 this.logger.log(`${order.orderNo} → ${order.status}${waybillNo ? ` (waybill: ${waybillNo})` : ''}`);
 
+                // Persist status change BEFORE triggering outbound creation.
+                // If outbound creation fails, the shelved status is already committed so
+                // the next poll sees prevStatus='shelved' and won't re-trigger.
+                await this.wmsOrderRepository.save(order);
+
                 // Auto-create outbound order when inbound goods are received (shelved)
                 if (order.type === JopWmsOrderType.INBOUND && prevStatus !== 'shelved' && order.status === 'shelved') {
                     this.logger.log(`Inbound ${order.orderNo} shelved — creating outbound orders`);
@@ -96,9 +101,8 @@ export class JopWmsScheduler {
                 order.errorCount += 1;
                 order.lastPolledAt = new Date();
                 this.logger.error(`Poll failed for ${order.orderNo} (attempt ${order.errorCount}): ${err?.message}`);
+                await this.wmsOrderRepository.save(order);
             }
-
-            await this.wmsOrderRepository.save(order);
         }
     }
 }

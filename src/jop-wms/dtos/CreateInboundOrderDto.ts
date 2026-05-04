@@ -72,6 +72,10 @@ export class CreateInboundOrderDto {
     @IsString()
     memo?: string;
 
+    @IsOptional()
+    @IsString()
+    sourceOrderUuids?: string;
+
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => InboundBox)

@@ -7,6 +7,9 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
 
@@ -18,10 +21,6 @@ import { DimensionsUnit } from '../inventory/enums/DimensionsUnit.enum';
 import { Order } from '../order/entities/order.entity';
 import { OrderItem } from '../order/entities/order-item.entity';
 import { OrderStatus } from '../order/enums/OrderStatus';
-
-import { Product } from '../inventory/entities/product.entity';
-
-import { ProcurementService } from '../procurement/procurement.service';
 
 import { JopWmsClient } from './jop-wms.client';
 import { JopWmsOrder, JopWmsOrderType } from './entities/jop-wms-order.entity';
@@ -40,6 +39,9 @@ import { CreateReturnOrderDto } from './dtos/CreateReturnOrderDto';
 import { QueryReturnOrderDto } from './dtos/QueryReturnOrderDto';
 import { DispatchOrdersDto } from './dtos/DispatchOrdersDto';
 
+import { QueueName } from '../queue/enums/QueueTypes.enum';
+import { DispatchShopJobData } from '../queue/types';
+
 @Injectable()
 export class JopWmsService {
     private readonly logger = new Logger(JopWmsService.name);
@@ -53,21 +55,18 @@ export class JopWmsService {
         private readonly wmsOrderRepository: Repository<JopWmsOrder>,
         @InjectRepository(Order)
         private readonly orderRepository: Repository<Order>,
-        @InjectRepository(OrderItem)
-        private readonly orderItemRepository: Repository<OrderItem>,
-        @InjectRepository(Product)
-        private readonly productRepository: Repository<Product>,
         @InjectRepository(Warehouse)
         private readonly warehouseRepository: Repository<Warehouse>,
         private readonly client: JopWmsClient,
-        private readonly procurementService: ProcurementService,
+        @InjectQueue(QueueName.WMS_DISPATCH)
+        private readonly dispatchQueue: Queue,
     ) { }
 
-    private async trackOrder(orderNo: string, type: JopWmsOrderType) {
+    private async trackOrder(orderNo: string, type: JopWmsOrderType, sourceOrderUuids?: string) {
         const existing = await this.wmsOrderRepository.findOne({ where: { orderNo } });
         if (existing) return;
         await this.wmsOrderRepository.save(
-            this.wmsOrderRepository.create({ orderNo, type, status: 'pending' }),
+            this.wmsOrderRepository.create({ orderNo, type, status: 'pending', sourceOrderUuids: sourceOrderUuids ?? null }),
         );
     }
 
@@ -134,7 +133,7 @@ export class JopWmsService {
             memo: dto.memo ?? '',
             boxList: dto.boxList,
         });
-        await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.INBOUND);
+        await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.INBOUND, dto.sourceOrderUuids);
         return result;
     }
 
@@ -279,36 +278,21 @@ export class JopWmsService {
             }
         }
 
-        const jobId = crypto.randomUUID();
-        setImmediate(() =>
-            this.runDispatch(jobId, dto).catch(err =>
-                this.logger.error(`Dispatch job ${jobId} crashed: ${err?.message}`)
-            )
-        );
-        return { jobId };
-    }
-
-    private async runDispatch(jobId: string, dto: DispatchOrdersDto): Promise<void> {
-        this.logger.log(`Dispatch job ${jobId} started`);
-
+        // ── Load eligible orders ───────────────────────────────────────────────
         const where: any = { status: OrderStatus.CONFIRMED, gulltransOrderId: IsNull() };
-        if (dto.orderUuids?.length) {
-            where.uuid = In(dto.orderUuids);
-        }
+        if (dto.orderUuids?.length) where.uuid = In(dto.orderUuids);
 
         const orders = await this.orderRepository.find({
             where,
-            relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product', 'shippingAddress'],
+            relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
         });
 
         if (!orders.length) {
-            this.logger.log(`Dispatch job ${jobId}: no eligible orders found`);
-            return;
+            this.logger.log('dispatchApprovedOrders: no eligible orders found');
+            return { jobId: '' };
         }
 
-        this.logger.log(`Dispatch job ${jobId}: processing ${orders.length} order(s)`);
-
-        // ── Step 1: group all items across all orders by shop_id ──────────────
+        // ── Group items by shop ────────────────────────────────────────────────
         type ItemRef = { order: Order; item: OrderItem };
         const shopGroups = new Map<string, { shopName: string; items: ItemRef[] }>();
 
@@ -324,112 +308,72 @@ export class JopWmsService {
         }
 
         if (!shopGroups.size) {
-            this.logger.warn(`Dispatch job ${jobId}: no items have Gulltrans shop data — import products from 1688 first`);
-            return;
+            this.logger.warn('dispatchApprovedOrders: no items have Gulltrans shop data — import products from 1688 first');
+            return { jobId: '' };
         }
 
-        // ── Step 2: build one Gulltrans payload entry per item (bulkCreateOrder
-        //            groups by shop_id internally) ───────────────────────────────
-        const gulltransOrders: any[] = [];
-        for (const [shopId, { shopName, items }] of shopGroups) {
-            for (const { item } of items) {
-                gulltransOrders.push({
-                    shop_id: shopId,
-                    shop_name: shopName,
-                    platform: '1688',
-                    platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                    name: item.variant.titleEn,
-                    goods_amount: String(item.variant.cost.amount * item.quantity),
-                    skus: [{
-                        platform_sku: item.variant.sku,
-                        price: String(item.variant.cost.amount),
-                        quantity: String(item.quantity),
-                        sku_info: item.variant.skuMeta ?? {},
-                    }],
-                });
-            }
-        }
-
-        // ── Step 3: single Gulltrans API call ────────────────────────────────
+        // ── Load warehouse address (needed by Gulltrans) ───────────────────────
         const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
-        if (!activeWarehouse) {
-            throw new NotFoundException('No active warehouse found');
-        }
+        if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
 
-        const address = [activeWarehouse.addressLine1, activeWarehouse.addressLine2]
-            .filter(Boolean).join(', ');
-
-        const warehouseAddress: any = {
+        const warehouseAddress = {
             receiver_name: activeWarehouse.contactName ?? '',
             phone: activeWarehouse.phone ?? '',
-            address,
+            address: [activeWarehouse.addressLine1, activeWarehouse.addressLine2].filter(Boolean).join(', '),
             city: activeWarehouse.city,
             province: activeWarehouse.state,
             postcode: activeWarehouse.postcode ?? '',
             company: activeWarehouse.name,
             country_name: activeWarehouse.country,
-            country: {
-                country_code: activeWarehouse.countryCode ?? '',
-                name: activeWarehouse.country,
-            },
+            country: { country_code: activeWarehouse.countryCode ?? '', name: activeWarehouse.country },
         };
 
-        const gulltransResult = await this.procurementService.bulkCreateOrder({
-            orders: gulltransOrders,
-            address: warehouseAddress,
-        });
+        // ── Enqueue one BullMQ job per shop ───────────────────────────────────
+        const dispatchJobId = crypto.randomUUID();
 
-        this.logger.log(`Dispatch job ${jobId}: Gulltrans — ${gulltransResult.success.length} shop order(s) created, ${gulltransResult.failed.length} failed`);
-        for (const f of gulltransResult.failed) {
-            this.logger.error(`Dispatch job ${jobId}: Gulltrans order failed for shop ${f.shopId}: ${f.reason}`);
-        }
-
-        // ── Step 4: map Gulltrans order IDs back to customer orders ───────────
-        // Build: shopId → gulltransOrderId
-        const shopOrderId = new Map<string, string>();
-        for (const s of gulltransResult.success) {
-            if (s.shopId && s.orderId != null) {
-                shopOrderId.set(s.shopId, String(s.orderId));
-            } else {
-                this.logger.warn(`Dispatch job ${jobId}: Gulltrans success entry missing shopId or orderId — ${JSON.stringify(s)}`);
-            }
-        }
-
-        // For each customer order, collect all Gulltrans IDs from its shops
-        const orderGulltransIds = new Map<string, Set<string>>();
-        for (const [shopId, { items }] of shopGroups) {
-            const gulltransOrderId = shopOrderId.get(shopId);
-            if (!gulltransOrderId) continue;
-            for (const { order } of items) {
-                if (!orderGulltransIds.has(order.uuid)) {
-                    orderGulltransIds.set(order.uuid, new Set());
-                }
-                orderGulltransIds.get(order.uuid)!.add(gulltransOrderId);
-            }
-        }
-
-        // ── Step 5: persist gulltransOrderId on each customer order ─────────
-        for (const order of orders) {
-            const ids = orderGulltransIds.get(order.uuid);
-            if (!ids?.size) {
-                this.logger.warn(`Dispatch job ${jobId}: order ${order.uuid} had no successful Gulltrans shop`);
-                continue;
-            }
-            await this.orderRepository.update(
-                { uuid: order.uuid },
-                { gulltransOrderId: [...ids].join(',') },
-            );
-        }
-
-        // ── Step 6: one WMS inbound per shop group ────────────────────────────
-        for (const [shopId, { items }] of shopGroups) {
-            if (!shopOrderId.has(shopId)) continue;
-
-            const inboundVoucherNo = crypto.randomUUID().replace(/-/g, '');
+        for (const [shopId, { shopName, items }] of shopGroups) {
             const orderUuids = [...new Set(items.map(({ order }) => order.uuid))];
+            const inboundVoucherNo = crypto.randomUUID().replace(/-/g, '');
 
-            let totalWeight = 0;
-            let maxLength = 0, maxWidth = 0, maxHeight = 0;
+            const gulltransItems = items.map(({ item }) => ({
+                shop_id: shopId,
+                shop_name: shopName,
+                platform: '1688',
+                platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
+                name: item.variant.titleEn,
+                goods_amount: String(item.variant.cost.amount * item.quantity),
+                skus: [{
+                    platform_sku: item.variant.sku,
+                    price: String(item.variant.cost.amount),
+                    quantity: String(item.quantity),
+                    sku_info: item.variant.skuMeta ?? {},
+                }],
+            }));
+
+            const seenSkus = new Set<string>();
+            const variantSyncData = items.reduce<DispatchShopJobData['variantSyncData']>((acc, { item }) => {
+                if (!seenSkus.has(item.variant.sku)) {
+                    seenSkus.add(item.variant.sku);
+                    acc.push({
+                        synchronizeType: 1,
+                        sku: item.variant.sku,
+                        barcode: item.variant.sku,
+                        name: item.variant.titleAr || item.variant.titleEn,
+                        enName: item.variant.titleEn,
+                        weightUnit: (item.variant.weight?.unit ?? WeightUnit.Kilograms).toUpperCase(),
+                        weight: item.variant.weight?.amount ?? 0,
+                        lengthUnit: (item.variant.dimensions?.unit ?? DimensionsUnit.Centimeter).toUpperCase(),
+                        length: item.variant.dimensions?.length ?? 0,
+                        width: item.variant.dimensions?.width ?? 0,
+                        height: item.variant.dimensions?.height ?? 0,
+                        packingType: 0,
+                        declaredPrice: item.variant.cost?.amount ?? 0,
+                    });
+                }
+                return acc;
+            }, []);
+
+            let totalWeight = 0, maxLength = 0, maxWidth = 0, maxHeight = 0;
             const skuQtyMap = new Map<string, number>();
 
             for (const { item } of items) {
@@ -440,51 +384,43 @@ export class JopWmsService {
                 skuQtyMap.set(item.variant.sku, (skuQtyMap.get(item.variant.sku) ?? 0) + item.quantity);
             }
 
-            const productList = [...skuQtyMap.entries()].map(([sku, qty]) => ({ sku, qty }));
+            const jobData: DispatchShopJobData = {
+                jobId: `${dispatchJobId}-${shopId}`,
+                dispatchJobId,
+                shopId,
+                shopName,
+                orderUuids,
+                inboundVoucherNo,
+                shipperMethod: dto.shipperMethod,
+                shipperCompany: dto.shipperCompany,
+                warehouseAddress,
+                gulltransItems,
+                variantSyncData,
+                wmsBoxList: [{
+                    boxNo: `BOX-${inboundVoucherNo.slice(0, 8).toUpperCase()}`,
+                    serialNumber: 1,
+                    length: maxLength || 1,
+                    width: maxWidth || 1,
+                    height: maxHeight || 1,
+                    weight: totalWeight || 1,
+                    productList: [...skuQtyMap.entries()].map(([sku, qty]) => ({ sku, qty })),
+                }],
+                createdAt: new Date(),
+            };
 
-            try {
-                // Sync all unique variants to WMS before creating the inbound
-                const uniqueVariants = new Map<string, ProductVariant>();
-                for (const { item } of items) {
-                    if (!uniqueVariants.has(item.variant.sku)) {
-                        uniqueVariants.set(item.variant.sku, item.variant);
-                    }
-                }
-                for (const variant of uniqueVariants.values()) {
-                    try {
-                        await this.syncVariantToWms(variant);
-                    } catch (err: any) {
-                        this.logger.warn(`Dispatch job ${jobId}: variant sync failed for ${variant.sku} — ${err?.message}`);
-                    }
-                }
+            await this.dispatchQueue.add('dispatch-shop', jobData, {
+                jobId: jobData.jobId,
+                attempts: 5,
+                backoff: { type: 'exponential', delay: 2 * 60 * 1000 },
+                removeOnComplete: 100,
+                removeOnFail: 200,
+            });
 
-                await this.createInboundOrder({
-                    customerVoucherNo: inboundVoucherNo,
-                    shipperMethod: dto.shipperMethod,
-                    shipperCompany: dto.shipperCompany,
-                    boxList: [{
-                        boxNo: `BOX-${inboundVoucherNo.slice(0, 8).toUpperCase()}`,
-                        serialNumber: 1,
-                        length: maxLength || 1,
-                        width: maxWidth || 1,
-                        height: maxHeight || 1,
-                        weight: totalWeight || 1,
-                        productList,
-                    }],
-                });
-
-                await this.wmsOrderRepository.update(
-                    { orderNo: inboundVoucherNo, type: JopWmsOrderType.INBOUND },
-                    { sourceOrderUuids: orderUuids.join(',') },
-                );
-
-                this.logger.log(`Dispatch job ${jobId}: inbound ${inboundVoucherNo} created for shop ${shopId} covering ${orderUuids.length} order(s)`);
-            } catch (err: any) {
-                this.logger.error(`Dispatch job ${jobId}: WMS inbound failed for shop ${shopId} — ${err?.message}`);
-            }
+            this.logger.log(`Dispatch ${dispatchJobId}: enqueued shop ${shopId} (${orderUuids.length} order(s))`);
         }
 
-        this.logger.log(`Dispatch job ${jobId} complete`);
+        this.logger.log(`Dispatch ${dispatchJobId}: ${shopGroups.size} shop job(s) queued`);
+        return { jobId: dispatchJobId };
     }
 
     async createOutboundsForInbound(wmsOrder: JopWmsOrder): Promise<void> {
@@ -514,6 +450,15 @@ export class JopWmsService {
             }
 
             const customerVoucherNo = `${order.uuid}-out`;
+
+            const existingOutbound = await this.wmsOrderRepository.findOne({
+                where: { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },
+            });
+            if (existingOutbound) {
+                this.logger.log(`Outbound ${customerVoucherNo} already tracked (status: ${existingOutbound.status}) — skipping`);
+                continue;
+            }
+
             const addr = order.shippingAddress;
 
             try {
