@@ -55,7 +55,7 @@ export class Category {
 	pricingFactor: number;
 
 	@Column({ type: "numeric", default: 0, })
-	discountFactor: number;
+	discountPercentage: number;
 
 	@Field({ nullable: true, })
 	@Column({ type: "varchar", length: 256, nullable: true, })

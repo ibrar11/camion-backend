@@ -37,7 +37,7 @@ export class UpdateCategoryDto {
 	@IsNumber()
 	@Min(1)
 	@Max(10)
-	discountFactor: number;
+	discountPercentage: number;
 
 	@IsBoolean()
 	isFeatured: boolean;

@@ -78,7 +78,7 @@ export class CategoriesService {
 		category.nameEn = body.name.en.trim();
 		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
-		category.discountFactor = body.discountFactor;
+		category.discountPercentage = body.discountPercentage;
 		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
@@ -272,7 +272,7 @@ export class CategoriesService {
 		category.nameEn = body.name.en.trim();
 		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
-		category.discountFactor = body.discountFactor;
+		category.discountPercentage = body.discountPercentage;
 		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
