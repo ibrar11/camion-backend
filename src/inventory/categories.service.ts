@@ -75,8 +75,8 @@ export class CategoriesService {
 		category.uuid = crypto.randomUUID();
 		category.parent = parentCategory;
 		category.slug = generateSlug(body.slug);
-		category.nameEn = body.name.en.trim().toLowerCase();
-		category.nameAr = body.name.ar.trim().toLowerCase();
+		category.nameEn = body.name.en.trim();
+		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
 		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
@@ -238,8 +238,8 @@ export class CategoriesService {
 
 		// Update the category
 		category.slug = generateSlug(body.slug);
-		category.nameEn = body.name.en.trim().toLowerCase();
-		category.nameAr = body.name.ar.trim().toLowerCase();
+		category.nameEn = body.name.en.trim();
+		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
 		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
