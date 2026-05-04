@@ -14,8 +14,8 @@ export const getSkipAndTake = (pageNumber: number, itemsPerPage: number): { skip
 		pageNumber = 1;
 	}
 
-	if (itemsPerPage > 10) {
-		itemsPerPage = 10;
+	if (itemsPerPage > 24) {
+		itemsPerPage = 24;
 	}
 
 	return {
