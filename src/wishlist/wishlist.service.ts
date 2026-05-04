@@ -93,7 +93,15 @@ export class WishlistService {
         wishlistItem.customer = customer;
         wishlistItem.product = product;
         wishlistItem.variant = variant;
-        return this.wishlistRepository.save(wishlistItem);
+        const wishedItem = await this.wishlistRepository.save(wishlistItem);
+
+        await this.productRepository.increment(
+            { id: product.id },
+            'likesCount',
+            1
+        );
+
+        return wishedItem;
     }
 
     /**
