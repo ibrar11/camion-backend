@@ -92,6 +92,14 @@ export class Order {
     })
     updatedAt: Date;
 
+    // <!--
+    // This field is not part of the schema. Please don't add it to the database.
+
+    @Field(() => Date, { name: "orderPlacementDate" })
+    orderPlacementDate: Date;
+
+    // -->
+
     @Exclude()
     @CreateDateColumn({
         name: "created_at",

@@ -50,6 +50,7 @@ import { Order } from '../order/entities/order.entity';
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
 import { QueueService } from 'src/queue/queue.service';
+import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 
 
 @Injectable()
@@ -244,7 +245,7 @@ export class ProcurementService {
                 const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
                 const shippingInfo = product.productShippingInfo.skuShippingDetails.find((detail: any) => detail.skuId === sku.skuId.toString());
 
-                const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0] ?? null;
+                const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
                 return {
                     title: title,
@@ -405,7 +406,7 @@ export class ProcurementService {
                             // The product is imported as active now.
                             // const product = await this.productService.updateProductStatus(productCreated.uuid, { status: ProductStatus.ACTIVE, });
 
-                            const optionValuesUuids: string[] = []
+                            const optionValueMap = new Map<string, string>();
 
                             // 3. create product option and product option values for product
                             if (productDetails.options?.length) {
@@ -446,7 +447,7 @@ export class ProcurementService {
                                                             createdOption.uuid,
                                                             optionValuePayload
                                                         );
-                                                        optionValuesUuids.push(optionValue.uuid)
+                                                        optionValueMap.set(optionValue.valueEn, optionValue.uuid);
                                                     } catch (error: any) {
                                                         this.logger.error(`Option value creation failed for product ${product.uuid}: ${error?.message}`);
                                                     }
@@ -470,6 +471,10 @@ export class ProcurementService {
                                     await Promise.all(
                                         batch.map(async (variant) => {
                                             try {
+                                                const optionValuesUuids = variant.attributes
+                                                    .map(attr => optionValueMap.get(attr.value))
+                                                    .filter((uuid): uuid is string => Boolean(uuid));
+
                                                 const dto: CreateProductVariantDto = {
                                                     warehouse: warehouse,
                                                     title: {
@@ -533,10 +538,10 @@ export class ProcurementService {
             }
 
             if (importedProductUuids.length) {
-                await this.queueService.addImportedProductsTranslationJob(
-                    importedProductUuids,
-                    1,
-                );
+                // await this.queueService.addImportedProductsTranslationJob(
+                //     importedProductUuids,
+                //     1,
+                // );
             }
 
             return results;
@@ -640,7 +645,7 @@ export class ProcurementService {
                         }
 
                         this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
-                        
+
                         const orderId = data?.data?.order_id ?? data?.data?.orderId ?? data?.data?.id;
                         await this.markGulltransOrderCreated(dto.orderUuid, orderId);
 

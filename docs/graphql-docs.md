@@ -2614,6 +2614,18 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                     isFeatured
                     position
                 }
+                optionValues{
+                    optionValue{
+                        uuid
+                        value(language: $language)
+                        position
+                        option {
+                            uuid
+                            name(language: $language)
+                            position
+                        }
+                    }
+                }
             }
         }
     }
@@ -2721,6 +2733,32 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                                 "position": 0
                             }
                         ]
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "9106ada0-6e4c-4310-b4ed-a2350494a8cd",
+                                    "value": "White 2151 short sleeves-100% cotton",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "8d37acb5-3cf0-4854-846a-ee35ff57916a",
+                                        "name": "Color",
+                                        "position": 1
+                                    }
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "767b2e2a-4ab2-4ca9-85e3-d0845a2b503c",
+                                    "value": "S [recommendation 45-57.5kg ]",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "5a4ea9b6-4e15-4fad-8205-e02a11af355b",
+                                        "name": "Size",
+                                        "position": 2
+                                    }
+                                }
+                            }
+                        ]
                     }
                 }
             ]
@@ -2787,6 +2825,18 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                     alt
                     isFeatured
                     position
+                }
+                optionValues{
+                    optionValue{
+                        uuid
+                        value(language: $language)
+                        position
+                        option {
+                            uuid
+                            name(language: $language)
+                            position
+                        }
+                    }
                 }
             }
         }
@@ -2879,6 +2929,32 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                                 "alt": "",
                                 "isFeatured": false,
                                 "position": 0
+                            }
+                        ]
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "9106ada0-6e4c-4310-b4ed-a2350494a8cd",
+                                    "value": "White 2151 short sleeves-100% cotton",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "8d37acb5-3cf0-4854-846a-ee35ff57916a",
+                                        "name": "Color",
+                                        "position": 1
+                                    }
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "767b2e2a-4ab2-4ca9-85e3-d0845a2b503c",
+                                    "value": "S [recommendation 45-57.5kg ]",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "5a4ea9b6-4e15-4fad-8205-e02a11af355b",
+                                        "name": "Size",
+                                        "position": 2
+                                    }
+                                }
                             }
                         ]
                     }
