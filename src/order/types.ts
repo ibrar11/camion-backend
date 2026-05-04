@@ -25,7 +25,7 @@ export class OrderPreviewResponse {
     @Field()
     discount: number;
 
-    shipping: ShippingCalculationResult;
+    shipping: ShippingCalculationResult | null;
 
     @Field()
     shippingTotal: number;
