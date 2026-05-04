@@ -44,7 +44,7 @@ export class ProcurementController {
         @Query("sort") sort: string,
         @Query("priceStart") priceStart: string,
         @Query("priceEnd") priceEnd: string,
-    ): Promise<Array<SearchProducts>> {
+    ): Promise<SearchProducts> {
         return this.procurementService.searchProduct(keyword, pageNumber, itemsPerPage, sort, priceStart, priceEnd);
     }
 
