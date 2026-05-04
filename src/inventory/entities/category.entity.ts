@@ -51,8 +51,11 @@ export class Category {
 	@Column({ type: "varchar", length: 32, })
 	nameAr: string;
 
-	@Column({ type: "numeric" })
+	@Column({ type: "numeric", default: 1, })
 	pricingFactor: number;
+
+	@Column({ type: "numeric", default: 0, })
+	discountFactor: number;
 
 	@Field({ nullable: true, })
 	@Column({ type: "varchar", length: 256, nullable: true, })

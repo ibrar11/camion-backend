@@ -78,6 +78,7 @@ export class CategoriesService {
 		category.nameEn = body.name.en.trim();
 		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
+		category.discountFactor = body.discountFactor;
 		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
@@ -154,6 +155,39 @@ export class CategoriesService {
 	}
 
 	/**
+	 * Finds a list of product categories uncached
+	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	findAllUncached(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Category>> {
+		this.logger.log(`Retrieving product categories uncached`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.categoryRepository.find({
+			relationLoadStrategy: "query",
+			where: {
+				parentId: IsNull(),
+			},
+			relations: {
+				children: {
+					children: true,
+				},
+			},
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
 	 * Returns the featured categories
 	 *
 	 * @param pageNumber
@@ -169,9 +203,6 @@ export class CategoriesService {
 		return this.categoryRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
-			// where: {
-			// 	isFeatured: true,
-			// },
 			where: {
 				isFeatured: true,
 			},
@@ -241,6 +272,7 @@ export class CategoriesService {
 		category.nameEn = body.name.en.trim();
 		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
+		category.discountFactor = body.discountFactor;
 		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
