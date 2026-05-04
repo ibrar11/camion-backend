@@ -325,7 +325,7 @@ export class AffiliatesService {
 
 		// Find the affiliate
 		const affiliate = await this.affiliateRepository.findOne({
-			cache: true,
+			// cache: true,
 			relationLoadStrategy: "query",
 			where: {
 				customer: {
