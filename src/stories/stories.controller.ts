@@ -12,6 +12,7 @@ import {
 	Post,
 	Put,
 	Query,
+	Req,
 	UploadedFile,
 	UseGuards,
 	UseInterceptors,
@@ -24,6 +25,8 @@ import { UpdateStoryDto } from './dtos/UpdateStoryDto';
 import { UpdateFrameDto } from './dtos/UpdateFrameDto';
 
 import { UserRole } from '../users/enums/UserRole';
+
+import { User } from "../users/entities/user.entity";
 
 import { Story } from './entities/story.entity';
 import { StoryFrame } from './entities/story-frame.entity';
@@ -50,11 +53,18 @@ export class StoriesController {
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetStories(
+		@Req()
+		req: Request & {
+			user: User,
+		},
 		@Query("filters") filters: string,
 		@Query("sort") sort: string,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Story>> {
+		if (req.user) {
+			return this.storiesService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
+		}
 		return this.storiesService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
