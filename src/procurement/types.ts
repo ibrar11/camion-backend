@@ -59,7 +59,7 @@ export interface SkuAttribute {
     skuImageUrl?: string;
 }
 
-export interface SearchProducts {
+export interface SearchProduct {
     externalId: number;
     title: string;
     price: number;
@@ -78,6 +78,16 @@ export interface SearchProducts {
     };
     createdAt: string;
     updatedAt: string;
+}
+
+export interface SearchProducts {
+    data: Array<SearchProduct>;
+    pagination: {
+        totalProducts: number;
+        totalPage: number;
+        page_size: number;
+        currentPage: number;
+    }
 }
 
 export interface ProductVariant {

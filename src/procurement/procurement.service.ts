@@ -39,6 +39,7 @@ import {
     importedProduct,
     CreateOrderResponse,
     BulkCreateOrderResponse,
+    SearchProduct,
 } from './types';
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
@@ -85,7 +86,7 @@ export class ProcurementService {
         sort: string,
         priceStart: string = '',
         priceEnd: string = ''
-    ): Promise<Array<SearchProducts>> {
+    ): Promise<SearchProducts> {
         try {
             if (Number(pageSize) > 50) {
                 throw new BadRequestException({
@@ -126,8 +127,14 @@ export class ProcurementService {
 
             const products: SearchProductItem[] = data?.data?.data || [];
 
+            const totalProducts = data?.data?.totalRecords;
+            const page_size = data?.data?.pageSize;
+            const currentPage = data?.data?.currentPage;
+            const excludeLastPage = (totalProducts % page_size) === 0;
+            const totalPage = excludeLastPage ? data?.data?.totalPage - 1 : data?.data?.totalPage;
+
             // Format the products
-            const formattedProducts = products?.map((item) => ({
+            const formattedProducts: Array<SearchProduct> = products?.map((item) => ({
                 externalId: item.offerId,
                 title: (item.subjectTrans || item.subject).slice(0, 128),
                 price: parseFloat(
@@ -149,10 +156,18 @@ export class ProcurementService {
                     level3: item.thirdCategoryId,
                 },
                 createdAt: item.createDate,
-                updatedAt: item.modifyDate,
+                updatedAt: item.modifyDate
             }));
 
-            return formattedProducts;
+            return {
+                data: formattedProducts,
+                pagination: {
+                    totalProducts: totalProducts,
+                    totalPage: totalPage,
+                    page_size: page_size,
+                    currentPage: currentPage,
+                }
+            };
         } catch (error: any) {
             this.logger.error(`Error fetching products: ${error?.message}`);
             throw new InternalServerErrorException({
