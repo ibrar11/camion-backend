@@ -2,7 +2,11 @@ import * as path from "node:path";
 import * as os from "node:os";
 import * as crypto from "node:crypto";
 
+import { ffmpegPath, ffprobePath } from "ffmpeg-ffprobe-static";
+
 import ffmpeg from "@ts-ffmpeg/fluent-ffmpeg";
+ffmpeg.setFfmpegPath(ffmpegPath as string);
+ffmpeg.setFfprobePath(ffprobePath as string);
 
 import { Injectable } from "@nestjs/common";
 
