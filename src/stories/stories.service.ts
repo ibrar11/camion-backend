@@ -1,5 +1,4 @@
 import * as crypto from "node:crypto";
-import * as fs from "node:fs";
 
 import {
 	BadRequestException,
@@ -12,8 +11,6 @@ import {
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { S3Service } from "../common/s3.service";
 import { ImageThumbnailService } from "../common/image-thumbnail.service";
@@ -42,7 +39,6 @@ export class StoriesService {
 		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(Story) private readonly storyRepository: Repository<Story>,
 		@InjectRepository(StoryFrame) private readonly frameRepository: Repository<StoryFrame>,
-		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 	) { }
 
 	/**
@@ -71,7 +67,7 @@ export class StoriesService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Story>> {
+	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Story>> {
 		this.logger.log(`Retrieving stories`);
 
 		// Get pagination params
@@ -79,6 +75,34 @@ export class StoriesService {
 
 		return this.storyRepository.find({
 			cache: true,
+			relationLoadStrategy: "query",
+			relations: {
+				frames: true,
+			},
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Retrives a list of stories
+	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	findAllUncached(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Story>> {
+		this.logger.log(`Retrieving stories`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.storyRepository.find({
 			relationLoadStrategy: "query",
 			relations: {
 				frames: true,
