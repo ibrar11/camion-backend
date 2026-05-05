@@ -44,14 +44,31 @@ export class ProductOptionService {
 			});
 		}
 
-		// Create the product option
-		const productOption = new ProductOption();
-		productOption.uuid = crypto.randomUUID();
-		productOption.product = product;
+		let productOption = await this.productOptionRepository.findOne({
+			where: {
+				product: { uuid: productUUID },
+				nameEn: body.name.en.trim(),
+			},
+			relations: ["product"],
+		});
+
+		// UPDATE
+		if (productOption) {
+			this.logger.log(`Updating existing option: ${body.name.en}`);
+		} else {
+			// CREATE
+			this.logger.log(`Creating new option: ${body.name.en}`);
+			productOption = new ProductOption();
+			productOption.uuid = crypto.randomUUID();
+			productOption.product = product;
+		}
+
+		// Common fields
 		productOption.nameEn = body.name.en.trim();
 		productOption.nameAr = body.name.ar.trim();
 		productOption.position = body.position;
-		return this.productOptionRepository.save(productOption);
+
+		return await this.productOptionRepository.save(productOption);
 	}
 
 	/**

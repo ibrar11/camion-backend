@@ -464,12 +464,12 @@ export class ProcurementService {
                                                         );
                                                         optionValueMap.set(optionValue.valueEn, optionValue.uuid);
                                                     } catch (error: any) {
-                                                        this.logger.error(`Option value creation failed for product ${product.uuid}: ${error?.message}`);
+                                                        this.logger.error(`Option value creation failed for product ${product.uuid}: ${error}`);
                                                     }
                                                 }
 
                                             } catch (error: any) {
-                                                this.logger.error(`Option creation failed for product ${product.uuid}: ${error?.message}`,);
+                                                this.logger.error(`Option creation failed for product ${product.uuid}: ${error}`,);
                                             }
                                         }),
                                     );
@@ -541,7 +541,7 @@ export class ProcurementService {
                             });
 
                         } catch (error: any) {
-                            this.logger.error(`Failed importing product ${id}: ${error?.message}`);
+                            this.logger.error(`Failed importing product ${id}: ${error}`);
 
                             results.failed.push({
                                 id,
