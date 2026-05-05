@@ -220,7 +220,7 @@ export class OrderService {
                 (await this.keyValuePairRepository.findOne({
                     where: { name: "free_shipping_above" }
                 }))?.integerValue
-            ) || null;
+            ) || 0;
 
             // Decide if we should charge shipping
             const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
@@ -694,7 +694,7 @@ export class OrderService {
                 (await this.keyValuePairRepository.findOne({
                     where: { name: "free_shipping_above" }
                 }))?.integerValue
-            ) || null;
+            ) || 0;
 
             // Decide if we should charge shipping
             const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
