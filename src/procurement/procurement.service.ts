@@ -480,6 +480,11 @@ export class ProcurementService {
                             if (productDetails.variants?.length) {
                                 const VARIANT_BATCH_SIZE = 5;
                                 const warehouse = dto.warehouseUUID;
+                                const hasVariantImages = productDetails.variants.some(v => !!v.image);
+
+                                let firstVariantId: string | null = null;
+                                let fallbackImagesAssigned = false;
+
                                 for (let i = 0; i < productDetails.variants.length; i += VARIANT_BATCH_SIZE) {
                                     const batch = productDetails.variants.slice(i, i + VARIANT_BATCH_SIZE);
 
@@ -523,9 +528,33 @@ export class ProcurementService {
                                                     dto,
                                                 );
 
-                                                const imageFile = await fetchImageAsFile(variant.image || '')
+                                                if (!firstVariantId) {
+                                                    firstVariantId = createdVariant.uuid;
+                                                }
 
-                                                await this.variantImageService.createProductVariantImage(createdVariant.uuid, imageFile);
+                                                // Variant already has its own image
+                                                if (variant.image) {
+                                                    const imageFile = await fetchImageAsFile(variant.image);
+                                                    await this.variantImageService.createProductVariantImage(
+                                                        createdVariant.uuid,
+                                                        imageFile,
+                                                    );
+                                                    return;
+                                                }
+
+                                                //  No variant images exist → use featured images ONLY ONCE
+                                                if (!hasVariantImages && !fallbackImagesAssigned && firstVariantId === createdVariant.uuid) {
+                                                    if (Array.isArray(productDetails.images)) {
+                                                        for (const img of productDetails.images) {
+                                                            const imageFile = await fetchImageAsFile(img);
+                                                            await this.variantImageService.createProductVariantImage(
+                                                                createdVariant.uuid,
+                                                                imageFile,
+                                                            );
+                                                        }
+                                                    }
+                                                    fallbackImagesAssigned = true;
+                                                }
 
                                             } catch (error: any) {
                                                 this.logger.error(`Variant creation failed for product ${product.uuid}: ${error?.message}`, error);
