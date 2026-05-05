@@ -13,11 +13,29 @@ export enum JopWmsOrderType {
     RETURN = 'return',
 }
 
-// Terminal statuses per order type (JOP API returns numeric codes as strings after String() cast)
-// Inbound:  14=Stored, 15=Warehouse closed, 16=Deleted
-// Outbound: 14=Shipped, 15=Invalidated
-// Return:   40=Shelved
-export const JOP_WMS_TERMINAL_STATUSES = ['14', '15', '16', '40'] as const;
+// JOP API returns numeric status codes as strings after String() cast
+export const JopWmsInboundStatus = {
+    STORED: '14',           // Goods fully received and shelved
+    WAREHOUSE_CLOSED: '15', // Warehouse session closed
+    DELETED: '16',          // Order deleted
+} as const;
+
+export const JopWmsOutboundStatus = {
+    SHIPPED: '14',          // Order shipped to customer
+    INVALIDATED: '15',      // Order invalidated
+} as const;
+
+export const JopWmsReturnStatus = {
+    SHELVED: '40',          // Return goods shelved
+} as const;
+
+export const JOP_WMS_TERMINAL_STATUSES = [
+    JopWmsInboundStatus.STORED,
+    JopWmsInboundStatus.WAREHOUSE_CLOSED,
+    JopWmsInboundStatus.DELETED,
+    JopWmsOutboundStatus.INVALIDATED,
+    JopWmsReturnStatus.SHELVED,
+] as const;
 
 @Entity({ name: 'jop_wms_orders' })
 export class JopWmsOrder {
