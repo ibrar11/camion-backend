@@ -264,16 +264,16 @@ export class ProductsService {
 	async searchProducts(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Searching for products, query: ${query}, language: ${language}`);
 
-		// Language to column name mapping
-		const columnMap: Record<string, string> = {
-			"en": "titleEn",
-			"ar": "titleAr",
+		// Language to title column name mapping
+		const titleColumnMap: Record<string, string> = {
+			"en": "product.titleEn",
+			"ar": "product.titleAr",
 		};
 
-		// Language to search query mapping
-		const queryMap: Record<string, string> = {
-			"en": "product.titleEn ILIKE :query OR product.descriptionEn ILIKE :query",
-			"ar": "product.titleAr ILIKE :query OR product.descriptionAr ILIKE :query",
+		// Language to description column name mapping
+		const descriptionColumnMap: Record<string, string> = {
+			"en": "product.descriptionEn",
+			"ar": "product.descriptionAr",
 		};
 
 		// Normalize the short code
@@ -291,6 +291,7 @@ export class ProductsService {
 		switch (sort) {
 			case ProductSort.BestMatch:
 				products = await this.productRepository.createQueryBuilder("product")
+					.cache(true)
 					.setFindOptions({
 						relationLoadStrategy: "query",
 					})
@@ -304,7 +305,7 @@ export class ProductsService {
 					.leftJoinAndSelect("variants.images", "images")
 
 					// Filter by product text column
-					.where(`product.${columnMap[language]} ILIKE :query`, { query: `%${query}%` })
+					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
 
 					// Filter active products
 					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
@@ -314,6 +315,7 @@ export class ProductsService {
 					.skip(skip)
 					.take(take)
 					.getMany();
+				break;
 
 			case ProductSort.PriceLowToHigh:
 				// Subquery to sort variants of a product by minimum price
@@ -338,7 +340,10 @@ export class ProductsService {
 					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Search Filter
-					.where(queryMap[language], { query: `%${query}%`, })
+					// Filter by product text column
+					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+
+					// Filter active products
 					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
 
 					// Add the subquery result as a virtual column for sorting
@@ -349,6 +354,7 @@ export class ProductsService {
 					.take(take)
 					.skip(skip)
 					.getMany();
+				break;
 
 			case ProductSort.PriceHighToLow:
 				const mostExpensiveVariantQuery = this.productRepository
@@ -372,7 +378,10 @@ export class ProductsService {
 					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Search Filter
-					.where(queryMap[language], { query: `%${query}%`, })
+					// Filter by product text column
+					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+
+					// Filter active products
 					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
 
 					// Add the subquery result as a virtual column for sorting
@@ -383,6 +392,7 @@ export class ProductsService {
 					.take(take)
 					.skip(skip)
 					.getMany();
+				break;
 
 			default: // do nothing
 				break;
