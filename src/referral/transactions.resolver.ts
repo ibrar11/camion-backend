@@ -4,7 +4,9 @@ import {
 	Context,
 	Field,
 	Int,
+	Parent,
 	Query,
+	ResolveField,
 	Resolver,
 } from "@nestjs/graphql";
 
@@ -32,6 +34,11 @@ export class GetCurrentWalletTransactionsArgs {
 @Resolver(() => Transaction)
 export class TransactionsResolver {
 	constructor(@Inject(TransactionsService) private readonly transactionsService: TransactionsService) { }
+
+	@ResolveField("createdAt", () => String)
+	getCreatedAt(@Parent() transaction: Transaction): String {
+		return new String(transaction.createdAt);
+	}
 
 	@Query(() => [Transaction])
 	async getCurrentAffiliateWalletTransactions(@Context() context, @Args() args: GetCurrentWalletTransactionsArgs): Promise<Array<Transaction>> {
