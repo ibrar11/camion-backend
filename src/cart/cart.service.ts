@@ -303,6 +303,49 @@ export class CartItemsService {
         // Calculate the price of the product/variant
         const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
 
+        //Check if a cart item with the target variant already exists
+        const existingItem = await this.cartRepository.findOne({
+            where: {
+                customer: { id: customer.id },
+                product: { uuid: body.productUuid },
+                variant: { uuid: body.variantUuid }
+            },
+            relations: {
+                product: {
+                    productCategories: {
+                        category: true,
+                    },
+                },
+                variant: {
+                    inventoryItem: {
+                        levels: true,
+                    },
+                },
+                customer: true,
+            },
+        })
+
+        // merge the dupliate variant and remove the old one
+        if (existingItem && existingItem.uuid !== cartItem.uuid) {
+
+            const mergedQuantity = existingItem.quantity + body.quantity;
+
+            if (availableStock < mergedQuantity) {
+                throw new BadRequestException('Insufficient stock after merge');
+            }
+
+            existingItem.product.variants = [];
+            existingItem.quantity = mergedQuantity;
+            existingItem.subTotal = {
+                amount: price.amount * mergedQuantity,
+                currencyCode: body.currency,
+            };
+
+            await this.cartRepository.remove(cartItem);
+            return this.cartRepository.save(existingItem);
+
+        }
+
         // Update the cart item
         cartItem.product.variants = [];
         cartItem.quantity = body.quantity;
