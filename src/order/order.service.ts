@@ -214,8 +214,6 @@ export class OrderService {
             // shipping and discount needs to be updated after the implementation of shippping and discounts
             let shippingCost = 0;
             let eta = "";
-            // Config
-            const freeShippingEnabled = String(this.configService.get("FREE_SHIPPING_ENABLED")).toLowerCase() === "true";
 
             // Fetch free shipping threshold once
             const freeShippingValue = Number(
@@ -225,7 +223,7 @@ export class OrderService {
             ) || null;
 
             // Decide if we should charge shipping
-            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
             
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
@@ -691,9 +689,6 @@ export class OrderService {
             let eta = "";
             let shippingCalculation: ShippingCalculationResult | null = null;
 
-            // Config
-            const freeShippingEnabled = String(this.configService.get("FREE_SHIPPING_ENABLED")).toLowerCase() === "true";
-
             // Fetch free shipping threshold once
             const freeShippingValue = Number(
                 (await this.keyValuePairRepository.findOne({
@@ -702,7 +697,7 @@ export class OrderService {
             ) || null;
 
             // Decide if we should charge shipping
-            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
