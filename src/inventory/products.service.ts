@@ -46,27 +46,29 @@ export class ProductsService {
 	async createProduct(body: CreateProductDto): Promise<Product> {
 		this.logger.log(`Attempting to create product: ${body.title.en}`);
 
-		// Check if a product already exists by the same slug
-		if (body.slug !== null) {
-			const productBySlug = await this.productRepository.findOne({
+		let product: Product | null = null;
+
+		// Check if a product already exists by the same procurement id
+		if (body.procurementId !== null) {
+			product = await this.productRepository.findOne({
 				relationLoadStrategy: "query",
 				where: {
-					slug: body.slug.trim().toLowerCase(),
+					procurementId: body.procurementId,
 				},
 			});
-
-			// Make sure we don't create another product with the same slug
-			if (productBySlug !== null) {
-				throw new BadRequestException({
-					errors: {
-						slug: "A product using the same slug already exists. Please use a different slug.",
-					},
-				});
-			}
 		}
 
-		const product = new Product();
-		product.uuid = crypto.randomUUID();
+		if (product) {
+			this.logger.log(`Updating existing product with procurement id: ${body.procurementId}`);
+		} else {
+			// CREATE new product
+			this.logger.log(`Creating new product: ${body.title.en}`);
+			product = new Product();
+			product.uuid = crypto.randomUUID();
+			product.status = ProductStatus.ACTIVE;
+			product.publishedAt = new Date();
+		}
+
 		product.slug = generateSlug(body.slug);
 		product.titleEn = body.title.en.trim();
 		product.titleAr = body.title.ar.trim();
@@ -76,29 +78,33 @@ export class ProductsService {
 		product.descriptionAr = body.description.ar.trim();
 		product.descriptionHtmlEn = body.descriptionHtml.en.trim();
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
-		product.status = ProductStatus.ACTIVE;
-		product.publishedAt = new Date();
 		product.shopId = body.shopId ?? null;
 		product.shopName = body.shopName ?? null;
 		product.procurementId = body.procurementId ?? null;
+
 		await this.productRepository.save(product);
 
 		// Find the categories and create product categories.
 		// This is to join the categories to its associated product.
 		if (body.categories !== null && Array.isArray(body.categories)) {
-			body.categories
-				.filter((categoryUUID, index) => body.categories.indexOf(categoryUUID) === index)
-				.forEach(async categoryUUID => {
-					const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
-					if (category === null) {
-						return;
-					}
+			// Remove old relations if updating
+			await this.productCategoryRepository.delete({
+				product: { id: product.id },
+			});
 
-					const productCategory = new ProductCategory();
-					productCategory.product = product;
-					productCategory.category = category;
-					await this.productCategoryRepository.save(productCategory);
-				});
+			const uniqueCategories = [...new Set(body.categories)];
+
+			for (const categoryUUID of uniqueCategories) {
+				const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID });
+
+				if (!category) continue;
+
+				const productCategory = new ProductCategory();
+				productCategory.product = product;
+				productCategory.category = category;
+
+				await this.productCategoryRepository.save(productCategory);
+			}
 		}
 
 		return product;
