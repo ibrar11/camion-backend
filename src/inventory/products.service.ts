@@ -203,6 +203,7 @@ export class ProductsService {
 			.where("category.id = :id", {
 				id: category.id,
 			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
 			.distinct(true)
 			.orderBy("product.id", "DESC")
 			.skip(skip)
@@ -236,6 +237,9 @@ export class ProductsService {
 				productCategories: {
 					category: true,
 				},
+			},
+			where: {
+				status: ProductStatus.ACTIVE,
 			},
 			order: {
 				id: "DESC",
@@ -286,26 +290,30 @@ export class ProductsService {
 
 		switch (sort) {
 			case ProductSort.BestMatch:
-				products = await this.productRepository.find({
-					cache: true,
-					relationLoadStrategy: "query",
-					where: {
-						[columnMap[language]]: ILike(`%${query}%`),
-					},
-					relations: {
-						variants: {
-							images: true,
-						},
-						productCategories: {
-							category: true,
-						},
-					},
-					order: {
-						id: "DESC",
-					},
-					skip: skip,
-					take: take,
-				});
+				products = await this.productRepository.createQueryBuilder("product")
+					.setFindOptions({
+						relationLoadStrategy: "query",
+					})
+
+					// Only join products that actually have categories
+					.innerJoin("product.productCategories", "productCategory")
+					.innerJoin("productCategory.category", "category")
+
+					// Join variants and images (still optional)
+					.leftJoinAndSelect("product.variants", "variants")
+					.leftJoinAndSelect("variants.images", "images")
+
+					// Filter by product text column
+					.where(`product.${columnMap[language]} ILIKE :query`, { query: `%${query}%` })
+
+					// Filter active products
+					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+
+					.distinct(true)
+					.orderBy("product.id", "DESC")
+					.skip(skip)
+					.take(take)
+					.getMany();
 
 			case ProductSort.PriceLowToHigh:
 				// Subquery to sort variants of a product by minimum price
@@ -331,6 +339,7 @@ export class ProductsService {
 
 					// Search Filter
 					.where(queryMap[language], { query: `%${query}%`, })
+					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
 
 					// Add the subquery result as a virtual column for sorting
 					.addSelect(`(${leastExpensiveVariantQuery})`, 'least_expensive_variant_price')
@@ -364,6 +373,7 @@ export class ProductsService {
 
 					// Search Filter
 					.where(queryMap[language], { query: `%${query}%`, })
+					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
 
 					// Add the subquery result as a virtual column for sorting
 					.addSelect(`(${mostExpensiveVariantQuery})`, 'most_expensive_variant_price')
@@ -398,6 +408,7 @@ export class ProductsService {
 			relationLoadStrategy: "query",
 			where: {
 				slug: slug.toLowerCase().trim(),
+				status: ProductStatus.ACTIVE,
 			},
 			relations: {
 				productCategories: {
@@ -437,6 +448,9 @@ export class ProductsService {
 				.andWhere('product.id != :productId', {
 					productId: product.id,
 				})
+				.andWhere("product.status = :status", {
+					status: ProductStatus.ACTIVE,
+				})
 				.distinct(true)
 				.skip(skip)
 				.take(take)
@@ -446,6 +460,9 @@ export class ProductsService {
 			products = await this.productRepository.find({
 				cache: true,
 				relationLoadStrategy: "query",
+				where: {
+					status: ProductStatus.ACTIVE,
+				},
 				relations: {
 					variants: {
 						images: true,
@@ -483,6 +500,9 @@ export class ProductsService {
 		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
+			where: {
+				status: ProductStatus.ACTIVE,
+			},
 			relations: {
 				variants: {
 					images: true,
@@ -519,6 +539,9 @@ export class ProductsService {
 		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
+			where: {
+				status: ProductStatus.ACTIVE,
+			},
 			relations: {
 				variants: {
 					images: true,
@@ -554,6 +577,7 @@ export class ProductsService {
 			relationLoadStrategy: "query",
 			where: {
 				slug: slug.toLowerCase().trim(),
+				status: ProductStatus.ACTIVE,
 			},
 			relations: {
 				productCategories: {
@@ -592,6 +616,9 @@ export class ProductsService {
 				})
 				.andWhere('product.id != :productId', {
 					productId: product.id,
+				})
+				.andWhere("product.status = :status", {
+					status: ProductStatus.ACTIVE,
 				})
 				.distinct(true)
 				.skip(skip)

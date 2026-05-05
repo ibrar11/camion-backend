@@ -173,12 +173,12 @@ import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 				database: configService.get<string>("DB_DATABASE"),
 				synchronize: true,
 				namingStrategy: new SnakeNamingStrategy(),
-				// logging: true,
-				cache: {
-					type: "ioredis",
-					options: configService.get<string>("REDIS_URI"),
-					duration: 500000,
-				},
+				logging: true,
+				// cache: {
+				// 	type: "ioredis",
+				// 	options: configService.get<string>("REDIS_URI"),
+				// 	duration: 500000,
+				// },
 				keepConnectionAlive: true,
 				extra: {
 					max: 20,

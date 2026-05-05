@@ -71,7 +71,7 @@ type Category {
 
 type Coupon {
   code: String!
-  createdAt: DateTime!
+  createdAt: String!
   discountPercentage: Float!
   expiresAt: DateTime!
   ordersCount: Float!
@@ -141,14 +141,14 @@ type Money {
 
 type Notification {
   brief: String!
-  createdAt: DateTime!
+  createdAt: String!
   isRead: Boolean!
   message: String!
   payload: String!
   priority: String!
   title: String!
   type: String!
-  updatedAt: DateTime!
+  updatedAt: String!
   uuid: String!
 }
 
@@ -425,7 +425,7 @@ type TextElement {
 
 type Transaction {
   amount: TransactionMoney!
-  createdAt: DateTime!
+  createdAt: String!
   description: String!
   type: String!
   uuid: String!
