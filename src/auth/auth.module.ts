@@ -9,6 +9,8 @@ import { CustomerAuthController } from './customer-auth.controller';
 import { CustomerAuthResolver } from './customer-auth.resolver';
 import { EmailModule } from 'src/email/email.module';
 
+import { TwilioService } from 'src/common/twilio.service';
+
 import { User } from 'src/users/entities/user.entity';
 
 import { UsersModule } from 'src/users/users.module';
@@ -49,6 +51,7 @@ import { RolesGuard } from './roles.guard';
         UsersService,
         AuthGuard,
         RolesGuard,
+        TwilioService,
     ],
     controllers: [
         CustomerAuthController,

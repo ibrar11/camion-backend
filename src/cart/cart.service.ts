@@ -142,7 +142,7 @@ export class CartItemsService {
         cartItem.quantity = body.quantity;
         cartItem.subTotal = {
             amount: price.amount * body.quantity,
-            currencyCode: variant.cost.currencyCode
+            currencyCode: price.currencyCode,
         };
         return this.cartRepository.save(cartItem);
     }
@@ -164,7 +164,13 @@ export class CartItemsService {
 
         // Find the items in the customer cart
         const cartItems = await this.cartRepository.find({
-            where: { customer: { uuid: customer.uuid } },
+            // cache: true,
+            relationLoadStrategy: "query",
+            where: {
+                customer: {
+                    uuid: customer.uuid,
+                },
+            },
             relations: {
                 product: {
                     productCategories: {
@@ -220,6 +226,8 @@ export class CartItemsService {
         this.logger.log(`Retrieving the cart item count for customer: ${customer.uuid}`);
 
         return this.cartRepository.count({
+            // cache: true,
+            relationLoadStrategy: "query",
             where: {
                 customer: { uuid: customer.uuid },
             },

@@ -8,6 +8,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	JoinColumn,
 	ManyToOne,
 	OneToMany,
@@ -98,6 +99,7 @@ export class ProductVariant {
 	uuid: string;
 
 	@ManyToOne(() => Product, (product) => product.variants, { onDelete: "CASCADE", })
+	@Index()
 	product: Product;
 
 	@JoinColumn()
@@ -105,6 +107,7 @@ export class ProductVariant {
 
 	@OneToOne(() => InventoryItem, (item) => item.variant)
 	@JoinColumn()
+	@Index()
 	inventoryItem: InventoryItem;
 
 	@Field(() => String, { name: "title" })
@@ -157,6 +160,9 @@ export class ProductVariant {
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.variant, { cascade: true, })
 	cartItems: Array<CartItem>;
+
+	@Column({ type: 'jsonb', nullable: true, default: null })
+	skuMeta: Record<string, any> | null;
 
 	@OneToMany(() => OrderItem, (orderItem) => orderItem.variant)
 	orderItems: Array<OrderItem>;

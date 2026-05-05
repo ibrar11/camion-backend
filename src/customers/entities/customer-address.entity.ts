@@ -4,7 +4,9 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -12,6 +14,8 @@ import {
 import { Exclude } from "class-transformer";
 
 import { Customer } from "./customer.entity";
+
+import { Order } from "../../order/entities/order.entity";
 
 @ObjectType()
 @Entity({ name: "customer_addresses", })
@@ -25,6 +29,7 @@ export class CustomerAddress {
 	uuid: string;
 
 	@ManyToOne(() => Customer, (customer) => customer.addresses, { onDelete: "CASCADE", })
+	@Index()
 	customer: Customer;
 
 	@Field()
@@ -62,6 +67,9 @@ export class CustomerAddress {
 	@Field()
 	@Column({ type: "boolean", default: true, })
 	isDefault: boolean;
+
+	@OneToMany(() => Order, (order) => order.shippingAddress)
+	orders: Array<Order>;
 
 	@Exclude()
 	@UpdateDateColumn({

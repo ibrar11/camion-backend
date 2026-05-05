@@ -8,6 +8,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
@@ -37,14 +38,17 @@ export class CartItem {
 
     @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.cartItems, { onDelete: "CASCADE" })
+    @Index()
     customer: Customer;
 
     @Field(() => Product)
     @ManyToOne(() => Product, (product) => product.cartItems, { onDelete: "CASCADE", })
+    @Index()
     product: Product;
 
     @Field(() => ProductVariant)
     @ManyToOne(() => ProductVariant, (variant) => variant.cartItems, { onDelete: "CASCADE" })
+    @Index()
     variant: ProductVariant;
 
     @Field(() => Int)
@@ -54,10 +58,6 @@ export class CartItem {
     @Field(() => Money)
     @Column(() => Money)
     subTotal: Money;
-
-    @Field(() => Money)
-    @Column(() => Money)
-    discountedSubTotal: Money;
 
     // <!--
     // These fields are not part of the schema. Please don't add them to the database.

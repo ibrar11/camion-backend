@@ -45,9 +45,8 @@ export class OrderController {
     create(
         @GetCustomer() customer: Customer,
         @Body() dto: CreateOrderDto,
-        @Query("currency") currency: CurrencyCode,
     ): Promise<Order> {
-        return this.orderService.create(customer, dto, currency);
+        return this.orderService.create(customer, dto);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
@@ -72,8 +71,9 @@ export class OrderController {
     @Get('order-preview')
     orderPreview(
         @GetCustomer() customer: Customer,
+        @Query("couponCode") couponCode: string,
     ): Promise<OrderPreviewResponse> {
-        return this.orderService.orderPreview(customer)
+        return this.orderService.orderPreview(customer, couponCode)
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)

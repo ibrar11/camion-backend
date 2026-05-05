@@ -21,6 +21,7 @@ Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 cartItems | Yes | Array<String> |list of cart items to be ordered
 paymentMethod | Yes | String | The payment method selected by the customer (e.g., COD, CARD, default(skipcash will be used) etc.)
+currency | Yes | String | target currency code
 couponCode | No | String | coupon code to apply
 
 ### Request Body
@@ -30,6 +31,7 @@ couponCode | No | String | coupon code to apply
         "f7b2a1d0-5c91-4d3e-a2f1-123456789abc"
     ],
     "paymentMethod": "default",
+    "currency": "qar",
     "couponCode": "rvse23"
 }
 ```
@@ -41,19 +43,19 @@ couponCode | No | String | coupon code to apply
     "status": "payment_pending",
     "subTotal": {
         "amount": 688,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "shippingCost": {
         "amount": 321,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "discount": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "total": {
         "amount": 1009,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "eta": "6-10 working days",
     "orderItems": [
@@ -78,7 +80,7 @@ couponCode | No | String | coupon code to apply
                 "barcode": "5627530595058",
                 "price": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "weight": {
                     "amount": 16,
@@ -93,12 +95,12 @@ couponCode | No | String | coupon code to apply
             },
             "price": {
                 "amount": 688,
-                "currencyCode": "usd"
+                "currencyCode": "qar"
             },
             "quantity": 1,
             "total": {
                 "amount": 688,
-                "currencyCode": "usd"
+                "currencyCode": "qar"
             }
         }
     ]
@@ -192,6 +194,11 @@ Order Preview
 GET /v1/orders/order-preview HTTP/1.1
 ```
 
+### Query Parameters
+Name | Description | Default
+-----|-------------|--------
+couponCode | coupon code to apply customer promo. | ``
+
 ### Response Body
 ```json
 {
@@ -210,7 +217,7 @@ GET /v1/orders/order-preview HTTP/1.1
                 "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
                 "descriptionHtmlEn": "<b>Your new bike awaits. Make it yours</b>",
                 "descriptionHtmlAr": "<b>Your new bike awaits. Make it yours</b>",
-                "status": "ACTIVE"
+                "status": "active"
             },
             "variant": {
                 "uuid": "ed0286b4-3eb8-4a84-971a-fb49fd6bcfd1",
@@ -249,7 +256,7 @@ GET /v1/orders/order-preview HTTP/1.1
             "createdAt": "2026-04-15T07:16:09.379Z"
         }
     ],
-    "address": {
+    "shippingAddress": {
         "uuid": "91600fd1-52e9-4d1f-906f-cc560f11545f",
         "fullName": "Fahad Al-Saud",
         "phoneNumber": "+966 51 234 5678",
@@ -262,6 +269,7 @@ GET /v1/orders/order-preview HTTP/1.1
         "isDefault": true
     },
     "cart_total": 688,
+    "discount": 250,
     "shipping": {
         "shippingFee": {
             "amount": 209.4,
@@ -298,7 +306,8 @@ GET /v1/orders/order-preview HTTP/1.1
         "countryCode": "SA"
     },
     "shippingTotal": 321.3325,
-    "grand_total": 1009.3325
+    "grand_total": 1009.3325,
+    "eta": "6-10 working days",
 }
 ```
 

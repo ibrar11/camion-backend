@@ -29,4 +29,8 @@ export class UpdateBannerDto {
 	@IsString()
 	@MinLength(1)
 	placement: string;
+
+	@IsString()
+	@MinLength(1)
+	color: string;
 }

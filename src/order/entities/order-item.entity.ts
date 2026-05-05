@@ -4,6 +4,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn
@@ -35,19 +36,23 @@ export class OrderItem {
     uuid: string;
 
     @Field(() => Order)
-    @ManyToOne(() => Order, (order) => order.orderItems)
+    @ManyToOne(() => Order, (order) => order.orderItems, { onDelete: "CASCADE", })
+    @Index()
     order: Order;
 
     @Field(() => Product)
     @ManyToOne(() => Product, (product) => product.orderItems)
+    @Index()
     product: Product;
 
     @Field(() => ProductVariant)
     @ManyToOne(() => ProductVariant, (variant) => variant.orderItems)
+    @Index()
     variant: ProductVariant;
 
     @Exclude()
     @ManyToOne(() => Warehouse, (warehouse) => warehouse.orderItems)
+    @Index()
     warehouse: Warehouse;
 
     @Field(() => Money)

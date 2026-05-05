@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException,
 } from "@nestjs/common";
@@ -12,6 +13,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Repository } from "typeorm";
 
 import { S3Service } from "../common/s3.service";
+import { FileService } from "../common/file.service";
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
@@ -27,6 +29,7 @@ export class CategoriesService {
 
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 	) { }
 
@@ -72,9 +75,11 @@ export class CategoriesService {
 		category.uuid = crypto.randomUUID();
 		category.parent = parentCategory;
 		category.slug = generateSlug(body.slug);
-		category.nameEn = body.name.en.trim().toLowerCase();
-		category.nameAr = body.name.ar.trim().toLowerCase();
+		category.nameEn = body.name.en.trim();
+		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
+		category.discountPercentage = body.discountPercentage;
+		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
 
@@ -89,7 +94,18 @@ export class CategoriesService {
 		this.logger.log(`Attempting to upload a thumbnail for category: ${categoryUUID}`);
 
 		// Update the file to s3
-		const params = await this.s3Service.uploadFile("categories", file);
+		let params: { key: string; url: string; } | null = null;
+		try {
+			params = await this.s3Service.uploadFile("categories", file);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the category image. Please try again.",
+			});
+		}
+
+		// Delete the temporary file
+		await this.fileService.deleteFile(file);
 
 		// Find the category
 		const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
@@ -120,6 +136,8 @@ export class CategoriesService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.categoryRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				parentId: IsNull(),
 			},
@@ -127,6 +145,66 @@ export class CategoriesService {
 				children: {
 					children: true,
 				},
+			},
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Finds a list of product categories uncached
+	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	findAllUncached(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Category>> {
+		this.logger.log(`Retrieving product categories uncached`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.categoryRepository.find({
+			relationLoadStrategy: "query",
+			where: {
+				parentId: IsNull(),
+			},
+			relations: {
+				children: {
+					children: true,
+				},
+			},
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Returns the featured categories
+	 *
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	findAllFeatured(pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Category>> {
+		this.logger.log(`Retrieving product categories = featured`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.categoryRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
+			where: {
+				isFeatured: true,
 			},
 			order: {
 				id: "DESC",
@@ -191,9 +269,11 @@ export class CategoriesService {
 
 		// Update the category
 		category.slug = generateSlug(body.slug);
-		category.nameEn = body.name.en.trim().toLowerCase();
-		category.nameAr = body.name.ar.trim().toLowerCase();
+		category.nameEn = body.name.en.trim();
+		category.nameAr = body.name.ar.trim();
 		category.pricingFactor = body.pricingFactor;
+		category.discountPercentage = body.discountPercentage;
+		category.isFeatured = body.isFeatured;
 		return this.categoryRepository.save(category);
 	}
 

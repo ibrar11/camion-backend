@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import * as sgMail from "@sendgrid/mail";
+import sgMail from "@sendgrid/mail";
 
 // ─── Per-template data shapes ────────────────────────────────────────────────
 // Each interface maps 1-to-1 with the {{variable}} placeholders defined in the
@@ -44,8 +44,8 @@ interface OrderCancelledTemplateData {
 export class EmailService {
 	private readonly logger = new Logger(EmailService.name);
 	private readonly emailEnabled: boolean;
+	private readonly isLocal: boolean;
 	private readonly from: string;
-	private readonly devMagicCode: string | null;
 
 	// SendGrid dynamic template IDs — set these in your .env
 	private readonly templateIds: Record<string, string>;
@@ -54,12 +54,8 @@ export class EmailService {
 		this.emailEnabled =
 			this.configService.get<string>("EMAIL_ENABLED") === "true";
 
+		this.isLocal = this.configService.get<string>("NODE_ENV") === "local";
 		this.from = this.configService.get<string>("EMAIL_FROM") as string;
-
-		const isDev = this.configService.get<string>("NODE_ENV") === "local";
-		this.devMagicCode = isDev
-			? (this.configService.get<string>("DEV_OTP_CODE") ?? "123456")
-			: null;
 
 		this.templateIds = {
 			otp: this.configService.get<string>("SENDGRID_TEMPLATE_OTP") as string,
@@ -84,14 +80,18 @@ export class EmailService {
 			sgMail.setApiKey(
 				this.configService.get<string>("SENDGRID_API_KEY") as string,
 			);
+			this.logger.log(`SendGrid initialised — from: ${this.from}, OTP template: ${this.templateIds.otp || '(not set)'}`);
+		} else {
+			this.logger.warn(`Email is disabled (EMAIL_ENABLED != "true")`);
 		}
 	}
 
 	async sendOtpEmail(to: string, data: OtpTemplateData): Promise<void> {
-		if (this.devMagicCode) {
-			this.logger.debug(`[DEV] Magic OTP for ${to}: ${this.devMagicCode}`);
+		if (this.isLocal) {
+			this.logger.debug(`[LOCAL] Skipping OTP email to ${to}`);
 			return;
 		}
+		this.logger.log(`Sending OTP email to ${to}`);
 		await this.send(to, this.templateIds.otp, data);
 	}
 

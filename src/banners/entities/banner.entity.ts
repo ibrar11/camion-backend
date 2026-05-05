@@ -48,6 +48,10 @@ export class Banner {
 	placement: string;
 
 	@Field()
+	@Column({ default: "#000000", })
+	color: string;
+
+	@Field()
 	@Column({ default: true, })
 	isActive: boolean;
 

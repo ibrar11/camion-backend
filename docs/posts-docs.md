@@ -1,8 +1,8 @@
-# Posts REST API
+# Posts REST & GraphQL API
 
 ==========================
 
-This document includes the documentation for Posts management module.
+This document includes the documentation for the Posts (CMS Pages) management module. Posts represent CMS-managed pages such as Privacy Policy, Refund Policy, and similar static content pages.
 
 ---
 
@@ -17,16 +17,14 @@ Follow the following steps to manage posts:
 
 ---
 
-# Posts API
-
-Posts represent content created by users.
+# Posts REST API
 
 ---
 
 ## Create a Post
 
 > [!IMPORTANT]
-> Requires authenticated user
+> Requires authenticated user (SuperAdmin, Admin, or Manager)
 
 ```http
 POST /v1/posts HTTP/1.1
@@ -38,10 +36,10 @@ POST /v1/posts HTTP/1.1
 
 ```json
 {
-    "slug": "my-first-post",
-    "title": "My First Post",
-    "brief": "Short summary of the post",
-    "content": "Full content of the post",
+    "slug": "privacy-policy",
+    "title": "Privacy Policy",
+    "brief": "Short summary of the page",
+    "content": "Full content of the page",
     "enabled": true
 }
 ```
@@ -53,14 +51,14 @@ POST /v1/posts HTTP/1.1
 ```json
 {
     "uuid": "post-uuid",
-    "slug": "my-first-post",
-    "title": "My First Post",
-    "brief": "Short summary of the post",
-    "content": "Full content of the post",
+    "slug": "privacy-policy",
+    "title": "Privacy Policy",
+    "brief": "Short summary of the page",
+    "content": "Full content of the page",
     "enabled": true,
-    "author": {
+    "createdBy": {
         "uuid": "user-uuid",
-        "name": "Author Name"
+        "fullName": "Admin Name"
     }
 }
 ```
@@ -71,7 +69,7 @@ POST /v1/posts HTTP/1.1
 
 * `uuid` is generated automatically
 * `enabled` defaults to `true` if not provided
-* Author is automatically assigned from authenticated user
+* `createdBy` is automatically assigned from the authenticated user
 
 ---
 
@@ -89,14 +87,14 @@ GET /v1/posts HTTP/1.1
 [
     {
         "uuid": "post-uuid",
-        "slug": "my-first-post",
-        "title": "My First Post",
+        "slug": "privacy-policy",
+        "title": "Privacy Policy",
         "brief": "Short summary",
         "content": "Full content",
         "enabled": true,
-        "author": {
+        "createdBy": {
             "uuid": "user-uuid",
-            "name": "Author Name"
+            "fullName": "Admin Name"
         }
     }
 ]
@@ -107,7 +105,7 @@ GET /v1/posts HTTP/1.1
 ### Behavior
 
 * Returns all posts
-* Includes author information
+* Includes `createdBy` information
 * Sorted by `createdAt` in descending order (latest first)
 
 ---
@@ -125,14 +123,14 @@ GET /v1/posts/<post-uuid> HTTP/1.1
 ```json
 {
     "uuid": "post-uuid",
-    "slug": "my-first-post",
-    "title": "My First Post",
+    "slug": "privacy-policy",
+    "title": "Privacy Policy",
     "brief": "Short summary",
     "content": "Full content",
     "enabled": true,
-    "author": {
+    "createdBy": {
         "uuid": "user-uuid",
-        "name": "Author Name"
+        "fullName": "Admin Name"
     }
 }
 ```
@@ -150,7 +148,7 @@ GET /v1/posts/<post-uuid> HTTP/1.1
 ## Update Post
 
 > [!IMPORTANT]
-> Requires authenticated user
+> Requires authenticated user (SuperAdmin, Admin, or Manager)
 
 ```http
 PUT /v1/posts/<post-uuid> HTTP/1.1
@@ -182,9 +180,9 @@ PUT /v1/posts/<post-uuid> HTTP/1.1
     "brief": "Updated summary",
     "content": "Updated content",
     "enabled": true,
-    "author": {
+    "createdBy": {
         "uuid": "user-uuid",
-        "name": "Author Name"
+        "fullName": "Admin Name"
     }
 }
 ```
@@ -202,7 +200,7 @@ PUT /v1/posts/<post-uuid> HTTP/1.1
 ## Delete Post
 
 > [!IMPORTANT]
-> Requires authenticated user
+> Requires authenticated user (SuperAdmin or Admin)
 
 ```http
 DELETE /v1/posts/<post-uuid> HTTP/1.1
@@ -227,21 +225,87 @@ DELETE /v1/posts/<post-uuid> HTTP/1.1
 
 ---
 
+# Posts GraphQL API
+
+---
+
+## Get All Posts
+
+```graphql
+query {
+    getPosts {
+        uuid
+        slug
+        title
+        brief
+        content
+        enabled
+        images
+        createdBy {
+            uuid
+            fullName
+        }
+    }
+}
+```
+
+---
+
+### Behavior
+
+* Returns all posts
+* Includes `createdBy` information
+* Sorted by `createdAt` in descending order (latest first)
+* Requires a valid Bearer token
+
+---
+
+## Get Single Post
+
+```graphql
+query {
+    getPost(slug: "privacy-policy") {
+        uuid
+        slug
+        title
+        brief
+        content
+        enabled
+        images
+        createdBy {
+            uuid
+            fullName
+        }
+    }
+}
+```
+
+---
+
+### Errors
+
+| Error         | Description    |
+| ------------- | -------------- |
+| 404 Not Found | Post not found |
+
+---
+
 # Security Notes
 
 * Only authenticated users can:
 
-  * create posts
-  * update posts
-  * delete posts
+  * create posts (SuperAdmin, Admin, Manager)
+  * update posts (SuperAdmin, Admin, Manager)
+  * delete posts (SuperAdmin, Admin)
 
-* Author is derived from authentication context
+* Read endpoints (REST GET and GraphQL queries) require a valid Bearer token
+* `createdBy` is derived from authentication context and cannot be set by the client
 
 ---
 
 # Summary
 
-* Posts are created and managed by authenticated users
-* UUID is used as public identifier
-* Includes full CRUD functionality
-* Supports author relationship and ordering
+* Posts are CMS-managed pages (e.g. Privacy Policy, Refund Policy)
+* UUID is used as the public identifier; `slug` provides a human-readable URL key
+* Includes full CRUD via REST and read queries via GraphQL
+* Tracks which admin created the page via `createdBy`

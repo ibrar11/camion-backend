@@ -25,7 +25,7 @@ import { Currency } from "./entities/currency.entity";
 @UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/currencies")
 export class CurrenciesController {
-	constructor(@Inject(CurrenciesService) private readonly currenciesService: CurrenciesService) {}
+	constructor(@Inject(CurrenciesService) private readonly currenciesService: CurrenciesService) { }
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Post()
@@ -34,11 +34,12 @@ export class CurrenciesController {
 		return this.currenciesService.create(body);
 	}
 
+	@Roles()
 	@Get()
 	@HttpCode(HttpStatus.OK)
-    async actionGetCurrencies(): Promise<Currency[]> {
-        return this.currenciesService.findAllCurrencies();
-    }
+	async actionGetCurrencies(): Promise<Currency[]> {
+		return this.currenciesService.findAllCurrencies();
+	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(":uuid")

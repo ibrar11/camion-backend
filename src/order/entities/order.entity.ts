@@ -4,6 +4,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     ManyToOne,
     OneToMany,
     OneToOne,
@@ -16,6 +17,7 @@ import { Exclude } from "class-transformer";
 import { OrderStatus } from "../enums/OrderStatus";
 
 import { Customer } from "../../customers/entities/customer.entity";
+import { CustomerAddress } from "../../customers/entities/customer-address.entity";
 
 import { OrderItem } from "./order-item.entity";
 
@@ -35,7 +37,13 @@ export class Order {
 
     @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.orders)
+    @Index()
     customer: Customer;
+
+    @Field(() => CustomerAddress)
+    @ManyToOne(() => CustomerAddress, (customerAddress) => customerAddress.orders)
+    @Index()
+    shippingAddress: CustomerAddress;
 
     @Field()
     @Column({
@@ -65,6 +73,11 @@ export class Order {
     @Column({ type: "varchar", length: 64 })
     eta: string;
 
+    // Set once a Gulltrans procurement order is created for this order. Null means not yet procured.
+    @Field(() => String, { nullable: true })
+    @Column({ type: "varchar", length: 128, nullable: true, default: null })
+    gulltransOrderId: string | null;
+
     @Field(() => [OrderItem])
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
     orderItems: Array<OrderItem>;
@@ -78,6 +91,14 @@ export class Order {
         type: "timestamptz",
     })
     updatedAt: Date;
+
+    // <!--
+    // This field is not part of the schema. Please don't add it to the database.
+
+    @Field(() => Date, { name: "orderPlacementDate" })
+    orderPlacementDate: Date;
+
+    // -->
 
     @Exclude()
     @CreateDateColumn({

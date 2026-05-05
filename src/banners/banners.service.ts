@@ -3,6 +3,7 @@ import * as crypto from "node:crypto";
 import {
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException,
 } from '@nestjs/common';
@@ -10,9 +11,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { S3Service } from 'src/common/s3.service';
+import { S3Service } from '../common/s3.service';
+import { FileService } from "../common/file.service";
 
-import { getSkipAndTake } from 'src/common/pagination';
+import { getSkipAndTake } from '../common/pagination';
 
 import { UpdateBannerDto } from './dtos/UpdateBannerDto';
 
@@ -24,6 +26,7 @@ export class BannersService {
 
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(Banner) private readonly bannerRepository: Repository<Banner>,
 	) { }
 
@@ -37,7 +40,18 @@ export class BannersService {
 		this.logger.log(`Attempting to create a banner`);
 
 		// Upload the file to s3
-		const params = await this.s3Service.uploadFile("banners", file);
+		let params: { key: string; url: string; } | null;
+		try {
+			params = await this.s3Service.uploadFile("banners", file);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the banner. Please try again.",
+			});
+		}
+
+		// Delete the temporary files
+		await this.fileService.deleteFile(file);
 
 		// Create a banner using the uploaded file
 		const banner = new Banner();
@@ -48,6 +62,7 @@ export class BannersService {
 		banner.linkUrl = "";
 		banner.isActive = true;
 		banner.placement = "";
+		banner.color = "";
 		return this.bannerRepository.save(banner);
 	}
 
@@ -59,13 +74,14 @@ export class BannersService {
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 */
-	async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Banner>> {
+	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Banner>> {
 		this.logger.log("Retrieving a list of banners");
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.bannerRepository.find({
+			cache: true,
 			order: {
 				id: "DESC",
 			},
@@ -118,6 +134,7 @@ export class BannersService {
 		banner.titleAr = body.title.ar.trim();
 		banner.linkUrl = body.linkUrl.trim();
 		banner.placement = body.placement.trim();
+		banner.color = body.color.trim();
 		banner.isActive = body.isActive;
 		return this.bannerRepository.save(banner);
 	}

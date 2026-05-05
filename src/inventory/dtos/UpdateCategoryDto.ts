@@ -1,6 +1,8 @@
 import {
+	IsBoolean,
 	IsNumber,
 	IsString,
+	Max,
 	MaxLength,
 	Min,
 	MinLength,
@@ -29,6 +31,14 @@ export class UpdateCategoryDto {
 	name: NameField;
 
 	@IsNumber()
-	@Min(0)
+	@Min(1)
 	pricingFactor: number;
+
+	@IsNumber()
+	@Min(1)
+	@Max(10)
+	discountPercentage: number;
+
+	@IsBoolean()
+	isFeatured: boolean;
 }

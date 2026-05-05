@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -7,6 +9,7 @@ import {
 	HttpStatus,
 	Inject,
 	Param,
+	Patch,
 	Post,
 	Put,
 	Query,
@@ -18,6 +21,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 
 import { UpdateProductVariantImageDto } from "./dtos/UpdateProductVariantImageDto";
+import { ReplaceProductVariantImageDto } from "./dtos/ReplaceProductVariantImageDto";
 
 import { ProductVariantImage } from "./entities/product-variant-image.entity";
 import { ProductVariantImageService } from "./product-variant-image.service";
@@ -36,7 +40,7 @@ export class ProductVariantImageController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Post()
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProductVariantImage(@Param('variantUUID') variantUUID: string, @UploadedFile() file: Express.Multer.File): Promise<ProductVariantImage> {
 		return this.productVariantImageService.createProductVariantImage(variantUUID, file);
@@ -67,6 +71,13 @@ export class ProductVariantImageController {
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductVariantImage(@Param('uuid') imageUUID: string, @Body() body: UpdateProductVariantImageDto): Promise<ProductVariantImage> {
 		return this.productVariantImageService.updateProductVariantImage(imageUUID, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Patch(':uuid')
+	@HttpCode(HttpStatus.OK)
+	actionPatchProductVariantImage(@Param('uuid') imageUUID: string, @Body() body: ReplaceProductVariantImageDto): Promise<ProductVariantImage> {
+		return this.productVariantImageService.replaceProductVariantImage(imageUUID, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)

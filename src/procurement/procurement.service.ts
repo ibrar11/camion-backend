@@ -36,8 +36,22 @@ import {
     SearchProductItem,
     SearchProducts,
     SkuAttribute,
-    importedProduct
+    importedProduct,
+    CreateOrderResponse,
+    BulkCreateOrderResponse,
+    SearchProduct,
 } from './types';
+import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
+
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Order } from '../order/entities/order.entity';
+
+import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
+import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { QueueService } from 'src/queue/queue.service';
+import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 
 
 @Injectable()
@@ -50,7 +64,14 @@ export class ProcurementService {
         @Inject(ProductOptionService) private readonly optionService: ProductOptionService,
         @Inject(ProductOptionValueService) private readonly optionValueService: ProductOptionValueService,
         @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
+        @Inject(QueueService) private readonly queueService: QueueService,
+        @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     ) { }
+
+    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderId: string | number) {
+        if (!orderUuid) return;
+        await this.orderRepository.update({ uuid: orderUuid }, { gulltransOrderId: String(gulltransOrderId) });
+    }
 
     /**
      * Finds a list of products with specific keyword
@@ -65,7 +86,7 @@ export class ProcurementService {
         sort: string,
         priceStart: string = '',
         priceEnd: string = ''
-    ): Promise<Array<SearchProducts>> {
+    ): Promise<SearchProducts> {
         try {
             if (Number(pageSize) > 50) {
                 throw new BadRequestException({
@@ -106,8 +127,14 @@ export class ProcurementService {
 
             const products: SearchProductItem[] = data?.data?.data || [];
 
+            const totalProducts = data?.data?.totalRecords;
+            const page_size = data?.data?.pageSize;
+            const currentPage = data?.data?.currentPage;
+            const excludeLastPage = (totalProducts % page_size) === 0;
+            const totalPage = excludeLastPage ? data?.data?.totalPage - 1 : data?.data?.totalPage;
+
             // Format the products
-            const formattedProducts = products?.map((item) => ({
+            const formattedProducts: Array<SearchProduct> = products?.map((item) => ({
                 externalId: item.offerId,
                 title: (item.subjectTrans || item.subject).slice(0, 128),
                 price: parseFloat(
@@ -129,10 +156,18 @@ export class ProcurementService {
                     level3: item.thirdCategoryId,
                 },
                 createdAt: item.createDate,
-                updatedAt: item.modifyDate,
+                updatedAt: item.modifyDate
             }));
 
-            return formattedProducts;
+            return {
+                data: formattedProducts,
+                pagination: {
+                    totalProducts: totalProducts,
+                    totalPage: totalPage,
+                    page_size: page_size,
+                    currentPage: currentPage,
+                }
+            };
         } catch (error: any) {
             this.logger.error(`Error fetching products: ${error?.message}`);
             throw new InternalServerErrorException({
@@ -223,7 +258,9 @@ export class ProcurementService {
                 }) ?? [];
 
                 const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
-                const shippingInfo = product.productShippingInfo.skuShippingDetails.find(detail => detail.skuId === sku.skuId.toString());
+                const shippingInfo = product.productShippingInfo.skuShippingDetails.find((detail: any) => detail.skuId === sku.skuId.toString());
+
+                const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
                 return {
                     title: title,
@@ -236,13 +273,26 @@ export class ProcurementService {
                     ),
                     stock: sku.amountOnSale,
                     attributes,
-                    image: sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0],
+                    image: skuImg,
                     shipping: {
                         weight: smartRoundInt(shippingInfo.weight),
                         length: smartRoundInt(shippingInfo.length),
                         width: smartRoundInt(shippingInfo.width),
                         height: smartRoundInt(shippingInfo.height),
                         origin: product.productShippingInfo.sendGoodsAddressText,
+                    },
+                    skuMeta: {
+                        shop_id: product.sellerOpenId,
+                        shop_name: product.companyName,
+                        spec_id: sku.specId,
+                        sku_img: skuImg,
+                        min_order_quantity: String(product.minOrderQuantity ?? 1),
+                        batch_number: '1',
+                        imgs: product.productImage?.images ?? [],
+                        specs: sku.skuAttributes?.map((attr: SkuAttribute) => ({
+                            label: attr.attributeName,
+                            value: attr.value,
+                        })) ?? [],
                     },
                 };
             });
@@ -319,6 +369,7 @@ export class ProcurementService {
             success: [] as importedProduct[],
             failed: [] as { id: string; reason: string }[],
         };
+        const importedProductUuids: string[] = [];
 
         try {
             const ids = [...new Set(dto.externalId || [])];
@@ -359,10 +410,18 @@ export class ProcurementService {
                                     en: productDetails.descriptionHtml,
                                     ar: productDetails.descriptionHtml
                                 },
-                                categories: dto.categories //need to add categories through admin dashboard
+                                categories: dto.categories, //need to add categories through admin dashboard
+                                shopId: productDetails.shopId ?? undefined,
+                                shopName: productDetails.shopName ?? undefined,
+                                procurementId: productDetails.externalId ? String(productDetails.externalId) : undefined,
                             });
 
-                            const optionValuesUuids: string[] = []
+                            importedProductUuids.push(product.uuid);
+
+                            // The product is imported as active now.
+                            // const product = await this.productService.updateProductStatus(productCreated.uuid, { status: ProductStatus.ACTIVE, });
+
+                            const optionValueMap = new Map<string, string>();
 
                             // 3. create product option and product option values for product
                             if (productDetails.options?.length) {
@@ -403,7 +462,7 @@ export class ProcurementService {
                                                             createdOption.uuid,
                                                             optionValuePayload
                                                         );
-                                                        optionValuesUuids.push(optionValue.uuid)
+                                                        optionValueMap.set(optionValue.valueEn, optionValue.uuid);
                                                     } catch (error: any) {
                                                         this.logger.error(`Option value creation failed for product ${product.uuid}: ${error?.message}`);
                                                     }
@@ -427,6 +486,10 @@ export class ProcurementService {
                                     await Promise.all(
                                         batch.map(async (variant) => {
                                             try {
+                                                const optionValuesUuids = variant.attributes
+                                                    .map(attr => optionValueMap.get(attr.value))
+                                                    .filter((uuid): uuid is string => Boolean(uuid));
+
                                                 const dto: CreateProductVariantDto = {
                                                     warehouse: warehouse,
                                                     title: {
@@ -437,7 +500,7 @@ export class ProcurementService {
                                                     barcode: variant.skuId?.toString() || '',
                                                     quantity: variant.stock || 0,
                                                     cost: {
-                                                        amount: variant.price || 0,
+                                                        amount: smartRoundInt(variant.price) || 0,
                                                         currencyCode: productDetails.currencyCode,
                                                     },
                                                     weight: {
@@ -451,6 +514,7 @@ export class ProcurementService {
                                                         unit: DimensionsUnit.Centimeter
                                                     },
                                                     optionValues: optionValuesUuids,
+                                                    skuMeta: variant.skuMeta,
                                                 };
 
                                                 // add product variants
@@ -488,12 +552,184 @@ export class ProcurementService {
                 );
             }
 
+            if (importedProductUuids.length) {
+                // await this.queueService.addImportedProductsTranslationJob(
+                //     importedProductUuids,
+                //     1,
+                // );
+            }
+
             return results;
         } catch (error: any) {
             this.logger.error(`Error importing products: ${error?.message || error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to import products',
                 details: error.response?.error || error,
+            });
+        }
+    }
+
+    /**
+     * Groups flat order items by shop_id (falls back to shop_name), merging skus
+     * and summing goods_amount and freight_fee within each group.
+     */
+    private groupOrdersByShop(orders: BulkCreateProcurementOrderDto['orders']) {
+        const groupMap = new Map<string, typeof orders>();
+
+        for (const order of orders) {
+            const key = order.shop_id || order.shop_name || `__ungrouped__${orders.indexOf(order)}`;
+            if (!groupMap.has(key)) groupMap.set(key, []);
+            groupMap.get(key)!.push(order);
+        }
+
+        return Array.from(groupMap.values()).map((group) => {
+            const first = group[0];
+
+            const mergedSkus = group.flatMap((o) => o.skus);
+
+            const totalGoodsAmount = group
+                .reduce((sum, o) => sum + parseFloat(o.goods_amount || '0'), 0)
+                .toString();
+
+            const totalFreightFee = group
+                .reduce((sum, o) => sum + parseFloat(o.freight_fee || '0'), 0)
+                .toString();
+
+            const name = group.map((o) => o.name).join(' | ').slice(0, 256);
+
+            const remark = group.map((o) => o.remark).filter(Boolean).join(' | ') || undefined;
+
+            return {
+                ...first,
+                name,
+                goods_amount: totalGoodsAmount,
+                freight_fee: totalFreightFee,
+                remark,
+                skus: mergedSkus,
+            };
+        });
+    }
+
+    /**
+     * Creates multiple Gulltrans daigou orders, auto-grouping products by shop,
+     * with a shared delivery address.
+     *
+     * @param dto
+     * @returns
+     */
+    async bulkCreateOrder(dto: BulkCreateProcurementOrderDto): Promise<BulkCreateOrderResponse> {
+        const results: BulkCreateOrderResponse = { success: [], failed: [] };
+
+        const grouped = this.groupOrdersByShop(dto.orders);
+
+        const BATCH_SIZE = 3;
+
+        for (let i = 0; i < grouped.length; i += BATCH_SIZE) {
+            const batch = grouped.slice(i, i + BATCH_SIZE);
+
+            await Promise.all(
+                batch.map(async (order) => {
+                    try {
+                        const response = await fetch(
+                            `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
+                            {
+                                method: 'PUT',
+                                headers: {
+                                    Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
+                                    'X-Uuid': process.env.GULLTRANS_UUID || '',
+                                    'Content-Type': 'application/json',
+                                    Language: 'en',
+                                },
+                                body: JSON.stringify({
+                                    ...order,
+                                    address: dto.address,
+                                    warehouse_id: process.env.GULLTRANS_WAREHOUSE_ID || '',
+                                    user_id: process.env.GULLTRANS_USER_ID || '',
+                                }),
+                            },
+                        );
+
+                        const data = await response.json();
+
+                        if (data.ret !== 1) {
+                            results.failed.push({
+                                shopId: order.shop_id,
+                                reason: data.msg,
+                            });
+                            return;
+                        }
+
+                        this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
+
+                        const orderId = data?.data?.order_id ?? data?.data?.orderId ?? data?.data?.id;
+                        await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+
+                        results.success.push({
+                            shopId: order.shop_id,
+                            orderId,
+                            raw: data?.data,
+                        });
+                    } catch (error: any) {
+                        this.logger.error(`Error creating order for shop ${order.shop_id}: ${error?.message}`);
+                        results.failed.push({
+                            shopId: order.shop_id,
+                            reason: error?.message || 'Unknown error',
+                        });
+                    }
+                }),
+            );
+        }
+
+        return results;
+    }
+
+    /**
+     * Creates a Gulltrans daigou order (passthrough)
+     *
+     * @param dto
+     * @returns
+     */
+    async createOrder(dto: CreateProcurementOrderDto): Promise<CreateOrderResponse> {
+        try {
+            const response = await fetch(
+                `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
+                        'X-Uuid': process.env.GULLTRANS_UUID || '',
+                        'Content-Type': 'application/json',
+                        Language: 'en',
+                    },
+                    body: JSON.stringify({
+                        ...dto,
+                        warehouse_id: process.env.GULLTRANS_WAREHOUSE_ID || '',
+                        user_id: process.env.GULLTRANS_USER_ID || '',
+                    }),
+                },
+            );
+
+            const data = await response.json();
+
+            if (data.ret !== 1) {
+                throw new BadRequestException({
+                    error: data.msg,
+                });
+            }
+
+            const orderId = data?.data?.order_id;
+            await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+
+            return {
+                success: true,
+                orderId,
+                raw: data?.data,
+            };
+        } catch (error: any) {
+            this.logger.error(`Error creating order: ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to create order',
+                details: error.response?.error || error.message,
             });
         }
     }

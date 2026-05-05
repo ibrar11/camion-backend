@@ -36,7 +36,6 @@ export class CustomersService {
 	async createCustomer(body: CreateCustomerDto) {
 		this.logger.log(`Creating customer: ${body.fullName}`);
 
-
 		// Remove the prefix + sign from the country code
 		let countryCode = body.countryCode;
 		if (countryCode !== null && countryCode !== undefined && countryCode.startsWith('+')) {
@@ -44,7 +43,7 @@ export class CustomersService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
@@ -70,7 +69,7 @@ export class CustomersService {
 		}
 
 		// Check if the customer exists by phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			const customerByPhoneNumber = await this.customerRepository.findOneBy({
 				phoneNumber: body.phoneNumber,
 			});

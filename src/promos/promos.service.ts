@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -72,6 +73,7 @@ export class PromosService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.promoRepository.find({
+			cache: true,
 			order: {
 				id: "DESC",
 			},

@@ -4,6 +4,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -25,6 +26,7 @@ export class Coupon {
 	uuid: string;
 
 	@ManyToOne(() => Affiliate, (affiliate) => affiliate.coupons, { onDelete: "CASCADE", })
+	@Index()
 	affiliate: Affiliate;
 
 	@Field()

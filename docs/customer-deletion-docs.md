@@ -26,10 +26,11 @@ Customer deletion follows a **soft-delete with delay** approach to ensure safety
 ## Request Account Deletion
 
 > [!IMPORTANT]
-> Requires authenticated customer
+> Requires a valid customer Bearer token. The customer is identified from the token — no UUID is needed in the URL.
 
 ```http
 DELETE /v1/customers/me HTTP/1.1
+Authorization: Bearer <customer-token>
 ```
 
 ---
@@ -56,10 +57,11 @@ DELETE /v1/customers/me HTTP/1.1
 ## Cancel Account Deletion
 
 > [!IMPORTANT]
-> Requires authenticated customer
+> Requires a valid customer Bearer token. The customer is identified from the token — no UUID is needed in the URL.
 
 ```http
 PATCH /v1/customers/me/cancel-deletion HTTP/1.1
+Authorization: Bearer <customer-token>
 ```
 
 ---

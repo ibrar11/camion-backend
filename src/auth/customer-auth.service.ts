@@ -35,6 +35,8 @@ import { CustomerAuthVerificationResponse } from "./response/CustomerAuthVerific
 import { CustomerAuthResponse } from "./response/CustomerAuthResponse";
 
 import { CustomerRole } from "src/customers/enums/CustomerRole";
+import { TwilioService } from "src/common/twilio.service";
+
 import { EmailService } from "src/email/email.service";
 
 import { CartItem } from "../cart/entities/cart-items.entity";
@@ -44,6 +46,7 @@ import { calculateStock } from "../common/calculateStock";
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
+	private readonly isLocal: boolean;
 	private readonly devMagicCode: string | null;
 
 	constructor(
@@ -53,11 +56,13 @@ export class CustomerAuthService {
 		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 		private readonly configService: ConfigService,
 		private readonly jwtService: JwtService,
+		private readonly twilioService: TwilioService,
 		private readonly emailService: EmailService,
 	) {
-		const isDev = this.configService.get<string>('NODE_ENV') === 'local';
-		this.devMagicCode = isDev
-			? (this.configService.get<string>('DEV_OTP_CODE') ?? '123456')
+		this.isLocal = this.configService.get<string>('NODE_ENV') === 'local';
+		const magicOtpEnabled = this.configService.get<string>('ENABLE_MAGIC_OTP') === 'Yes';
+		this.devMagicCode = magicOtpEnabled
+			? (this.configService.get<string>('MAGIC_OTP') ?? '123456')
 			: null;
 	}
 
@@ -77,7 +82,7 @@ export class CustomerAuthService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
@@ -123,27 +128,29 @@ export class CustomerAuthService {
 		customer.isActive = true;
 		await this.customerRepository.save(customer);
 
-		// merge the customer gurst cart
-		const guestCustomer = await this.customerRepository.findOneBy({
-			uuid: body.guestUUID?.trim(),
-		});
-
-		if (guestCustomer) {
-			const cartItems = await this.cartItemRepository.find({
-				where: {
-					customer: { id: guestCustomer.id }
-				}
+		// merge the customer guest cart
+		if (body.guestUUID) {
+			const guestCustomer = await this.customerRepository.findOneBy({
+				uuid: body.guestUUID.trim(),
 			});
 
-			for (const item of cartItems) {
-				item.customer = customer;
+			if (guestCustomer) {
+				const cartItems = await this.cartItemRepository.find({
+					where: {
+						customer: { id: guestCustomer.id }
+					}
+				});
+
+				for (const item of cartItems) {
+					item.customer = customer;
+				}
+
+				await this.cartItemRepository.save(cartItems);
+
+				// deactivate the guest user after merge
+				guestCustomer.isActive = false;
+				await this.customerRepository.save(guestCustomer);
 			}
-
-			await this.cartItemRepository.save(cartItems);
-
-			// deactivate the guest user after after merge
-			guestCustomer.isActive = false;
-			await this.customerRepository.save(guestCustomer);
 		}
 
 		// Create the payload
@@ -157,7 +164,7 @@ export class CustomerAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in the cache so we can invalidate the customer session later.
-		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,
@@ -181,7 +188,7 @@ export class CustomerAuthService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
@@ -200,6 +207,12 @@ export class CustomerAuthService {
 				errors: {
 					phoneNumber: "Customer not found with the provided phone number.",
 				},
+			});
+		}
+
+		if (!customer.isActive) {
+			throw new UnauthorizedException({
+				error: "Account is deactivated.",
 			});
 		}
 
@@ -227,7 +240,11 @@ export class CustomerAuthService {
 						where: { customer: { id: customer.id } },
 						relations: {
 							product: true,
-							variant: true
+							variant: {
+								inventoryItem: {
+									levels: true,
+								},
+							},
 						},
 					});
 
@@ -285,7 +302,7 @@ export class CustomerAuthService {
 			}
 		}
 
-		// Generate a random secret to verify customer email address
+		// In local/dev env use the magic code; otherwise generate a real OTP
 		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
 
 		// Create a login request
@@ -295,8 +312,8 @@ export class CustomerAuthService {
 		request.secret = await bcrypt.hash(secret, 10);
 		await this.loginRequestRepository.save(request);
 
-		// TODO: Send the secret to the customer using their email address
-		console.log(secret);
+		// Send OTP via Twilio Messaging Service
+		await this.twilioService.sendOtp(customer.phoneNumber, secret);
 
 		// Create a payload for the session token
 		const payload = {
@@ -332,6 +349,12 @@ export class CustomerAuthService {
 			});
 		}
 
+		if (!customer.isActive) {
+			throw new UnauthorizedException({
+				error: "Account is deactivated.",
+			});
+		}
+
 		// merge the customer gurst cart
 		if (body.guestUUID) {
 			const guestCustomer = await this.customerRepository.findOne({
@@ -356,7 +379,11 @@ export class CustomerAuthService {
 						where: { customer: { id: customer.id } },
 						relations: {
 							product: true,
-							variant: true
+							variant: {
+								inventoryItem: {
+									levels: true,
+								},
+							},
 						},
 					});
 
@@ -414,8 +441,12 @@ export class CustomerAuthService {
 			}
 		}
 
-		// Generate a random secret to verify customer email address
-		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
+		// In local env use the magic code so no real email is needed; otherwise generate a real OTP
+		const secret = this.isLocal
+			? (this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString())
+			: crypto.randomInt(100000, 1000000).toString();
+
+		this.logger.log(`customer login secret: ${secret}`);
 
 		// Create a login request
 		const request = new LoginRequest();
@@ -480,10 +511,11 @@ export class CustomerAuthService {
 			});
 		}
 
-		// Match the secret against the login request
-		if (!bcrypt.compareSync(body.secret, request.secret)) {
+		// Accept magic OTP or the real OTP stored in the login request
+		const magicMatch = this.devMagicCode !== null && body.secret === this.devMagicCode;
+		if (!magicMatch && !bcrypt.compareSync(body.secret, request.secret)) {
 			throw new BadRequestException({
-				error: "We weren't able to log you in. Give your phon number another look and try again.",
+				error: "We weren't able to log you in. Give your phone number another look and try again.",
 			});
 		}
 
@@ -501,7 +533,7 @@ export class CustomerAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in cache so we can invalidate the customer session later.
-		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,
@@ -548,8 +580,9 @@ export class CustomerAuthService {
 			});
 		}
 
-		// Match the secret against the login request
-		if (!bcrypt.compareSync(body.secret, request.secret)) {
+		// Accept magic OTP or the real OTP stored in the login request
+		const magicMatch = this.devMagicCode !== null && body.secret === this.devMagicCode;
+		if (!magicMatch && !bcrypt.compareSync(body.secret, request.secret)) {
 			throw new BadRequestException({
 				error: "We weren't able to log you in. Give your email address another look and try again.",
 			});
@@ -569,7 +602,7 @@ export class CustomerAuthService {
 		const token = await this.jwtService.signAsync(payload);
 
 		// Save the token in cache so we can invalidate the customer session later.
-		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, this.configService.get<number>('JWT_EXPIRES_IN'));
+		await this.cacheManager.set(`auth:customer-session:${payload.jti}`, token, (this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000);
 
 		return {
 			token: token,
@@ -609,7 +642,7 @@ export class CustomerAuthService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 

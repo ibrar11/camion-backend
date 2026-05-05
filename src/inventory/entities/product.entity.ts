@@ -7,7 +7,9 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	OneToMany,
+	OneToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -26,6 +28,8 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 import { OrderItem } from "../../order/entities/order-item.entity";
 
 import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
+
+import { Translation } from "../../translation/entities/translation.entity";
 
 @ObjectType()
 @Entity({ name: "products", })
@@ -94,6 +98,18 @@ export class Product {
 	})
 	status: ProductStatus;
 
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 128, nullable: true, default: null })
+	shopId: string | null;
+
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 256, nullable: true, default: null })
+	shopName: string | null;
+
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 64, nullable: true, default: null })
+	procurementId: string | null;
+
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	salesCount: number;
@@ -144,6 +160,7 @@ export class Product {
 	@OneToMany(() => ProductVariant, (variant) => variant.product, { cascade: true, })
 	variants: Array<ProductVariant>;
 
+	@Field(() => [ProductCategory])
 	@OneToMany(() => ProductCategory, (productCategories) => productCategories.product, { cascade: true, })
 	productCategories: Array<ProductCategory>;
 
@@ -154,11 +171,14 @@ export class Product {
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;
 
-	@OneToMany(() => OrderItem, (orderItem) => orderItem.product)
+	@OneToMany(() => OrderItem, (orderItem) => orderItem.product, { cascade: true, })
 	orderItems: Array<OrderItem>;
 
-	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product)
+	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product, { cascade: true, })
 	wishlistItems: Array<WishlistItem>;
+
+	@OneToOne(() => Translation, (translation) => translation.product, { cascade: true, })
+	translation: Translation;
 
 	@Exclude()
 	@Column({

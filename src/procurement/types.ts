@@ -59,7 +59,7 @@ export interface SkuAttribute {
     skuImageUrl?: string;
 }
 
-export interface SearchProducts {
+export interface SearchProduct {
     externalId: number;
     title: string;
     price: number;
@@ -80,6 +80,16 @@ export interface SearchProducts {
     updatedAt: string;
 }
 
+export interface SearchProducts {
+    data: Array<SearchProduct>;
+    pagination: {
+        totalProducts: number;
+        totalPage: number;
+        page_size: number;
+        currentPage: number;
+    }
+}
+
 export interface ProductVariant {
     title: string;
     skuId: number;
@@ -96,7 +106,8 @@ export interface ProductVariant {
         width: number;
         height: number;
         origin: string;
-    },
+    };
+    skuMeta: Record<string, any>;
 }
 
 export interface ProductOption {
@@ -151,4 +162,20 @@ export interface ProductDetail {
 export interface importedProduct {
     externalId: string,
     product: Product
+}
+
+export interface GulltransOrderResult {
+    order_id: string | number;
+    [key: string]: any;
+}
+
+export interface CreateOrderResponse {
+    success: boolean;
+    orderId: string | number;
+    raw: GulltransOrderResult;
+}
+
+export interface BulkCreateOrderResponse {
+    success: { shopId: string | undefined; orderId: string | number; raw: GulltransOrderResult }[];
+    failed: { shopId: string | undefined; reason: string }[];
 }

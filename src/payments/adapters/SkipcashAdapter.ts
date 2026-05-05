@@ -6,6 +6,8 @@ import {
     Logger,
 } from "@nestjs/common";
 
+import { ConfigService } from "@nestjs/config";
+
 import { generateSignature } from "../../common/skipcash";
 
 import { CreatePaymentDto } from "../dtos/CreatePaymentDto";
@@ -18,6 +20,8 @@ import {
 @Injectable()
 export class SkipCashAdapter {
     private readonly logger = new Logger(SkipCashAdapter.name);
+
+    constructor(private readonly configService: ConfigService) { }
 
     // note: create payment method needs to be updated after order implementation
 
@@ -37,7 +41,7 @@ export class SkipCashAdapter {
 
             const payload: SignaturePayload = {
                 Uid: crypto.randomUUID(),
-                KeyId: process.env.SKIPCASH_KEY_ID,
+                KeyId: this.configService.get<string>("SKIPCASH_KEY_ID"),
                 Amount: dto.amount.toFixed(2),
                 FirstName: dto.firstName,
                 LastName: dto.lastName,
@@ -54,8 +58,9 @@ export class SkipCashAdapter {
 
             const signature = generateSignature(payload);
 
+            this.logger.log(`Attempting to hit skipcash payment api ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
             // create skipcash payment
-            const res = await fetch(`${process.env.SKIPCASH_BASE_URL}/api/v1/payments`, {
+            const res = await fetch(`${this.configService.get<string>("SKIPCASH_BASE_URL")}/api/v1/payments`, {
                 method: "POST",
                 headers: {
                     Authorization: signature,
@@ -64,6 +69,7 @@ export class SkipCashAdapter {
                 body: JSON.stringify(payload),
             });
             const data = await res.json();
+            this.logger.log(`After hitting skipcash api ${data}`);
 
             if (!res.ok || data.hasError) {
                 let message = "Payment creation failed";
@@ -89,7 +95,8 @@ export class SkipCashAdapter {
                 raw: data,
             };
         } catch (error: any) {
-            this.logger.error(`SkipCash payment failed: ${JSON.stringify(error?.response?.data || error.message)}`);
+            console.log("SkipCash payment failed:", error)
+            this.logger.error(`SkipCash payment failed: ${error}`);
             throw new InternalServerErrorException({
                 error: "SkipCash payment failed",
                 details: error?.response?.data || error?.message || error,

@@ -49,7 +49,7 @@ export class CustomerAddressesService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
@@ -130,6 +130,7 @@ export class CustomerAddressesService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.customerAddressRepository.find({
+			// cache: true,
 			where: {
 				customer: {
 					id: customer.id,
@@ -246,15 +247,16 @@ export class CustomerAddressesService {
 	async updateCustomerAddress(customerUUID: string, customerAddressUUID: string, body: UpdateCustomerAddressDto): Promise<CustomerAddress> {
 		this.logger.log(`Updating customer address: ${customerAddressUUID}`);
 
-		// Find the customer address
-		const address = await this.customerAddressRepository.findOne({
-			where: { uuid: customerAddressUUID, },
-			relations: {
-				customer: true,
-			},
-		});
+		// Find the customer
+		const customer = await this.customerRepository.findOneBy({ uuid: customerUUID, });
+		if (customer === null) {
+			throw new NotFoundException({
+				error: "Failed to find the customer. Please check and try again.",
+			});
+		}
 
-		// Make sure the address exists
+		// Find the address exists
+		const address = await this.customerAddressRepository.findOneBy({ uuid: customerAddressUUID, });
 		if (address === null) {
 			throw new NotFoundException({
 				error: "Failed to find the address. Please check and try again.",
@@ -262,9 +264,19 @@ export class CustomerAddressesService {
 		}
 
 		// Make sure the address belongs to the customer
-		if (address.customer !== null && address.customer.uuid !== customerUUID) {
+		if (address.customer !== null && customer.uuid !== customerUUID) {
 			throw new ForbiddenException({
 				error: "You're not allowed to retrieve this address. Please check and try again.",
+			});
+		}
+
+		// If the current address is set as default, we need to disable other address as default
+		if (body.isDefault) {
+			await this.customerAddressRepository.update({
+				customer: { id: customer.id, },
+				id: Not(address.id),
+			}, {
+				isDefault: false,
 			});
 		}
 
@@ -277,6 +289,7 @@ export class CustomerAddressesService {
 		address.city = body.city.trim();
 		address.state = body.state.trim();
 		address.country = body.country.trim();
+		address.isDefault = body.isDefault;
 		return this.customerAddressRepository.save(address);
 	}
 

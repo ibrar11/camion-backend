@@ -7,6 +7,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	OneToMany,
 	PrimaryGeneratedColumn,
@@ -19,6 +20,9 @@ import { ProductCategory } from "./product-category.entity";
 
 @ObjectType()
 @Entity({ name: "categories", })
+@Index("IDX_CATEGORIES_FEATURED", ["isFeatured"], {
+	where: `"is_featured" = true`,
+})
 export class Category {
 	@Exclude()
 	@PrimaryGeneratedColumn()
@@ -29,6 +33,7 @@ export class Category {
 	uuid: string;
 
 	@ManyToOne(() => Category, (category) => category.children, { onDelete: "SET NULL", })
+	@Index()
 	parent: Category | null;
 
 	@Field()
@@ -46,12 +51,19 @@ export class Category {
 	@Column({ type: "varchar", length: 32, })
 	nameAr: string;
 
-	@Column({ type: "numeric" })
+	@Column({ type: "numeric", default: 1, })
 	pricingFactor: number;
+
+	@Column({ type: "numeric", default: 0, })
+	discountPercentage: number;
 
 	@Field({ nullable: true, })
 	@Column({ type: "varchar", length: 256, nullable: true, })
 	thumbnailUrl: string;
+
+	@Field()
+	@Column({ name: "is_featured", type: "boolean", default: false, })
+	isFeatured: boolean;
 
 	@Exclude()
 	@Column({ nullable: true, })

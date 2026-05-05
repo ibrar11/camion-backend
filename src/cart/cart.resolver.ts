@@ -52,7 +52,7 @@ export class CartResolver {
     }
 
     @Query(() => [CartItem])
-    async getCustomerCart(
+    getCustomerCart(
         @Context() context: any,
         @Args() args: GetCustomerCartArgs
     ): Promise<Array<CartItem>> {
@@ -67,7 +67,7 @@ export class CartResolver {
     }
 
     @Query(() => Number)
-    async getCustomerCartCount(
+    getCustomerCartCount(
         @Context() context: any,
     ): Promise<number> {
         const customer: Customer = context.req.customer;

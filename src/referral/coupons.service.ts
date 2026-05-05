@@ -123,6 +123,8 @@ export class CouponsService {
 
 		// Find the customer
 		const customer = await this.customerRepository.findOne({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				uuid: customerUUID,
 			},
@@ -142,6 +144,8 @@ export class CouponsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.couponRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				affiliate: {
 					id: customer.affiliate.id,

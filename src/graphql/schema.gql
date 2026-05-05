@@ -6,7 +6,7 @@ type Affiliate {
   bio: String!
   couponsCreated: Float!
   couponsUsed: Float!
-  createdAt: DateTime!
+  createdAt: String!
   fullName: String!
   gender: String!
   nationality: String!
@@ -37,6 +37,7 @@ type BankAccount {
 }
 
 type Banner {
+  color: String!
   imageUrl: String!
   isActive: Boolean!
   linkUrl: String!
@@ -49,7 +50,6 @@ type Banner {
 
 type CartItem {
   availableStock: Int!
-  discountedSubTotal: Money!
   isAvailable: Boolean!
   product: Product!
   quantity: Int!
@@ -60,7 +60,8 @@ type CartItem {
 
 type Category {
   children: [Category!]!
-  name(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
+  isFeatured: Boolean!
+  name(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
   nameAr: String!
   nameEn: String!
   slug: String!
@@ -154,7 +155,10 @@ type Notification {
 type Order {
   discount: Money!
   eta: String!
+  gulltransOrderId: String
   orderItems: [OrderItem!]!
+  orderPlacementDate: DateTime!
+  shippingAddress: CustomerAddress!
   shippingCost: Money!
   status: String!
   subTotal: Money!
@@ -173,6 +177,16 @@ type OrderItem {
   variant(currency: String! = "usd", language: String! = "en"): ProductVariant!
 }
 
+type OrderPreviewResponse {
+  cart_total: Float!
+  discount: Float!
+  eta: String!
+  grand_total: Float!
+  items: [CartItem!]!
+  shippingAddress: CustomerAddress!
+  shippingTotal: Float!
+}
+
 type PollElement {
   options: PollOptionElement!
   question: String!
@@ -182,6 +196,22 @@ type PollElement {
 type PollOptionElement {
   ar: String!
   en: String!
+}
+
+type Post {
+  brief: String
+  content: String!
+  createdBy: PostAuthor!
+  enabled: Boolean!
+  images: [String!]
+  slug: String!
+  title: String!
+  uuid: String!
+}
+
+type PostAuthor {
+  fullName: String!
+  uuid: String!
 }
 
 type Product {
@@ -196,6 +226,8 @@ type Product {
   descriptionHtmlEn: String!
   likesCount: Float!
   options: [ProductOption!]!
+  procurementId: String
+  productCategories: [ProductCategory!]!
   ratingAvg: Float!
   ratingFiveStarCount: Float!
   ratingFourStarCount: Float!
@@ -205,6 +237,8 @@ type Product {
   reviews: [ProductReview!]!
   reviewsCount: Float!
   salesCount: Float!
+  shopId: String
+  shopName: String
   slug: String!
   status: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
@@ -212,6 +246,10 @@ type Product {
   titleEn: String!
   uuid: String!
   variants(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
+}
+
+type ProductCategory {
+  category: Category!
 }
 
 type ProductOption {
@@ -224,6 +262,7 @@ type ProductOption {
 }
 
 type ProductOptionValue {
+  option: ProductOption!
   position: Int!
   uuid: String!
   value(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
@@ -291,7 +330,7 @@ type Promo {
 
 type Query {
   getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
-  getCategories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Category!]!
+  getCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCurrencies: [Currency!]!
   getCurrentAffiliate: Affiliate
   getCurrentAffiliateBankAccounts(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [BankAccount!]!
@@ -299,16 +338,22 @@ type Query {
   getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
   getCurrentCustomerOrder(currency: String! = "usd", language: String! = "en", uuid: String!): Order!
-  getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1, status: String! = "pending"): [Order!]!
+  getCurrentCustomerOrderPreview(couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
+  getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1, status: String): [Order!]!
+  getCurrentCustomerReturnRequest(uuid: String!): ReturnRequest!
+  getCurrentCustomerReturnRequests(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!
   getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
   getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!
   getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
+  getFeaturedCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getPost(slug: String!): Post!
+  getPosts: [Post!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
   getProductsByCategory(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!, sort: String! = "best-match"): [Product!]!
@@ -318,6 +363,27 @@ type Query {
   getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
   getStories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Story!]!
   searchProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
+}
+
+type ReturnEvidence {
+  createdAt: DateTime!
+  mimeType: String!
+  url: String!
+  uuid: String!
+}
+
+type ReturnRequest {
+  adminNote: String
+  createdAt: DateTime!
+  evidence: [ReturnEvidence!]!
+  order: Order!
+  orderItem: OrderItem
+  reason: String!
+  reasonDetail: String!
+  refundAmount: Money
+  status: String!
+  updatedAt: DateTime!
+  uuid: String!
 }
 
 type Story {

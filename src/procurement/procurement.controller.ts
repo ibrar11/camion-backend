@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 
 import { ImportProductDto } from './dtos/ImportProductDto';
+import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
+import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
 
 import { UserRole } from '../users/enums/UserRole';
 
@@ -23,7 +25,9 @@ import { Roles } from '../auth/roles.decorator';
 
 import {
     SearchProducts,
-    ProductDetail
+    ProductDetail,
+    CreateOrderResponse,
+    BulkCreateOrderResponse,
 } from './types';
 
 @UseGuards(AuthGuard, RolesGuard)
@@ -40,7 +44,7 @@ export class ProcurementController {
         @Query("sort") sort: string,
         @Query("priceStart") priceStart: string,
         @Query("priceEnd") priceEnd: string,
-    ): Promise<Array<SearchProducts>> {
+    ): Promise<SearchProducts> {
         return this.procurementService.searchProduct(keyword, pageNumber, itemsPerPage, sort, priceStart, priceEnd);
     }
 
@@ -59,5 +63,23 @@ export class ProcurementController {
         @Body() body: ImportProductDto
     ) {
         return this.procurementService.importProduct(body)
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Post('order')
+    @HttpCode(HttpStatus.OK)
+    createOrder(
+        @Body() body: CreateProcurementOrderDto
+    ): Promise<CreateOrderResponse> {
+        return this.procurementService.createOrder(body);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Post('order/bulk')
+    @HttpCode(HttpStatus.OK)
+    bulkCreateOrder(
+        @Body() body: BulkCreateProcurementOrderDto
+    ): Promise<BulkCreateOrderResponse> {
+        return this.procurementService.bulkCreateOrder(body);
     }
 }

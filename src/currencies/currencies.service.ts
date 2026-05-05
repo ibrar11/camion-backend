@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import {
 	ConflictException,
 	Injectable,
+	Logger,
 	NotFoundException,
 } from "@nestjs/common";
 
@@ -16,10 +17,11 @@ import { Currency } from "./entities/currency.entity";
 
 @Injectable()
 export class CurrenciesService {
+	private readonly logger = new Logger(CurrenciesService.name);
+
 	constructor(
-		@InjectRepository(Currency)
-		private readonly currencyRepository: Repository<Currency>,
-	) {}
+		@InjectRepository(Currency) private readonly currencyRepository: Repository<Currency>,
+	) { }
 
 	/**
 	 * Create a new currency
@@ -27,6 +29,8 @@ export class CurrenciesService {
 	 * @returns Currency
 	 */
 	async create(body: CreateCurrencyDto): Promise<Currency> {
+		this.logger.log(`Creating currency, name: ${body.name}, alphaCode: ${body.alphaCode}`);
+
 		const alphaCode = body.alphaCode.trim().toUpperCase();
 
 		const existing = await this.currencyRepository.findOneBy({ alphaCode });
@@ -42,15 +46,19 @@ export class CurrenciesService {
 		return this.currencyRepository.save(currency);
 	}
 
-    /**
-     * Retrieve all currencies
-     * @returns Currency[]
-     */
-    findAllCurrencies(): Promise<Currency[]> {
-        return this.currencyRepository.find({
-            order: { name: "ASC" },
-        });
-    }
+	/**
+	 * Retrieve all currencies
+	 * @returns Currency[]
+	 */
+	findAllCurrencies(): Promise<Currency[]> {
+		this.logger.log(`Retrieving currencies`);
+
+		// Find the currencies
+		return this.currencyRepository.find({
+			cache: true,
+			order: { name: "ASC" },
+		});
+	}
 
 	/**
 	 * Update a currency by UUID

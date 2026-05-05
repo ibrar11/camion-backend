@@ -8,5 +8,5 @@ import { ProductStatus } from "../enums/ProductStatus.enum";
 export class UpdateProductStatusDto {
 	@IsString()
 	@IsEnum(ProductStatus)
-	status: string;
+	status: ProductStatus;
 }

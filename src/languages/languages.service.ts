@@ -2,7 +2,9 @@ import crypto from "node:crypto";
 
 import {
 	ConflictException,
+	Inject,
 	Injectable,
+	Logger,
 	NotFoundException,
 } from "@nestjs/common";
 
@@ -16,10 +18,11 @@ import { Language } from "./entities/language.entity";
 
 @Injectable()
 export class LanguagesService {
+	private readonly logger = new Logger(LanguagesService.name);
+
 	constructor(
-		@InjectRepository(Language)
-		private readonly languageRepository: Repository<Language>,
-	) {}
+		@InjectRepository(Language) private readonly languageRepository: Repository<Language>,
+	) { }
 
 	/**
 	 * Create a new language
@@ -27,6 +30,8 @@ export class LanguagesService {
 	 * @returns Language
 	 */
 	async create(body: CreateLanguageDto): Promise<Language> {
+		this.logger.log(`Creating language, name: ${body.name}, shortCode: ${body.shortCode}`);
+
 		const shortCode = body.shortCode.trim().toLowerCase();
 
 		const existing = await this.languageRepository.findOneBy({ shortCode });
@@ -50,18 +55,21 @@ export class LanguagesService {
 	 * @param itemsPerPage
 	 * @returns Language[]
 	 */
-	getAllLanguages(): Promise<Language[]> {
+	async getAllLanguages(): Promise<Language[]> {
+		this.logger.log(`Retrieving languages`);
+
 		return this.languageRepository.find({
+			cache: true,
 			order: { name: "ASC" },
 		});
 	}
 
-    /**
-     * Update a language by UUID
-     * @param uuid
-     * @param body
-     * @returns Language
-     */
+	/**
+	 * Update a language by UUID
+	 * @param uuid
+	 * @param body
+	 * @returns Language
+	 */
 	async update(uuid: string, body: UpdateLanguageDto): Promise<Language> {
 		const language = await this.languageRepository.findOneBy({ uuid });
 

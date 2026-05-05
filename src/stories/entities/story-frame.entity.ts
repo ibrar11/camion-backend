@@ -8,6 +8,7 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
@@ -121,6 +122,7 @@ export class StoryFrame {
 	uuid: string;
 
 	@ManyToOne(() => Story, (story) => story.frames, { onDelete: "CASCADE", })
+	@Index()
 	story: Story;
 
 	@Field()

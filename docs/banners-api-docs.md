@@ -39,6 +39,7 @@ curl --location --request POST 'http://localhost:8000/v1/banners' \
     "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
     "linkUrl": "",
     "placement": "",
+    "color": "",
     "isActive": true
 }
 ```
@@ -71,6 +72,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1bd64a8f-dd34-4b49-adb5-659bf2b7a151.jpg",
         "linkUrl": "New Products",
         "placement": "homepage",
+        "color": "",
         "isActive": true
     },
     {
@@ -80,6 +82,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
         "linkUrl": "",
         "placement": "",
+        "color": "",
         "isActive": true
     }
 ]
@@ -104,6 +107,7 @@ GET /v1/banners/<banner-uuid> HTTP/1.1
     "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
     "linkUrl": "",
     "placement": "",
+    "color": "#000000",
     "isActive": true
 }
 ```
@@ -127,7 +131,8 @@ PUT /v1/banners/<banner-uuid> HTTP/1.1
     },
     "linkUrl": "New Products",
     "isActive": true,
-    "placement": "homepage"
+    "placement": "homepage",
+    "color": "#000000",
 }
 ```
 
@@ -140,6 +145,7 @@ PUT /v1/banners/<banner-uuid> HTTP/1.1
     "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1bd64a8f-dd34-4b49-adb5-659bf2b7a151.jpg",
     "linkUrl": "New Products",
     "placement": "homepage",
+    "color": "#000000",
     "isActive": true
 }
 ```

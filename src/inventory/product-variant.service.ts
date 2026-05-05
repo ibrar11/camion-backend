@@ -73,6 +73,7 @@ export class ProductVariantService {
 		variant.cost = body.cost;
 		variant.weight = body.weight;
 		variant.dimensions = body.dimensions;
+		variant.skuMeta = body.skuMeta ?? null;
 		await this.variantRepository.save(variant);
 
 		// Create the inventory item for the variant
