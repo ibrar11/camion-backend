@@ -211,18 +211,20 @@ slug | Yes | String | A unique string that identifies the category
 name.en | Yes | String | The name of the category in English
 name.ar | Yes | String | The name of the category in Arabic
 pricingFactor | Yes | Number | The pricing factor of the category
+discountPercentage | Yes | Number | The discount percentage of the category
 isFeatured | Yes | Boolean | Determines if the category is featured.
 
 ### Request Body
 ```json
 {
     "parentUUID": null,
-    "slug": "sneakers",
+    "slug": "iphones-nine",
     "name": {
-        "en": "Sneakers",
+        "en": "iPhones",
         "ar": "أحذية رياضية"
     },
-    "pricingFactor": 1.2,
+    "pricingFactor": 10,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```
@@ -231,10 +233,11 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
 ```json
 {
     "uuid": "5d32adfe-cdaa-4d19-9a3b-c2374b2a0aab",
-    "slug": "sneakers",
-    "nameEn": "sneakers",
+    "slug": "iphones-nine",
+    "nameEn": "iPhones",
     "nameAr": "أحذية رياضية",
-    "pricingFactor": 1.2,
+    "pricingFactor": 10,
+    "discountPercentage": 5,
     "isFeatured": true,
     "parent": null
 }
@@ -267,6 +270,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "nameEn": "sneakers",
         "nameAr": "أحذية رياضية",
         "pricingFactor": "1.2",
+        "discountPercentage": "5",
         "isFeatured": true,
         "children": [
             {
@@ -275,6 +279,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
                 "nameEn": "sneakers-shoes",
                 "nameAr": "أحذية رياضية",
                 "pricingFactor": "1.2",
+                "discountPercentage": "5",
                 "isFeatured": true,
                 "children": []
             }
@@ -301,6 +306,7 @@ GET /v1/categories/<category-uuid> HTTP/1.1
     "nameEn": "sneakers",
     "nameAr": "sneakers",
     "pricingFactor": 1.4,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```
@@ -321,6 +327,7 @@ slug | Yes | String | A unique string that identifies the category
 name.en | Yes | String | The name of the category in English
 name.ar | Yes | String | The name of the category in Arabic
 pricingFactor | Yes | Number | The pricing factor of the category
+discountPercentage | Yes | Number | The discount percentage on products in this category
 isFeatured | Yes | Boolean | Determines if the category is featured.
 
 ### Request Body
@@ -332,6 +339,7 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
         "ar": "أحذية رياضية"
     },
     "pricingFactor": 1.4,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```
@@ -344,6 +352,7 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
     "nameEn": "Sneakers",
     "nameAr": "أحذية رياضية",
     "pricingFactor": 1.4,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```

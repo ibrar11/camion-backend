@@ -1,19 +1,29 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+	Injectable,
+	Logger,
+} from '@nestjs/common';
 
-import { CurrencyCode } from 'src/inventory/enums/CurrencyCode.enum';
-import { Money, ProductVariant } from '../inventory/entities/product-variant.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
+
+import {
+	Money,
+	ProductVariant,
+} from '../inventory/entities/product-variant.entity';
+
 import { ExchangeRate } from './entities/exchange-rate.entity';
-import { In, Repository } from 'typeorm';
-import { Product } from 'src/inventory/entities/product.entity';
-import { Category } from 'src/inventory/entities/category.entity';
-import { KeyValuePair } from 'src/key-value-pairs/entities/key-value-pair.entity';
-import { KeyValuePairType } from 'src/key-value-pairs/enums/KeyValuePairType.enum';
+import { Product } from '../inventory/entities/product.entity';
+import { Category } from '../inventory/entities/category.entity';
 
 @Injectable()
 export class PricingService {
 	private readonly logger = new Logger(PricingService.name);
 
+	/**
+	 * The last time we synced the exchange rates
+	 */
 	private lastSync: Date = new Date();
 
 	/**
@@ -22,14 +32,11 @@ export class PricingService {
 	private exchangeRates: Array<ExchangeRate> = [];
 
 	/**
-	 * A map of key value pairs that will apply discounts
+	 * Initialize the pricing service
+	 *
+	 * @param exchangeRateRepository
 	 */
-	private keyValuePairs: Record<string, number | string | boolean> = {};
-
-	constructor(
-		@InjectRepository(ExchangeRate) private readonly exchangeRateRepository: Repository<ExchangeRate>,
-		@InjectRepository(KeyValuePair) private readonly keyValuePairRepository: Repository<KeyValuePair>,
-	) {
+	constructor(@InjectRepository(ExchangeRate) private readonly exchangeRateRepository: Repository<ExchangeRate>) {
 		this.initialize();
 	}
 
@@ -45,29 +52,6 @@ export class PricingService {
 			skip: 0,
 			take: 10,
 		});
-
-		// Populate the keyValuePairsMap
-		const keyValuePairs = await this.keyValuePairRepository.findBy({
-			name: In(["price_multiplier", "discount_above_100", "discount_below_100"]),
-		});
-
-		// Create a record of values
-		this.keyValuePairs = Object.fromEntries(
-			keyValuePairs.map(keyValuePair => {
-				switch (keyValuePair.type) {
-					case KeyValuePairType.Integer:
-						return [keyValuePair.name, keyValuePair.integerValue];
-					case KeyValuePairType.Decimal:
-						return [keyValuePair.name, keyValuePair.decimalValue];
-					case KeyValuePairType.String:
-						return [keyValuePair.name, keyValuePair.stringValue];
-					case KeyValuePairType.Boolean:
-						return [keyValuePair.name, keyValuePair.booleanValue];
-					default:
-						return [keyValuePair.name, null];
-				}
-			})
-		);
 
 		// Keep a track of the last sync time to keep exchange rates and key value pairs updated
 		this.lastSync = new Date();
@@ -101,9 +85,9 @@ export class PricingService {
 		}
 
 		// Find the exchange rate for the request currency code
-		let exchangeRate = this.exchangeRates.filter(
-			(exchangeRate) => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim() && exchangeRate.srcCurrencyCode.toLowerCase().trim() === variant.cost.currencyCode
-		).at(0) ?? null;
+		let exchangeRate = this.exchangeRates
+			.filter(exchangeRate => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim())
+			.at(0) ?? null;
 
 		// If there is no exchange rate, we will no longer continue
 		if (exchangeRate === null) {
@@ -121,20 +105,12 @@ export class PricingService {
 		}
 
 		// Find the pricing factor based on the last category applied on the product
-		let categoryPricingFactor: number = 1;
-		if (lastCategory !== null) {
-			categoryPricingFactor = lastCategory.pricingFactor;
-		}
+		let pricingFactor: number = 1,
+			discountPercentage: number = 0;
 
-		// Get the price_multiplier from the key value pairs
-		let priceMultiplier: number = 1;
-		try {
-			if (this.keyValuePairs["price_multiplier"]) {
-				priceMultiplier = parseFloat((this.keyValuePairs["price_multiplier"] as unknown) as string);
-			}
-		} catch (err) {
-			this.logger.error(err);
-			priceMultiplier = 1;
+		if (lastCategory !== null) {
+			pricingFactor = lastCategory.pricingFactor;
+			discountPercentage = lastCategory.discountPercentage;
 		}
 
 		// Calculate exchange rate factor
@@ -147,23 +123,22 @@ export class PricingService {
 		}
 
 		// Calculate the base price based on the cost and the exchange rate.
-		const basePrice = variant.cost.amount * exchangeRateFactor * priceMultiplier;
+		const basePrice = variant.cost.amount * pricingFactor * exchangeRateFactor;
 
-		// Add to the base price, the profit margin based on the category.
-		// The profit margin will be the base price multiplied by the pricing factor of the last category
-		const totalPrice = basePrice * categoryPricingFactor;
+		// Apply discount if there is any
+		const discountedPrice = basePrice * (1 - (discountPercentage / 100));
 
-		// If discount isn't applied we return early
-		if (!applyDiscount) {
+		// Apply the discount and return the discounted price
+		if (applyDiscount && discountPercentage !== 0) {
 			return {
-				amount: Math.ceil(basePrice),
+				amount: Math.ceil(discountedPrice),
 				currencyCode: currency,
 			};
 		}
 
-		// Apply discount and return the price
+		// Don't apply any discount and return full price
 		return {
-			amount: Math.ceil(totalPrice),
+			amount: Math.ceil(basePrice),
 			currencyCode: currency,
 		};
 	}
