@@ -3200,6 +3200,18 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                 isFeatured
                 position
             }
+            optionValues{
+                optionValue{
+                    uuid
+                    value(language: $language)
+                    position
+                    option {
+                        uuid
+                        name(language: $language)
+                        position
+                    }
+                }
+            }
         }
         availableStock
     }
@@ -3274,6 +3286,20 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                             "alt": "",
                             "isFeatured": false,
                             "position": 0
+                        }
+                    ],
+                    "optionValues": [
+                        {
+                            "optionValue": {
+                                "uuid": "853fe098-90a1-460d-ab49-20abc7f55896",
+                                "value": "Off-white and dark gray [double standard model]",
+                                "position": 8,
+                                "option": {
+                                    "uuid": "caf82529-a8a9-43e3-b927-7447e61eba12",
+                                    "name": "Color",
+                                    "position": 1
+                                }
+                            }
                         }
                     ]
                 },

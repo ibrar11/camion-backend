@@ -182,6 +182,11 @@ export class CartItemsService {
                         levels: true,
                     },
                     images: true,
+                    optionValues: {
+                        optionValue: {
+                            option: true
+                        }
+                    }
                 },
             },
             order: { id: 'DESC' },
