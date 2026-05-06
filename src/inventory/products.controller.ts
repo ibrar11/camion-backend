@@ -51,7 +51,7 @@ export class ProductsController {
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Product>> {
-		return this.productsService.findAll(filters, sort, pageNumber, itemsPerPage);
+		return this.productsService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
