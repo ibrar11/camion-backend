@@ -639,6 +639,9 @@ export class ProductsService {
 			products = await this.productRepository.find({
 				cache: true,
 				relationLoadStrategy: "query",
+				where: {
+					status: ProductStatus.ACTIVE,
+				},
 				relations: {
 					variants: {
 						images: true,
