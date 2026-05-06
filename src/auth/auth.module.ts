@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Customer } from 'src/customers/entities/customer.entity';
@@ -29,9 +30,11 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
+import { GoogleOAuthStrategy } from './strategies/google.strategy';
 
 @Module({
     imports: [
+        PassportModule,
         TypeOrmModule.forFeature([
             User,
             Customer,
@@ -52,6 +55,7 @@ import { RolesGuard } from './roles.guard';
         AuthGuard,
         RolesGuard,
         TwilioService,
+        GoogleOAuthStrategy,
     ],
     controllers: [
         CustomerAuthController,

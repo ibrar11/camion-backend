@@ -2,6 +2,8 @@ import * as crypto from "node:crypto";
 
 import * as bcrypt from "bcrypt";
 
+import { OAuth2Client, LoginTicket } from "google-auth-library";
+
 import {
 	BadRequestException,
 	Inject,
@@ -21,6 +23,7 @@ import { ConfigService } from "@nestjs/config";
 
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
+import { GoogleMobileAuthDto } from "./dtos/GoogleMobileAuthDto";
 import { VerifyCustomerDto } from "./dtos/VerifyCustomerDto";
 import { RegisterCustomerDto } from "./dtos/RegisterCustomerDto";
 import { LoginCustomerByEmailAddressDto } from "./dtos/LoginCustomerByEmailAddressDto";
@@ -312,8 +315,11 @@ export class CustomerAuthService {
 		request.secret = await bcrypt.hash(secret, 10);
 		await this.loginRequestRepository.save(request);
 
-		// Send OTP via Twilio Messaging Service
-		await this.twilioService.sendOtp(customer.phoneNumber, secret);
+		if (this.isLocal) {
+			this.logger.log(`[LOCAL] OTP for ${customer.phoneNumber}: ${secret}`);
+		} else {
+			await this.twilioService.sendOtp(customer.phoneNumber!, secret);
+		}
 
 		// Create a payload for the session token
 		const payload = {
@@ -623,6 +629,95 @@ export class CustomerAuthService {
 		} catch (err) {
 			this.logger.error(err);
 		}
+	}
+
+	async loginWithGoogleMobile(dto: GoogleMobileAuthDto): Promise<CustomerAuthResponse> {
+		const { idToken } = dto;
+
+		const allowedAudiences: string[] = [];
+		const iosClientId = this.configService.get<string>('GOOGLE_IOS_CLIENT_ID');
+		const androidClientId = this.configService.get<string>('GOOGLE_ANDROID_CLIENT_ID');
+		if (iosClientId) allowedAudiences.push(iosClientId);
+		if (androidClientId) allowedAudiences.push(androidClientId);
+
+		if (allowedAudiences.length === 0) {
+			throw new UnauthorizedException({ error: 'Google authentication not configured.' });
+		}
+
+		let ticket: LoginTicket;
+		try {
+			const client = new OAuth2Client();
+			ticket = await client.verifyIdToken({ idToken, audience: allowedAudiences });
+		} catch {
+			throw new UnauthorizedException({ error: 'Invalid or expired Google ID token.' });
+		}
+
+		const payload = ticket.getPayload();
+		if (!payload) {
+			throw new UnauthorizedException({ error: 'Invalid token payload.' });
+		}
+
+		const googleId = payload.sub;
+		const email = payload.email || '';
+		const fullName = payload.name || '';
+
+		if (!email || !googleId) {
+			throw new UnauthorizedException({ error: 'Email or Google ID not found in token.' });
+		}
+
+		return this.findOrCreateGoogleCustomer({ email, fullName, googleId });
+	}
+
+	async loginWithGoogleWeb(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
+		return this.findOrCreateGoogleCustomer(profile);
+	}
+
+	private async findOrCreateGoogleCustomer(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, googleId } = profile;
+
+		let customer = await this.customerRepository.findOneBy({ googleId });
+
+		if (!customer) {
+			customer = await this.customerRepository.findOneBy({
+				emailAddress: email.toLowerCase().trim(),
+			});
+
+			if (customer) {
+				customer.googleId = googleId;
+				customer = await this.customerRepository.save(customer);
+			} else {
+				const newCustomer = new Customer();
+				newCustomer.uuid = crypto.randomUUID();
+				newCustomer.fullName = (fullName || email.split('@')[0]).trim();
+				newCustomer.emailAddress = email.toLowerCase().trim();
+				newCustomer.phoneNumber = null;
+				newCustomer.password = '';
+				newCustomer.googleId = googleId;
+				newCustomer.role = CustomerRole.Customer;
+				newCustomer.isActive = true;
+				customer = await this.customerRepository.save(newCustomer);
+			}
+		}
+
+		if (!customer.isActive) {
+			throw new UnauthorizedException({ error: 'Account is deactivated.' });
+		}
+
+		const jwtPayload = {
+			jti: crypto.randomUUID(),
+			type: 'customer',
+			sub: customer.uuid,
+		};
+
+		const token = await this.jwtService.signAsync(jwtPayload);
+
+		await this.cacheManager.set(
+			`auth:customer-session:${jwtPayload.jti}`,
+			token,
+			(this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000,
+		);
+
+		return { token, customer };
 	}
 
 	/***
