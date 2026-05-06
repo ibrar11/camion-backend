@@ -73,6 +73,11 @@ export class Order {
     @Column({ type: "varchar", length: 64 })
     eta: string;
 
+    // Set once a Gulltrans procurement order is created for this order. Null means not yet procured.
+    @Field(() => String, { nullable: true })
+    @Column({ type: "varchar", length: 128, nullable: true, default: null })
+    gulltransOrderId: string | null;
+
     @Field(() => [OrderItem])
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
     orderItems: Array<OrderItem>;
@@ -86,6 +91,14 @@ export class Order {
         type: "timestamptz",
     })
     updatedAt: Date;
+
+    // <!--
+    // This field is not part of the schema. Please don't add it to the database.
+
+    @Field(() => Date, { name: "orderPlacementDate" })
+    orderPlacementDate: Date;
+
+    // -->
 
     @Exclude()
     @CreateDateColumn({

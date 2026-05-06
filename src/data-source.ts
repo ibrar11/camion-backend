@@ -74,6 +74,9 @@ import { User } from "./users/entities/user.entity";
 //WishList
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
 
+// JOP WMS
+import { JopWmsOrder } from "./jop-wms/entities/jop-wms-order.entity";
+
 // pricing
 import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
 
@@ -82,6 +85,13 @@ import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 
 // promos
 import { Promo } from "./promos/entities/promo.entity";
+
+import { ReturnRequest } from "./returns/entities/return-request.entity";
+import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
+
+// translation
+import { Translation } from "./translation/entities/translation.entity";
+import { TranslationItem } from "./translation/entities/translation-item.entity";
 
 export const CamionDataSource = new DataSource({
 	type: "postgres",
@@ -107,6 +117,7 @@ export const CamionDataSource = new DataSource({
 		CustomerAddress,
 		InventoryItem,
 		InventoryLevel,
+		JopWmsOrder,
 		Language,
 		LoginRequest,
 		Notification,
@@ -134,6 +145,10 @@ export const CamionDataSource = new DataSource({
 		ExchangeRate,
 		KeyValuePair,
 		Promo,
+		ReturnRequest,
+		ReturnEvidence,
+		Translation,
+		TranslationItem,
 	],
 	migrations: [
 		"src/migrations/*",

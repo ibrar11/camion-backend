@@ -201,6 +201,20 @@ GET /v1/cart-items HTTP/1.1
                         "height": 1000
                     }
                 }
+            ],
+            "optionValues": [
+                {
+                    "optionValue": {
+                        "uuid": "853fe098-90a1-460d-ab49-20abc7f55896",
+                        "value": "Off-white and dark gray [double standard model]",
+                        "position": 8,
+                        "option": {
+                            "uuid": "caf82529-a8a9-43e3-b927-7447e61eba12",
+                            "name": "Color",
+                            "position": 1
+                        }
+                    }
+                }
             ]
         },
         "quantity": 1,

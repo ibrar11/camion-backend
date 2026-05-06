@@ -362,7 +362,7 @@ export class OrderService {
      *
      * @returns
      */
-    findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
+    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
@@ -372,7 +372,7 @@ export class OrderService {
                 filter.status = status;
             }
 
-            return this.orderRepository.find({
+            const orders = await this.orderRepository.find({
                 relationLoadStrategy: "query",
                 where: {
                     ...filter
@@ -392,6 +392,10 @@ export class OrderService {
                 skip: skip,
                 take: take,
             });
+            return orders.map((order) => {
+                order.orderPlacementDate = order.createdAt;
+                return order;
+            })
         } catch (error: any) {
             this.logger.error(`Error fetching orders: ${error}`);
             throw new InternalServerErrorException({
@@ -406,7 +410,7 @@ export class OrderService {
      * @param customerUuid
      * @returns
      */
-    findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
+    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
         try {
 
             // Get pagination params
@@ -417,7 +421,7 @@ export class OrderService {
                 filter.status = status
             }
 
-            return this.orderRepository.find({
+            const orders = await this.orderRepository.find({
                 relationLoadStrategy: "query",
                 where: {
                     customer: { uuid: customerUuid },
@@ -438,6 +442,10 @@ export class OrderService {
                 skip: skip,
                 take: take,
             });
+            return orders.map((order) => {
+                order.orderPlacementDate = order.createdAt;
+                return order;
+            })
         } catch (error: any) {
             this.logger.error(`Error fetching my orders: ${error}`);
             throw new InternalServerErrorException({
@@ -466,6 +474,11 @@ export class OrderService {
                         },
                         variant: {
                             images: true,
+                            optionValues: {
+                                optionValue: {
+                                    option: true
+                                }
+                            }
                         },
                     },
                     shippingAddress: true
@@ -475,6 +488,8 @@ export class OrderService {
             if (!order) throw new NotFoundException({
                 error: 'Order not found',
             });
+
+            order.orderPlacementDate = order.createdAt;
 
             return order;
         } catch (error: any) {
@@ -596,7 +611,12 @@ export class OrderService {
                         inventoryItem: {
                             levels: true
                         },
-                        images: true
+                        images: true,
+                        optionValues: {
+                            optionValue: {
+                                option: true
+                            }
+                        }
                     }
                 }
             });

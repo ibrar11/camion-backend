@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 } from "@nestjs/common";
 
@@ -11,6 +12,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
 import { S3Service } from "../common/s3.service";
+import { FileService } from "../common/file.service";
 
 import { ProductReview } from "./entities/product-review.entity";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
@@ -21,6 +23,7 @@ export class ProductReviewImageService {
 
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(ProductReview) private readonly productReview: Repository<ProductReview>,
 		@InjectRepository(ProductReviewImage) private readonly productReviewImageRepository: Repository<ProductReviewImage>,
 	) { }
@@ -43,7 +46,18 @@ export class ProductReviewImageService {
 		}
 
 		// Upload the file to s3
-		const params = await this.s3Service.uploadFile("reviews", file);
+		let params: { key: string; url: string; } | null = null;
+		try {
+			params = await this.s3Service.uploadFile("reviews", file);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the product review image image. Please try again.",
+			});
+		}
+
+		// Delete the temporary files
+		await this.fileService.deleteFile(file);
 
 		// Create a review image
 		const image = new ProductReviewImage();

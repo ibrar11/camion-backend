@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { S3Service } from '../common/s3.service';
+import { FileService } from '../common/file.service';
 
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -68,6 +69,8 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 
 import { PricingModule } from '../pricing/pricing.module';
 
+import { Translation } from '../translation/entities/translation.entity';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -88,6 +91,7 @@ import { PricingModule } from '../pricing/pricing.module';
 			InventoryLevel,
 			Warehouse,
 			CartItem,
+			Translation
 		]),
 		ClientsModule,
 		PricingModule,
@@ -114,7 +118,7 @@ import { PricingModule } from '../pricing/pricing.module';
 		ProductVariantService,
 		ProductVariantService,
 		WarehouseService,
-		S3Service,
+		FileService,
 	],
 	controllers: [
 		CategoriesController,

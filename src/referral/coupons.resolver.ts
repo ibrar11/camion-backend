@@ -4,7 +4,9 @@ import {
 	Context,
 	Field,
 	Int,
+	Parent,
 	Query,
+	ResolveField,
 	Resolver,
 } from "@nestjs/graphql";
 
@@ -32,6 +34,16 @@ export class GetCurrentAffiliateCouponsArgs {
 @Resolver(() => Coupon)
 export class CouponsResolver {
 	constructor(@Inject(CouponsService) private readonly couponsService: CouponsService) { }
+
+	@ResolveField("expiresAt", () => String)
+	getExpiresAt(@Parent() coupon: Coupon): String {
+		return new String(coupon.expiresAt);
+	}
+
+	@ResolveField("createdAt", () => String)
+	getCreatedAt(@Parent() coupon: Coupon): String {
+		return new String(coupon.createdAt);
+	}
 
 	@Query(() => [Coupon])
 	async getCurrentAffiliateCoupons(@Context() context, @Args() args: GetCurrentAffiliateCouponsArgs): Promise<Array<Coupon>> {

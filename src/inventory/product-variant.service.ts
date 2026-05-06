@@ -62,10 +62,23 @@ export class ProductVariantService {
 			});
 		}
 
-		// Create the product variant
-		const variant = new ProductVariant();
-		variant.uuid = crypto.randomUUID();
-		variant.product = product;
+		let variant = await this.variantRepository.findOne({
+			where: { sku: body.sku.trim() },
+			relations: ["inventoryItem"],
+		});
+
+		// UPDATE
+		if (variant) {
+			this.logger.log(`Updating variant with SKU: ${body.sku}`);
+		} else {
+			// CREATE
+			this.logger.log(`Creating new variant with SKU: ${body.sku}`);
+			variant = new ProductVariant();
+			variant.uuid = crypto.randomUUID();
+			variant.product = product;
+		}
+
+		// common fields (create + update)
 		variant.titleEn = body.title.en.trim();
 		variant.titleAr = body.title.ar.trim();
 		variant.sku = body.sku.trim();
@@ -73,39 +86,67 @@ export class ProductVariantService {
 		variant.cost = body.cost;
 		variant.weight = body.weight;
 		variant.dimensions = body.dimensions;
+		variant.skuMeta = body.skuMeta ?? null;
+
 		await this.variantRepository.save(variant);
 
-		// Create the inventory item for the variant
-		const inventoryItem = new InventoryItem();
-		inventoryItem.uuid = crypto.randomUUID();
+		// INVENTORY ITEM (update or create)
+		let inventoryItem = await this.inventoryItemRepository.findOne({
+			where: { variant: { uuid: variant.uuid } },
+		});
+
+		if (!inventoryItem) {
+			inventoryItem = new InventoryItem();
+			inventoryItem.uuid = crypto.randomUUID();
+			inventoryItem.variant = variant;
+		}
+
 		inventoryItem.sku = body.sku.trim();
-		inventoryItem.variant = variant;
 		await this.inventoryItemRepository.save(inventoryItem);
 
-		// Create the inventory level in the warehouse
-		const inventoryLevel = new InventoryLevel();
-		inventoryLevel.uuid = crypto.randomUUID();
+		// INVENTORY LEVEL (update or create)
+		let inventoryLevel = await this.inventoryLevelRepository.findOne({
+			where: {
+				inventoryItem: { uuid: inventoryItem.uuid },
+				warehouse: { uuid: warehouse.uuid },
+			},
+			relations: ["inventoryItem", "warehouse"],
+		});
+
+		if (!inventoryLevel) {
+			inventoryLevel = new InventoryLevel();
+			inventoryLevel.uuid = crypto.randomUUID();
+			inventoryLevel.inventoryItem = inventoryItem;
+			inventoryLevel.warehouse = warehouse;
+		}
+
 		inventoryLevel.quantity = body.quantity;
-		inventoryLevel.inventoryItem = inventoryItem;
-		inventoryLevel.warehouse = warehouse;
 		await this.inventoryLevelRepository.save(inventoryLevel);
 
-		// Find the product option values and create product variant option values
-		// This is to join the product option values to its associated product variant.
-		if (body.optionValues !== null && Array.isArray(body.optionValues)) {
-			body.optionValues
-				.filter((optionValueUUID, index) => body.optionValues.indexOf(optionValueUUID) === index)
-				.forEach(async optionValueUUID => {
-					const optionValue = await this.productOptionValueRepository.findOneBy({ uuid: optionValueUUID, });
-					if (optionValue === null) {
-						return;
-					}
+		// OPTION VALUES (reset + reassign)
+		if (body.optionValues && Array.isArray(body.optionValues)) {
+			const rows = await this.productVariantOptionValueRepository.find({
+				where: { variant: { uuid: variant.uuid } },
+				relations: {variant: true},
+			});
 
-					const productVariantOptionValue = new ProductVariantOptionValue();
-					productVariantOptionValue.variant = variant;
-					productVariantOptionValue.optionValue = optionValue;
-					await this.productVariantOptionValueRepository.save(productVariantOptionValue);
+			await this.productVariantOptionValueRepository.remove(rows);
+
+			const uniqueOptionValues = [...new Set(body.optionValues)];
+
+			for (const optionValueUUID of uniqueOptionValues) {
+				const optionValue = await this.productOptionValueRepository.findOneBy({
+					uuid: optionValueUUID,
 				});
+
+				if (!optionValue) continue;
+
+				const relation = new ProductVariantOptionValue();
+				relation.variant = variant;
+				relation.optionValue = optionValue;
+
+				await this.productVariantOptionValueRepository.save(relation);
+			}
 		}
 
 		return variant;

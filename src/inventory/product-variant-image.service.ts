@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import {
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException,
 } from "@nestjs/common";
@@ -15,10 +16,11 @@ import { S3Service } from "../common/s3.service";
 import { getSkipAndTake } from "../common/pagination";
 
 import { UpdateProductVariantImageDto } from "./dtos/UpdateProductVariantImageDto";
+import { ReplaceProductVariantImageDto } from "./dtos/ReplaceProductVariantImageDto";
 
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage, ProductVariantImageDimensions } from "./entities/product-variant-image.entity";
-
+import { FileService } from "src/common/file.service";
 
 @Injectable()
 export class ProductVariantImageService {
@@ -26,6 +28,7 @@ export class ProductVariantImageService {
 
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantImage) private readonly productVariantImageRepository: Repository<ProductVariantImage>,
 	) { }
@@ -49,7 +52,18 @@ export class ProductVariantImageService {
 		}
 
 		// Upload the image to s3
-		const params = await this.s3Service.uploadFile("product-images", file);
+		let params: { key: string, url: string } | null = null;
+		try {
+			params = await this.s3Service.uploadFile("product-images", file);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the product variant image. Please try again.",
+			});
+		}
+
+		// Delete the temporary files
+		await this.fileService.deleteFile(file);
 
 		// Create the product variant image
 		const productVariantImage = new ProductVariantImage();
@@ -145,6 +159,41 @@ export class ProductVariantImageService {
 		variantImage.alt = body.alt.trim();
 		variantImage.position = body.position;
 		variantImage.isFeatured = body.isFeatured;
+		return this.productVariantImageRepository.save(variantImage);
+	}
+
+	/**
+	 * Replaces the product variant image
+	 *
+	 * @param uuid
+	 * @param body
+	 * @returns
+	 */
+	async replaceProductVariantImage(uuid: string, body: ReplaceProductVariantImageDto): Promise<ProductVariantImage> {
+		this.logger.log(`Replacing product variant image: ${uuid}`);
+
+		// Find the variant image
+		const variantImage = await this.productVariantImageRepository.findOneBy({ uuid: uuid, });
+		if (variantImage === null) {
+			throw new NotFoundException({
+				error: "Failed to find the variant image. Please check and try again.",
+			});
+		}
+
+		// Move the file from source to destination
+		let params: { key: string, url: string } | null = null;
+		try {
+			params = await this.s3Service.moveFile("product-images", body.key);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the product variant image. Please try again.",
+			});
+		}
+
+		// Update the image
+		variantImage.imageUrl = params.url;
+		variantImage.thumbnailUrl = params.url;
 		return this.productVariantImageRepository.save(variantImage);
 	}
 

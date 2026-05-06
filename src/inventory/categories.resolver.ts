@@ -27,7 +27,7 @@ export class GetCategoriesArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -72,7 +72,5 @@ export class CategoriesResolver {
 	@Query(() => [Category])
 	getFeaturedCategories(@Args() args: GetCategoriesArgs): Promise<Array<Category>> {
 		return this.categoriesService.findAllFeatured(args.pageNumber, args.itemsPerPage);
-		// console.log(x);
-		// return x;
 	}
 }

@@ -55,7 +55,7 @@ export class PostsController {
     }
 
     /**
-     * Get single post
+     * Get single post by uuid
      */
     @Get(':uuid')
     @HttpCode(HttpStatus.OK)

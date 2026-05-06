@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -36,7 +38,7 @@ export class BannersController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post()
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateBanner(@UploadedFile() file: Express.Multer.File): Promise<Banner> {
 		return this.bannersService.createBanner(file);

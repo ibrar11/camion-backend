@@ -24,9 +24,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import KeyvRedis from "@keyv/redis";
 
-import { Keyv } from "keyv";
-import { Cacheable, CacheableMemory } from "cacheable";
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -106,6 +103,10 @@ import { Order } from "./order/entities/order.entity";
 import { OrderItem } from "./order/entities/order-item.entity";
 import { OrderModule } from './order/order.module';
 
+import { ReturnRequest } from "./returns/entities/return-request.entity";
+import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
+import { ReturnsModule } from './returns/returns.module';
+
 import { Notification } from "./notifications/entities/notification.entity";
 import { NotificationsModule } from './notifications/notifications.module';
 
@@ -121,6 +122,15 @@ import { PricingModule } from './pricing/pricing.module';
 import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
 import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
 import { Promo } from "./promos/entities/promo.entity";
+
+import { QueueModule } from "./queue/queue.module";
+
+import { Translation } from "./translation/entities/translation.entity";
+import { TranslationItem } from "./translation/entities/translation-item.entity";
+import { TranslationModule } from './translation/translation.module';
+
+import { JopWmsModule } from './jop-wms/jop-wms.module';
+import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 
 @Module({
 	imports: [
@@ -160,6 +170,7 @@ import { Promo } from "./promos/entities/promo.entity";
 				database: configService.get<string>("DB_DATABASE"),
 				synchronize: true,
 				namingStrategy: new SnakeNamingStrategy(),
+				logging: false,
 				cache: {
 					type: "ioredis",
 					options: configService.get<string>("REDIS_URI"),
@@ -236,6 +247,14 @@ import { Promo } from "./promos/entities/promo.entity";
 					KeyValuePair,
 
 					Promo,
+
+					ReturnRequest,
+					ReturnEvidence,
+
+					Translation,
+					TranslationItem,
+
+					JopWmsOrder,
 				],
 			}),
 		}),
@@ -287,8 +306,11 @@ import { Promo } from "./promos/entities/promo.entity";
 		WishlistModule,
 		PricingModule,
 		KeyValuePairsModule,
-		WishlistModule,
 		PromosModule,
+		ReturnsModule,
+		QueueModule,
+		TranslationModule,
+		JopWmsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -10,6 +12,7 @@ import {
 	Post,
 	Put,
 	Query,
+	Req,
 	UploadedFile,
 	UseGuards,
 	UseInterceptors,
@@ -29,6 +32,7 @@ import { AuthGuard } from "../auth/auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 
 import { Roles } from "../auth/roles.decorator";
+import { User } from "src/users/entities/user.entity";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/categories")
@@ -44,7 +48,7 @@ export class CategoriesController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid/thumbnail')
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionUploadThumbnail(@Param('uuid') uuid: string, @UploadedFile() file: Express.Multer.File): Promise<Category> {
 		return this.productCategoryService.updateThumbnail(uuid, file);
@@ -54,11 +58,19 @@ export class CategoriesController {
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductCategories(
+		@Req()
+		req: Request & {
+			jti: string,
+			user: User,
+		},
 		@Query("filters") filters: string,
 		@Query("sort") sort: string,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Category>> {
+		if (req.user) {
+			return this.productCategoryService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
+		}
 		return this.productCategoryService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 

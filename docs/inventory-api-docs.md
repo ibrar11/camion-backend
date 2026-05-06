@@ -211,18 +211,20 @@ slug | Yes | String | A unique string that identifies the category
 name.en | Yes | String | The name of the category in English
 name.ar | Yes | String | The name of the category in Arabic
 pricingFactor | Yes | Number | The pricing factor of the category
+discountPercentage | Yes | Number | The discount percentage of the category
 isFeatured | Yes | Boolean | Determines if the category is featured.
 
 ### Request Body
 ```json
 {
     "parentUUID": null,
-    "slug": "sneakers",
+    "slug": "iphones-nine",
     "name": {
-        "en": "Sneakers",
+        "en": "iPhones",
         "ar": "أحذية رياضية"
     },
-    "pricingFactor": 1.2,
+    "pricingFactor": 10,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```
@@ -231,10 +233,11 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
 ```json
 {
     "uuid": "5d32adfe-cdaa-4d19-9a3b-c2374b2a0aab",
-    "slug": "sneakers",
-    "nameEn": "sneakers",
+    "slug": "iphones-nine",
+    "nameEn": "iPhones",
     "nameAr": "أحذية رياضية",
-    "pricingFactor": 1.2,
+    "pricingFactor": 10,
+    "discountPercentage": 5,
     "isFeatured": true,
     "parent": null
 }
@@ -267,6 +270,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "nameEn": "sneakers",
         "nameAr": "أحذية رياضية",
         "pricingFactor": "1.2",
+        "discountPercentage": "5",
         "isFeatured": true,
         "children": [
             {
@@ -275,6 +279,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
                 "nameEn": "sneakers-shoes",
                 "nameAr": "أحذية رياضية",
                 "pricingFactor": "1.2",
+                "discountPercentage": "5",
                 "isFeatured": true,
                 "children": []
             }
@@ -301,6 +306,7 @@ GET /v1/categories/<category-uuid> HTTP/1.1
     "nameEn": "sneakers",
     "nameAr": "sneakers",
     "pricingFactor": 1.4,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```
@@ -321,6 +327,7 @@ slug | Yes | String | A unique string that identifies the category
 name.en | Yes | String | The name of the category in English
 name.ar | Yes | String | The name of the category in Arabic
 pricingFactor | Yes | Number | The pricing factor of the category
+discountPercentage | Yes | Number | The discount percentage on products in this category
 isFeatured | Yes | Boolean | Determines if the category is featured.
 
 ### Request Body
@@ -332,6 +339,7 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
         "ar": "أحذية رياضية"
     },
     "pricingFactor": 1.4,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```
@@ -344,6 +352,7 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
     "nameEn": "Sneakers",
     "nameAr": "أحذية رياضية",
     "pricingFactor": 1.4,
+    "discountPercentage": 5,
     "isFeatured": true
 }
 ```
@@ -1490,6 +1499,38 @@ PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
     "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
     "alt": "iPhone Photo",
     "isFeatured": true,
+    "position": 0,
+    "dimensions": {
+        "width": 1000,
+        "height": 1000
+    }
+}
+```
+
+Replace Variant Image
+---------------------
+
+```http
+PATCH /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "key": "generated/e5001e9b-1521-490d-b164-44d88460e067.png"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+    "imageUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
+    "thumbnailUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
+    "alt": "",
+    "isFeatured": false,
     "position": 0,
     "dimensions": {
         "width": 1000,

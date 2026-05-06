@@ -9,6 +9,7 @@ import {
 	Entity,
 	Index,
 	OneToMany,
+	OneToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -27,6 +28,8 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 import { OrderItem } from "../../order/entities/order-item.entity";
 
 import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
+
+import { Translation } from "../../translation/entities/translation.entity";
 
 @ObjectType()
 @Entity({ name: "products", })
@@ -93,7 +96,20 @@ export class Product {
 		enum: ProductStatus,
 		default: ProductStatus.DRAFT,
 	})
+	@Index()
 	status: ProductStatus;
+
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 128, nullable: true, default: null })
+	shopId: string | null;
+
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 256, nullable: true, default: null })
+	shopName: string | null;
+
+	@Field(() => String, { nullable: true })
+	@Column({ type: 'varchar', length: 64, nullable: true, default: null })
+	procurementId: string | null;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
@@ -161,6 +177,9 @@ export class Product {
 
 	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product, { cascade: true, })
 	wishlistItems: Array<WishlistItem>;
+
+	@OneToOne(() => Translation, (translation) => translation.product, { cascade: true, })
+	translation: Translation;
 
 	@Exclude()
 	@Column({

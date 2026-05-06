@@ -34,7 +34,7 @@ export class PostsResolver {
     }
 
     @Query(() => Post)
-    getPost(@Args('uuid') uuid: string): Promise<Post> {
-        return this.postsService.findOne(uuid);
+    getPost(@Args('slug') slug: string): Promise<Post> {
+        return this.postsService.findOneBySlug(slug);
     }
 }

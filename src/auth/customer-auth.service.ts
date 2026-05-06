@@ -82,7 +82,7 @@ export class CustomerAuthService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
@@ -188,7 +188,7 @@ export class CustomerAuthService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 
@@ -639,7 +639,7 @@ export class CustomerAuthService {
 		}
 
 		// Trim the phone number
-		if (body.phoneNumber !== null) {
+		if (body.phoneNumber !== null && body.phoneNumber !== undefined) {
 			body.phoneNumber = body.phoneNumber.trim();
 		}
 

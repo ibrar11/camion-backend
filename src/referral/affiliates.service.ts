@@ -73,6 +73,13 @@ export class AffiliatesService {
 			});
 		}
 
+		// Make sure an influencer isn't able to switch to be an affiliate
+		if (customer.role === CustomerRole.Influencer) {
+			throw new ConflictException({
+				error: "You're already an influencer. You cannot switch to be an affiliate.",
+			});
+		}
+
 		// Update the customer's role
 		customer.role = CustomerRole.Affiliate;
 		await this.customerRepository.save(customer);
@@ -170,6 +177,13 @@ export class AffiliatesService {
 		if (customer.role === CustomerRole.Influencer) {
 			throw new BadRequestException({
 				error: "You're already an influencer.",
+			});
+		}
+
+		// Make sure the affiliate isn't able to switch to be an influencer
+		if (customer.role === CustomerRole.Affiliate) {
+			throw new ConflictException({
+				error: "You're already an affiliate. You cannot switch to be an influencer.",
 			});
 		}
 
@@ -311,7 +325,7 @@ export class AffiliatesService {
 
 		// Find the affiliate
 		const affiliate = await this.affiliateRepository.findOne({
-			cache: true,
+			// cache: true,
 			relationLoadStrategy: "query",
 			where: {
 				customer: {

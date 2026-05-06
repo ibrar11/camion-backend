@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { S3Service } from 'src/common/s3.service';
+import { FileService } from 'src/common/file.service';
 
 import { Banner } from './entities/banner.entity';
 import { BannersService } from './banners.service';
@@ -32,6 +33,7 @@ import { ClientsModule } from '../clients/clients.module';
 		CustomersService,
 		BannersService,
 		BannersResolver,
+		FileService,
 	],
 	controllers: [BannersController]
 })

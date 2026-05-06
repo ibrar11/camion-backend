@@ -39,11 +39,19 @@ import {
     importedProduct,
     CreateOrderResponse,
     BulkCreateOrderResponse,
+    SearchProduct,
 } from './types';
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Order } from '../order/entities/order.entity';
+
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { QueueService } from 'src/queue/queue.service';
+import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 
 
 @Injectable()
@@ -56,7 +64,14 @@ export class ProcurementService {
         @Inject(ProductOptionService) private readonly optionService: ProductOptionService,
         @Inject(ProductOptionValueService) private readonly optionValueService: ProductOptionValueService,
         @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
+        @Inject(QueueService) private readonly queueService: QueueService,
+        @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     ) { }
+
+    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderId: string | number) {
+        if (!orderUuid) return;
+        await this.orderRepository.update({ uuid: orderUuid }, { gulltransOrderId: String(gulltransOrderId) });
+    }
 
     /**
      * Finds a list of products with specific keyword
@@ -71,7 +86,7 @@ export class ProcurementService {
         sort: string,
         priceStart: string = '',
         priceEnd: string = ''
-    ): Promise<Array<SearchProducts>> {
+    ): Promise<SearchProducts> {
         try {
             if (Number(pageSize) > 50) {
                 throw new BadRequestException({
@@ -112,8 +127,14 @@ export class ProcurementService {
 
             const products: SearchProductItem[] = data?.data?.data || [];
 
+            const totalProducts = data?.data?.totalRecords;
+            const page_size = data?.data?.pageSize;
+            const currentPage = data?.data?.currentPage;
+            const excludeLastPage = (totalProducts % page_size) === 0;
+            const totalPage = excludeLastPage ? data?.data?.totalPage - 1 : data?.data?.totalPage;
+
             // Format the products
-            const formattedProducts = products?.map((item) => ({
+            const formattedProducts: Array<SearchProduct> = products?.map((item) => ({
                 externalId: item.offerId,
                 title: (item.subjectTrans || item.subject).slice(0, 128),
                 price: parseFloat(
@@ -135,10 +156,18 @@ export class ProcurementService {
                     level3: item.thirdCategoryId,
                 },
                 createdAt: item.createDate,
-                updatedAt: item.modifyDate,
+                updatedAt: item.modifyDate
             }));
 
-            return formattedProducts;
+            return {
+                data: formattedProducts,
+                pagination: {
+                    totalProducts: totalProducts,
+                    totalPage: totalPage,
+                    page_size: page_size,
+                    currentPage: currentPage,
+                }
+            };
         } catch (error: any) {
             this.logger.error(`Error fetching products: ${error?.message}`);
             throw new InternalServerErrorException({
@@ -229,7 +258,9 @@ export class ProcurementService {
                 }) ?? [];
 
                 const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
-                const shippingInfo = product.productShippingInfo.skuShippingDetails.find(detail => detail.skuId === sku.skuId.toString());
+                const shippingInfo = product.productShippingInfo.skuShippingDetails.find((detail: any) => detail.skuId === sku.skuId.toString());
+
+                const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
                 return {
                     title: title,
@@ -242,13 +273,26 @@ export class ProcurementService {
                     ),
                     stock: sku.amountOnSale,
                     attributes,
-                    image: sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? product.productImage?.images?.[0],
+                    image: skuImg,
                     shipping: {
                         weight: smartRoundInt(shippingInfo.weight),
                         length: smartRoundInt(shippingInfo.length),
                         width: smartRoundInt(shippingInfo.width),
                         height: smartRoundInt(shippingInfo.height),
                         origin: product.productShippingInfo.sendGoodsAddressText,
+                    },
+                    skuMeta: {
+                        shop_id: product.sellerOpenId,
+                        shop_name: product.companyName,
+                        spec_id: sku.specId,
+                        sku_img: skuImg,
+                        min_order_quantity: String(product.minOrderQuantity ?? 1),
+                        batch_number: '1',
+                        imgs: product.productImage?.images ?? [],
+                        specs: sku.skuAttributes?.map((attr: SkuAttribute) => ({
+                            label: attr.attributeName,
+                            value: attr.value,
+                        })) ?? [],
                     },
                 };
             });
@@ -325,6 +369,7 @@ export class ProcurementService {
             success: [] as importedProduct[],
             failed: [] as { id: string; reason: string }[],
         };
+        const importedProductUuids: string[] = [];
 
         try {
             const ids = [...new Set(dto.externalId || [])];
@@ -365,13 +410,18 @@ export class ProcurementService {
                                     en: productDetails.descriptionHtml,
                                     ar: productDetails.descriptionHtml
                                 },
-                                categories: dto.categories //need to add categories through admin dashboard
+                                categories: dto.categories, //need to add categories through admin dashboard
+                                shopId: productDetails.shopId ?? undefined,
+                                shopName: productDetails.shopName ?? undefined,
+                                procurementId: productDetails.externalId ? String(productDetails.externalId) : undefined,
                             });
+
+                            importedProductUuids.push(product.uuid);
 
                             // The product is imported as active now.
                             // const product = await this.productService.updateProductStatus(productCreated.uuid, { status: ProductStatus.ACTIVE, });
 
-                            const optionValuesUuids: string[] = []
+                            const optionValueMap = new Map<string, string>();
 
                             // 3. create product option and product option values for product
                             if (productDetails.options?.length) {
@@ -412,14 +462,14 @@ export class ProcurementService {
                                                             createdOption.uuid,
                                                             optionValuePayload
                                                         );
-                                                        optionValuesUuids.push(optionValue.uuid)
+                                                        optionValueMap.set(optionValue.valueEn, optionValue.uuid);
                                                     } catch (error: any) {
-                                                        this.logger.error(`Option value creation failed for product ${product.uuid}: ${error?.message}`);
+                                                        this.logger.error(`Option value creation failed for product ${product.uuid}: ${error}`);
                                                     }
                                                 }
 
                                             } catch (error: any) {
-                                                this.logger.error(`Option creation failed for product ${product.uuid}: ${error?.message}`,);
+                                                this.logger.error(`Option creation failed for product ${product.uuid}: ${error}`,);
                                             }
                                         }),
                                     );
@@ -430,12 +480,21 @@ export class ProcurementService {
                             if (productDetails.variants?.length) {
                                 const VARIANT_BATCH_SIZE = 5;
                                 const warehouse = dto.warehouseUUID;
+                                const hasVariantImages = productDetails.variants.some(v => !!v.image);
+
+                                let firstVariantId: string | null = null;
+                                let fallbackImagesAssigned = false;
+
                                 for (let i = 0; i < productDetails.variants.length; i += VARIANT_BATCH_SIZE) {
                                     const batch = productDetails.variants.slice(i, i + VARIANT_BATCH_SIZE);
 
                                     await Promise.all(
                                         batch.map(async (variant) => {
                                             try {
+                                                const optionValuesUuids = variant.attributes
+                                                    .map(attr => optionValueMap.get(attr.value))
+                                                    .filter((uuid): uuid is string => Boolean(uuid));
+
                                                 const dto: CreateProductVariantDto = {
                                                     warehouse: warehouse,
                                                     title: {
@@ -460,6 +519,7 @@ export class ProcurementService {
                                                         unit: DimensionsUnit.Centimeter
                                                     },
                                                     optionValues: optionValuesUuids,
+                                                    skuMeta: variant.skuMeta,
                                                 };
 
                                                 // add product variants
@@ -468,9 +528,33 @@ export class ProcurementService {
                                                     dto,
                                                 );
 
-                                                const imageFile = await fetchImageAsFile(variant.image || '')
+                                                if (!firstVariantId) {
+                                                    firstVariantId = createdVariant.uuid;
+                                                }
 
-                                                await this.variantImageService.createProductVariantImage(createdVariant.uuid, imageFile);
+                                                // Variant already has its own image
+                                                if (variant.image) {
+                                                    const imageFile = await fetchImageAsFile(variant.image);
+                                                    await this.variantImageService.createProductVariantImage(
+                                                        createdVariant.uuid,
+                                                        imageFile,
+                                                    );
+                                                    return;
+                                                }
+
+                                                //  No variant images exist → use featured images ONLY ONCE
+                                                if (!hasVariantImages && !fallbackImagesAssigned && firstVariantId === createdVariant.uuid) {
+                                                    if (Array.isArray(productDetails.images)) {
+                                                        for (const img of productDetails.images) {
+                                                            const imageFile = await fetchImageAsFile(img);
+                                                            await this.variantImageService.createProductVariantImage(
+                                                                createdVariant.uuid,
+                                                                imageFile,
+                                                            );
+                                                        }
+                                                    }
+                                                    fallbackImagesAssigned = true;
+                                                }
 
                                             } catch (error: any) {
                                                 this.logger.error(`Variant creation failed for product ${product.uuid}: ${error?.message}`, error);
@@ -486,7 +570,7 @@ export class ProcurementService {
                             });
 
                         } catch (error: any) {
-                            this.logger.error(`Failed importing product ${id}: ${error?.message}`);
+                            this.logger.error(`Failed importing product ${id}: ${error}`);
 
                             results.failed.push({
                                 id,
@@ -495,6 +579,13 @@ export class ProcurementService {
                         }
                     }),
                 );
+            }
+
+            if (importedProductUuids.length) {
+                // await this.queueService.addImportedProductsTranslationJob(
+                //     importedProductUuids,
+                //     1,
+                // );
             }
 
             return results;
@@ -571,7 +662,7 @@ export class ProcurementService {
                         const response = await fetch(
                             `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                             {
-                                method: 'POST',
+                                method: 'PUT',
                                 headers: {
                                     Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
                                     'X-Uuid': process.env.GULLTRANS_UUID || '',
@@ -597,9 +688,14 @@ export class ProcurementService {
                             return;
                         }
 
+                        this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
+
+                        const orderId = data?.data?.order_id ?? data?.data?.orderId ?? data?.data?.id;
+                        await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+
                         results.success.push({
                             shopId: order.shop_id,
-                            orderId: data?.data?.order_id,
+                            orderId,
                             raw: data?.data,
                         });
                     } catch (error: any) {
@@ -627,7 +723,7 @@ export class ProcurementService {
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                 {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: {
                         Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
                         'X-Uuid': process.env.GULLTRANS_UUID || '',
@@ -650,9 +746,12 @@ export class ProcurementService {
                 });
             }
 
+            const orderId = data?.data?.order_id;
+            await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+
             return {
                 success: true,
-                orderId: data?.data?.order_id,
+                orderId,
                 raw: data?.data,
             };
         } catch (error: any) {

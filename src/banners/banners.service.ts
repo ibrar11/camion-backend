@@ -3,6 +3,7 @@ import * as crypto from "node:crypto";
 import {
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException,
 } from '@nestjs/common';
@@ -11,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { S3Service } from '../common/s3.service';
+import { FileService } from "../common/file.service";
 
 import { getSkipAndTake } from '../common/pagination';
 
@@ -24,6 +26,7 @@ export class BannersService {
 
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(Banner) private readonly bannerRepository: Repository<Banner>,
 	) { }
 
@@ -37,7 +40,18 @@ export class BannersService {
 		this.logger.log(`Attempting to create a banner`);
 
 		// Upload the file to s3
-		const params = await this.s3Service.uploadFile("banners", file);
+		let params: { key: string; url: string; } | null;
+		try {
+			params = await this.s3Service.uploadFile("banners", file);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the banner. Please try again.",
+			});
+		}
+
+		// Delete the temporary files
+		await this.fileService.deleteFile(file);
 
 		// Create a banner using the uploaded file
 		const banner = new Banner();

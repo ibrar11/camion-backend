@@ -1,0 +1,844 @@
+JOP WMS REST API
+================
+
+This document covers the JOP Overseas Warehouse Management System (WMS) integration. It explains the architecture, polling mechanism, environment setup, and all admin API endpoints.
+
+---
+
+Overview
+--------
+
+JOP WMS is an external HTTP-based warehouse system used to manage the full overseas warehouse lifecycle:
+
+```
+Product Sync → Inbound (stock in) → Outbound (fulfillment) → Shipping → Returns
+```
+
+### End-to-end order dispatch flow
+
+```
+Customer places order
+       ↓
+Admin approves (status → CONFIRMED)
+       ↓
+POST /v1/wms/orders/dispatch  →  returns { jobId } immediately (202)
+       ↓ (background)
+All confirmed orders collected → items grouped by 1688 shop
+       ↓
+One Gulltrans procurement order per shop (all customer orders merged)
+       ↓
+Variants synced to WMS → One WMS inbound per shop group
+  (inbound covers all customer orders for that shop)
+       ↓
+[Scheduler polls inbound every 30 min]
+       ↓
+Inbound status → "shelved" (goods received at warehouse)
+       ↓
+Scheduler auto-creates one WMS outbound per customer order
+       ↓
+[Scheduler polls outbound every 15 min, saves waybill number]
+```
+
+**Key characteristics:**
+- All requests use HTTP POST with JSON
+- No webhooks — status changes must be polled
+- Authentication is per-request using an MD5 signature
+
+---
+
+Architecture
+------------
+
+The integration lives entirely in `src/jop-wms/` as a self-contained layer. It is only accessible from admin routes.
+
+```
+JopWmsController  (v1/wms/*)
+       │
+       ▼
+JopWmsService     (business logic — syncs with local DB, tracks orders)
+       │
+       ├──► JopWmsClient    (HTTP layer — builds MD5 signature, calls JOP WMS API)
+       └──► JopWmsScheduler (cron-based polling — updates jop_wms_orders table)
+```
+
+**`JopWmsClient`** — thin wrapper around `fetch`. Reads credentials from env vars, computes the MD5 signature on every request, and handles HTTP errors.
+
+**`JopWmsService`** — business logic layer. For product sync, it reads `ProductVariant` data from the local DB (populated via Gulltrans/1688 procurement) and maps it to the WMS format. For order creation, it automatically registers each order into the `jop_wms_orders` table so it enters the polling loop. The batch dispatch flow (`dispatchApprovedOrders`) runs in the background (fire-and-forget via `setImmediate`): it groups all confirmed orders by 1688 shop, makes one Gulltrans API call per shop, syncs all affected variants to WMS, and creates one WMS inbound per shop group covering all customer orders in it.
+
+**`JopWmsScheduler`** — cron jobs that poll non-terminal orders on a fixed interval. When an inbound order transitions to `shelved`, the scheduler automatically creates one WMS outbound order per customer order that was part of that inbound. See the Polling section below.
+
+---
+
+Environment Variables
+---------------------
+
+Add these to your `.env`:
+
+```
+JOP_WMS_BASE_URL=https://wms.example.com/api
+JOP_WMS_API_KEY=your_api_key
+JOP_WMS_API_SECRET=your_api_secret
+JOP_WMS_PROVIDER_API_KEY=your_provider_api_key
+JOP_WMS_USER_TOKEN=your_user_token
+JOP_WMS_WAREHOUSE_CODE=your_warehouse_code
+
+# Default logistics channel used when auto-creating outbound orders
+JOP_WMS_LOGISTICS_CHANNEL=your_logistics_channel_code
+```
+
+The Gulltrans warehouse address (where 1688 suppliers ship goods to) is read from the **active `Warehouse` record** in the database — not from env vars. Ensure the active warehouse has the following fields populated:
+
+| Column | Maps to | Required |
+|---|---|---|
+| `contactName` | `receiver_name` | Yes |
+| `phone` | `phone` | Yes |
+| `addressLine1` + `addressLine2` | `address` | Yes |
+| `city` | `city` | Yes |
+| `state` | `province` | Yes |
+| `country` | `country_name` | Yes |
+| `countryCode` | `country.country_code` | Yes |
+| `postcode` | `postcode` | No |
+| `name` | `company` | No |
+
+---
+
+Authentication
+--------------
+
+Every outbound call to JOP WMS is signed automatically by `JopWmsClient`. No manual auth step is required from the caller.
+
+The signature is computed as:
+
+```
+MD5(requestBodyJson + apiKey + apiSecret + timestamp)
+```
+
+The following headers are sent on every request:
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+| `apiKey` | `JOP_WMS_API_KEY` |
+| `providerApiKey` | `JOP_WMS_PROVIDER_API_KEY` |
+| `userToken` | `JOP_WMS_USER_TOKEN` |
+| `timestamp` | Unix ms timestamp (generated per request) |
+| `signature` | MD5 hash described above |
+
+---
+
+Polling
+-------
+
+JOP WMS has no webhooks, so order status must be polled. Two cron jobs run automatically in the background.
+
+**Outbound orders** — polled every 15 minutes. Fulfillment orders are time-sensitive because customers are waiting for tracking numbers. Once the WMS returns a waybill number, it is saved to the `jop_wms_orders` table.
+
+**Inbound and return orders** — polled every 30 minutes. These are slower-paced warehouse operations.
+
+### How polling works
+
+1. When an inbound, outbound, or return order is successfully created via the admin API, it is automatically registered in the `jop_wms_orders` table with `status = pending`.
+2. On each cron tick, the scheduler queries all non-terminal orders of that type.
+3. It calls the appropriate JOP WMS status endpoint and updates `status`, `waybillNo`, and `lastPolledAt` in the DB.
+4. For inbound orders: if the status transitions to `shelved` (goods received at warehouse), the scheduler automatically creates one WMS outbound order per customer order linked to that inbound (stored in `sourceOrderUuids`), using each customer's shipping address and `JOP_WMS_LOGISTICS_CHANNEL`.
+5. Once an order reaches a terminal status, it is excluded from future polls.
+
+**Terminal statuses** (polling stops automatically): `completed`, `cancelled`, `shelved`, `closed`
+
+> [!NOTE]
+> `shelved` is terminal for **inbound** orders (goods are now on warehouse shelves) but triggers outbound creation. It is also terminal for **return** orders (returned goods are re-shelved). Outbound orders are not affected by this trigger.
+
+### Error handling
+
+Each order has an `errorCount` field. If the JOP WMS call fails, `errorCount` is incremented. Once an order accumulates **5 consecutive failures**, it is skipped in future poll cycles. This prevents a permanently broken order from blocking the scheduler.
+
+### `jop_wms_orders` table
+
+| Column | Description |
+|---|---|
+| `orderNo` | The `customerVoucherNo` sent to JOP WMS (unique, max 32 chars). Dispatch-created inbounds use a 32-character hex string (UUID with dashes stripped) per shop group; outbound orders use `<customer-order-uuid>-out` |
+| `type` | `inbound`, `outbound`, or `return` |
+| `status` | Last known status from WMS |
+| `waybillNo` | Tracking number (outbound only, populated once available) |
+| `sourceOrderUuids` | Comma-separated customer `Order.uuid` values linked to this WMS record. For inbounds: all orders in the shop group. For outbounds: the single customer order UUID. Used by the scheduler to create outbound orders on shelved transition |
+| `lastPolledAt` | Timestamp of last successful poll attempt |
+| `errorCount` | Consecutive poll failures; order is skipped after 5 |
+
+Use `GET /v1/wms/orders/tracked` to inspect this table from the admin dashboard.
+
+---
+
+Admin API
+=========
+
+> [!IMPORTANT]
+> You must include your access token as a `Bearer` token in the Authorization header. Your account must be active.
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+All routes are prefixed with `/v1/wms`.
+
+---
+
+Order Dispatch
+--------------
+
+### Dispatch Approved Orders
+
+Batch-dispatches all `CONFIRMED` customer orders that have not yet been procured. Before starting the background job, a **synchronous pre-flight check** runs: if `orderUuids` is provided and any UUID already has a WMS inbound order in `jop_wms_orders`, the request is rejected immediately with `400 Bad Request` and the conflicting UUIDs are returned. If the check passes, the endpoint returns `202 Accepted` with a `jobId` and the work continues in the background:
+
+1. Collects all eligible orders and groups their items by 1688 shop (`shopId`)
+2. Makes **one Gulltrans procurement order per shop** (all customer orders merged — e.g. 5 orders with items from the same shop = 1 Gulltrans order). Each SKU's `sku_info` is populated automatically from `ProductVariant.skuMeta` captured during import
+3. Stamps each customer order's `gulltransOrderId` with the returned Gulltrans order ID(s)
+4. Syncs all affected product variants to WMS (`product/synchronize`) before creating inbounds
+5. Creates **one WMS inbound per shop group**, with a combined product list and the `sourceOrderUuids` of all contributing customer orders. The inbound `customerVoucherNo` is a 32-character hex string (UUID with dashes stripped)
+
+When the inbound reaches `shelved`, the scheduler auto-creates one outbound per customer order from the group.
+
+Products must have been imported via `POST /v1/procurement/import` first — the `shopId`, `shopName`, `procurementId`, and `skuMeta` stored during import are used to build the Gulltrans payload automatically. The warehouse address is read from the active `Warehouse` record in the database.
+
+```http
+POST /v1/wms/orders/dispatch HTTP/1.1
+```
+
+### Request Body
+```json
+{
+    "orderUuids": ["uuid-1", "uuid-2"],
+    "shipperMethod": 0,
+    "shipperCompany": "DHL Freight"
+}
+```
+
+### Request Body Fields
+| Field | Required | Type | Description |
+|---|---|---|---|
+| orderUuids | No | UUID[] | Specific order UUIDs to dispatch. If omitted, all `CONFIRMED` orders without a `gulltransOrderId` are processed |
+| shipperMethod | Yes | Number | Shipping method: `0`=sea, `1`=air, `2`=express, `3`=rail, `4`=land |
+| shipperCompany | No | String | Name of the freight company |
+
+### Response Body
+
+Returns **202 Accepted** immediately when the pre-flight check passes. Processing happens in the background.
+
+```json
+{
+    "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+If any provided `orderUuids` are already dispatched, returns **400 Bad Request** synchronously:
+
+```json
+{
+    "message": "Some orders have already been dispatched to WMS",
+    "alreadyDispatched": ["uuid-1", "uuid-2"]
+}
+```
+
+Use the server logs (tagged with `jobId`) to track progress and results.
+
+### Notes
+- Orders whose products were not imported from 1688 (missing `shopId`) are skipped with a warning log
+- Products must be re-imported after the `skuMeta` feature was introduced — variants with `skuMeta: null` will send an empty `sku_info` which Gulltrans rejects
+- One customer order spanning items from two shops produces two Gulltrans orders and two WMS inbounds; the `gulltransOrderId` on the order stores both IDs comma-separated
+- Variant sync failures are non-blocking — the inbound is still created with a warning log
+- Box dimensions are derived automatically from `ProductVariant.dimensions` and `ProductVariant.weight`
+- Dispatch is blocked (400) if any provided UUID already appears in `jop_wms_orders.sourceOrderUuids`; omitting `orderUuids` bypasses this check (dispatch-all mode)
+
+---
+
+Products
+--------
+
+### Sync Product to WMS
+
+Reads a `ProductVariant` from the local database by UUID and pushes it to JOP WMS via `product/synchronize`. The variant must have been imported via the procurement flow first.
+
+```http
+POST /v1/wms/products/sync HTTP/1.1
+```
+
+### Request Body
+```json
+{
+    "variantUuid": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+```
+
+### Request Body Fields
+| Field | Required | Type | Description |
+|---|---|---|---|
+| variantUuid | Yes | UUID | UUID of the local `ProductVariant` to sync |
+
+### What gets sent to WMS
+The service maps the variant's local data — SKU, barcode, title, weight, dimensions, image URL, declared value — into the JOP WMS product format automatically.
+
+### Response Body
+```json
+{
+    "code": 200,
+    "msg": "success",
+    "data": {}
+}
+```
+
+---
+
+### Query Products in WMS
+
+```http
+GET /v1/wms/products HTTP/1.1
+```
+
+### Query Parameters
+| Parameter | Required | Type | Description |
+|---|---|---|---|
+| sku | No | String | Filter by SKU |
+| barcode | No | String | Filter by barcode |
+| pageNumber | No | Number | Page number (default: 1) |
+| itemsPerPage | No | Number | Items per page (default: 20) |
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "list": [
+            {
+                "sku": "ABC-001",
+                "barcode": "1234567890",
+                "productName": "Blue Running Shoes",
+                "weight": 800,
+                "weightUnit": "g",
+                "stock": 42
+            }
+        ],
+        "total": 1
+    }
+}
+```
+
+---
+
+Inbound Orders (Stock Entry)
+----------------------------
+
+Used to notify the warehouse that stock is incoming.
+
+### Create Inbound Order
+
+```http
+POST /v1/wms/inbound HTTP/1.1
+```
+
+After a successful response, the order is automatically registered in `jop_wms_orders` and enters the polling loop.
+
+### Request Body
+```json
+{
+    "orderNo": "INB-2025-001",
+    "items": [
+        { "sku": "ABC-001", "quantity": 100 },
+        { "sku": "ABC-002", "quantity": 50 }
+    ],
+    "remark": "First batch from supplier"
+}
+```
+
+### Request Body Fields
+| Field | Required | Type | Description |
+|---|---|---|---|
+| orderNo | Yes | String | Your unique reference number for this inbound order |
+| items | Yes | Array | At least one item required |
+| items[].sku | Yes | String | Product SKU |
+| items[].quantity | Yes | Number | Quantity being sent in |
+| remark | No | String | Optional note |
+
+---
+
+### Get Inbound Order Status
+
+```http
+GET /v1/wms/inbound/status?orderNo=INB-2025-001 HTTP/1.1
+```
+
+### Query Parameters
+| Parameter | Required | Type | Description |
+|---|---|---|---|
+| orderNo | Yes | String | The inbound order number |
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "orderNo": "INB-2025-001",
+        "status": "receiving",
+        "items": [
+            { "sku": "ABC-001", "expectedQty": 100, "receivedQty": 60 }
+        ]
+    }
+}
+```
+
+---
+
+### Cancel Inbound Order
+
+```http
+POST /v1/wms/inbound/:orderNo/cancel HTTP/1.1
+```
+
+### Response Body
+```json
+{
+    "code": 200,
+    "msg": "success"
+}
+```
+
+---
+
+### Get Inbound Label URL
+
+Retrieves a printable shipping label URL for the inbound shipment.
+
+```http
+GET /v1/wms/inbound/:orderNo/label HTTP/1.1
+```
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "labelUrl": "https://wms.example.com/labels/INB-2025-001.pdf"
+    }
+}
+```
+
+---
+
+Outbound Orders (Fulfillment)
+------------------------------
+
+Used to instruct the warehouse to pick, pack, and ship an order to a customer.
+
+### Create Outbound Order
+
+```http
+POST /v1/wms/outbound HTTP/1.1
+```
+
+After a successful response, the order is automatically registered in `jop_wms_orders`. The scheduler polls it every 15 minutes and saves the waybill number once the WMS provides it.
+
+### Request Body
+```json
+{
+    "orderNo": "OUT-2025-001",
+    "logisticsCode": "DHL-EXPRESS",
+    "recipient": {
+        "name": "John Doe",
+        "phone": "+971501234567",
+        "country": "AE",
+        "province": "Dubai",
+        "city": "Dubai",
+        "address": "123 Sheikh Zayed Road",
+        "zipCode": "00000"
+    },
+    "items": [
+        { "sku": "ABC-001", "quantity": 2 }
+    ],
+    "remark": "Fragile — handle with care"
+}
+```
+
+### Request Body Fields
+| Field | Required | Type | Description |
+|---|---|---|---|
+| orderNo | Yes | String | Your unique reference number |
+| logisticsCode | Yes | String | Logistics channel code (obtain from `GET /v1/wms/logistics`) |
+| recipient | Yes | Object | Delivery recipient details |
+| recipient.name | Yes | String | Full name |
+| recipient.phone | Yes | String | Phone number including country code |
+| recipient.country | Yes | String | ISO country code |
+| recipient.province | Yes | String | Province or state |
+| recipient.city | Yes | String | City |
+| recipient.address | Yes | String | Street address |
+| recipient.zipCode | No | String | Postal/ZIP code |
+| items | Yes | Array | At least one item required |
+| items[].sku | Yes | String | Product SKU |
+| items[].quantity | Yes | Number | Quantity to ship |
+| remark | No | String | Optional note |
+
+---
+
+### Get Outbound Order Status
+
+```http
+GET /v1/wms/outbound/:orderNo/status HTTP/1.1
+```
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "orderNo": "OUT-2025-001",
+        "status": "shipped",
+        "waybillNo": "DHL1234567890"
+    }
+}
+```
+
+---
+
+### Cancel Outbound Order
+
+```http
+POST /v1/wms/outbound/:orderNo/cancel HTTP/1.1
+```
+
+> [!NOTE]
+> If the shipping forecast has failed, the recommended flow is: cancel the outbound order, then recreate it. This is handled at the application level — the WMS itself does not retry automatically.
+
+### Response Body
+```json
+{
+    "code": 200,
+    "msg": "success"
+}
+```
+
+---
+
+### Estimate Shipping Cost
+
+Returns the estimated shipping fee before creating an outbound order.
+
+```http
+POST /v1/wms/outbound/estimate-shipping HTTP/1.1
+```
+
+### Request Body
+```json
+{
+    "logisticsCode": "DHL-EXPRESS",
+    "countryCode": "AE",
+    "items": [
+        { "sku": "ABC-001", "quantity": 2 }
+    ]
+}
+```
+
+### Request Body Fields
+| Field | Required | Type | Description |
+|---|---|---|---|
+| logisticsCode | Yes | String | Logistics channel code |
+| countryCode | Yes | String | Destination ISO country code |
+| items | Yes | Array | Items to estimate for |
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "logisticsCode": "DHL-EXPRESS",
+        "estimatedFee": 18.50,
+        "currency": "USD",
+        "estimatedDays": "5-7"
+    }
+}
+```
+
+---
+
+Inventory
+---------
+
+### Query Inventory
+
+Returns current stock levels in the overseas warehouse, including available vs. damaged quantities.
+
+```http
+GET /v1/wms/inventory HTTP/1.1
+```
+
+### Query Parameters
+| Parameter | Required | Type | Description |
+|---|---|---|---|
+| sku | No | String | Filter by SKU |
+| pageNumber | No | Number | Page number (default: 1) |
+| itemsPerPage | No | Number | Items per page (default: 20) |
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "list": [
+            {
+                "sku": "ABC-001",
+                "availableQty": 38,
+                "damagedQty": 2,
+                "totalQty": 40
+            }
+        ],
+        "total": 1
+    }
+}
+```
+
+---
+
+Logistics
+---------
+
+### Get Logistics Channels
+
+Returns available shipping channels for a given destination country. Use the `logisticsCode` values in outbound order creation and shipping estimation.
+
+```http
+GET /v1/wms/logistics?countryCode=AE HTTP/1.1
+```
+
+### Query Parameters
+| Parameter | Required | Type | Description |
+|---|---|---|---|
+| countryCode | Yes | String | ISO country code of the destination |
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": [
+        {
+            "logisticsCode": "DHL-EXPRESS",
+            "logisticsName": "DHL Express",
+            "estimatedDays": "5-7",
+            "maxWeightKg": 30
+        },
+        {
+            "logisticsCode": "ARAMEX-STD",
+            "logisticsName": "Aramex Standard",
+            "estimatedDays": "10-14",
+            "maxWeightKg": 30
+        }
+    ]
+}
+```
+
+---
+
+Waybill (Tracking)
+------------------
+
+### Query Waybill Number
+
+Returns the carrier tracking number for a shipped outbound order. The same number is also stored locally in `jop_wms_orders.waybillNo` once the polling scheduler picks it up.
+
+```http
+GET /v1/wms/waybill/:orderNo HTTP/1.1
+```
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "orderNo": "OUT-2025-001",
+        "waybillNo": "DHL1234567890",
+        "carrier": "DHL"
+    }
+}
+```
+
+---
+
+Returns
+-------
+
+### Create Return Order
+
+Notifies the warehouse that a customer is sending stock back.
+
+```http
+POST /v1/wms/returns HTTP/1.1
+```
+
+After a successful response, the order is automatically registered in `jop_wms_orders` and polled every 30 minutes. Terminal status for returns is `shelved` (goods put back in usable stock) or `cancelled`.
+
+### Request Body
+```json
+{
+    "returnOrderNo": "RET-2025-001",
+    "originalOrderNo": "OUT-2025-001",
+    "items": [
+        { "sku": "ABC-001", "quantity": 1 }
+    ],
+    "remark": "Customer changed their mind"
+}
+```
+
+### Request Body Fields
+| Field | Required | Type | Description |
+|---|---|---|---|
+| returnOrderNo | Yes | String | Your unique reference for this return |
+| originalOrderNo | Yes | String | The outbound order number being returned |
+| items | Yes | Array | Items being returned |
+| items[].sku | Yes | String | Product SKU |
+| items[].quantity | Yes | Number | Quantity being returned |
+| remark | No | String | Optional note |
+
+---
+
+### Query Return Order
+
+```http
+GET /v1/wms/returns?returnOrderNo=RET-2025-001 HTTP/1.1
+```
+
+### Query Parameters
+| Parameter | Required | Type | Description |
+|---|---|---|---|
+| returnOrderNo | Yes | String | The return order number |
+
+### Response Body
+```json
+{
+    "code": 200,
+    "data": {
+        "returnOrderNo": "RET-2025-001",
+        "status": "shelved",
+        "items": [
+            {
+                "sku": "ABC-001",
+                "returnedQty": 1,
+                "qualifiedQty": 1,
+                "damagedQty": 0
+            }
+        ]
+    }
+}
+```
+
+---
+
+Polling State
+-------------
+
+### Get Tracked Orders
+
+Returns all orders currently tracked in the local `jop_wms_orders` table, including their last known status, waybill number, last poll time, and error count.
+
+```http
+GET /v1/wms/orders/tracked HTTP/1.1
+```
+
+```http
+GET /v1/wms/orders/tracked?type=outbound HTTP/1.1
+```
+
+### Query Parameters
+| Parameter | Required | Type | Description |
+|---|---|---|---|
+| type | No | `inbound` \| `outbound` \| `return` | Filter by order type |
+
+### Response Body
+```json
+[
+    {
+        "id": 1,
+        "orderNo": "OUT-2025-001",
+        "type": "outbound",
+        "status": "shipped",
+        "waybillNo": "DHL1234567890",
+        "lastPolledAt": "2025-04-27T10:30:00.000Z",
+        "errorCount": 0,
+        "createdAt": "2025-04-27T08:00:00.000Z",
+        "updatedAt": "2025-04-27T10:30:00.000Z"
+    },
+    {
+        "id": 2,
+        "orderNo": "INB-2025-001",
+        "type": "inbound",
+        "status": "receiving",
+        "waybillNo": null,
+        "lastPolledAt": "2025-04-27T10:00:00.000Z",
+        "errorCount": 0,
+        "createdAt": "2025-04-26T09:00:00.000Z",
+        "updatedAt": "2025-04-27T10:00:00.000Z"
+    }
+]
+```
+
+---
+
+Business Flows
+--------------
+
+### Full Order Dispatch (recommended)
+
+End-to-end flow from customer order approval to warehouse fulfillment:
+
+```
+1. PATCH /v1/orders/:uuid/status  { status: "confirmed" }
+                                         → admin approves customer order(s)
+
+2. POST /v1/wms/orders/dispatch          → returns { jobId } immediately (202)
+   { shipperMethod: 0 }                    background job:
+                                           - groups orders by shop
+                                           - creates one Gulltrans order per shop
+                                           - syncs variants to WMS
+                                           - creates one WMS inbound per shop group
+
+3. GET  /v1/wms/inbound/label            → print inbound shipping label (optional)
+
+4.      [scheduler polls inbound every 30m]
+
+5. Inbound status → "shelved"            → scheduler auto-creates one outbound per customer order
+
+6.      [scheduler polls outbound every 15m, saves waybillNo]
+
+7. GET  /v1/wms/waybill/:orderNo         → retrieve tracking number on-demand
+```
+
+### Manual Inbound (Stock Entry)
+
+For inbound orders not tied to a customer order (e.g. restocking):
+
+```
+1. POST /v1/wms/products/sync                    → sync product variant to WMS (required before inbound)
+2. POST /v1/wms/inbound                          → create inbound order (auto-tracked)
+3. GET  /v1/wms/inbound/:orderNo/label           → print label for shipment
+4.      [scheduler polls inboundorder/status every 30m]
+5. GET  /v1/wms/orders/tracked?type=inbound      → check polling state
+```
+
+### Manual Outbound (Order Fulfillment)
+
+For outbound orders created independently of the dispatch flow:
+
+```
+1. GET  /v1/wms/logistics?countryCode=...        → get available channels
+2. POST /v1/wms/outbound/estimate-shipping       → get cost estimate
+3. POST /v1/wms/outbound                         → create outbound order (auto-tracked)
+4.      [scheduler polls outboundorder/status every 15m, saves waybillNo]
+5. GET  /v1/wms/waybill/:orderNo                 → get tracking number on-demand
+```
+
+If the shipping forecast fails, cancel and recreate:
+```
+POST /v1/wms/outbound/:orderNo/cancel
+POST /v1/wms/outbound   (new orderNo)
+```
+
+### Returns
+
+```
+1. POST /v1/wms/returns                          → create return order (auto-tracked)
+2.      [scheduler polls returnorder/query every 30m]
+3. GET  /v1/wms/returns?returnOrderNo=...        → check status on-demand
+```

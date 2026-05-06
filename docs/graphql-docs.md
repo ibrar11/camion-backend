@@ -2614,6 +2614,18 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                     isFeatured
                     position
                 }
+                optionValues{
+                    optionValue{
+                        uuid
+                        value(language: $language)
+                        position
+                        option {
+                            uuid
+                            name(language: $language)
+                            position
+                        }
+                    }
+                }
             }
         }
     }
@@ -2721,6 +2733,32 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                                 "position": 0
                             }
                         ]
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "9106ada0-6e4c-4310-b4ed-a2350494a8cd",
+                                    "value": "White 2151 short sleeves-100% cotton",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "8d37acb5-3cf0-4854-846a-ee35ff57916a",
+                                        "name": "Color",
+                                        "position": 1
+                                    }
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "767b2e2a-4ab2-4ca9-85e3-d0845a2b503c",
+                                    "value": "S [recommendation 45-57.5kg ]",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "5a4ea9b6-4e15-4fad-8205-e02a11af355b",
+                                        "name": "Size",
+                                        "position": 2
+                                    }
+                                }
+                            }
+                        ]
                     }
                 }
             ]
@@ -2787,6 +2825,18 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                     alt
                     isFeatured
                     position
+                }
+                optionValues{
+                    optionValue{
+                        uuid
+                        value(language: $language)
+                        position
+                        option {
+                            uuid
+                            name(language: $language)
+                            position
+                        }
+                    }
                 }
             }
         }
@@ -2879,6 +2929,32 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                                 "alt": "",
                                 "isFeatured": false,
                                 "position": 0
+                            }
+                        ]
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "9106ada0-6e4c-4310-b4ed-a2350494a8cd",
+                                    "value": "White 2151 short sleeves-100% cotton",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "8d37acb5-3cf0-4854-846a-ee35ff57916a",
+                                        "name": "Color",
+                                        "position": 1
+                                    }
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "767b2e2a-4ab2-4ca9-85e3-d0845a2b503c",
+                                    "value": "S [recommendation 45-57.5kg ]",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "5a4ea9b6-4e15-4fad-8205-e02a11af355b",
+                                        "name": "Size",
+                                        "position": 2
+                                    }
+                                }
                             }
                         ]
                     }
@@ -3124,6 +3200,18 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                 isFeatured
                 position
             }
+            optionValues{
+                optionValue{
+                    uuid
+                    value(language: $language)
+                    position
+                    option {
+                        uuid
+                        name(language: $language)
+                        position
+                    }
+                }
+            }
         }
         availableStock
     }
@@ -3198,6 +3286,20 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                             "alt": "",
                             "isFeatured": false,
                             "position": 0
+                        }
+                    ],
+                    "optionValues": [
+                        {
+                            "optionValue": {
+                                "uuid": "853fe098-90a1-460d-ab49-20abc7f55896",
+                                "value": "Off-white and dark gray [double standard model]",
+                                "position": 8,
+                                "option": {
+                                    "uuid": "caf82529-a8a9-43e3-b927-7447e61eba12",
+                                    "name": "Color",
+                                    "position": 1
+                                }
+                            }
                         }
                     ]
                 },
@@ -3315,11 +3417,11 @@ query {
 Get CMS Page
 ------------
 
-Returns a single CMS page by UUID.
+Returns a single CMS page by slug.
 
 ```graphql
-query GetPost($uuid: String!) {
-    getPost(uuid: $uuid) {
+query GetPost($slug: String!) {
+    getPost(slug: $slug) {
         uuid
         slug
         title
@@ -3337,7 +3439,7 @@ query GetPost($uuid: String!) {
 
 ```json
 {
-    "uuid": "b3f1a2c4-1234-4abc-9def-000000000001"
+    "slug": "privacy-policy"
 }
 ```
 
@@ -3356,6 +3458,337 @@ query GetPost($uuid: String!) {
                 "uuid": "user-uuid",
                 "fullName": "Admin Name"
             }
+        }
+    }
+}
+```
+
+Get Current Customer Return Requests
+-------------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerReturnRequests($currency: String,  $language: String) {
+    getCurrentCustomerReturnRequests {
+        uuid
+        order {
+            uuid
+            status
+            subTotal {
+                amount
+                currencyCode
+            }
+            shippingCost {
+                amount
+                currencyCode
+            }
+            discount {
+                amount
+                currencyCode
+            }
+            total {
+                amount
+                currencyCode
+            }
+        }
+        orderItem {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            discountedPrice {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+            product {
+                uuid
+                slug
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
+                status
+                productCategories {
+                    category {
+                        uuid
+                        slug
+                        name
+                        nameEn
+                        nameAr
+                        thumbnailUrl
+                    }
+                }
+            }
+            variant {
+                uuid
+                title(language: $language)
+                sku
+                barcode
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
+            }
+        }
+        reason
+        reasonDetail
+        status
+        adminNote
+        refundAmount {
+            amount
+            currencyCode
+        }
+        evidence {
+            uuid
+            url
+            mimeType
+        }
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language":"en",
+    "currency": "qar",
+    "pageNumber":1,
+    "itemsPerPage": 10,
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerReturnRequests": [
+            {
+                "uuid": "bb14d554-63d6-4f85-a6b2-7070063dace4",
+                "order": {
+                    "uuid": "685b81a1-127f-4ce6-868e-7df33012a738",
+                    "status": "return_requested",
+                    "subTotal": {
+                        "amount": 525,
+                        "currencyCode": "qar"
+                    },
+                    "shippingCost": {
+                        "amount": 165,
+                        "currencyCode": "qar"
+                    },
+                    "discount": {
+                        "amount": 53,
+                        "currencyCode": "qar"
+                    },
+                    "total": {
+                        "amount": 637,
+                        "currencyCode": "qar"
+                    }
+                },
+                "orderItem": null,
+                "reason": "wrong_variation",
+                "reasonDetail": "order small size",
+                "status": "pending",
+                "adminNote": null,
+                "refundAmount": {
+                    "amount": 637,
+                    "currencyCode": "qar"
+                },
+                "evidence": []
+            }
+        ]
+    }
+}
+```
+
+Get Current Customer Return Request
+-------------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerReturnRequest($uuid: String!,$currency: String,  $language: String) {
+    getCurrentCustomerReturnRequest(uuid: $uuid) {
+        uuid
+        order {
+            uuid
+            status
+            subTotal {
+                amount
+                currencyCode
+            }
+            shippingCost {
+                amount
+                currencyCode
+            }
+            discount {
+                amount
+                currencyCode
+            }
+            total {
+                amount
+                currencyCode
+            }
+        }
+        orderItem {
+            uuid
+            price {
+                amount
+                currencyCode
+            }
+            discountedPrice {
+                amount
+                currencyCode
+            }
+            quantity
+            total {
+                amount
+                currencyCode
+            }
+            product {
+                uuid
+                slug
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
+                status
+                productCategories {
+                    category {
+                        uuid
+                        slug
+                        name
+                        nameEn
+                        nameAr
+                        thumbnailUrl
+                    }
+                }
+            }
+            variant {
+                uuid
+                title(language: $language)
+                sku
+                barcode
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
+            }
+        }
+        reason
+        reasonDetail
+        status
+        adminNote
+        refundAmount {
+            amount
+            currencyCode
+        }
+        evidence {
+            uuid
+            url
+            mimeType
+        }
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+  "uuid": "bb14d554-63d6-4f85-a6b2-7070063dace4",
+  "language": "en",
+  "currency": "qar"
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerReturnRequest": {
+            "uuid": "bb14d554-63d6-4f85-a6b2-7070063dace4",
+            "order": {
+                "uuid": "685b81a1-127f-4ce6-868e-7df33012a738",
+                "status": "return_requested",
+                "subTotal": {
+                    "amount": 525,
+                    "currencyCode": "qar"
+                },
+                "shippingCost": {
+                    "amount": 165,
+                    "currencyCode": "qar"
+                },
+                "discount": {
+                    "amount": 53,
+                    "currencyCode": "qar"
+                },
+                "total": {
+                    "amount": 637,
+                    "currencyCode": "qar"
+                }
+            },
+            "orderItem": null,
+            "reason": "wrong_variation",
+            "reasonDetail": "order small size",
+            "status": "pending",
+            "adminNote": null,
+            "refundAmount": {
+                "amount": 637,
+                "currencyCode": "qar"
+            },
+            "evidence": []
         }
     }
 }

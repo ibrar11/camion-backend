@@ -44,14 +44,34 @@ export class ProductOptionValueService {
 			});
 		}
 
-		// Create the product option value
-		const productOptionValue = new ProductOptionValue();
-		productOptionValue.uuid = crypto.randomUUID();
-		productOptionValue.option = productOption;
-		productOptionValue.valueEn = body.value.en.trim();
+		const normalizedValueEn = body.value.en.trim();
+
+		// Try to find existing value by option + value
+		let productOptionValue = await this.productOptionValueRepository.findOne({
+			where: {
+				option: { uuid: productOptionUUID },
+				valueEn: normalizedValueEn,
+			},
+			relations: ["option"],
+		});
+
+		// UPDATE
+		if (productOptionValue) {
+			this.logger.log(`Updating existing option value: ${normalizedValueEn}`);
+		} else {
+			// CREATE
+			this.logger.log(`Creating new option value: ${normalizedValueEn}`);
+			productOptionValue = new ProductOptionValue();
+			productOptionValue.uuid = crypto.randomUUID();
+			productOptionValue.option = productOption;
+		}
+
+		// Common fields
+		productOptionValue.valueEn = normalizedValueEn;
 		productOptionValue.valueAr = body.value.ar.trim();
 		productOptionValue.position = body.position;
-		return this.productOptionValueRepository.save(productOptionValue);
+
+		return await this.productOptionValueRepository.save(productOptionValue);
 	}
 
 	/**

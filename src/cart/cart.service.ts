@@ -182,6 +182,11 @@ export class CartItemsService {
                         levels: true,
                     },
                     images: true,
+                    optionValues: {
+                        optionValue: {
+                            option: true
+                        }
+                    }
                 },
             },
             order: { id: 'DESC' },
@@ -285,8 +290,43 @@ export class CartItemsService {
             });
         }
 
+        const product = await this.productRepository.findOne({
+            where: { uuid: body.productUuid, },
+            relations: {
+                variants: {
+                    inventoryItem: {
+                        levels: true,
+                    },
+                },
+                productCategories: {
+                    category: true,
+                },
+            },
+        });
+
+        // Make sure the product exists and is available for sale.
+        if (!product || product.status !== ProductStatus.ACTIVE) {
+            throw new BadRequestException({
+                error: 'Product not available',
+            });
+        }
+
+        if (!product.variants || !Array.isArray(product.variants)) {
+            throw new BadRequestException({
+                error: "Failed to find any variant of the product. Please check and try again.",
+            });
+        }
+
+        // find the specific variant from the product
+        const variant = product.variants.find((variant) => (variant.uuid === body.variantUuid));
+        if (!variant) {
+            throw new NotFoundException({
+                error: "Faild to find the requested variant. Please check and try again.",
+            });
+        }
+
         // check the variant stock availability
-        const availableStock = calculateStock(cartItem.variant);
+        const availableStock = calculateStock(variant);
         if (availableStock <= 0) {
             throw new BadRequestException({
                 error: 'Product is out of stock. Please try again later.',
@@ -303,8 +343,52 @@ export class CartItemsService {
         // Calculate the price of the product/variant
         const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
 
+        //Check if a cart item with the target variant already exists
+        const existingItem = await this.cartRepository.findOne({
+            where: {
+                customer: { id: customer.id },
+                product: { uuid: body.productUuid },
+                variant: { uuid: body.variantUuid }
+            },
+            relations: {
+                product: {
+                    productCategories: {
+                        category: true,
+                    },
+                },
+                variant: {
+                    inventoryItem: {
+                        levels: true,
+                    },
+                },
+                customer: true,
+            },
+        })
+
+        // merge the dupliate variant and remove the old one
+        if (existingItem && existingItem.uuid !== cartItem.uuid) {
+
+            const mergedQuantity = existingItem.quantity + body.quantity;
+
+            if (availableStock < mergedQuantity) {
+                throw new BadRequestException('Insufficient stock after merge');
+            }
+
+            existingItem.product.variants = [];
+            existingItem.quantity = mergedQuantity;
+            existingItem.subTotal = {
+                amount: price.amount * mergedQuantity,
+                currencyCode: body.currency,
+            };
+
+            await this.cartRepository.remove(cartItem);
+            return this.cartRepository.save(existingItem);
+
+        }
+
         // Update the cart item
         cartItem.product.variants = [];
+        cartItem.variant = variant;
         cartItem.quantity = body.quantity;
         cartItem.subTotal = {
             amount: price.amount * body.quantity,

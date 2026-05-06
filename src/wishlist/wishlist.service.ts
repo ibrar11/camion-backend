@@ -93,7 +93,15 @@ export class WishlistService {
         wishlistItem.customer = customer;
         wishlistItem.product = product;
         wishlistItem.variant = variant;
-        return this.wishlistRepository.save(wishlistItem);
+        const wishedItem = await this.wishlistRepository.save(wishlistItem);
+
+        await this.productRepository.increment(
+            { id: product.id },
+            'likesCount',
+            1
+        );
+
+        return wishedItem;
     }
 
     /**
@@ -107,7 +115,7 @@ export class WishlistService {
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
         return this.wishlistRepository.find({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 customer: {
@@ -139,7 +147,7 @@ export class WishlistService {
      */
     async getWishlistItem(customer: Customer, wishlistItemUUID: string): Promise<WishlistItem> {
         const wishlistItem = await this.wishlistRepository.findOne({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 uuid: wishlistItemUUID,
@@ -169,7 +177,7 @@ export class WishlistService {
      */
     async getWishlistCount(customer: Customer): Promise<number> {
         const count = await this.wishlistRepository.count({
-            cache: true,
+            // cache: true,
             relationLoadStrategy: "query",
             where: {
                 customer: { uuid: customer.uuid, },

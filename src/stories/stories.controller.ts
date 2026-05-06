@@ -1,3 +1,5 @@
+import * as os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -10,6 +12,7 @@ import {
 	Post,
 	Put,
 	Query,
+	Req,
 	UploadedFile,
 	UseGuards,
 	UseInterceptors,
@@ -22,6 +25,8 @@ import { UpdateStoryDto } from './dtos/UpdateStoryDto';
 import { UpdateFrameDto } from './dtos/UpdateFrameDto';
 
 import { UserRole } from '../users/enums/UserRole';
+
+import { User } from "../users/entities/user.entity";
 
 import { Story } from './entities/story.entity';
 import { StoryFrame } from './entities/story-frame.entity';
@@ -48,11 +53,18 @@ export class StoriesController {
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetStories(
+		@Req()
+		req: Request & {
+			user: User,
+		},
 		@Query("filters") filters: string,
 		@Query("sort") sort: string,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Story>> {
+		if (req.user) {
+			return this.storiesService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
+		}
 		return this.storiesService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
@@ -79,7 +91,7 @@ export class StoriesController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post(':uuid/frames')
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateStoryFrame(@Param('uuid') uuid: string, @UploadedFile() file: Express.Multer.File): Promise<StoryFrame> {
 		return this.storiesService.createStoryFrame(uuid, file);
