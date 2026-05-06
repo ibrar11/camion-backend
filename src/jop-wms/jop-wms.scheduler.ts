@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Not, In, Repository } from 'typeorm';
 
 import { JopWmsClient } from './jop-wms.client';
-import { JopWmsOrder, JopWmsOrderType, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
+import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
 import { JopWmsService } from './jop-wms.service';
 
 @Injectable()
@@ -87,18 +87,22 @@ export class JopWmsScheduler {
 
                 this.logger.log(`${order.orderNo} → ${order.status}${waybillNo ? ` (waybill: ${waybillNo})` : ''}`);
 
-                // Auto-create outbound order when inbound goods are received (shelved)
-                if (order.type === JopWmsOrderType.INBOUND && prevStatus !== 'shelved' && order.status === 'shelved') {
-                    this.logger.log(`Inbound ${order.orderNo} shelved — creating outbound orders`);
+                // Persist status change BEFORE triggering outbound creation.
+                // If outbound creation fails, the stored status is already committed so
+                // the next poll sees prevStatus=STORED and won't re-trigger.
+                await this.wmsOrderRepository.save(order);
+
+                // Auto-create outbound order when inbound goods are fully stored
+                if (order.type === JopWmsOrderType.INBOUND && prevStatus !== JopWmsInboundStatus.STORED && order.status === JopWmsInboundStatus.STORED) {
+                    this.logger.log(`Inbound ${order.orderNo} stored — creating outbound orders`);
                     await this.wmsService.createOutboundsForInbound(order);
                 }
             } catch (err: any) {
                 order.errorCount += 1;
                 order.lastPolledAt = new Date();
                 this.logger.error(`Poll failed for ${order.orderNo} (attempt ${order.errorCount}): ${err?.message}`);
+                await this.wmsOrderRepository.save(order);
             }
-
-            await this.wmsOrderRepository.save(order);
         }
     }
 }

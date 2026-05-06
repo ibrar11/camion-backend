@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
 import { Product } from '../inventory/entities/product.entity';
@@ -17,11 +18,14 @@ import { CustomersService } from '../customers/customers.service';
 import { ClientsModule } from '../clients/clients.module';
 import { ProcurementModule } from '../procurement/procurement.module';
 
+import { QueueName } from '../queue/enums/QueueTypes.enum';
+
 import { JopWmsOrder } from './entities/jop-wms-order.entity';
 import { JopWmsClient } from './jop-wms.client';
 import { JopWmsService } from './jop-wms.service';
 import { JopWmsController } from './jop-wms.controller';
 import { JopWmsScheduler } from './jop-wms.scheduler';
+import { DispatchProcessor } from './workers/dispatch.processor';
 
 @Module({
     imports: [
@@ -35,6 +39,7 @@ import { JopWmsScheduler } from './jop-wms.scheduler';
             User,
             Customer,
         ]),
+        BullModule.registerQueue({ name: QueueName.WMS_DISPATCH }),
         ClientsModule,
         ProcurementModule,
     ],
@@ -44,6 +49,7 @@ import { JopWmsScheduler } from './jop-wms.scheduler';
         JopWmsClient,
         JopWmsService,
         JopWmsScheduler,
+        DispatchProcessor,
     ],
     controllers: [JopWmsController],
     exports: [JopWmsService],

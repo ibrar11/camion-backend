@@ -1,5 +1,6 @@
 export enum QueueName {
-    TRANSLATION = 'translation'
+    TRANSLATION = 'translation',
+    WMS_DISPATCH = 'wms-dispatch',
 }
 
 export enum JobPriority {
