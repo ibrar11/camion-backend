@@ -290,8 +290,43 @@ export class CartItemsService {
             });
         }
 
+        const product = await this.productRepository.findOne({
+            where: { uuid: body.productUuid, },
+            relations: {
+                variants: {
+                    inventoryItem: {
+                        levels: true,
+                    },
+                },
+                productCategories: {
+                    category: true,
+                },
+            },
+        });
+
+        // Make sure the product exists and is available for sale.
+        if (!product || product.status !== ProductStatus.ACTIVE) {
+            throw new BadRequestException({
+                error: 'Product not available',
+            });
+        }
+
+        if (!product.variants || !Array.isArray(product.variants)) {
+            throw new BadRequestException({
+                error: "Failed to find any variant of the product. Please check and try again.",
+            });
+        }
+
+        // find the specific variant from the product
+        const variant = product.variants.find((variant) => (variant.uuid === body.variantUuid));
+        if (!variant) {
+            throw new NotFoundException({
+                error: "Faild to find the requested variant. Please check and try again.",
+            });
+        }
+
         // check the variant stock availability
-        const availableStock = calculateStock(cartItem.variant);
+        const availableStock = calculateStock(variant);
         if (availableStock <= 0) {
             throw new BadRequestException({
                 error: 'Product is out of stock. Please try again later.',
@@ -353,6 +388,7 @@ export class CartItemsService {
 
         // Update the cart item
         cartItem.product.variants = [];
+        cartItem.variant = variant;
         cartItem.quantity = body.quantity;
         cartItem.subTotal = {
             amount: price.amount * body.quantity,
