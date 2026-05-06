@@ -53,6 +53,8 @@ import { Affiliate } from "../referral/entities/affiliate.entity";
 
 import { PricingService } from "../pricing/pricing.service";
 
+import { KeyValuePair } from "../key-value-pairs/entities/key-value-pair.entity";
+
 import {
     calculateCartShipping,
     ShippingCalculationResult
@@ -72,11 +74,14 @@ import {
     OrderPreviewResponse,
 } from "./types";
 
+import { ConfigService } from "@nestjs/config";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
 
     constructor(
+        private readonly configService: ConfigService,
         @InjectRepository(Order) private orderRepository: Repository<Order>,
         @InjectRepository(OrderItem) private orderItemRepository: Repository<OrderItem>,
         @InjectRepository(InventoryItem) private inventoryRepository: Repository<InventoryItem>,
@@ -86,6 +91,7 @@ export class OrderService {
         @InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
         @InjectRepository(Wallet) private readonly walletRepository: Repository<Wallet>,
         @InjectRepository(Affiliate) private readonly affiliateRepository: Repository<Affiliate>,
+        @InjectRepository(KeyValuePair) private readonly keyValuePairRepository: Repository<KeyValuePair>,
         @Inject(TransactionsService) private readonly transactionsService: TransactionsService,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
@@ -206,24 +212,39 @@ export class OrderService {
             const exchangeRates = await this.exchangeRateService.findAll("", "");
 
             // shipping and discount needs to be updated after the implementation of shippping and discounts
-            const shippingCartItems = cartItems.map(item => ({
-                weight: {
-                    amount: item.variant.weight.amount,
-                    unit: item.variant.weight.unit,
-                },
-                quantity: item.quantity,
-            }));
+            let shippingCost = 0;
+            let eta = "";
 
-            // Calculate shipping fee using utility function
-            const shippingCalculation = calculateCartShipping(
-                shippingCartItems,
-                address.country,
-                currency, // Todo make currency dynamic
-                exchangeRates,
-                subTotal
-            );
-            const shippingCost = Math.floor(shippingCalculation.totalShippingCost);
-            const eta = shippingCalculation.transitTime.estimatedRange
+            // Fetch free shipping threshold once
+            const freeShippingValue = Number(
+                (await this.keyValuePairRepository.findOne({
+                    where: { name: "free_shipping_above" }
+                }))?.integerValue
+            ) || 0;
+
+            // Decide if we should charge shipping
+            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
+            
+            if (shouldApplyShipping) {
+                const shippingCartItems = cartItems.map(item => ({
+                    weight: {
+                        amount: item.variant.weight.amount,
+                        unit: item.variant.weight.unit,
+                    },
+                    quantity: item.quantity,
+                }));
+
+                // Calculate shipping fee using utility function
+                const shippingCalculation = calculateCartShipping(
+                    shippingCartItems,
+                    address.country,
+                    currency, // Todo make currency dynamic
+                    exchangeRates,
+                    subTotal
+                );
+                shippingCost = Math.floor(shippingCalculation.totalShippingCost);
+                eta = shippingCalculation.transitTime.estimatedRange
+            }
 
             // COUPON VALIDATION & DISCOUNT
             let discount = 0;
@@ -664,29 +685,43 @@ export class OrderService {
                 });
             }
 
-            // Prepare cart items for shipping calculation
-            const shippingCartItems = cartItems.map(item => ({
-                weight: {
-                    amount: item.variant.weight.amount,
-                    unit: item.variant.weight.unit,
-                },
-                quantity: item.quantity,
-            }));
+            let shippingCost = 0;
+            let eta = "";
+            let shippingCalculation: ShippingCalculationResult | null = null;
 
-            const exchangeRates = await this.exchangeRateService.findAll("", "");
-            const currency = cartItems[0].subTotal.currencyCode;
+            // Fetch free shipping threshold once
+            const freeShippingValue = Number(
+                (await this.keyValuePairRepository.findOne({
+                    where: { name: "free_shipping_above" }
+                }))?.integerValue
+            ) || 0;
 
-            // Calculate shipping fee using utility function
-            const shippingCalculation = calculateCartShipping(
-                shippingCartItems,
-                address.country,
-                currency, // Todo make currency dynamic
-                exchangeRates,
-                subTotal
-            );
+            // Decide if we should charge shipping
+            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
 
-            const shippingCost = Math.floor(shippingCalculation.totalShippingCost);
-            const eta = shippingCalculation.transitTime.estimatedRange
+            if (shouldApplyShipping) {
+                const shippingCartItems = cartItems.map(item => ({
+                    weight: item.variant.weight,
+                    quantity: item.quantity,
+                }));
+
+                const [exchangeRates] = await Promise.all([
+                    this.exchangeRateService.findAll("", "")
+                ]);
+
+                const currency = cartItems[0]?.subTotal.currencyCode;
+
+                shippingCalculation = calculateCartShipping(
+                    shippingCartItems,
+                    address.country,
+                    currency,
+                    exchangeRates,
+                    subTotal
+                );
+
+                shippingCost = Math.floor(shippingCalculation.totalShippingCost);
+                eta = shippingCalculation.transitTime.estimatedRange;
+            }
 
             // COUPON VALIDATION & DISCOUNT
             let discount = 0;
