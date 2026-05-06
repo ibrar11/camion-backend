@@ -73,7 +73,7 @@ type Coupon {
   code: String!
   createdAt: String!
   discountPercentage: Float!
-  expiresAt: DateTime!
+  expiresAt: String!
   ordersCount: Float!
   uuid: String!
 }
