@@ -24,9 +24,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import KeyvRedis from "@keyv/redis";
 
-import { Keyv } from "keyv";
-import { Cacheable, CacheableMemory } from "cacheable";
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -173,7 +170,7 @@ import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 				database: configService.get<string>("DB_DATABASE"),
 				synchronize: true,
 				namingStrategy: new SnakeNamingStrategy(),
-				// logging: true,
+				logging: false,
 				cache: {
 					type: "ioredis",
 					options: configService.get<string>("REDIS_URI"),
@@ -309,7 +306,7 @@ import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 		WishlistModule,
 		PricingModule,
 		KeyValuePairsModule,
-        PromosModule,
+		PromosModule,
 		ReturnsModule,
 		QueueModule,
 		TranslationModule,

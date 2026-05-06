@@ -96,6 +96,7 @@ export class Product {
 		enum: ProductStatus,
 		default: ProductStatus.DRAFT,
 	})
+	@Index()
 	status: ProductStatus;
 
 	@Field(() => String, { nullable: true })
