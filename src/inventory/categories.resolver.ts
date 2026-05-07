@@ -18,6 +18,7 @@ import { Category } from "./entities/category.entity";
 import { CategoriesService } from "./categories.service";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
+import { ConfigService } from "@nestjs/config";
 
 @ArgsType()
 export class GetCategoriesArgs {
@@ -34,7 +35,14 @@ export class GetCategoriesArgs {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Category)
 export class CategoriesResolver {
-	constructor(@Inject(CategoriesService) private readonly categoriesService: CategoriesService) { }
+	assetsHost: string = "";
+
+	constructor(
+		@Inject(CategoriesService) private readonly categoriesService: CategoriesService,
+		private readonly configService: ConfigService,
+	) {
+		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+	}
 
 	@ResolveField("name", () => String)
 	getName(@Parent() category: Category, @Args() args: GetCategoriesArgs): string {
@@ -56,9 +64,9 @@ export class CategoriesResolver {
 
 		const segments = category.thumbnailUrl.split("/");
 		if (category.thumbnailUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (category.thumbnailUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";

@@ -17,4 +17,7 @@ export class UpdateProductVariantImageDto {
 
 	@IsBoolean()
 	isFeatured: boolean;
+
+	@IsBoolean()
+	isEnabled: boolean = true;
 }
