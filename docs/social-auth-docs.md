@@ -35,7 +35,7 @@ This means a customer who registered by phone/email can later sign in with a soc
 | `GOOGLE_CALLBACK_URL` | Callback URL registered in Google Cloud Console — must match exactly |
 | `GOOGLE_IOS_CLIENT_ID` | iOS OAuth client ID (for mobile ID token verification) |
 | `GOOGLE_ANDROID_CLIENT_ID` | Android OAuth client ID (for mobile ID token verification) |
-| `FRONTEND_REDIRECT_URL` | URL the browser is redirected to after a successful web OAuth login |
+| `FRONTEND_REDIRECT_URL` | URL the browser is redirected to after a successful web OAuth login (e.g. `https://app.dev.camiontrading.com/en`) |
 
 **Registered callback URLs (Google Cloud Console)**
 
@@ -99,6 +99,83 @@ GET /auth/google/callback HTTP/1.1
 ```
 
 This endpoint is called by Google — do not call it directly.
+
+---
+
+## Facebook
+
+### Environment variables
+
+| Variable | Description |
+|---|---|
+| `FACEBOOK_APP_ID` | Facebook application ID |
+| `FACEBOOK_APP_SECRET` | Facebook application secret |
+| `FACEBOOK_CALLBACK_URL` | Callback URL registered in Facebook Developer Console — must match exactly |
+
+**Registered callback URLs (Facebook Developer Console)**
+
+| Environment | Callback URL |
+|---|---|
+| Dev | `https://app.dev.camiontrading.com/auth/facebook/callback` |
+| Production | TBD |
+
+---
+
+### Mobile — verify access token
+
+The mobile app authenticates with Facebook natively and sends the resulting access token to the API.
+
+```http
+POST /v1/auth/customer/oauth/facebook HTTP/1.1
+Content-Type: application/json
+```
+
+**Request body**
+```json
+{
+    "accessToken": "<facebook-access-token-from-native-sdk>"
+}
+```
+
+**Response**
+```json
+{
+    "token": "<session-token>",
+    "customer": {
+        "uuid": "...",
+        "fullName": "...",
+        "emailAddress": "..."
+    }
+}
+```
+
+> **Note:** The API verifies the token against `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` using Facebook's Graph API (`debug_token`). Email permission must be granted by the user — login will be rejected if email is not returned.
+
+Use the returned `token` as a `Bearer` token on subsequent requests.
+
+---
+
+### Web — initiate redirect
+
+Redirect the browser to this URL to start the OAuth flow.
+
+```http
+GET /auth/facebook HTTP/1.1
+```
+
+The browser is redirected to Facebook's login screen. No request body required.
+
+---
+
+### Web — OAuth callback
+
+Facebook redirects back to this endpoint after the user authenticates. The API sets a `token` cookie and redirects the browser to `FRONTEND_REDIRECT_URL`.
+
+```http
+GET /auth/facebook/callback HTTP/1.1
+```
+
+This endpoint is called by Facebook — do not call it directly.
 
 ---
 
