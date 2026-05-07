@@ -32,12 +32,17 @@ This means a customer who registered by phone/email can later sign in with a soc
 |---|---|
 | `GOOGLE_CLIENT_ID` | Web application OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Web application client secret |
-| `GOOGLE_CALLBACK_URL` | Publicly accessible callback URL on the API domain — must match a URI registered in Google Cloud Console |
+| `GOOGLE_CALLBACK_URL` | Callback URL registered in Google Cloud Console — must match exactly |
 | `GOOGLE_IOS_CLIENT_ID` | iOS OAuth client ID (for mobile ID token verification) |
 | `GOOGLE_ANDROID_CLIENT_ID` | Android OAuth client ID (for mobile ID token verification) |
 | `FRONTEND_REDIRECT_URL` | URL the browser is redirected to after a successful web OAuth login |
 
-> **Note:** `GOOGLE_CALLBACK_URL` must be set to `https://<your-api-domain>/v1/auth/customer/oauth/google/callback` and registered in the Google Cloud Console under **Authorized redirect URIs**.
+**Registered callback URLs (Google Cloud Console)**
+
+| Environment | Callback URL |
+|---|---|
+| Dev | `https://app.dev.camiontrading.com/auth/google/callback` |
+| Production | TBD |
 
 ---
 
@@ -78,7 +83,7 @@ Use the returned `token` as a `Bearer` token on subsequent requests.
 Redirect the browser to this URL to start the OAuth flow.
 
 ```http
-GET /v1/auth/customer/oauth/google/web HTTP/1.1
+GET /auth/google HTTP/1.1
 ```
 
 The browser is redirected to Google's consent screen. No request body required.
@@ -90,7 +95,7 @@ The browser is redirected to Google's consent screen. No request body required.
 Google redirects back to this endpoint after the user authenticates. The API sets a `token` cookie and redirects the browser to `FRONTEND_REDIRECT_URL`.
 
 ```http
-GET /v1/auth/customer/oauth/google/callback HTTP/1.1
+GET /auth/google/callback HTTP/1.1
 ```
 
 This endpoint is called by Google — do not call it directly.
@@ -99,12 +104,12 @@ This endpoint is called by Google — do not call it directly.
 
 ## Adding a new provider
 
-To add another social provider (e.g. Facebook, Apple):
+To add another social provider:
 
 1. **Install the Passport strategy** for the provider and its types.
 2. **Add a strategy file** at `src/auth/strategies/<provider>.strategy.ts` — implement `validate()` to return `{ email, fullName, <provider>Id }`.
 3. **Add a `<provider>Id` column** to the `Customer` entity (`nullable: true, unique: true`).
-4. **Add a service method** in `CustomerAuthService` — call `findOrCreateGoogleCustomer` pattern for the new provider.
-5. **Add endpoints** to `CustomerAuthController` — mobile POST and/or web GET redirect + callback.
+4. **Add a service method** in `CustomerAuthService` for mobile verification, and a `findOrCreate<Provider>Customer` private method following the same pattern as `findOrCreateGoogleCustomer`.
+5. **Add endpoints** to `SocialAuthController` for the web flow (`GET /auth/<provider>` + `GET /auth/<provider>/callback`) and to `CustomerAuthController` for the mobile flow (`POST /v1/auth/customer/oauth/<provider>`).
 6. **Register the strategy** in `AuthModule` providers.
-7. **Add env vars** for the provider credentials.
+7. **Add env vars** to `.env` and `.env.example`.

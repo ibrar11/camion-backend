@@ -31,6 +31,7 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
 import { GoogleOAuthStrategy } from './strategies/google.strategy';
+import { SocialAuthController } from './social-auth.controller';
 
 @Module({
     imports: [
@@ -61,6 +62,7 @@ import { GoogleOAuthStrategy } from './strategies/google.strategy';
         CustomerAuthController,
         UserAuthController,
         GuestAuthController,
+        SocialAuthController,
     ],
     exports: [
         AuthGuard,
