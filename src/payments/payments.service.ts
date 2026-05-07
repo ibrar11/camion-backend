@@ -59,4 +59,26 @@ export class PaymentsService {
             throw error;
         }
     }
+
+    /**
+     * Fetch all payments
+     *
+     * @returns
+     */
+    async findAll(): Promise<Array<PaymentTransaction>> {
+        try {
+            this.logger.log(`Attempting to fetch payments`);
+
+            // fetch all payment transactions
+            return this.paymentTransactionRepository.find({
+                relations: {
+                    order: true
+                }
+            })
+
+        } catch (error: any) {
+            this.logger.error(`Error creating payment: ${error?.response?.data || error.message}`);
+            throw error;
+        }
+    }
 }
