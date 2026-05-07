@@ -10,8 +10,9 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 
-import { Request } from 'express';
+import type { Request } from 'express';
 
+import { GoogleMobileAuthDto } from './dtos/GoogleMobileAuthDto';
 import { VerifyCustomerDto } from './dtos/VerifyCustomerDto';
 import { RegisterCustomerDto } from './dtos/RegisterCustomerDto';
 
@@ -75,6 +76,12 @@ export class CustomerAuthController {
 		}
 	): Promise<void> {
 		return this.customerAuthService.logout(req.jti, req.customer);
+	}
+
+	@HttpCode(HttpStatus.OK)
+	@Post('oauth/google')
+	actionGoogleMobileAuth(@Body() body: GoogleMobileAuthDto): Promise<CustomerAuthResponse> {
+		return this.customerAuthService.loginWithGoogleMobile(body);
 	}
 
 	@UseGuards(AuthGuard)

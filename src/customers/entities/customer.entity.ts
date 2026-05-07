@@ -45,8 +45,12 @@ export class Customer {
 	emailAddress: string;
 
 	@Field(() => String, { nullable: true, })
-	@Column({ type: "varchar", length: 16, nullable: false, unique: true, })
-	phoneNumber: string;
+	@Column({ type: "varchar", length: 16, nullable: true, unique: true, })
+	phoneNumber: string | null;
+
+	@Exclude()
+	@Column({ type: "varchar", length: 64, nullable: true, unique: true, })
+	googleId: string | null;
 
 	@Exclude()
 	@Column({ type: "varchar", nullable: false, length: 64, })
