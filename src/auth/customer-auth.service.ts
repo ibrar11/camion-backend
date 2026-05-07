@@ -3,6 +3,7 @@ import * as crypto from "node:crypto";
 import * as bcrypt from "bcrypt";
 
 import { OAuth2Client, LoginTicket } from "google-auth-library";
+import { createRemoteJWKSet, jwtVerify, SignJWT, importPKCS8 } from "jose";
 
 import {
 	BadRequestException,
@@ -25,6 +26,7 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { GoogleMobileAuthDto } from "./dtos/GoogleMobileAuthDto";
 import { FacebookMobileAuthDto } from "./dtos/FacebookMobileAuthDto";
+import { AppleMobileAuthDto } from "./dtos/AppleMobileAuthDto";
 import { VerifyCustomerDto } from "./dtos/VerifyCustomerDto";
 import { RegisterCustomerDto } from "./dtos/RegisterCustomerDto";
 import { LoginCustomerByEmailAddressDto } from "./dtos/LoginCustomerByEmailAddressDto";
@@ -790,6 +792,145 @@ export class CustomerAuthService {
 				newCustomer.phoneNumber = null;
 				newCustomer.password = '';
 				newCustomer.googleId = googleId;
+				newCustomer.role = CustomerRole.Customer;
+				newCustomer.isActive = true;
+				customer = await this.customerRepository.save(newCustomer);
+			}
+		}
+
+		if (!customer.isActive) {
+			throw new UnauthorizedException({ error: 'Account is deactivated.' });
+		}
+
+		const jwtPayload = {
+			jti: crypto.randomUUID(),
+			type: 'customer',
+			sub: customer.uuid,
+		};
+
+		const token = await this.jwtService.signAsync(jwtPayload);
+
+		await this.cacheManager.set(
+			`auth:customer-session:${jwtPayload.jti}`,
+			token,
+			(this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000,
+		);
+
+		return { token, customer };
+	}
+
+	async loginWithAppleMobile(dto: AppleMobileAuthDto): Promise<CustomerAuthResponse> {
+		const { identityToken, authorizationCode, fullName } = dto;
+
+		if (!identityToken && !authorizationCode) {
+			throw new BadRequestException({ error: 'Identity token or authorization code is required.' });
+		}
+
+		const audience = this.configService.get<string>('APPLE_AUDIENCE');
+		const issuer = this.configService.get<string>('APPLE_ISSUER') || 'https://appleid.apple.com';
+
+		if (!audience) {
+			throw new UnauthorizedException({ error: 'Apple authentication not configured.' });
+		}
+
+		let tokenToVerify = identityToken;
+
+		if (!tokenToVerify && authorizationCode) {
+			tokenToVerify = await this.exchangeAppleCode(authorizationCode, audience, issuer);
+		}
+
+		if (!tokenToVerify) {
+			throw new UnauthorizedException({ error: 'Identity token not available.' });
+		}
+
+		let payload: Awaited<ReturnType<typeof jwtVerify>>['payload'];
+		try {
+			const appleJwks = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
+			({ payload } = await jwtVerify(tokenToVerify, appleJwks, { issuer, audience }));
+		} catch {
+			throw new UnauthorizedException({ error: 'Invalid or expired Apple identity token.' });
+		}
+
+		const appleId = payload.sub;
+		if (!appleId) {
+			throw new UnauthorizedException({ error: 'Apple ID not found in token.' });
+		}
+
+		const email = (payload['email'] as string) || '';
+		const name = (payload['name'] as string) || fullName || '';
+
+		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId });
+	}
+
+	private async exchangeAppleCode(code: string, audience: string, issuer: string): Promise<string> {
+		const teamId = this.configService.get<string>('APPLE_TEAM_ID');
+		const keyId = this.configService.get<string>('APPLE_KEY_ID');
+		const privateKey = this.configService.get<string>('APPLE_PRIVATE_KEY');
+
+		if (!teamId || !keyId || !privateKey) {
+			throw new UnauthorizedException({ error: 'Apple code exchange not configured.' });
+		}
+
+		const rawKey = privateKey.replace(/\\n/g, '\n').trim();
+		const normalizedKey = rawKey.includes('BEGIN PRIVATE KEY')
+			? rawKey
+			: `-----BEGIN PRIVATE KEY-----\n${rawKey}\n-----END PRIVATE KEY-----`;
+
+		const clientSecret = await new SignJWT({})
+			.setProtectedHeader({ alg: 'ES256', kid: keyId })
+			.setIssuedAt()
+			.setExpirationTime('5m')
+			.setIssuer(teamId)
+			.setAudience(issuer)
+			.setSubject(audience)
+			.sign(await importPKCS8(normalizedKey, 'ES256'));
+
+		const response = await fetch('https://appleid.apple.com/auth/token', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({
+				grant_type: 'authorization_code',
+				code,
+				client_id: audience,
+				client_secret: clientSecret,
+			}),
+		});
+
+		const data = await response.json() as { id_token?: string };
+		if (!data.id_token) {
+			throw new UnauthorizedException({ error: 'Apple token exchange failed.' });
+		}
+
+		return data.id_token;
+	}
+
+	private async findOrCreateAppleCustomer(profile: { email: string; fullName: string; appleId: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, appleId } = profile;
+
+		let customer = await this.customerRepository.findOneBy({ appleId });
+
+		if (!customer) {
+			if (email) {
+				customer = await this.customerRepository.findOneBy({
+					emailAddress: email.toLowerCase().trim(),
+				});
+				if (customer) {
+					customer.appleId = appleId;
+					customer = await this.customerRepository.save(customer);
+				}
+			}
+
+			if (!customer) {
+				if (!email) {
+					throw new UnauthorizedException({ error: 'Email address is required for first-time Apple login.' });
+				}
+				const newCustomer = new Customer();
+				newCustomer.uuid = crypto.randomUUID();
+				newCustomer.fullName = (fullName || email.split('@')[0]).trim();
+				newCustomer.emailAddress = email.toLowerCase().trim();
+				newCustomer.phoneNumber = null;
+				newCustomer.password = '';
+				newCustomer.appleId = appleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
 				customer = await this.customerRepository.save(newCustomer);
