@@ -33,6 +33,9 @@ import { OauthService } from '../oauth/oauth.service';
 
 import { Order } from '../order/entities/order.entity';
 
+import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
+import { ExchangeRateService } from '../pricing/exchange-rate.service';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -42,6 +45,7 @@ import { Order } from '../order/entities/order.entity';
             Client,
             ClientRefreshToken,
             Order,
+            ExchangeRate
         ]),
     ],
     providers: [
@@ -54,6 +58,7 @@ import { Order } from '../order/entities/order.entity';
         CustomersService,
         ClientsService,
         OauthService,
+        ExchangeRateService,
     ],
     controllers: [
         PaymentsController,
