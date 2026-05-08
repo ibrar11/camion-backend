@@ -306,8 +306,7 @@ export class CustomerAuthService {
 			}
 		}
 
-		// In local/dev env use the magic code; otherwise generate a real OTP
-		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
+		const secret = crypto.randomInt(100000, 1000000).toString();
 
 		// Create a login request
 		const request = new LoginRequest();
@@ -448,13 +447,7 @@ export class CustomerAuthService {
 			}
 		}
 
-		// In local env use the magic code so no real email is needed; otherwise generate a real OTP
-		const secret = this.isLocal
-			? (this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString())
-			: crypto.randomInt(100000, 1000000).toString();
-
-		this.logger.log(`customer login secret: ${secret}`);
-
+		const secret = crypto.randomInt(100000, 1000000).toString();
 		// Create a login request
 		const request = new LoginRequest();
 		request.uuid = crypto.randomUUID();
@@ -462,10 +455,11 @@ export class CustomerAuthService {
 		request.secret = await bcrypt.hash(secret, 10);
 		await this.loginRequestRepository.save(request);
 
-		// Send OTP to the customer via email
-		await this.emailService.sendOtpEmail(customer.emailAddress, {
-			otp: secret,
-		});
+		if (this.isLocal) {
+			this.logger.log(`[LOCAL] OTP for ${customer.emailAddress}: ${secret}`);
+		} else {
+			await this.emailService.sendOtpEmail(customer.emailAddress, { otp: secret });
+		}
 
 		// Create a payload for the session token
 		const payload = {
