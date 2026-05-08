@@ -51,18 +51,21 @@ export class PaymentsService {
 
             const exchangeRates = await this.exchangeRateService.findAll("", "");
             if (dto?.provider === PaymentProvider.SKIPCASH) {
-                const exchangeRate = exchangeRates
+                if(dto.currency.toLowerCase().trim() !== "qar") {
+
+                    const exchangeRate = exchangeRates
                     .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === dto.currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
                     .at(0) ?? null;
-
-                if (!exchangeRate) {
-                    throw new NotFoundException({
-                        error: `Exchange Rate for ${dto.country} to qar not found`
-                    });
+                    
+                    if (!exchangeRate) {
+                        throw new NotFoundException({
+                            error: `Exchange Rate for ${dto.country} to qar not found`
+                        });
+                    }
+                    
+                    // convert the total in QAR for skipcash.
+                    dto.amount = dto.amount * exchangeRate.factor;
                 }
-
-                // convert the total in QAR for skipcash.
-                dto.amount = dto.amount * exchangeRate.factor;
             }
 
             // fetch the strategy for specified provider
