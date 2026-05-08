@@ -15,19 +15,21 @@ export class ImageThumbnailService {
 	 * @param imagePath
 	 * @returns
 	 */
-	async generateThumbnail(imagePath: string): Promise<string> {
-		const outputPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.jpg`);
+	generateThumbnail(imagePath: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const outputPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.jpg`);
 
-		sharp(imagePath)
-			.resize({
-				width: 320,
-				height: 320,
-				fit: "cover",
-				position: "center",
-			})
-			.toFormat("jpeg", { quality: 90, })
-			.toFile(outputPath);
-
-		return outputPath;
+			sharp(imagePath)
+				.resize({
+					width: 320,
+					height: 320,
+					fit: "cover",
+					position: "center",
+				})
+				.toFormat("jpeg", { quality: 90 })
+				.toFile(outputPath)
+				.then(() => resolve(outputPath))
+				.catch(err => reject(err));
+		});
 	}
 }

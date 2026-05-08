@@ -18,6 +18,7 @@ import { Banner } from "./entities/banner.entity";
 import { BannersService } from "./banners.service";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
+import { ConfigService } from "@nestjs/config";
 
 @ArgsType()
 export class GetBannersArgs {
@@ -34,7 +35,14 @@ export class GetBannersArgs {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Banner)
 export class BannersResolver {
-	constructor(@Inject(BannersService) private readonly bannersService: BannersService) { }
+	assetsHost: string = "";
+
+	constructor(
+		@Inject(BannersService) private readonly bannersService: BannersService,
+		private readonly configService: ConfigService,
+	) {
+		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+	}
 
 	@ResolveField("title", () => String)
 	getTitle(@Parent() banner: Banner, @Args() args: GetBannersArgs): string {
@@ -56,9 +64,9 @@ export class BannersResolver {
 
 		const segments = banner.imageUrl.split("/");
 		if (banner.imageUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (banner.imageUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";

@@ -20,6 +20,7 @@ import { StoriesService } from "./stories.service";
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { StoryFrame } from "./entities/story-frame.entity";
 import { retry } from "rxjs";
+import { ConfigService } from "@nestjs/config";
 
 @ArgsType()
 export class GetStoriesArgs {
@@ -59,6 +60,12 @@ export class StoriesResolver {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => StoryFrame)
 export class FramesResolver {
+	assetsHost: string = "";
+
+	constructor(private readonly configService: ConfigService) {
+		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+	}
+
 	@ResolveField("mediaUrl", () => String)
 	getMediaUrl(@Parent() frame: StoryFrame): string {
 		if (frame === null || frame.mediaUrl === null) {
@@ -67,9 +74,9 @@ export class FramesResolver {
 
 		const segments = frame.mediaUrl.split("/");
 		if (frame.mediaUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (frame.mediaUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -83,9 +90,9 @@ export class FramesResolver {
 
 		const segments = frame.thumbnailUrl.split("/");
 		if (frame.thumbnailUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (frame.thumbnailUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
