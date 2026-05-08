@@ -53,6 +53,10 @@ export class Customer {
 	googleId: string | null;
 
 	@Exclude()
+	@Column({ type: "varchar", length: 64, nullable: true, unique: true, })
+	facebookId: string | null;
+
+	@Exclude()
 	@Column({ type: "varchar", nullable: false, length: 64, })
 	password: string;
 

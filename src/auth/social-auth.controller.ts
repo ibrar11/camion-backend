@@ -24,12 +24,31 @@ export class SocialAuthController {
 		@Res() res: Response,
 	) {
 		const result = await this.customerAuthService.loginWithGoogleWeb(req.user);
+		return this.redirectWithToken(res, result.token);
+	}
 
+	@Get('facebook')
+	@UseGuards(PassportAuthGuard('facebook'))
+	actionFacebookWebAuth() {
+		return;
+	}
+
+	@Get('facebook/callback')
+	@UseGuards(PassportAuthGuard('facebook'))
+	async actionFacebookWebCallback(
+		@Req() req: Request & { user: { email: string; fullName: string; facebookId: string } },
+		@Res() res: Response,
+	) {
+		const result = await this.customerAuthService.loginWithFacebookWeb(req.user);
+		return this.redirectWithToken(res, result.token);
+	}
+
+	private redirectWithToken(res: Response, token: string) {
 		const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
 		const sameSite = (process.env.COOKIE_SAMESITE as 'lax' | 'strict' | 'none') || 'none';
 		const secure = process.env.COOKIE_SECURE === 'true' || sameSite === 'none';
 
-		res.cookie('token', result.token, {
+		res.cookie('token', token, {
 			httpOnly: false,
 			secure,
 			sameSite,
@@ -38,6 +57,6 @@ export class SocialAuthController {
 			path: '/',
 		});
 
-		return res.redirect(302, process.env.FRONTEND_REDIRECT_URL || 'https://camion-app.com/auth/success');
+		return res.redirect(302, process.env.FRONTEND_REDIRECT_URL || 'https://app.dev.camiontrading.com/en');
 	}
 }
