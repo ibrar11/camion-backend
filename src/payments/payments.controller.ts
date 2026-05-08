@@ -1,6 +1,7 @@
 import { 
     Body, 
     Controller, 
+    Get, 
     Post, 
     UseGuards
 } from "@nestjs/common";
@@ -27,5 +28,11 @@ export class PaymentsController {
     @Post()
     create(@Body() dto: CreatePaymentDto): Promise<PaymentTransaction> {
         return this.paymentsService.createPayment(dto);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get()
+    getPayments(): Promise<Array<PaymentTransaction>> {
+        return this.paymentsService.findAll();
     }
 }

@@ -53,12 +53,15 @@ import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrder
 import { QueueService } from 'src/queue/queue.service';
 import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 
+import { ConfigService } from '@nestjs/config';
+
 
 @Injectable()
 export class ProcurementService {
     private readonly logger = new Logger(ProcurementService.name);
 
     constructor(
+        private readonly configService: ConfigService,
         @Inject(ProductsService) private readonly productService: ProductsService,
         @Inject(ProductVariantService) private readonly variantService: ProductVariantService,
         @Inject(ProductOptionService) private readonly optionService: ProductOptionService,
@@ -227,9 +230,34 @@ export class ProcurementService {
 
             const description = extractFormattedText(product.description);
 
-            const descriptionTrans = product.descriptionTrans ?
-                extractFormattedText(product.descriptionTrans)
-                : description;
+            let descriptionTrans: string = '';
+            if (product.descriptionTrans) {
+                descriptionTrans = extractFormattedText(product.descriptionTrans);
+            } else {
+                this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
+                console.log("descriptiondescription",JSON.stringify({
+                    text: description,
+                    sourceLanguage: 'ch',
+                    targetLanguage: 'en'
+                }))
+                const translation = await await fetch(
+                    `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/contextual`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: description,
+                            sourceLanguage: 'ch',
+                            targetLanguage: 'en',
+                            updateWeaviate: true
+                        }),
+                    },
+                );
+                const data = await translation.json();
+                descriptionTrans = data?.translated || "";
+            }
 
             const skus = product.productSkuInfos ?? [];
 
@@ -582,10 +610,10 @@ export class ProcurementService {
             }
 
             if (importedProductUuids.length) {
-                // await this.queueService.addImportedProductsTranslationJob(
-                //     importedProductUuids,
-                //     1,
-                // );
+                await this.queueService.addImportedProductsTranslationJob(
+                    importedProductUuids,
+                    1,
+                );
             }
 
             return results;

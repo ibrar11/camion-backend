@@ -16,11 +16,11 @@ import { S3Service } from "../common/s3.service";
 import { getSkipAndTake } from "../common/pagination";
 
 import { UpdateProductVariantImageDto } from "./dtos/UpdateProductVariantImageDto";
-import { ReplaceProductVariantImageDto } from "./dtos/ReplaceProductVariantImageDto";
 
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage, ProductVariantImageDimensions } from "./entities/product-variant-image.entity";
-import { FileService } from "src/common/file.service";
+import { FileService } from "../common/file.service";
+import { ImageThumbnailService } from "../common/image-thumbnail.service";
 
 @Injectable()
 export class ProductVariantImageService {
@@ -29,6 +29,7 @@ export class ProductVariantImageService {
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@Inject(FileService) private readonly fileService: FileService,
+		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
 		@InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantImage) private readonly productVariantImageRepository: Repository<ProductVariantImage>,
 	) { }
@@ -51,10 +52,24 @@ export class ProductVariantImageService {
 			});
 		}
 
-		// Upload the image to s3
-		let params: { key: string, url: string } | null = null;
+		// Generate a thumbnail for the image
+		const thumbnailPath = await this.imageThumbnailService.generateThumbnail(file.path);
+
+		// Upload the thumbnail of the image/video to s3
+		let thumbnailParams: { key: string, url: string } | null;
 		try {
-			params = await this.s3Service.uploadFile("product-images", file);
+			thumbnailParams = await this.s3Service.uploadPath("product-images", thumbnailPath, "image/jpeg");
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the thumbnail. Please try again.",
+			});
+		}
+
+		// Upload the image to s3
+		let imageParams: { key: string, url: string, } | null = null;
+		try {
+			imageParams = await this.s3Service.uploadFile("product-images", file);
 		} catch (err) {
 			this.logger.error(err);
 			throw new InternalServerErrorException({
@@ -63,6 +78,7 @@ export class ProductVariantImageService {
 		}
 
 		// Delete the temporary files
+		await this.fileService.deletePath(thumbnailPath);
 		await this.fileService.deleteFile(file);
 
 		// Create the product variant image
@@ -70,10 +86,11 @@ export class ProductVariantImageService {
 		productVariantImage.uuid = crypto.randomUUID();
 		productVariantImage.variant = variant;
 		productVariantImage.alt = "";
-		productVariantImage.imageUrl = params.url;
-		productVariantImage.thumbnailUrl = params.url;
+		productVariantImage.imageUrl = imageParams.url;
+		productVariantImage.thumbnailUrl = thumbnailParams.url;
 		productVariantImage.position = 0;
 		productVariantImage.isFeatured = false;
+		productVariantImage.isEnabled = true;
 		productVariantImage.dimensions = new ProductVariantImageDimensions();
 		productVariantImage.dimensions.height = 1000;
 		productVariantImage.dimensions.width = 1000;
@@ -159,6 +176,7 @@ export class ProductVariantImageService {
 		variantImage.alt = body.alt.trim();
 		variantImage.position = body.position;
 		variantImage.isFeatured = body.isFeatured;
+		variantImage.isEnabled = body.isEnabled;
 		return this.productVariantImageRepository.save(variantImage);
 	}
 
@@ -166,10 +184,10 @@ export class ProductVariantImageService {
 	 * Replaces the product variant image
 	 *
 	 * @param uuid
-	 * @param body
+	 * @param file
 	 * @returns
 	 */
-	async replaceProductVariantImage(uuid: string, body: ReplaceProductVariantImageDto): Promise<ProductVariantImage> {
+	async replaceProductVariantImage(uuid: string, file: Express.Multer.File): Promise<ProductVariantImage> {
 		this.logger.log(`Replacing product variant image: ${uuid}`);
 
 		// Find the variant image
@@ -180,10 +198,24 @@ export class ProductVariantImageService {
 			});
 		}
 
-		// Move the file from source to destination
-		let params: { key: string, url: string } | null = null;
+		// Generate a thumbnail for the image
+		const thumbnailPath = await this.imageThumbnailService.generateThumbnail(file.path);
+
+		// Upload the thumbnail of the image/video to s3
+		let thumbnailParams: { key: string, url: string } | null;
 		try {
-			params = await this.s3Service.moveFile("product-images", body.key);
+			thumbnailParams = await this.s3Service.uploadPath("product-images", thumbnailPath, "image/jpeg");
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the thumbnail. Please try again.",
+			});
+		}
+
+		// Upload the image to s3
+		let imageParams: { key: string, url: string, } | null = null;
+		try {
+			imageParams = await this.s3Service.uploadFile("product-images", file);
 		} catch (err) {
 			this.logger.error(err);
 			throw new InternalServerErrorException({
@@ -191,9 +223,13 @@ export class ProductVariantImageService {
 			});
 		}
 
+		// Delete the temporary files
+		await this.fileService.deletePath(thumbnailPath);
+		await this.fileService.deleteFile(file);
+
 		// Update the image
-		variantImage.imageUrl = params.url;
-		variantImage.thumbnailUrl = params.url;
+		variantImage.imageUrl = imageParams.url;
+		variantImage.thumbnailUrl = thumbnailParams.url;
 		return this.productVariantImageRepository.save(variantImage);
 	}
 
