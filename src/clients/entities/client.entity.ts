@@ -8,6 +8,7 @@ import {
 import { Exclude } from 'class-transformer';
 
 import { ClientStatus } from '../enums/client-status';
+import { ClientRole } from '../enums/client-role.enum';
 
 @Entity({ name: 'clients' })
 export class Client {
@@ -32,9 +33,16 @@ export class Client {
     secret: string;
 
     @Column({
-    type: 'enum',
-    enum: ClientStatus,
-    default: ClientStatus.ACTIVE,
+        type: "enum",
+        enum: ClientRole,
+        default: ClientRole.None,
+    })
+    role: ClientRole;
+
+    @Column({
+        type: 'enum',
+        enum: ClientStatus,
+        default: ClientStatus.ACTIVE,
     })
     status!: ClientStatus;
 
