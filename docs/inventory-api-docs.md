@@ -763,6 +763,60 @@ status | Yes | String | The current status of the product. Possible values are `
 }
 ```
 
+Update Product Featured Image
+-----------------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+PUT /v1/products/<product-uuid>/featured-image HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+imageUUID | Yes | String | The UUID of the product variant image
+
+### Request Body
+```json
+{
+    "imageUUID": "e23e83b6-48b9-436b-84c1-617a9bc5a60e"
+}
+```
+
+### Response Body
+```json
+{
+    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+    "slug": "iphone-22",
+    "titleEn": "iPhone 22",
+    "titleAr": "آيفون 22",
+    "briefEn": "From $799 or $33.29/mo. per month for 24 months",
+    "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+    "descriptionEn": "Your new iPhone awaits. Make it yours.",
+    "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+    "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
+    "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+    "featuredImageUrl": "s3://product-images/320e44b7-cc8c-40e1-ad6b-d592df0f7888.webp",
+    "featuredThumbnailUrl": "s3://product-images/0f8f43f6-8c88-41d3-a175-4ff69a45feb9.webp",
+    "status": "active",
+    "shopId": null,
+    "shopName": null,
+    "procurementId": null,
+    "salesCount": 0,
+    "likesCount": 0,
+    "reviewsCount": 1,
+    "ratingSum": 5,
+    "ratingCount": 1,
+    "ratingAvg": "5",
+    "ratingOneStarCount": 0,
+    "ratingTwoStarCount": 0,
+    "ratingThreeStarCount": 0,
+    "ratingFourStarCount": 0,
+    "ratingFiveStarCount": 0
+}
+```
+
 Delete Product
 --------------
 

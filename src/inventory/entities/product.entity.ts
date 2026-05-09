@@ -91,6 +91,14 @@ export class Product {
 	@Column({ type: "text", })
 	descriptionHtmlAr: string;
 
+	@Field(() => String)
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	featuredImageUrl: string;
+
+	@Field(() => String)
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	featuredThumbnailUrl: string;
+
 	@Field()
 	@Column({
 		type: "enum",
