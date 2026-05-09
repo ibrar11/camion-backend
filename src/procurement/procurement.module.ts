@@ -48,6 +48,8 @@ import { FileService } from '../common/file.service';
 import { QueueService } from '../queue/queue.service';
 import { QueueModule } from '../queue/queue.module';
 
+import { TranslationService } from '../translation/translation.service';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -82,6 +84,7 @@ import { QueueModule } from '../queue/queue.module';
 		S3Service,
 		FileService,
 		QueueService,
+		TranslationService,
 	],
 	controllers: [ProcurementController],
 	exports: [ProcurementService],

@@ -70,6 +70,7 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 import { PricingModule } from '../pricing/pricing.module';
 
 import { Translation } from '../translation/entities/translation.entity';
+import { TranslationService } from 'src/translation/translation.service';
 
 @Module({
 	imports: [
@@ -119,6 +120,7 @@ import { Translation } from '../translation/entities/translation.entity';
 		ProductVariantService,
 		WarehouseService,
 		FileService,
+		TranslationService,
 	],
 	controllers: [
 		CategoriesController,

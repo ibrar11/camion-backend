@@ -22,7 +22,6 @@ export class ProductTranslationProvider {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ texts, sourceLanguage, targetLanguage }),
         });
-        console.log("resresresresresres", res)
 
         if (!res.ok) {
             throw new Error(`Translation API responded with ${res.status}`);
@@ -40,5 +39,27 @@ export class ProductTranslationProvider {
     ): Promise<string[]> {
         const translations = await this.translate(texts, targetLanguage, sourceLanguage);
         return translations;
+    }
+
+    async translateSingleText(
+        text: string,
+        targetLanguage: string,
+        sourceLanguage = 'en',
+    ): Promise<string> {
+        if (!text) return text;
+
+        const res = await fetch(`${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, sourceLanguage, targetLanguage }),
+        });
+
+        if (!res.ok) {
+            throw new Error(`Translation API responded with ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        return data?.translated ?? text;
     }
 }

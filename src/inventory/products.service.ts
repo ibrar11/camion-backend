@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException
@@ -27,6 +28,9 @@ import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
 import { sliceProductVariants } from "src/common/product-variant-filter";
 
+import { TranslationService } from "../translation/translation.service";
+import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
+
 @Injectable()
 export class ProductsService {
 	private readonly logger = new Logger(ProductsService.name);
@@ -35,6 +39,7 @@ export class ProductsService {
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
+		@Inject(TranslationService) private readonly translationService: TranslationService,
 	) { }
 
 	/**
@@ -1003,6 +1008,39 @@ export class ProductsService {
 			throw new NotFoundException({
 				error: "Failed to find the product. Please check and try again.",
 			});
+		}
+
+		if (product.titleEn !== body.title.en.trim()) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.PRODUCT_TITLE,
+				product.uuid,
+				product.uuid,
+				body.title.en.trim(),
+				'en',
+				1000,
+			);
+		}
+
+		if (product.briefEn !== body.brief.en.trim()) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.PRODUCT_BRIEF,
+				product.uuid,
+				product.uuid,
+				body.brief.en.trim(),
+				'en',
+				1000,
+			);
+		}
+
+		if (product.descriptionEn !== body.description.en.trim()) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.PRODUCT_DESCRIPTION,
+				product.uuid,
+				product.uuid,
+				body.description.en.trim(),
+				'en',
+				1000,
+			);
 		}
 
 		// Update the product

@@ -60,7 +60,7 @@ export class TranslationProcessor extends WorkerHost {
     }
 
     async process(job: Job<TranslationJobData>): Promise<any> {
-        const { productUuids, sourceLanguageId } = job.data;
+        const { productUuids, sourceLanguageCode } = job.data;
 
         this.logger.log(
             `Processing translation batch job ${job.id} for ${productUuids.length} products`,
@@ -72,7 +72,7 @@ export class TranslationProcessor extends WorkerHost {
             const languages = await this.languageRepository.find();
 
             const targetLanguages = languages.filter(
-                (lang) => lang.id !== sourceLanguageId,
+                (lang) => lang.shortCode !== sourceLanguageCode,
             );
 
             await job.updateProgress(10);
@@ -128,176 +128,185 @@ export class TranslationProcessor extends WorkerHost {
         product: Product,
         targetLanguages: Language[],
     ): Promise<void> {
-        const existingTranslation = await this.translationRepository.findOne({
-            where: {
-                entityUuid: product.uuid,
-                entityType: 'product',
-            },
-        });
-
-        let translationEntity: Translation;
-
-        if (existingTranslation) {
-            translationEntity = existingTranslation;
-        } else {
-            translationEntity = await this.translationRepository.save({
-                uuid: crypto.randomUUID(),
-                entityType: 'product',
-                entityUuid: product.uuid,
-                completed: false,
+        try {
+            const existingTranslation = await this.translationRepository.findOne({
+                where: {
+                    entityUuid: product.uuid,
+                    entityType: 'product',
+                },
             });
-        }
 
-        const variants = product.variants ?? [];
-        const options = product.options ?? [];
-        const optionValues = options.flatMap((o) => o.values ?? []);
-        const categories = product.productCategories ?? [];
+            let translationEntity: Translation;
 
-        const translationItemsToInsert: Partial<TranslationItem>[] = [];
-
-        // Batch all texts for this language into one parallel round-trip
-        const allTexts = [
-            product.titleEn,
-            product.briefEn,
-            product.descriptionEn,
-            ...variants.map((v) => v.titleEn),
-            ...options.map((o) => o.nameEn),
-            ...optionValues.map((v) => v.valueEn),
-            ...categories.map((c) => c.category.nameEn),
-        ];
-
-        const CONCURRENT_LANGUAGES = 2;
-
-        for (let i = 0; i < targetLanguages.length; i += CONCURRENT_LANGUAGES) {
-            const chunk = targetLanguages.slice(i, i + CONCURRENT_LANGUAGES);
-
-            const results = await Promise.all(
-                chunk.map(async (language) => {
-
-                    const translated = await this.translationProvider.translateBatch(
-                        allTexts,
-                        language.shortCode,
-                    );
-
-                    return { language, translated };
-                }),
-            );
-
-            for (const { language, translated } of results) {
-                let idx = 0;
-
-                const translatedProductTitle = translated[idx++];
-                const translatedProductBrief = translated[idx++];
-                const translatedProductDescription = translated[idx++];
-
-                const translatedVariants = variants.map((v) => ({
-                    uuid: v.uuid,
-                    translatedText: translated[idx++],
-                }));
-
-                const translatedOptions = options.map((o) => ({
-                    uuid: o.uuid,
-                    translatedText: translated[idx++],
-                }));
-
-                const translatedOptionValues = optionValues.map((v) => ({
-                    uuid: v.uuid,
-                    translatedText: translated[idx++],
-                }));
-
-                const translatedCategories = categories.map((c) => ({
-                    uuid: c.category.uuid,
-                    translatedText: translated[idx++],
-                }));
-
-                translationItemsToInsert.push({
+            if (existingTranslation) {
+                translationEntity = existingTranslation;
+            } else {
+                translationEntity = await this.translationRepository.save({
                     uuid: crypto.randomUUID(),
-                    translation: translationEntity,
-                    language,
-                    translatedProductTitle,
-                    translatedProductBrief,
-                    translatedProductDescription,
-                    translatedProductVariants: translatedVariants,
-                    translatedProductOptions: translatedOptions,
-                    translatedProductOptionValues: translatedOptionValues,
-                    translatedCategories,
+                    entityType: 'product',
+                    entityUuid: product.uuid,
+                    completed: false,
                 });
+            }
 
-                if (language.shortCode === 'ar') {
-                    const productToUpdate = await this.productRepository.findOne({
-                        where: {
-                            id: product.id
-                        }
+            const variants = product.variants ?? [];
+            const options = product.options ?? [];
+            const optionValues = options.flatMap((o) => o.values ?? []);
+            const categories = product.productCategories ?? [];
+
+            const translationItemsToInsert: Partial<TranslationItem>[] = [];
+
+            // Batch all texts for this language into one parallel round-trip
+            const allTexts = [
+                product.titleEn,
+                product.briefEn,
+                product.descriptionEn,
+                ...variants.map((v) => v.titleEn),
+                ...options.map((o) => o.nameEn),
+                ...optionValues.map((v) => v.valueEn),
+                ...categories.map((c) => c.category.nameEn),
+            ];
+
+            const CONCURRENT_LANGUAGES = 2;
+
+            for (let i = 0; i < targetLanguages.length; i += CONCURRENT_LANGUAGES) {
+                const chunk = targetLanguages.slice(i, i + CONCURRENT_LANGUAGES);
+
+                const results = await Promise.all(
+                    chunk.map(async (language) => {
+
+                        const translated = await this.translationProvider.translateBatch(
+                            allTexts,
+                            language.shortCode,
+                        );
+
+                        return { language, translated };
+                    }),
+                );
+
+                for (const { language, translated } of results) {
+                    let idx = 0;
+
+                    const translatedProductTitle = translated[idx++];
+                    const translatedProductBrief = translated[idx++];
+                    const translatedProductDescription = translated[idx++];
+
+                    const translatedVariants = variants.map((v) => ({
+                        uuid: v.uuid,
+                        translatedText: translated[idx++],
+                    }));
+
+                    const translatedOptions = options.map((o) => ({
+                        uuid: o.uuid,
+                        translatedText: translated[idx++],
+                    }));
+
+                    const translatedOptionValues = optionValues.map((v) => ({
+                        uuid: v.uuid,
+                        translatedText: translated[idx++],
+                    }));
+
+                    const translatedCategories = categories.map((c) => ({
+                        uuid: c.category.uuid,
+                        translatedText: translated[idx++],
+                    }));
+
+                    translationItemsToInsert.push({
+                        uuid: crypto.randomUUID(),
+                        translation: translationEntity,
+                        language,
+                        translatedProductTitle,
+                        translatedProductBrief,
+                        translatedProductDescription,
+                        translatedProductVariants: translatedVariants,
+                        translatedProductOptions: translatedOptions,
+                        translatedProductOptionValues: translatedOptionValues,
+                        translatedCategories,
                     });
-                    if (productToUpdate) {
-                        productToUpdate.titleAr = translatedProductTitle;
-                        productToUpdate.briefAr = translatedProductBrief;
-                        productToUpdate.descriptionAr = translatedProductDescription;
 
-                        await this.productRepository.save(productToUpdate);
+                    if (language.shortCode === 'ar') {
+                        const productToUpdate = await this.productRepository.findOne({
+                            where: {
+                                id: product.id
+                            }
+                        });
+                        if (productToUpdate) {
+                            productToUpdate.titleAr = translatedProductTitle?.trim().slice(0, 128);
+                            productToUpdate.briefAr = translatedProductBrief;
+                            productToUpdate.descriptionAr = translatedProductDescription;
+
+                            const updatedProduct = await this.productRepository.save(productToUpdate);
+                            translationEntity.product = updatedProduct;
+                        }
+
+                        await Promise.all(
+                            translatedVariants.map(async (v) => {
+                                const variant = await this.productVariantRepository.findOne({
+                                    where: { uuid: v.uuid },
+                                });
+
+                                if (variant) {
+                                    variant.titleAr = v.translatedText?.trim().slice(0, 128);
+                                    await this.productVariantRepository.save(variant);
+                                }
+                            }),
+                        );
+
+                        await Promise.all(
+                            translatedOptions.map(async (o) => {
+                                const option = await this.productOptionRepository.findOne({
+                                    where: { uuid: o.uuid },
+                                });
+
+                                if (option) {
+                                    option.nameAr = o.translatedText?.trim().slice(0, 64);
+                                    await this.productOptionRepository.save(option);
+                                }
+                            }),
+                        );
+
+                        await Promise.all(
+                            translatedOptionValues.map(async (v) => {
+                                const optionValue = await this.productOptionValueRepository.findOne({
+                                    where: { uuid: v.uuid },
+                                });
+
+                                if (optionValue) {
+                                    optionValue.valueAr = v.translatedText?.trim().slice(0, 64);
+                                    await this.productOptionValueRepository.save(optionValue);
+                                }
+                            }),
+                        );
+
+                        await Promise.all(
+                            translatedCategories.map(async (c) => {
+                                const category = await this.categoryRepository.findOne({
+                                    where: { uuid: c.uuid },
+                                });
+
+                                if (category) {
+                                    category.nameAr = c.translatedText;
+                                    await this.categoryRepository.save(category);
+                                }
+                            }),
+                        );
                     }
-
-                    await Promise.all(
-                        translatedVariants.map(async (v) => {
-                            const variant = await this.productVariantRepository.findOne({
-                                where: { uuid: v.uuid },
-                            });
-
-                            if (variant) {
-                                variant.titleAr = v.translatedText;
-                                await this.productVariantRepository.save(variant);
-                            }
-                        }),
-                    );
-
-                    await Promise.all(
-                        translatedOptions.map(async (o) => {
-                            const option = await this.productOptionRepository.findOne({
-                                where: { uuid: o.uuid },
-                            });
-
-                            if (option) {
-                                option.nameAr = o.translatedText;
-                                await this.productOptionRepository.save(option);
-                            }
-                        }),
-                    );
-
-                    await Promise.all(
-                        translatedOptionValues.map(async (v) => {
-                            const optionValue = await this.productOptionValueRepository.findOne({
-                                where: { uuid: v.uuid },
-                            });
-
-                            if (optionValue) {
-                                optionValue.valueAr = v.translatedText;
-                                await this.productOptionValueRepository.save(optionValue);
-                            }
-                        }),
-                    );
-
-                    await Promise.all(
-                        translatedCategories.map(async (c) => {
-                            const category = await this.categoryRepository.findOne({
-                                where: { uuid: c.uuid },
-                            });
-
-                            if (category) {
-                                category.nameAr = c.translatedText;
-                                await this.categoryRepository.save(category);
-                            }
-                        }),
-                    );
                 }
             }
+
+            if (translationItemsToInsert.length) {
+                await this.translationItemRepository.save(translationItemsToInsert);
+            }
+
+            translationEntity.completed = true;
+
+            await this.translationRepository.save(translationEntity);
+        } catch (error: any) {
+            this.logger.error(
+                `Translation job failed: ${error}`,
+            );
+
+            throw error;
         }
-
-        if (translationItemsToInsert.length) {
-            await this.translationItemRepository.save(translationItemsToInsert);
-        }
-
-        translationEntity.completed = true;
-
-        await this.translationRepository.save(translationEntity);
     }
 }

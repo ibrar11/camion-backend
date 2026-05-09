@@ -235,11 +235,6 @@ export class ProcurementService {
                 descriptionTrans = extractFormattedText(product.descriptionTrans);
             } else {
                 this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
-                console.log("descriptiondescription",JSON.stringify({
-                    text: description,
-                    sourceLanguage: 'ch',
-                    targetLanguage: 'en'
-                }))
                 const translation = await await fetch(
                     `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/contextual`,
                     {
@@ -463,8 +458,8 @@ export class ProcurementService {
                                             try {
                                                 const optionPayload = {
                                                     name: {
-                                                        en: option.name,
-                                                        ar: option.name,
+                                                        en: option.name?.trim().slice(0, 64),
+                                                        ar: option.name?.trim().slice(0, 64),
                                                     },
                                                     position: i + index + 1
                                                 };
@@ -479,8 +474,8 @@ export class ProcurementService {
                                                     try {
                                                         const optionValuePayload = {
                                                             value: {
-                                                                en: option.values[valueIndex],
-                                                                ar: option.values[valueIndex],
+                                                                en: option.values[valueIndex]?.trim().slice(0, 64),
+                                                                ar: option.values[valueIndex]?.trim().slice(0, 64),
                                                             },
                                                             position: valueIndex + 1,
                                                         };
@@ -526,8 +521,8 @@ export class ProcurementService {
                                                 const dto: CreateProductVariantDto = {
                                                     warehouse: warehouse,
                                                     title: {
-                                                        en: variant.title ?? '',
-                                                        ar: variant.title ?? '',
+                                                        en: variant.title?.trim().slice(0, 128) ?? '',
+                                                        ar: variant.title?.trim().slice(0, 128) ?? '',
                                                     },
                                                     sku: variant.skuId?.toString() || crypto.randomUUID(),
                                                     barcode: variant.skuId?.toString() || '',
@@ -554,6 +549,7 @@ export class ProcurementService {
                                                 const createdVariant = await this.variantService.createProductVariant(
                                                     product.uuid,
                                                     dto,
+                                                    true
                                                 );
 
                                                 if (!firstVariantId) {
@@ -612,7 +608,7 @@ export class ProcurementService {
             if (importedProductUuids.length) {
                 await this.queueService.addImportedProductsTranslationJob(
                     importedProductUuids,
-                    1,
+                    "en",
                 );
             }
 
