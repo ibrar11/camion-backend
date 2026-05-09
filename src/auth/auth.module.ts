@@ -31,6 +31,7 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
 import { GoogleOAuthStrategy } from './strategies/google.strategy';
+import { FacebookOAuthStrategy } from './strategies/facebook.strategy';
 import { SocialAuthController } from './social-auth.controller';
 
 @Module({
@@ -57,6 +58,7 @@ import { SocialAuthController } from './social-auth.controller';
         RolesGuard,
         TwilioService,
         GoogleOAuthStrategy,
+        FacebookOAuthStrategy,
     ],
     controllers: [
         CustomerAuthController,

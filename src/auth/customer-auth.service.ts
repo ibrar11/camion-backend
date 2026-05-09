@@ -24,6 +24,7 @@ import { ConfigService } from "@nestjs/config";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { GoogleMobileAuthDto } from "./dtos/GoogleMobileAuthDto";
+import { FacebookMobileAuthDto } from "./dtos/FacebookMobileAuthDto";
 import { VerifyCustomerDto } from "./dtos/VerifyCustomerDto";
 import { RegisterCustomerDto } from "./dtos/RegisterCustomerDto";
 import { LoginCustomerByEmailAddressDto } from "./dtos/LoginCustomerByEmailAddressDto";
@@ -305,8 +306,7 @@ export class CustomerAuthService {
 			}
 		}
 
-		// In local/dev env use the magic code; otherwise generate a real OTP
-		const secret = this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString();
+		const secret = crypto.randomInt(100000, 1000000).toString();
 
 		// Create a login request
 		const request = new LoginRequest();
@@ -447,13 +447,7 @@ export class CustomerAuthService {
 			}
 		}
 
-		// In local env use the magic code so no real email is needed; otherwise generate a real OTP
-		const secret = this.isLocal
-			? (this.devMagicCode ?? crypto.randomInt(100000, 1000000).toString())
-			: crypto.randomInt(100000, 1000000).toString();
-
-		this.logger.log(`customer login secret: ${secret}`);
-
+		const secret = crypto.randomInt(100000, 1000000).toString();
 		// Create a login request
 		const request = new LoginRequest();
 		request.uuid = crypto.randomUUID();
@@ -461,10 +455,11 @@ export class CustomerAuthService {
 		request.secret = await bcrypt.hash(secret, 10);
 		await this.loginRequestRepository.save(request);
 
-		// Send OTP to the customer via email
-		await this.emailService.sendOtpEmail(customer.emailAddress, {
-			otp: secret,
-		});
+		if (this.isLocal) {
+			this.logger.log(`[LOCAL] OTP for ${customer.emailAddress}: ${secret}`);
+		} else {
+			await this.emailService.sendOtpEmail(customer.emailAddress, { otp: secret });
+		}
 
 		// Create a payload for the session token
 		const payload = {
@@ -670,6 +665,102 @@ export class CustomerAuthService {
 
 	async loginWithGoogleWeb(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
 		return this.findOrCreateGoogleCustomer(profile);
+	}
+
+	async loginWithFacebookMobile(dto: FacebookMobileAuthDto): Promise<CustomerAuthResponse> {
+		const appId = this.configService.get<string>('FACEBOOK_APP_ID');
+		const appSecret = this.configService.get<string>('FACEBOOK_APP_SECRET');
+
+		if (!appId || !appSecret) {
+			throw new UnauthorizedException({ error: 'Facebook authentication not configured.' });
+		}
+
+		const appAccessToken = `${appId}|${appSecret}`;
+
+		const debugRes = await fetch(
+			`https://graph.facebook.com/debug_token?input_token=${dto.accessToken}&access_token=${appAccessToken}`,
+		);
+		const debugData = (await debugRes.json()) as { data?: { is_valid?: boolean; app_id?: string } };
+
+		if (!debugData.data?.is_valid) {
+			throw new UnauthorizedException({ error: 'Invalid Facebook access token.' });
+		}
+		if (debugData.data.app_id !== appId) {
+			throw new UnauthorizedException({ error: 'Facebook token app mismatch.' });
+		}
+
+		const profileRes = await fetch(
+			`https://graph.facebook.com/me?fields=id,name,email&access_token=${dto.accessToken}`,
+		);
+		const profileData = (await profileRes.json()) as { id?: string; name?: string; email?: string };
+
+		const facebookId = profileData.id;
+		if (!facebookId) {
+			throw new UnauthorizedException({ error: 'Facebook ID not found.' });
+		}
+
+		const email = profileData.email || '';
+		const fullName = profileData.name || '';
+
+		return this.findOrCreateFacebookCustomer({ email, fullName, facebookId });
+	}
+
+	async loginWithFacebookWeb(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
+		return this.findOrCreateFacebookCustomer(profile);
+	}
+
+	private async findOrCreateFacebookCustomer(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, facebookId } = profile;
+
+		let customer = await this.customerRepository.findOneBy({ facebookId });
+
+		if (!customer) {
+			if (email) {
+				customer = await this.customerRepository.findOneBy({
+					emailAddress: email.toLowerCase().trim(),
+				});
+				if (customer) {
+					customer.facebookId = facebookId;
+					customer = await this.customerRepository.save(customer);
+				}
+			}
+
+			if (!customer) {
+				if (!email) {
+					throw new UnauthorizedException({ error: 'Email address is required for Facebook login.' });
+				}
+				const newCustomer = new Customer();
+				newCustomer.uuid = crypto.randomUUID();
+				newCustomer.fullName = (fullName || email.split('@')[0]).trim();
+				newCustomer.emailAddress = email.toLowerCase().trim();
+				newCustomer.phoneNumber = null;
+				newCustomer.password = '';
+				newCustomer.facebookId = facebookId;
+				newCustomer.role = CustomerRole.Customer;
+				newCustomer.isActive = true;
+				customer = await this.customerRepository.save(newCustomer);
+			}
+		}
+
+		if (!customer.isActive) {
+			throw new UnauthorizedException({ error: 'Account is deactivated.' });
+		}
+
+		const jwtPayload = {
+			jti: crypto.randomUUID(),
+			type: 'customer',
+			sub: customer.uuid,
+		};
+
+		const token = await this.jwtService.signAsync(jwtPayload);
+
+		await this.cacheManager.set(
+			`auth:customer-session:${jwtPayload.jti}`,
+			token,
+			(this.configService.get<number>('JWT_EXPIRES_IN') ?? 86400) * 1000,
+		);
+
+		return { token, customer };
 	}
 
 	private async findOrCreateGoogleCustomer(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {

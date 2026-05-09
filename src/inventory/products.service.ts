@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
@@ -297,8 +297,8 @@ export class ProductsService {
 			})
 
 			// Populate variants and their specific option value mappings
-			.leftJoinAndSelect('product.variants', 'variants')
-			.leftJoinAndSelect('variants.images', 'images')
+			.leftJoinAndSelect("product.variants", "variant")
+			.leftJoinAndSelect("variant.images", "image")
 
 			// Many-to-many join
 			.innerJoin("product.productCategories", "productCategory")
@@ -333,6 +333,9 @@ export class ProductsService {
 		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
+			where: {
+				status: ProductStatus.ACTIVE,
+			},
 			relations: {
 				variants: {
 					images: true,
@@ -340,9 +343,6 @@ export class ProductsService {
 				productCategories: {
 					category: true,
 				},
-			},
-			where: {
-				status: ProductStatus.ACTIVE,
 			},
 			order: {
 				id: "DESC",
@@ -403,8 +403,8 @@ export class ProductsService {
 					.innerJoin("productCategory.category", "category")
 
 					// Join variants and images (still optional)
-					.leftJoinAndSelect("product.variants", "variants")
-					.leftJoinAndSelect("variants.images", "images")
+					.leftJoinAndSelect("product.variants", "variant")
+					.leftJoinAndSelect("variant.images", "image")
 
 					// Filter by product text column
 					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
@@ -430,8 +430,8 @@ export class ProductsService {
 					})
 
 					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -464,8 +464,8 @@ export class ProductsService {
 					})
 
 					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -542,8 +542,8 @@ export class ProductsService {
 					.innerJoin("productCategory.category", "category")
 
 					// Join variants and images (still optional)
-					.leftJoinAndSelect("product.variants", "variants")
-					.leftJoinAndSelect("variants.images", "images")
+					.leftJoinAndSelect("product.variants", "variant")
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Filter by product text column
 					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
@@ -573,8 +573,8 @@ export class ProductsService {
 					})
 
 					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -611,8 +611,8 @@ export class ProductsService {
 					})
 
 					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -686,8 +686,8 @@ export class ProductsService {
 				})
 
 				// Populate variants and their specific option value mappings
-				.leftJoinAndSelect('product.variants', 'variants')
-				.leftJoinAndSelect('variants.images', 'images')
+				.leftJoinAndSelect('product.variants', 'variant')
+				.leftJoinAndSelect('variant.images', 'image')
 
 				// Many-to-many join
 				.innerJoin("product.productCategories", "productCategory")
@@ -855,8 +855,8 @@ export class ProductsService {
 				})
 
 				// Populate variants and their specific option value mappings
-				.leftJoinAndSelect('product.variants', 'variants')
-				.leftJoinAndSelect('variants.images', 'images')
+				.leftJoinAndSelect('product.variants', 'variant')
+				.leftJoinAndSelect('variant.images', 'image')
 
 				// Many-to-many join
 				.innerJoin("product.productCategories", "productCategory")
@@ -958,7 +958,10 @@ export class ProductsService {
 		const product = await this.productRepository.findOne({
 			cache: true,
 			relationLoadStrategy: "query",
-			where: { slug: slug, },
+			where: {
+				slug: slug,
+				status: ProductStatus.ACTIVE,
+			},
 			relations: {
 				options: {
 					values: true,

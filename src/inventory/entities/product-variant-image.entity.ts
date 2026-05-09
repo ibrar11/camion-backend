@@ -60,6 +60,11 @@ export class ProductVariantImage {
 	@Column({ type: "boolean", default: false, })
 	isFeatured: boolean;
 
+	@Field()
+	@Column({ type: "boolean", default: true, })
+	@Index()
+	isEnabled: boolean;
+
 	@Field(() => Int)
 	@Column({ type: "integer" })
 	position: number;

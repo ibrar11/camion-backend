@@ -305,6 +305,7 @@ type ProductVariantImage {
   alt: String!
   dimensions: ProductVariantImageDimensions!
   imageUrl: String!
+  isEnabled: Boolean!
   isFeatured: Boolean!
   position: Int!
   thumbnailUrl: String!

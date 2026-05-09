@@ -11,18 +11,16 @@ import {
 
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+    DataSource,
     In,
     Repository
 } from 'typeorm';
 
 import { OrderStatus } from "./enums/OrderStatus";
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
-import { TransactionType } from "../referral/enums/TransactionType.enum";
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
-
-import { CreateTransactionDto } from "../referral/dtos/CreateTransactionDto";
 
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
@@ -47,9 +45,7 @@ import { Coupon } from "../referral/entities/coupon.entity";
 
 import { Wallet } from "../referral/entities/wallet.entity";
 
-import { TransactionsService } from "../referral/transactions.service";
-
-import { Affiliate } from "../referral/entities/affiliate.entity";
+import { Transaction, TransactionMoney } from "../referral/entities/transaction.entity";
 
 import { PricingService } from "../pricing/pricing.service";
 
@@ -82,17 +78,14 @@ export class OrderService {
 
     constructor(
         private readonly configService: ConfigService,
+        private readonly dataSource: DataSource,
         @InjectRepository(Order) private orderRepository: Repository<Order>,
-        @InjectRepository(OrderItem) private orderItemRepository: Repository<OrderItem>,
         @InjectRepository(InventoryItem) private inventoryRepository: Repository<InventoryItem>,
         @InjectRepository(InventoryLevel) private inventoryLevelRepository: Repository<InventoryLevel>,
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
         @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
         @InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
-        @InjectRepository(Wallet) private readonly walletRepository: Repository<Wallet>,
-        @InjectRepository(Affiliate) private readonly affiliateRepository: Repository<Affiliate>,
         @InjectRepository(KeyValuePair) private readonly keyValuePairRepository: Repository<KeyValuePair>,
-        @Inject(TransactionsService) private readonly transactionsService: TransactionsService,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
@@ -106,6 +99,10 @@ export class OrderService {
      * @returns
      */
     async create(customer: Customer, dto: CreateOrderDto,): Promise<Order> {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
         try {
             this.logger.log(`Attempting to create order for customer: ${customer.fullName}`);
             const address = await this.addressRepository.findOne({
@@ -173,18 +170,17 @@ export class OrderService {
                     });
                 }
 
-                // Deduct
+                // Deduct inventory within transaction
                 level.quantity -= cart.quantity;
-                await this.inventoryLevelRepository.save(level);
+                await queryRunner.manager.save(level);
 
                 const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
                 const discountedPriceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
-                // const priceAmount = Number(variant.cost.amount);
                 const totalAmount = discountedPriceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
 
-                // create order items
+                // create order items within transaction
                 const orderItem = new OrderItem()
                 orderItem.uuid = crypto.randomUUID();
                 orderItem.product = cart.product;
@@ -204,7 +200,7 @@ export class OrderService {
                     currencyCode: variant.cost.currencyCode,
                 };
 
-                await this.orderItemRepository.save(orderItem);
+                await queryRunner.manager.save(orderItem);
 
                 orderItems.push(orderItem)
             }
@@ -224,7 +220,7 @@ export class OrderService {
 
             // Decide if we should charge shipping
             const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
-            
+
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
                     weight: {
@@ -267,7 +263,7 @@ export class OrderService {
             }
             const total = subTotal + shippingCost - discount;
 
-            // create a order
+            // create a order within transaction
             const order = new Order();
             order.uuid = crypto.randomUUID();
             order.customer = customer;
@@ -292,7 +288,7 @@ export class OrderService {
             order.orderItems = orderItems;
             order.shippingAddress = address;
 
-            await this.orderRepository.save(order);
+            await queryRunner.manager.save(order);
 
             // RECORD AFFILIATE COMMISSION
             if (coupon?.affiliate && coupon.code && discount >= 0) {
@@ -303,8 +299,8 @@ export class OrderService {
                 );
 
                 if (commissionAmount > 0 && coupon.affiliate.wallet?.id) {
-                    const walletId = coupon.affiliate.wallet.id
-                    const wallet = await this.walletRepository.findOne({
+                    const walletId = coupon.affiliate.wallet.id;
+                    const wallet = await queryRunner.manager.findOne(Wallet, {
                         where: { id: walletId },
                         relations: { affiliate: true },
                     });
@@ -315,28 +311,29 @@ export class OrderService {
                         });
                     }
 
-                    // Create transaction record
-                    const referralTransactionDto: CreateTransactionDto = {
-                        amount: commissionAmount,
-                        currencyCode: currency,
-                        type: TransactionType.Credit,
-                        description: `Commission from order #${order.uuid} using coupon ${coupon.code}`
-                    }
-                    await this.transactionsService.createTransaction(wallet.uuid, referralTransactionDto)
+                    // Create affiliate commission transaction record within the same transaction
+                    const referralTx = new Transaction();
+                    referralTx.uuid = crypto.randomUUID();
+                    referralTx.wallet = wallet;
+                    referralTx.amount = new TransactionMoney();
+                    referralTx.amount.amount = commissionAmount;
+                    referralTx.amount.currencyCode = currency as CurrencyCode;
+                    referralTx.description = `Commission from order #${order.uuid} using coupon ${coupon.code}`;
+                    await queryRunner.manager.save(referralTx);
 
                     // Update wallet balance
                     wallet.amount.amount += commissionAmount;
                     wallet.amountAvailable.amount += commissionAmount;
-                    await this.walletRepository.save(wallet);
+                    await queryRunner.manager.save(wallet);
 
-                    // // Update affiliate's total commission and remaining balance
+                    // Update affiliate's total commission and remaining balance
                     const affiliate = wallet.affiliate;
                     affiliate.totalCommission.amount += commissionAmount;
                     affiliate.remainingBalance.amount += commissionAmount;
                     affiliate.couponsUsed += 1;
-                    await this.affiliateRepository.save(affiliate);
+                    await queryRunner.manager.save(affiliate);
 
-                    await this.couponRepository.increment({ id: coupon.id }, 'ordersCount', 1);
+                    await queryRunner.manager.increment(Coupon, { id: coupon.id }, 'ordersCount', 1);
                 }
             }
 
@@ -344,7 +341,7 @@ export class OrderService {
             const provider = dto.paymentMethod === "default" ? PaymentProvider.SKIPCASH : PaymentProvider[dto.paymentMethod]
             // payment service needs to integrated here
             const paymentPayload = {
-                provider: PaymentProvider.SKIPCASH,
+                provider: provider,
                 amount: total,
                 currency: currency,
                 orderUUID: order.uuid,
@@ -359,22 +356,26 @@ export class OrderService {
                 postalCode: address.zipCode,
             }
 
-            const payment = await this.paymentService.createPayment(paymentPayload)
+            // External payment call — if this throws, the entire DB transaction rolls back
+            const payment = await this.paymentService.createPayment(paymentPayload);
             order.paymentTransaction = payment;
-            await this.orderRepository.save(order);
+            await queryRunner.manager.save(order);
 
-            // clear the cart
-            await this.cartRepository.delete({
-                uuid: In(dto.cartItemUuids)
-            });
+            // Clear the cart within transaction
+            await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
+
+            await queryRunner.commitTransaction();
 
             return order;
         } catch (error: any) {
+            await queryRunner.rollbackTransaction();
             this.logger.error(`Error placing order: ${error}`);
             throw new InternalServerErrorException({
                 error: 'Failed to place order',
                 details: error?.response?.error || error?.message || error,
             });
+        } finally {
+            await queryRunner.release();
         }
     }
 
