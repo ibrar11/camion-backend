@@ -8,6 +8,7 @@ import {
 	CreateDateColumn,
 	Entity,
 	Index,
+	JoinColumn,
 	OneToMany,
 	OneToOne,
 	PrimaryGeneratedColumn,
@@ -179,6 +180,7 @@ export class Product {
 	wishlistItems: Array<WishlistItem>;
 
 	@OneToOne(() => Translation, (translation) => translation.product, { cascade: true, })
+	@JoinColumn()
 	translation: Translation;
 
 	@Exclude()

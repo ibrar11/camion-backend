@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import {
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -17,6 +18,9 @@ import { UpdateProductOptionDto } from "./dtos/UpdateProductOptionDto";
 import { Product } from "./entities/product.entity";
 import { ProductOption } from "./entities/product-option.entity";
 
+import { TranslationService } from "../translation/translation.service";
+import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
+
 @Injectable()
 export class ProductOptionService {
 	private readonly logger = new Logger(ProductOptionService.name);
@@ -24,6 +28,7 @@ export class ProductOptionService {
 	constructor(
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductOption) private readonly productOptionRepository: Repository<ProductOption>,
+		@Inject(TranslationService) private readonly translationService: TranslationService,
 	) { }
 
 	/**
@@ -134,11 +139,29 @@ export class ProductOptionService {
 		this.logger.log(`Updating product option: ${uuid}`);
 
 		// Find the product option
-		const productOption = await this.productOptionRepository.findOneBy({ uuid: uuid, });
+		const productOption = await this.productOptionRepository.findOne({
+			where: { uuid: uuid },
+			relations: {
+				product: true
+			}
+		});
 		if (productOption === null) {
 			throw new NotFoundException({
 				error: "Failed to find the product option. Please check and try again.",
 			});
+		}
+
+		const nameChanged = productOption.nameEn !== body.name.en.trim();
+
+		if (nameChanged) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.OPTION_NAME,
+				productOption.uuid,
+				productOption?.product?.uuid,
+				body.name.en.trim(),
+				'en',
+				1000,
+			);
 		}
 
 		// Update the product option

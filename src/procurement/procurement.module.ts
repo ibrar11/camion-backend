@@ -49,6 +49,8 @@ import { ImageThumbnailService } from '../common/image-thumbnail.service';
 import { QueueService } from '../queue/queue.service';
 import { QueueModule } from '../queue/queue.module';
 
+import { TranslationService } from '../translation/translation.service';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -84,6 +86,7 @@ import { QueueModule } from '../queue/queue.module';
 		FileService,
 		QueueService,
 		ImageThumbnailService,
+		TranslationService,
 	],
 	controllers: [ProcurementController],
 	exports: [ProcurementService],
