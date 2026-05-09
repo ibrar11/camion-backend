@@ -30,7 +30,7 @@ import { AuthGuard } from "../auth/auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 
 import { Roles } from "../auth/roles.decorator";
-import { ClientRole } from "src/clients/enums/client-role.enum";
+import { ClientRole } from "../clients/enums/client-role.enum";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products/:productUUID/variants/:variantUUID/images')
