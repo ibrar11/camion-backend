@@ -10,7 +10,7 @@ export interface TranslationJobData {
 
     productUuids: string[];
 
-    sourceLanguageId: number;
+    sourceLanguageCode: string;
 
     createdAt: Date;
 

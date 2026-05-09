@@ -8,6 +8,7 @@ import {
 	CreateDateColumn,
 	Entity,
 	Index,
+	JoinColumn,
 	OneToMany,
 	OneToOne,
 	PrimaryGeneratedColumn,
@@ -89,6 +90,14 @@ export class Product {
 	@Field(() => String)
 	@Column({ type: "text", })
 	descriptionHtmlAr: string;
+
+	@Field(() => String)
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	featuredImageUrl: string;
+
+	@Field(() => String)
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	featuredThumbnailUrl: string;
 
 	@Field()
 	@Column({
@@ -179,6 +188,7 @@ export class Product {
 	wishlistItems: Array<WishlistItem>;
 
 	@OneToOne(() => Translation, (translation) => translation.product, { cascade: true, })
+	@JoinColumn()
 	translation: Translation;
 
 	@Exclude()

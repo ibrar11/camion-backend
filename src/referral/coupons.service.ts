@@ -144,7 +144,7 @@ export class CouponsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.couponRepository.find({
-			cache: true,
+			// cache: true,
 			relationLoadStrategy: "query",
 			where: {
 				affiliate: {

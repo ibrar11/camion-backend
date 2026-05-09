@@ -58,9 +58,6 @@ export class PaymentsWebhookService {
             const order = await this.orderRepository.findOne({
                 where: {
                     uuid: TransactionId
-                },
-                relations: {
-                    paymentTransaction: true
                 }
             })
 
@@ -73,7 +70,8 @@ export class PaymentsWebhookService {
 
             const transaction = await this.paymentRepository.findOne({
                 where: {
-                    id: order.paymentTransaction.id
+                    transactionId: TransactionId,
+                    order: {id: order.id}
                 },
             });
 

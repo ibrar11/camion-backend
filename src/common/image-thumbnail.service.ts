@@ -15,19 +15,45 @@ export class ImageThumbnailService {
 	 * @param imagePath
 	 * @returns
 	 */
-	async generateThumbnail(imagePath: string): Promise<string> {
-		const outputPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.jpg`);
+	generateThumbnail(imagePath: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const outputPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.webp`);
 
-		sharp(imagePath)
-			.resize({
-				width: 320,
-				height: 320,
-				fit: "cover",
-				position: "center",
-			})
-			.toFormat("jpeg", { quality: 90, })
-			.toFile(outputPath);
+			sharp(imagePath)
+				.resize({
+					width: 320,
+					height: 320,
+					fit: "cover",
+					position: "center",
+				})
+				.toFormat("webp", { quality: 90 })
+				.toFile(outputPath)
+				.then(() => resolve(outputPath))
+				.catch(err => reject(err));
+		});
+	}
 
-		return outputPath;
+	/**
+	 * Generates thumbnails of a image
+	 *
+	 * @param imagePath
+	 * @returns
+	 */
+	generateImage(imagePath: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const outputPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.webp`);
+
+			sharp(imagePath)
+				.resize({
+					width: 960,
+					height: 960,
+					fit: "cover",
+					position: "center",
+				})
+				.toFormat("webp", { quality: 90 })
+				.toFile(outputPath)
+				.then(() => resolve(outputPath))
+				.catch(err => reject(err));
+		});
 	}
 }

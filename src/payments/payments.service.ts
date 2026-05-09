@@ -1,6 +1,8 @@
 import {
+    Inject,
     Injectable,
-    Logger
+    Logger,
+    NotFoundException
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
@@ -14,15 +16,20 @@ import { PaymentStrategyFactory } from "./factories/PaymentStrategyFactory";
 
 import { PaymentStatus } from "./enums/PaymentStatus";
 
+import { ExchangeRateService } from "../pricing/exchange-rate.service";
+
+import { PaymentProvider } from "./enums/PaymentProvider";
+
 @Injectable()
 export class PaymentsService {
     private readonly logger = new Logger(PaymentsService.name);
-    
+
     constructor(
         @InjectRepository(PaymentTransaction) private paymentTransactionRepository: Repository<PaymentTransaction>,
+        @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         private strategyfactory: PaymentStrategyFactory,
-    ) {}
-    
+    ) { }
+
     /**
      * Creates new payment
      *
@@ -41,10 +48,29 @@ export class PaymentsService {
                 status: PaymentStatus.PENDING
             })
             await this.paymentTransactionRepository.save(transaction);
-            
+
+            const exchangeRates = await this.exchangeRateService.findAll("", "");
+            if (dto?.provider === PaymentProvider.SKIPCASH) {
+                if(dto.currency.toLowerCase().trim() !== "qar") {
+
+                    const exchangeRate = exchangeRates
+                    .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === dto.currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
+                    .at(0) ?? null;
+                    
+                    if (!exchangeRate) {
+                        throw new NotFoundException({
+                            error: `Exchange Rate for ${dto.country} to qar not found`
+                        });
+                    }
+                    
+                    // convert the total in QAR for skipcash.
+                    dto.amount = dto.amount * exchangeRate.factor;
+                }
+            }
+
             // fetch the strategy for specified provider
             const strategy = this.strategyfactory.getStrategy(dto.provider);
-            
+
             // intialize the payment creation for specifed provider
             const result = await strategy.InitiatePayment(dto);
 
@@ -53,6 +79,28 @@ export class PaymentsService {
 
             this.logger.log(`Completed create payment for order ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
             return await this.paymentTransactionRepository.save(transaction);
+
+        } catch (error: any) {
+            this.logger.error(`Error creating payment: ${error?.response?.data || error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Fetch all payments
+     *
+     * @returns
+     */
+    async findAll(): Promise<Array<PaymentTransaction>> {
+        try {
+            this.logger.log(`Attempting to fetch payments`);
+
+            // fetch all payment transactions
+            return this.paymentTransactionRepository.find({
+                relations: {
+                    order: true
+                }
+            })
 
         } catch (error: any) {
             this.logger.error(`Error creating payment: ${error?.response?.data || error.message}`);

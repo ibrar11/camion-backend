@@ -53,12 +53,15 @@ import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrder
 import { QueueService } from 'src/queue/queue.service';
 import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 
+import { ConfigService } from '@nestjs/config';
+
 
 @Injectable()
 export class ProcurementService {
     private readonly logger = new Logger(ProcurementService.name);
 
     constructor(
+        private readonly configService: ConfigService,
         @Inject(ProductsService) private readonly productService: ProductsService,
         @Inject(ProductVariantService) private readonly variantService: ProductVariantService,
         @Inject(ProductOptionService) private readonly optionService: ProductOptionService,
@@ -227,9 +230,29 @@ export class ProcurementService {
 
             const description = extractFormattedText(product.description);
 
-            const descriptionTrans = product.descriptionTrans ?
-                extractFormattedText(product.descriptionTrans)
-                : description;
+            let descriptionTrans: string = '';
+            if (product.descriptionTrans) {
+                descriptionTrans = extractFormattedText(product.descriptionTrans);
+            } else {
+                this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
+                const translation = await await fetch(
+                    `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/contextual`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: description,
+                            sourceLanguage: 'ch',
+                            targetLanguage: 'en',
+                            updateWeaviate: true
+                        }),
+                    },
+                );
+                const data = await translation.json();
+                descriptionTrans = data?.translated || "";
+            }
 
             const skus = product.productSkuInfos ?? [];
 
@@ -435,8 +458,8 @@ export class ProcurementService {
                                             try {
                                                 const optionPayload = {
                                                     name: {
-                                                        en: option.name,
-                                                        ar: option.name,
+                                                        en: option.name?.trim().slice(0, 64),
+                                                        ar: option.name?.trim().slice(0, 64),
                                                     },
                                                     position: i + index + 1
                                                 };
@@ -451,8 +474,8 @@ export class ProcurementService {
                                                     try {
                                                         const optionValuePayload = {
                                                             value: {
-                                                                en: option.values[valueIndex],
-                                                                ar: option.values[valueIndex],
+                                                                en: option.values[valueIndex]?.trim().slice(0, 64),
+                                                                ar: option.values[valueIndex]?.trim().slice(0, 64),
                                                             },
                                                             position: valueIndex + 1,
                                                         };
@@ -498,8 +521,8 @@ export class ProcurementService {
                                                 const dto: CreateProductVariantDto = {
                                                     warehouse: warehouse,
                                                     title: {
-                                                        en: variant.title ?? '',
-                                                        ar: variant.title ?? '',
+                                                        en: variant.title?.trim().slice(0, 128) ?? '',
+                                                        ar: variant.title?.trim().slice(0, 128) ?? '',
                                                     },
                                                     sku: variant.skuId?.toString() || crypto.randomUUID(),
                                                     barcode: variant.skuId?.toString() || '',
@@ -526,6 +549,7 @@ export class ProcurementService {
                                                 const createdVariant = await this.variantService.createProductVariant(
                                                     product.uuid,
                                                     dto,
+                                                    true
                                                 );
 
                                                 if (!firstVariantId) {
@@ -582,10 +606,10 @@ export class ProcurementService {
             }
 
             if (importedProductUuids.length) {
-                // await this.queueService.addImportedProductsTranslationJob(
-                //     importedProductUuids,
-                //     1,
-                // );
+                await this.queueService.addImportedProductsTranslationJob(
+                    importedProductUuids,
+                    "en",
+                );
             }
 
             return results;

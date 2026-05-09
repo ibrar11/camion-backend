@@ -29,6 +29,7 @@ import { PricingService } from "src/pricing/pricing.service";
 import { CurrencyCode } from "./enums/CurrencyCode.enum";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
 import { Category } from "./entities/category.entity";
+import { ConfigService } from "@nestjs/config";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -186,9 +187,14 @@ export class GetRecentlyViewedProductsArgs {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Product)
 export class ProductsResolver {
+	assetsHost: string = "";
+
 	constructor(
 		@Inject(ProductsService) private readonly productsService: ProductsService,
-	) { }
+		private readonly configService: ConfigService
+	) {
+		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+	}
 
 	@ResolveField("title", () => String)
 	getTitle(@Parent() product: Product, @Args() args: GetProductsArgs): string {
@@ -236,6 +242,38 @@ export class ProductsResolver {
 		};
 
 		return descriptionHtmlMap[language] ?? product.descriptionHtmlEn;
+	}
+
+	@ResolveField("featuredImageUrl", () => String)
+	getFeaturedImageUrl(@Parent() product: Product): string {
+		if (product === null || product.featuredImageUrl === null) {
+			return "";
+		}
+
+		const segments = product.featuredImageUrl.split("/");
+		if (product.featuredImageUrl.startsWith("https://")) {
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+		} else if (product.featuredImageUrl.startsWith("s3://")) {
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
+	@ResolveField("featuredThumbnailUrl", () => String)
+	getFeaturedThumbnailUrl(@Parent() product: Product): string {
+		if (product === null || product.featuredThumbnailUrl === null) {
+			return "";
+		}
+
+		const segments = product.featuredThumbnailUrl.split("/");
+		if (product.featuredThumbnailUrl.startsWith("https://")) {
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+		} else if (product.featuredThumbnailUrl.startsWith("s3://")) {
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
 	}
 
 	@ResolveField("variants", () => [ProductVariant])
@@ -369,6 +407,12 @@ export class ProductVariantResolver {
 
 @Resolver(() => ProductVariantImage)
 export class ProductVariantImageResolver {
+	assetsHost: string = "";
+
+	constructor(private readonly configService: ConfigService) {
+		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+	}
+
 	@ResolveField("imageUrl", () => String)
 	getImageUrl(@Parent() productVariantImage: ProductVariantImage): string {
 		if (productVariantImage === null || productVariantImage.imageUrl === null) {
@@ -377,9 +421,9 @@ export class ProductVariantImageResolver {
 
 		const segments = productVariantImage.imageUrl.split("/");
 		if (productVariantImage.imageUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (productVariantImage.imageUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -393,9 +437,9 @@ export class ProductVariantImageResolver {
 
 		const segments = productVariantImage.thumbnailUrl.split("/");
 		if (productVariantImage.thumbnailUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (productVariantImage.thumbnailUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -404,6 +448,12 @@ export class ProductVariantImageResolver {
 
 @Resolver(() => ProductReviewImage)
 export class ProductReviewImageResolver {
+	assetsHost: string = "";
+
+	constructor(private readonly configService: ConfigService) {
+		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+	}
+
 	@ResolveField("imageUrl", () => String)
 	getImageUrl(@Parent() reviewImage: ProductReviewImage): string {
 		if (reviewImage === null || reviewImage.imageUrl === null) {
@@ -412,9 +462,9 @@ export class ProductReviewImageResolver {
 
 		const segments = reviewImage.imageUrl.split("/");
 		if (reviewImage.imageUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (reviewImage.imageUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -428,9 +478,9 @@ export class ProductReviewImageResolver {
 
 		const segments = reviewImage.thumbnailUrl.split("/");
 		if (reviewImage.thumbnailUrl.startsWith("https://")) {
-			return `https://assets.dev.camiontrading.com/${segments[3]}/${segments[4]}`;
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
 		} else if (reviewImage.thumbnailUrl.startsWith("s3://")) {
-			return `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";

@@ -2,13 +2,14 @@ import * as crypto from "node:crypto";
 
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
@@ -17,6 +18,7 @@ import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
 import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
+import { UpdateProductFeaturedImageDto } from "./dtos/UpdateProductFeaturedImageDto";
 
 import { ProductStatus } from './enums/ProductStatus.enum';
 import { ProductSort } from "./enums/ProductSort.enum";
@@ -25,7 +27,11 @@ import { Category } from "./entities/category.entity";
 import { Product } from './entities/product.entity';
 import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
-import { sliceProductVariants } from "src/common/product-variant-filter";
+import { ProductVariantImage } from "./entities/product-variant-image.entity";
+import { sliceProductVariants } from "../common/product-variant-filter";
+
+import { TranslationService } from "../translation/translation.service";
+import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
 
 @Injectable()
 export class ProductsService {
@@ -35,6 +41,8 @@ export class ProductsService {
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
+		@InjectRepository(ProductVariantImage) private readonly productImageVariantImageRepository: Repository<ProductVariantImage>,
+		@Inject(TranslationService) private readonly translationService: TranslationService,
 	) { }
 
 	/**
@@ -65,7 +73,7 @@ export class ProductsService {
 			this.logger.log(`Creating new product: ${body.title.en}`);
 			product = new Product();
 			product.uuid = crypto.randomUUID();
-			product.status = ProductStatus.ACTIVE;
+			product.status = ProductStatus.DRAFT; // Save products as draft
 			product.publishedAt = new Date();
 		}
 
@@ -119,8 +127,8 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAll(filters: string, sort: ProductSort = ProductSort.Desc, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
-		this.logger.log(`Retrieving products`);
+	async findAllUncached(filters: string, sort: ProductSort = ProductSort.Desc, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products uncached`);
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
@@ -138,12 +146,12 @@ export class ProductsService {
 
 		// Returns products by category
 		if (filtersObject.slug !== undefined) {
-			return this.findAllByCategory(filtersObject.slug, pageNumber, itemsPerPage);
+			return this.findAllByCategoryUncached(filtersObject.slug, pageNumber, itemsPerPage);
 		}
 
 		// Returns products by query
 		if (filtersObject.query !== undefined) {
-			return this.searchProducts(filtersObject.query, "en", ProductSort.BestMatch, pageNumber, itemsPerPage);
+			return this.searchProductsUncached(filtersObject.query, "en", ProductSort.BestMatch, pageNumber, itemsPerPage);
 		}
 
 		const products = await this.productRepository.find({
@@ -162,6 +170,98 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		return sliceProductVariants(products);
+	}
+
+	/**
+	 * Finds a list of products
+	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAll(filters: string, sort: ProductSort = ProductSort.Desc, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products for graphql`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find all the active products and cache the result
+		const products = await this.productRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
+			where: {
+				status: ProductStatus.ACTIVE,
+			},
+			relations: {
+				variants: {
+					images: true,
+				},
+				productCategories: {
+					category: true,
+				},
+			},
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+
+		return sliceProductVariants(products);
+	}
+
+	/**
+	 * Finds a list of products in a specific category
+	 *
+	 * @param categorySlug
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAllByCategoryUncached(categorySlug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products uncached by category slug: ${categorySlug}`);
+
+		// Find the category, return empty array if there is not category
+		const category = await this.categoryRepository.findOne({
+			cache: true,
+			where: {
+				slug: categorySlug,
+			},
+		});
+
+		if (category === null) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Populate variants and their specific option value mappings
+			.leftJoinAndSelect('product.variants', 'variants')
+			.leftJoinAndSelect('variants.images', 'images')
+
+			// Many-to-many join
+			.innerJoin("product.productCategories", "productCategory")
+			.innerJoin("productCategory.category", "category")
+			.where("category.id = :id", {
+				id: category.id,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
 
 		return sliceProductVariants(products);
 	}
@@ -200,8 +300,8 @@ export class ProductsService {
 			})
 
 			// Populate variants and their specific option value mappings
-			.leftJoinAndSelect('product.variants', 'variants')
-			.leftJoinAndSelect('variants.images', 'images')
+			.leftJoinAndSelect("product.variants", "variant")
+			.leftJoinAndSelect("variant.images", "image")
 
 			// Many-to-many join
 			.innerJoin("product.productCategories", "productCategory")
@@ -236,6 +336,9 @@ export class ProductsService {
 		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
+			where: {
+				status: ProductStatus.ACTIVE,
+			},
 			relations: {
 				variants: {
 					images: true,
@@ -244,15 +347,150 @@ export class ProductsService {
 					category: true,
 				},
 			},
-			where: {
-				status: ProductStatus.ACTIVE,
-			},
 			order: {
 				id: "DESC",
 			},
 			skip: skip,
 			take: take,
 		});
+
+		return sliceProductVariants(products);
+	}
+
+	/**
+	 * Searches a product for a language
+	 *
+	 * @param query
+	 * @param language
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async searchProductsUncached(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Searching for products uncached, query: ${query}, language: ${language}`);
+
+		// Language to title column name mapping
+		const titleColumnMap: Record<string, string> = {
+			"en": "product.titleEn",
+			"ar": "product.titleAr",
+		};
+
+		// Language to description column name mapping
+		const descriptionColumnMap: Record<string, string> = {
+			"en": "product.descriptionEn",
+			"ar": "product.descriptionAr",
+		};
+
+		// Normalize the short code
+		if (language !== undefined && language !== null) {
+			language = language.toLowerCase().trim();
+		} else {
+			language = "en";
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		let products: Array<Product> = [];
+
+		switch (sort) {
+			case ProductSort.BestMatch:
+				products = await this.productRepository.createQueryBuilder("product")
+					.setFindOptions({
+						relationLoadStrategy: "query",
+					})
+
+					// Only join products that actually have categories
+					.innerJoin("product.productCategories", "productCategory")
+					.innerJoin("productCategory.category", "category")
+
+					// Join variants and images (still optional)
+					.leftJoinAndSelect("product.variants", "variant")
+					.leftJoinAndSelect("variant.images", "image")
+
+					// Filter by product text column
+					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+
+					.distinct(true)
+					.orderBy("product.id", "DESC")
+					.skip(skip)
+					.take(take)
+					.getMany();
+				break;
+
+			case ProductSort.PriceLowToHigh:
+				// Subquery to sort variants of a product by minimum price
+				const leastExpensiveVariantQuery = this.productRepository
+					.manager.createQueryBuilder(ProductVariant, 'v')
+					.select('MIN(v.cost_amount)', 'minCostAmount')
+					.where('v.product_id = product.id')
+					.getQuery();
+
+				products = await this.productRepository.createQueryBuilder('product')
+					.setFindOptions({
+						relationLoadStrategy: "query",
+					})
+
+					// Populate variants and their specific option value mappings
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
+
+					// Populate product categories
+					.leftJoinAndSelect('product.productCategories', 'productCategories')
+					.leftJoinAndSelect('productCategories.category', 'category')
+
+					// Search Filter
+					// Filter by product text column
+					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+
+					// Add the subquery result as a virtual column for sorting
+					.addSelect(`(${leastExpensiveVariantQuery})`, 'least_expensive_variant_price')
+
+					// Order by the virtual column and handle pagination
+					.orderBy('least_expensive_variant_price', 'ASC')
+					.take(take)
+					.skip(skip)
+					.getMany();
+				break;
+
+			case ProductSort.PriceHighToLow:
+				const mostExpensiveVariantQuery = this.productRepository
+					.manager.createQueryBuilder(ProductVariant, 'v')
+					.select('MAX(v.cost_amount)', 'maxCostAmount')
+					.where('v.product_id = product.id')
+					.getQuery();
+
+				products = await this.productRepository.createQueryBuilder('product')
+					.setFindOptions({
+						relationLoadStrategy: "query",
+					})
+
+					// Populate variants and their specific option value mappings
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
+
+					// Populate product categories
+					.leftJoinAndSelect('product.productCategories', 'productCategories')
+					.leftJoinAndSelect('productCategories.category', 'category')
+
+					// Search Filter
+					// Filter by product text column
+					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+
+					// Add the subquery result as a virtual column for sorting
+					.addSelect(`(${mostExpensiveVariantQuery})`, 'most_expensive_variant_price')
+
+					// Order by the virtual column and handle pagination
+					.orderBy('most_expensive_variant_price', 'DESC')
+					.take(take)
+					.skip(skip)
+					.getMany();
+				break;
+
+			default: // do nothing
+				break;
+		}
 
 		return sliceProductVariants(products);
 	}
@@ -307,8 +545,8 @@ export class ProductsService {
 					.innerJoin("productCategory.category", "category")
 
 					// Join variants and images (still optional)
-					.leftJoinAndSelect("product.variants", "variants")
-					.leftJoinAndSelect("variants.images", "images")
+					.leftJoinAndSelect("product.variants", "variant")
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Filter by product text column
 					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
@@ -338,8 +576,8 @@ export class ProductsService {
 					})
 
 					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -376,8 +614,8 @@ export class ProductsService {
 					})
 
 					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variants')
-					.leftJoinAndSelect('variants.images', 'images')
+					.leftJoinAndSelect('product.variants', 'variant')
+					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -451,8 +689,8 @@ export class ProductsService {
 				})
 
 				// Populate variants and their specific option value mappings
-				.leftJoinAndSelect('product.variants', 'variants')
-				.leftJoinAndSelect('variants.images', 'images')
+				.leftJoinAndSelect('product.variants', 'variant')
+				.leftJoinAndSelect('variant.images', 'image')
 
 				// Many-to-many join
 				.innerJoin("product.productCategories", "productCategory")
@@ -620,8 +858,8 @@ export class ProductsService {
 				})
 
 				// Populate variants and their specific option value mappings
-				.leftJoinAndSelect('product.variants', 'variants')
-				.leftJoinAndSelect('variants.images', 'images')
+				.leftJoinAndSelect('product.variants', 'variant')
+				.leftJoinAndSelect('variant.images', 'image')
 
 				// Many-to-many join
 				.innerJoin("product.productCategories", "productCategory")
@@ -723,7 +961,10 @@ export class ProductsService {
 		const product = await this.productRepository.findOne({
 			cache: true,
 			relationLoadStrategy: "query",
-			where: { slug: slug, },
+			where: {
+				slug: slug,
+				status: ProductStatus.ACTIVE,
+			},
 			relations: {
 				options: {
 					values: true,
@@ -773,6 +1014,39 @@ export class ProductsService {
 			throw new NotFoundException({
 				error: "Failed to find the product. Please check and try again.",
 			});
+		}
+
+		if (product.titleEn !== body.title.en.trim()) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.PRODUCT_TITLE,
+				product.uuid,
+				product.uuid,
+				body.title.en.trim(),
+				'en',
+				1000,
+			);
+		}
+
+		if (product.briefEn !== body.brief.en.trim()) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.PRODUCT_BRIEF,
+				product.uuid,
+				product.uuid,
+				body.brief.en.trim(),
+				'en',
+				1000,
+			);
+		}
+
+		if (product.descriptionEn !== body.description.en.trim()) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.PRODUCT_DESCRIPTION,
+				product.uuid,
+				product.uuid,
+				body.description.en.trim(),
+				'en',
+				1000,
+			);
 		}
 
 		// Update the product
@@ -902,6 +1176,45 @@ export class ProductsService {
 
 		// Update the product
 		product.status = status;
+		return this.productRepository.save(product);
+	}
+
+	/**
+	 * Updates the featured images of the products
+	 *
+	 * @param uuid
+	 * @param body``
+	 * @returns
+	 */
+	async updateProductFeaturedImage(uuid: string, body: UpdateProductFeaturedImageDto): Promise<Product> {
+		this.logger.log(`Updating product featured image: ${uuid}`);
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Find the image
+		const image = await this.productImageVariantImageRepository.findOne({
+			where: { uuid: body.imageUUID, },
+		});
+
+		if (image === null) {
+			throw new NotFoundException({
+				error: "Failed to find the image. Please check and try again.",
+			});
+		}
+
+		// Update the featured image and thumbnail
+		product.featuredImageUrl = image.imageUrl;
+		product.featuredThumbnailUrl = image.thumbnailUrl;
 		return this.productRepository.save(product);
 	}
 

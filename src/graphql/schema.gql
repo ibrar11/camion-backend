@@ -73,7 +73,7 @@ type Coupon {
   code: String!
   createdAt: String!
   discountPercentage: Float!
-  expiresAt: DateTime!
+  expiresAt: String!
   ordersCount: Float!
   uuid: String!
 }
@@ -224,6 +224,8 @@ type Product {
   descriptionHtml(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
+  featuredImageUrl: String!
+  featuredThumbnailUrl: String!
   likesCount: Float!
   options: [ProductOption!]!
   procurementId: String
@@ -305,6 +307,7 @@ type ProductVariantImage {
   alt: String!
   dimensions: ProductVariantImageDimensions!
   imageUrl: String!
+  isEnabled: Boolean!
   isFeatured: Boolean!
   position: Int!
   thumbnailUrl: String!

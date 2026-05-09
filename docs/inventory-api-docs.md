@@ -763,6 +763,60 @@ status | Yes | String | The current status of the product. Possible values are `
 }
 ```
 
+Update Product Featured Image
+-----------------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+PUT /v1/products/<product-uuid>/featured-image HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+imageUUID | Yes | String | The UUID of the product variant image
+
+### Request Body
+```json
+{
+    "imageUUID": "e23e83b6-48b9-436b-84c1-617a9bc5a60e"
+}
+```
+
+### Response Body
+```json
+{
+    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
+    "slug": "iphone-22",
+    "titleEn": "iPhone 22",
+    "titleAr": "آيفون 22",
+    "briefEn": "From $799 or $33.29/mo. per month for 24 months",
+    "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
+    "descriptionEn": "Your new iPhone awaits. Make it yours.",
+    "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
+    "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
+    "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
+    "featuredImageUrl": "s3://product-images/320e44b7-cc8c-40e1-ad6b-d592df0f7888.webp",
+    "featuredThumbnailUrl": "s3://product-images/0f8f43f6-8c88-41d3-a175-4ff69a45feb9.webp",
+    "status": "active",
+    "shopId": null,
+    "shopName": null,
+    "procurementId": null,
+    "salesCount": 0,
+    "likesCount": 0,
+    "reviewsCount": 1,
+    "ratingSum": 5,
+    "ratingCount": 1,
+    "ratingAvg": "5",
+    "ratingOneStarCount": 0,
+    "ratingTwoStarCount": 0,
+    "ratingThreeStarCount": 0,
+    "ratingFourStarCount": 0,
+    "ratingFiveStarCount": 0
+}
+```
+
 Delete Product
 --------------
 
@@ -1382,6 +1436,7 @@ curl --location --request POST 'http://localhost:8000/v1/products/d0bd2ed9-81b2-
     "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
     "alt": "",
     "isFeatured": false,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,
@@ -1410,6 +1465,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
         "alt": "",
         "isFeatured": false,
+        "isEnabled": true,
         "position": 0,
         "dimensions": {
             "width": 1000,
@@ -1422,6 +1478,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
         "alt": "",
         "isFeatured": false,
+        "isEnabled": true,
         "position": 0,
         "dimensions": {
             "width": 1000,
@@ -1434,6 +1491,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
         "alt": "iPhone Photo",
         "isFeatured": true,
+        "isEnabled": true,
         "position": 0,
         "dimensions": {
             "width": 1000,
@@ -1462,6 +1520,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
     "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
     "alt": "",
     "isFeatured": false,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,
@@ -1486,7 +1545,8 @@ PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
 {
     "alt": "iPhone Photo",
     "position": 0,
-    "isFeatured": true
+    "isFeatured": true,
+    "isEnabled": true,
 }
 ```
 
@@ -1499,6 +1559,7 @@ PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
     "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
     "alt": "iPhone Photo",
     "isFeatured": true,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,
@@ -1511,15 +1572,15 @@ Replace Variant Image
 ---------------------
 
 ```http
-PATCH /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+POST /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
 ```
 
 ### Request Body
 
-```json
-{
-    "key": "generated/e5001e9b-1521-490d-b164-44d88460e067.png"
-}
+```bash
+curl --location --request POST '/v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid>' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+--form 'file=@"/Work/camiontrading/e0af200a-ccb8-4530-918a-2be7e4e761ab.png"'
 ```
 
 ### Response Body
@@ -1527,10 +1588,11 @@ PATCH /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<produc
 ```json
 {
     "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
-    "imageUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
-    "thumbnailUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
-    "alt": "",
-    "isFeatured": false,
+    "imageUrl": "s3://product-images/cb15384d-2f33-4fc0-9eb6-374697677ff6.png",
+    "thumbnailUrl": "s3://product-images/4b61155f-4fbe-4c03-acae-f1b3b916a95e.jpg",
+    "alt": "iPhone Photo",
+    "isFeatured": true,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,

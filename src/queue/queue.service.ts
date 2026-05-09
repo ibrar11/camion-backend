@@ -27,8 +27,8 @@ export class QueueService {
     private readonly logger = new Logger(QueueService.name);
 
     constructor(
-        @InjectQueue(QueueName.TRANSLATION)
-        private readonly translationQueue: Queue,
+        @InjectQueue(QueueName.TRANSLATION) private readonly translationQueue:Queue,
+        @InjectQueue(QueueName.FIELD_TRANSLATION) private readonly fieldTranslationQueue:Queue,
     ) { }
 
     /**
@@ -92,7 +92,7 @@ export class QueueService {
      */
     async addImportedProductsTranslationJob(
         productUuids: string[],
-        sourceLanguageId: number,
+        sourceLanguageCode: string,
     ): Promise<void> {
         if (!productUuids.length) {
             return;
@@ -104,7 +104,7 @@ export class QueueService {
 
         await this.addTranslationJob({
             productUuids,
-            sourceLanguageId,
+            sourceLanguageCode,
         });
     }
 
@@ -142,6 +142,8 @@ export class QueueService {
         switch (queueName) {
             case QueueName.TRANSLATION:
                 return this.translationQueue;
+            case QueueName.FIELD_TRANSLATION:
+                return this.fieldTranslationQueue;
 
             default:
                 throw new Error(`Queue ${queueName} not found`);

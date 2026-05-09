@@ -32,6 +32,10 @@ import { ProductTranslationProvider } from '../translation/providers/product-tra
 
 import { Category } from '../inventory/entities/category.entity';
 
+import { FieldTranslationProcessor } from 'src/translation/workers/fieldTranslation.processor';
+import { TranslationService } from 'src/translation/translation.service';
+import { TranslationItemService } from 'src/translation/translation-item.service';
+
 @Global()
 @Module({
     imports: [
@@ -63,6 +67,7 @@ import { Category } from '../inventory/entities/category.entity';
         }),
         BullModule.registerQueue(
             { name: QueueName.TRANSLATION },
+            { name: QueueName.FIELD_TRANSLATION },
         ),
         TypeOrmModule.forFeature([
             Product,
@@ -80,7 +85,10 @@ import { Category } from '../inventory/entities/category.entity';
         QueueService,
         TranslationQueue,
         TranslationProcessor,
+        FieldTranslationProcessor,
         ProductTranslationProvider,
+        TranslationService,
+        TranslationItemService,
     ],
     controllers: [QueueController],
     exports: [

@@ -35,6 +35,11 @@ export class GetCurrentAffiliateCouponsArgs {
 export class CouponsResolver {
 	constructor(@Inject(CouponsService) private readonly couponsService: CouponsService) { }
 
+	@ResolveField("expiresAt", () => String)
+	getExpiresAt(@Parent() coupon: Coupon): String {
+		return new String(coupon.expiresAt);
+	}
+
 	@ResolveField("createdAt", () => String)
 	getCreatedAt(@Parent() coupon: Coupon): String {
 		return new String(coupon.createdAt);

@@ -44,9 +44,12 @@ import { Order } from '../order/entities/order.entity';
 
 import { S3Service } from '../common/s3.service';
 import { FileService } from '../common/file.service';
+import { ImageThumbnailService } from '../common/image-thumbnail.service';
 
 import { QueueService } from '../queue/queue.service';
 import { QueueModule } from '../queue/queue.module';
+
+import { TranslationService } from '../translation/translation.service';
 
 @Module({
 	imports: [
@@ -82,6 +85,8 @@ import { QueueModule } from '../queue/queue.module';
 		S3Service,
 		FileService,
 		QueueService,
+		ImageThumbnailService,
+		TranslationService,
 	],
 	controllers: [ProcurementController],
 	exports: [ProcurementService],

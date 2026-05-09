@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import {
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -22,6 +23,9 @@ import { InventoryItem } from "./entities/inventory-item.entity";
 import { InventoryLevel } from "./entities/inventory-level.entity";
 import { Warehouse } from "./entities/warehouse.entity";
 
+import { TranslationService } from "../translation/translation.service";
+import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
+
 @Injectable()
 export class ProductVariantService {
 	private readonly logger = new Logger(ProductVariantService.name);
@@ -34,6 +38,7 @@ export class ProductVariantService {
 		@InjectRepository(InventoryItem) private readonly inventoryItemRepository: Repository<InventoryItem>,
 		@InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
 		@InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
+		@Inject(TranslationService) private readonly translationService: TranslationService,
 	) { }
 
 	/**
@@ -43,7 +48,7 @@ export class ProductVariantService {
 	 * @param body
 	 * @returns
 	 */
-	async createProductVariant(productUUID: string, body: CreateProductVariantDto): Promise<ProductVariant> {
+	async createProductVariant(productUUID: string, body: CreateProductVariantDto, skipTranslation: boolean = false): Promise<ProductVariant> {
 		this.logger.log(`Attempting to create product variant for product: ${productUUID}`);
 
 		// Find the product
@@ -127,7 +132,7 @@ export class ProductVariantService {
 		if (body.optionValues && Array.isArray(body.optionValues)) {
 			const rows = await this.productVariantOptionValueRepository.find({
 				where: { variant: { uuid: variant.uuid } },
-				relations: {variant: true},
+				relations: { variant: true },
 			});
 
 			await this.productVariantOptionValueRepository.remove(rows);
@@ -147,6 +152,11 @@ export class ProductVariantService {
 
 				await this.productVariantOptionValueRepository.save(relation);
 			}
+		}
+
+		if (!skipTranslation) {
+			// Only trigger translation for manual saves (not bulk import)
+			await this.translationService.queueProductTranslation(productUUID, 5000);
 		}
 
 		return variant;
@@ -217,11 +227,28 @@ export class ProductVariantService {
 		this.logger.log(`Updating variant: ${uuid}`);
 
 		// Find the variant
-		const variant = await this.variantRepository.findOneBy({ uuid: uuid, });
+		const variant = await this.variantRepository.findOne({ 
+			where: {uuid: uuid},
+			relations: {
+				product: true
+			}
+		});
 		if (variant === null) {
 			throw new NotFoundException({
 				error: "Failed to find the variant. Please check and try again.",
 			});
+		}
+
+		const titleChanged = variant.titleEn !== body.title.en.trim();
+
+		if (titleChanged) {
+			await this.translationService.queueFieldTranslation(
+				FieldTranslationType.VARIANT_TITLE,
+				variant.uuid,
+				variant?.product?.uuid,
+				body.title.en.trim(),
+				'en',
+			);
 		}
 
 		// Update the variant
