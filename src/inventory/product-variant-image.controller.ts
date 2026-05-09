@@ -30,6 +30,7 @@ import { AuthGuard } from "../auth/auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 
 import { Roles } from "../auth/roles.decorator";
+import { ClientRole } from "src/clients/enums/client-role.enum";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products/:productUUID/variants/:variantUUID/images')
@@ -71,7 +72,7 @@ export class ProductVariantImageController {
 		return this.productVariantImageService.updateProductVariantImage(imageUUID, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, ClientRole.ImageUploader)
 	@Post(':uuid')
 	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.OK)
