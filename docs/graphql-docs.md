@@ -307,6 +307,8 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -362,6 +364,8 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -411,6 +415,8 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -466,6 +472,8 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -515,6 +523,8 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -570,6 +580,8 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -619,6 +631,8 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -673,6 +687,8 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -722,6 +738,8 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -775,6 +793,8 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -824,6 +844,8 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -877,6 +899,8 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -926,6 +950,8 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -980,6 +1006,8 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1029,6 +1057,8 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -1082,6 +1112,8 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1131,6 +1163,8 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -1184,6 +1218,8 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1287,6 +1323,8 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
                 "brief": "From $799 or $33.29/mo. per month for 24 months",
                 "description": "Your new iPhone awaits. Make it yours.",
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1337,6 +1375,8 @@ query GetProduct($slug: String, $language: String, $currency: String) {
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
+    featuredImageUrl
+    featuredThumbnailUrl
     status
     salesCount
     likesCount
@@ -1453,6 +1493,8 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             "brief": "From $799 or $33.29/mo. per month for 24 months",
             "description": "Your new iPhone awaits. Make it yours.",
             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+            "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+            "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
             "status": "active",
             "salesCount": 0,
             "likesCount": 0,
@@ -2373,6 +2415,8 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 brief(language: $language)
                 description(language: $language)
                 descriptionHtml(language: $language)
+                featuredImageUrl
+                featuredThumbnailUrl
                 status
             }
             variant {
@@ -2472,6 +2516,8 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                             "brief": "From $799 or $33.29/mo. per month for 24 months",
                             "description": "Your new iPhone awaits. Make it yours.",
                             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                            "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                             "status": "DRAFT",
                         },
                         "variant": {
@@ -2572,6 +2618,8 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                 brief(language: $language)
                 description(language: $language)
                 descriptionHtml(language: $language)
+                featuredImageUrl
+                featuredThumbnailUrl
                 status
                 productCategories {
                     category {
@@ -2690,6 +2738,8 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                         "brief": "From $799 or $33.29/mo. per month for 24 months",
                         "description": "Your new iPhone awaits. Make it yours.",
                         "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                        "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                        "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                         "status": "DRAFT",
                         "productCategories": [
                             {
@@ -2784,6 +2834,8 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                 brief(language: $language)
                 description(language: $language)
                 descriptionHtml(language: $language)
+                featuredImageUrl
+                featuredThumbnailUrl
                 status
                 salesCount
                 likesCount
@@ -2887,6 +2939,8 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                         "brief": "",
                         "description": "",
                         "descriptionHtml": "",
+                        "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                        "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                         "status": "active",
                         "salesCount": 0,
                         "likesCount": 0,
@@ -2998,6 +3052,8 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             brief(language: $language)
             description(language: $language)
             descriptionHtml(language: $language)
+            featuredImageUrl
+            featuredThumbnailUrl
             status
             salesCount
             likesCount
@@ -3070,6 +3126,8 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                     "brief": "From $799 or $33.29/mo. per month for 24 months",
                     "description": "Your new iPhone awaits. Make it yours.",
                     "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                    "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                    "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                     "status": "active",
                     "salesCount": 0,
                     "likesCount": 0,
@@ -3158,6 +3216,8 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
             brief(language: $language)
             description(language: $language)
             descriptionHtml(language: $language)
+            featuredImageUrl
+            featuredThumbnailUrl
             status
             salesCount
             likesCount
@@ -3244,6 +3304,8 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                     "brief": "From $799 or $33.29/mo. per month for 24 months",
                     "description": "Your new iPhone awaits. Make it yours.",
                     "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
+                    "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                    "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                     "status": "active",
                     "salesCount": 0,
                     "likesCount": 0,
@@ -3514,6 +3576,8 @@ query GetCurrentCustomerReturnRequests($currency: String,  $language: String) {
                 brief(language: $language)
                 description(language: $language)
                 descriptionHtml(language: $language)
+                featuredImageUrl
+                featuredThumbnailUrl
                 status
                 productCategories {
                     category {
@@ -3681,6 +3745,8 @@ query GetCurrentCustomerReturnRequest($uuid: String!,$currency: String,  $langua
                 brief(language: $language)
                 description(language: $language)
                 descriptionHtml(language: $language)
+                featuredImageUrl
+                featuredThumbnailUrl
                 status
                 productCategories {
                     category {

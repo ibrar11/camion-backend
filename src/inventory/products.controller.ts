@@ -17,6 +17,7 @@ import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
 import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
+import { UpdateProductFeaturedImageDto } from './dtos/UpdateProductFeaturedImageDto';
 
 import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from '../customers/enums/CustomerRole';
@@ -81,6 +82,13 @@ export class ProductsController {
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductStatus(@Param('uuid') uuid: string, @Body() body: UpdateProductStatusDto): Promise<Product> {
 		return this.productsService.updateProductStatus(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Put(':uuid/featured-image')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateProductFeaturedImage(@Param('uuid') uuid: string, @Body() body: UpdateProductFeaturedImageDto): Promise<Product> {
+		return this.productsService.updateProductFeaturedImage(uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)

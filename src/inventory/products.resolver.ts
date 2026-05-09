@@ -187,9 +187,14 @@ export class GetRecentlyViewedProductsArgs {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Product)
 export class ProductsResolver {
+	assetsHost: string = "";
+
 	constructor(
 		@Inject(ProductsService) private readonly productsService: ProductsService,
-	) { }
+		private readonly configService: ConfigService
+	) {
+		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+	}
 
 	@ResolveField("title", () => String)
 	getTitle(@Parent() product: Product, @Args() args: GetProductsArgs): string {
@@ -237,6 +242,38 @@ export class ProductsResolver {
 		};
 
 		return descriptionHtmlMap[language] ?? product.descriptionHtmlEn;
+	}
+
+	@ResolveField("featuredImageUrl", () => String)
+	getFeaturedImageUrl(@Parent() product: Product): string {
+		if (product === null || product.featuredImageUrl === null) {
+			return "";
+		}
+
+		const segments = product.featuredImageUrl.split("/");
+		if (product.featuredImageUrl.startsWith("https://")) {
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+		} else if (product.featuredImageUrl.startsWith("s3://")) {
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
+	@ResolveField("featuredThumbnailUrl", () => String)
+	getFeaturedThumbnailUrl(@Parent() product: Product): string {
+		if (product === null || product.featuredThumbnailUrl === null) {
+			return "";
+		}
+
+		const segments = product.featuredThumbnailUrl.split("/");
+		if (product.featuredThumbnailUrl.startsWith("https://")) {
+			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+		} else if (product.featuredThumbnailUrl.startsWith("s3://")) {
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
 	}
 
 	@ResolveField("variants", () => [ProductVariant])

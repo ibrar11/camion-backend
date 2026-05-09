@@ -224,6 +224,8 @@ type Product {
   descriptionHtml(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
+  featuredImageUrl: String!
+  featuredThumbnailUrl: String!
   likesCount: Float!
   options: [ProductOption!]!
   procurementId: String

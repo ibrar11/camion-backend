@@ -18,6 +18,7 @@ import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
 import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
+import { UpdateProductFeaturedImageDto } from "./dtos/UpdateProductFeaturedImageDto";
 
 import { ProductStatus } from './enums/ProductStatus.enum';
 import { ProductSort } from "./enums/ProductSort.enum";
@@ -26,7 +27,8 @@ import { Category } from "./entities/category.entity";
 import { Product } from './entities/product.entity';
 import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
-import { sliceProductVariants } from "src/common/product-variant-filter";
+import { ProductVariantImage } from "./entities/product-variant-image.entity";
+import { sliceProductVariants } from "../common/product-variant-filter";
 
 import { TranslationService } from "../translation/translation.service";
 import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
@@ -39,6 +41,7 @@ export class ProductsService {
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
+		@InjectRepository(ProductVariantImage) private readonly productImageVariantImageRepository: Repository<ProductVariantImage>,
 		@Inject(TranslationService) private readonly translationService: TranslationService,
 	) { }
 
@@ -70,7 +73,7 @@ export class ProductsService {
 			this.logger.log(`Creating new product: ${body.title.en}`);
 			product = new Product();
 			product.uuid = crypto.randomUUID();
-			product.status = ProductStatus.ACTIVE;
+			product.status = ProductStatus.DRAFT; // Save products as draft
 			product.publishedAt = new Date();
 		}
 
@@ -1173,6 +1176,45 @@ export class ProductsService {
 
 		// Update the product
 		product.status = status;
+		return this.productRepository.save(product);
+	}
+
+	/**
+	 * Updates the featured images of the products
+	 *
+	 * @param uuid
+	 * @param body``
+	 * @returns
+	 */
+	async updateProductFeaturedImage(uuid: string, body: UpdateProductFeaturedImageDto): Promise<Product> {
+		this.logger.log(`Updating product featured image: ${uuid}`);
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Find the image
+		const image = await this.productImageVariantImageRepository.findOne({
+			where: { uuid: body.imageUUID, },
+		});
+
+		if (image === null) {
+			throw new NotFoundException({
+				error: "Failed to find the image. Please check and try again.",
+			});
+		}
+
+		// Update the featured image and thumbnail
+		product.featuredImageUrl = image.imageUrl;
+		product.featuredThumbnailUrl = image.thumbnailUrl;
 		return this.productRepository.save(product);
 	}
 
