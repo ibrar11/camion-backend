@@ -5,6 +5,7 @@ import {
     CreateDateColumn,
     Entity,
     Index,
+    JoinColumn,
     ManyToOne,
     OneToMany,
     OneToOne,
@@ -83,6 +84,7 @@ export class Order {
     orderItems: Array<OrderItem>;
 
     @OneToOne(() => PaymentTransaction, (transaction) => transaction.order, { cascade: true })
+    @JoinColumn()
     paymentTransaction: PaymentTransaction;
 
     @Exclude()

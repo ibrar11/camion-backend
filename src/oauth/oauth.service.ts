@@ -124,7 +124,10 @@ export class OauthService {
             type: 'client',
         };
 
-        const accessTtl = this.configService.get<string>('ACCESS_TOKEN_TTL') || '48h';
+        // TODO: Set this time in the env.
+        // const accessTtl = this.configService.get<string>('ACCESS_TOKEN_TTL') || '48h';
+
+        const accessTtl = '180d';
 
         const signOptions: JwtSignOptions = {
             algorithm: 'RS256',

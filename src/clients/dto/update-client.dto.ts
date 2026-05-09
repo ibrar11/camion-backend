@@ -1,10 +1,13 @@
 import {
+    IsEnum,
     IsOptional,
     IsString,
     IsUrl,
     MaxLength,
     MinLength
 } from 'class-validator';
+
+import { ClientRole } from '../enums/client-role.enum';
 
 export class UpdateClientDto {
     @IsOptional()
@@ -22,4 +25,7 @@ export class UpdateClientDto {
     @IsOptional()
     @IsUrl()
     homepage?: string;
+
+    @IsEnum(ClientRole)
+    role: ClientRole;
 }

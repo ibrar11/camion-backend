@@ -20,6 +20,7 @@ import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 
 import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from '../customers/enums/CustomerRole';
+import { ClientRole } from '../clients/enums/client-role.enum';
 import { ProductSort } from './enums/ProductSort.enum';
 
 import { Product } from './entities/product.entity';
@@ -51,10 +52,10 @@ export class ProductsController {
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Product>> {
-		return this.productsService.findAll(filters, sort, pageNumber, itemsPerPage);
+		return this.productsService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProduct(@Param('uuid') uuid: string): Promise<Product> {

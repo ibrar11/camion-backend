@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { S3Service } from '../common/s3.service';
 import { FileService } from '../common/file.service';
+import { ImageThumbnailService } from '../common/image-thumbnail.service';
 
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -119,6 +120,7 @@ import { Translation } from '../translation/entities/translation.entity';
 		ProductVariantService,
 		WarehouseService,
 		FileService,
+		ImageThumbnailService,
 	],
 	controllers: [
 		CategoriesController,

@@ -53,7 +53,7 @@ export class ClientsService {
      */
     findAll(): Promise<Client[]> {
         return this.clientRepository.find({
-            select: ['uuid', 'name', 'description', 'homepage', 'status'],
+            select: ['uuid', 'name', 'description', 'homepage', 'status', 'role'],
             order: { createdAt: 'DESC' },
         });
     }
@@ -68,7 +68,7 @@ export class ClientsService {
     async findOne(uuid: string): Promise<Client> {
         const client = await this.clientRepository.findOne({
             where: { uuid: uuid },
-            select: ['uuid', 'name', 'description', 'homepage', 'status'],
+            select: ['uuid', 'name', 'description', 'homepage', 'status', 'role'],
         });
         if (client === null) {
             throw new NotFoundException({
@@ -95,6 +95,7 @@ export class ClientsService {
                 error: "Failed to find the client. Please check and try again.",
             });
         }
+
         Object.assign(client, dto);
 
         return this.clientRepository.save(client);

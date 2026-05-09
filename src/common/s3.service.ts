@@ -1,4 +1,4 @@
-import * as fs from "node:fs";
+import * as fs from "fs/promises";
 import * as crypto from "node:crypto";
 
 import {
@@ -43,12 +43,14 @@ export class S3Service {
 		this.logger.log(`Uploading file: ${file.path} to S3`);
 
 		// Make sure a file exists at the path
-		if (!fs.existsSync(file.path)) {
-			throw new Error(`Failed to upload the file. Please try again.`);
+		try {
+			fs.access(file.path, fs.constants.F_OK);
+		} catch {
+			throw new Error(`Failed to find the file at the path. Please make sure the file exists.`);
 		}
 
 		// Read the file
-		const readStream = fs.readFileSync(file.path);
+		const readStream = await fs.readFile(file.path);
 
 		// Generate a unique name for the file being uploaded with the extension of the file
 		const key = `${crypto.randomUUID()}.${file.originalname.substring(file.originalname.lastIndexOf('.') + 1)}`;
@@ -74,23 +76,24 @@ export class S3Service {
 	 * Uploads a file to s3
 	 *
 	 * @param prefix
-	 * @param path
+	 * @param filePath
 	 * @param mimetype
 	 * @returns
 	 */
-	async uploadPath(prefix: string, path: string, mimetype: string): Promise<{ key: string, url: string, }> {
-		this.logger.log(`Uploading path: ${path} to s3`);
+	async uploadPath(prefix: string, filePath: string, mimetype: string): Promise<{ key: string, url: string, }> {
+		this.logger.log(`Uploading path: ${filePath} to s3`);
 
-		// Make sure a file exists at the path
-		if (!fs.existsSync(path)) {
-			throw new Error(`Failed to upload the file. Please try again.`);
+		try {
+			fs.access(filePath, fs.constants.F_OK);
+		} catch {
+			throw new Error(`Failed to find the file at the path. Please make sure the file exists.`);
 		}
 
 		// Read the file
-		const readStream = fs.readFileSync(path);
+		const readStream = await fs.readFile(filePath);
 
 		// Generate a unique name for the file being uploaded with the extension of the file
-		const key = `${crypto.randomUUID()}.${path.substring(path.lastIndexOf('.') + 1)}`;
+		const key = `${crypto.randomUUID()}.${filePath.substring(filePath.lastIndexOf('.') + 1)}`;
 
 		// Create the upload command
 		const command = new PutObjectCommand({

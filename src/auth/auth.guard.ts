@@ -68,13 +68,13 @@ export class AuthGuard implements CanActivate {
 						: ""
 			);
 
-			if (tokenExists === null || tokenExists === undefined) {
+			// Make sure the token exists in the cache.
+			if (payload.type !== "client" && (tokenExists === null || tokenExists === undefined)) {
 				throw new UnauthorizedException();
 			}
 
 			if (payload.type === "client") {
 				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
-
 				if (!client || client.status !== ClientStatus.ACTIVE) {
 					throw new UnauthorizedException();
 				}

@@ -1382,6 +1382,7 @@ curl --location --request POST 'http://localhost:8000/v1/products/d0bd2ed9-81b2-
     "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
     "alt": "",
     "isFeatured": false,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,
@@ -1410,6 +1411,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/13f903c1-88d4-48b0-8ee4-dcde4c36eb15.jpg",
         "alt": "",
         "isFeatured": false,
+        "isEnabled": true,
         "position": 0,
         "dimensions": {
             "width": 1000,
@@ -1422,6 +1424,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/bcec2846-6350-4547-a248-55c47851c93a.jpg",
         "alt": "",
         "isFeatured": false,
+        "isEnabled": true,
         "position": 0,
         "dimensions": {
             "width": 1000,
@@ -1434,6 +1437,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images HTTP/1.1
         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
         "alt": "iPhone Photo",
         "isFeatured": true,
+        "isEnabled": true,
         "position": 0,
         "dimensions": {
             "width": 1000,
@@ -1462,6 +1466,7 @@ GET /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
     "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
     "alt": "",
     "isFeatured": false,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,
@@ -1486,7 +1491,8 @@ PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
 {
     "alt": "iPhone Photo",
     "position": 0,
-    "isFeatured": true
+    "isFeatured": true,
+    "isEnabled": true,
 }
 ```
 
@@ -1499,6 +1505,7 @@ PUT /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-
     "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/787d4649-9a61-4ea8-a69b-f10299397aa9.jpg",
     "alt": "iPhone Photo",
     "isFeatured": true,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,
@@ -1511,15 +1518,15 @@ Replace Variant Image
 ---------------------
 
 ```http
-PATCH /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
+POST /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid> HTTP/1.1
 ```
 
 ### Request Body
 
-```json
-{
-    "key": "generated/e5001e9b-1521-490d-b164-44d88460e067.png"
-}
+```bash
+curl --location --request POST '/v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<product-variant-image-uuid>' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+--form 'file=@"/Work/camiontrading/e0af200a-ccb8-4530-918a-2be7e4e761ab.png"'
 ```
 
 ### Response Body
@@ -1527,10 +1534,11 @@ PATCH /v1/products/<product-uuid>/variants/<product-variant-uuid>/images/<produc
 ```json
 {
     "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
-    "imageUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
-    "thumbnailUrl": "s3://product-images/8a0d6b1d-75c9-48f9-a000-cf344db2de71.png",
-    "alt": "",
-    "isFeatured": false,
+    "imageUrl": "s3://product-images/cb15384d-2f33-4fc0-9eb6-374697677ff6.png",
+    "thumbnailUrl": "s3://product-images/4b61155f-4fbe-4c03-acae-f1b3b916a95e.jpg",
+    "alt": "iPhone Photo",
+    "isFeatured": true,
+    "isEnabled": true,
     "position": 0,
     "dimensions": {
         "width": 1000,
