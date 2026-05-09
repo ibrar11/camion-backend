@@ -204,7 +204,7 @@ export class ProductVariantImageService {
 		// Upload the thumbnail of the image/video to s3
 		let thumbnailParams: { key: string, url: string } | null;
 		try {
-			thumbnailParams = await this.s3Service.uploadPath("product-images", thumbnailPath, "image/jpeg");
+			thumbnailParams = await this.s3Service.uploadPath("product-images", thumbnailPath, "image/webp");
 		} catch (err) {
 			this.logger.error(err);
 			throw new InternalServerErrorException({
@@ -212,10 +212,13 @@ export class ProductVariantImageService {
 			});
 		}
 
+		// Generate a smaller image for the image
+		const imagePath = await this.imageThumbnailService.generateImage(file.path);
+
 		// Upload the image to s3
 		let imageParams: { key: string, url: string, } | null = null;
 		try {
-			imageParams = await this.s3Service.uploadFile("product-images", file);
+			imageParams = await this.s3Service.uploadPath("product-images", imagePath, "image/webp");
 		} catch (err) {
 			this.logger.error(err);
 			throw new InternalServerErrorException({
@@ -225,6 +228,7 @@ export class ProductVariantImageService {
 
 		// Delete the temporary files
 		await this.fileService.deletePath(thumbnailPath);
+		await this.fileService.deletePath(imagePath);
 		await this.fileService.deleteFile(file);
 
 		// Update the image
