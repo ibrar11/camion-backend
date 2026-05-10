@@ -28,7 +28,10 @@ import { Product } from './entities/product.entity';
 import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage } from "./entities/product-variant-image.entity";
-import { sliceProductVariants } from "../common/product-variant-filter";
+import {
+	sliceProductVariants,
+	sliceProductVariantsWithDrafts,
+} from "../common/product-variant-filter";
 
 import { TranslationService } from "../translation/translation.service";
 import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
@@ -171,7 +174,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return sliceProductVariants(products);
+		return sliceProductVariantsWithDrafts(products);
 	}
 
 	/**
