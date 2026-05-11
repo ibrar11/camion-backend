@@ -35,7 +35,7 @@ import {
 export class ProcurementController {
     constructor(private readonly procurementService: ProcurementService) { }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
     @Get()
     search(
         @Query("keyword") keyword: string,
@@ -48,7 +48,7 @@ export class ProcurementController {
         return this.procurementService.searchProduct(keyword, pageNumber, itemsPerPage, sort, priceStart, priceEnd);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
     @Get(':productId')
     detail(
         @Param('productId') productId: string,
@@ -56,7 +56,7 @@ export class ProcurementController {
         return this.procurementService.getProductDetail(productId);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
     @Post('import')
     @HttpCode(HttpStatus.OK)
     importProducts(
@@ -65,7 +65,7 @@ export class ProcurementController {
         return this.procurementService.importProduct(body)
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
     @Post('order')
     @HttpCode(HttpStatus.OK)
     createOrder(
@@ -74,7 +74,7 @@ export class ProcurementController {
         return this.procurementService.createOrder(body);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
     @Post('order/bulk')
     @HttpCode(HttpStatus.OK)
     bulkCreateOrder(
