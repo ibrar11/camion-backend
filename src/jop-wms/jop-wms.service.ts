@@ -75,6 +75,26 @@ export class JopWmsService {
         return new Date().toISOString().replace('Z', '+0000');
     }
 
+    // JOP WMS only accepts CM or FT — normalize everything else to CM
+    private toCm(value: number, unit: string): number {
+        switch (unit.toLowerCase()) {
+            case 'm':  return value * 100;
+            case 'in': return value * 2.54;
+            default:   return value; // cm, ft handled as-is
+        }
+    }
+
+    private normalizeDimensions(dimensions?: { length?: number; width?: number; height?: number; unit?: string }) {
+        const unit = dimensions?.unit ?? DimensionsUnit.Centimeter;
+        const wmsUnit = unit.toLowerCase() === 'ft' ? 'FT' : 'CM';
+        return {
+            lengthUnit: wmsUnit,
+            length: this.toCm(dimensions?.length ?? 0, unit),
+            width: this.toCm(dimensions?.width ?? 0, unit),
+            height: this.toCm(dimensions?.height ?? 0, unit),
+        };
+    }
+
     // ─── Products ────────────────────────────────────────────────────────────
 
     async syncProduct(dto: SyncProductDto) {
@@ -99,10 +119,7 @@ export class JopWmsService {
             enName: variant.titleEn,
             weightUnit: (variant.weight?.unit ?? WeightUnit.Kilograms).toUpperCase(),
             weight: variant.weight?.amount ?? 0,
-            lengthUnit: (variant.dimensions?.unit ?? DimensionsUnit.Centimeter).toUpperCase(),
-            length: variant.dimensions?.length ?? 0,
-            width: variant.dimensions?.width ?? 0,
-            height: variant.dimensions?.height ?? 0,
+            ...this.normalizeDimensions(variant.dimensions),
             packingType: 0,
             declaredPrice: variant.cost?.amount ?? 0,
         });
@@ -362,10 +379,7 @@ export class JopWmsService {
                         enName: item.variant.titleEn,
                         weightUnit: (item.variant.weight?.unit ?? WeightUnit.Kilograms).toUpperCase(),
                         weight: item.variant.weight?.amount ?? 0,
-                        lengthUnit: (item.variant.dimensions?.unit ?? DimensionsUnit.Centimeter).toUpperCase(),
-                        length: item.variant.dimensions?.length ?? 0,
-                        width: item.variant.dimensions?.width ?? 0,
-                        height: item.variant.dimensions?.height ?? 0,
+                        ...this.normalizeDimensions(item.variant.dimensions),
                         packingType: 0,
                         declaredPrice: item.variant.cost?.amount ?? 0,
                     });

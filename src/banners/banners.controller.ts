@@ -12,12 +12,12 @@ import {
 	Post,
 	Put,
 	Query,
-	UploadedFile,
+	UploadedFiles,
 	UseGuards,
 	UseInterceptors,
 } from '@nestjs/common';
 
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 import { UpdateBannerDto } from './dtos/UpdateBannerDto';
 
@@ -38,10 +38,15 @@ export class BannersController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post()
-	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
+	@UseInterceptors(FileFieldsInterceptor([
+		{ name: "fileEn", maxCount: 1 },
+		{ name: "fileAr", maxCount: 1, },
+	], {
+		dest: os.tmpdir(),
+	}))
 	@HttpCode(HttpStatus.CREATED)
-	actionCreateBanner(@UploadedFile() file: Express.Multer.File): Promise<Banner> {
-		return this.bannersService.createBanner(file);
+	actionCreateBanner(@UploadedFiles() files: { fileEn: Express.Multer.File[], fileAr: Express.Multer.File[], }): Promise<Banner> {
+		return this.bannersService.createBanner(files.fileEn, files.fileAr);
 	}
 
 	@Roles()

@@ -1,5 +1,6 @@
 import {
 	IsEnum,
+	IsOptional,
 	IsString,
 	MaxLength,
 	MinLength,
@@ -42,4 +43,19 @@ export class UpdateWarehouseDto {
 	@MinLength(1)
 	@MaxLength(32)
 	city: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(32)
+	contactName?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(32)
+	phone?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(16)
+	postcode?: string;
 }

@@ -24,6 +24,8 @@ import { ConfigService } from "@nestjs/config";
 
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
+import { isPhoneNumberValid } from "../common/phone-number-validation";
+
 import { GoogleMobileAuthDto } from "./dtos/GoogleMobileAuthDto";
 import { FacebookMobileAuthDto } from "./dtos/FacebookMobileAuthDto";
 import { AppleMobileAuthDto } from "./dtos/AppleMobileAuthDto";
@@ -80,6 +82,13 @@ export class CustomerAuthService {
 	 */
 	async registerCustomer(body: RegisterCustomerDto): Promise<CustomerAuthResponse> {
 		this.logger.log(`Attempting to register customer: ${body.fullName}`);
+
+		// Check if the phone number is valid
+		if (!isPhoneNumberValid(body.phoneNumber, body.countryCode)) {
+			throw new BadRequestException({
+				phoneNumber: "Please enter a valid phone number.",
+			});
+		}
 
 		// Remove the prefix + sign from the country code
 		let countryCode = body.countryCode;
@@ -186,6 +195,13 @@ export class CustomerAuthService {
 	 */
 	async loginCustomerByPhoneNumber(body: LoginCustomerByPhoneNumberDto): Promise<CustomerAuthVerificationResponse> {
 		this.logger.log(`Attempting to login customer by phone number: ${body.countryCode} ${body.phoneNumber}`);
+
+		// Check if the phone number is valid
+		if (!isPhoneNumberValid(body.phoneNumber, body.countryCode)) {
+			throw new BadRequestException({
+				phoneNumber: "Please enter a valid phone number.",
+			});
+		}
 
 		// Remove the prefix + sign from the country code
 		let countryCode = body.countryCode;
@@ -961,6 +977,13 @@ export class CustomerAuthService {
 	 */
 	async updateProfile(principal: Customer, body: UpdateCustomerDto): Promise<Customer> {
 		this.logger.log(`Updating customer: ${principal.uuid}`);
+
+		// Check if the phone number is valid
+		if (!isPhoneNumberValid(body.phoneNumber, body.countryCode)) {
+			throw new BadRequestException({
+				phoneNumber: "Please enter a valid phone number.",
+			});
+		}
 
 		// Remove the prefix + sign from the country code
 		let countryCode = body.countryCode;

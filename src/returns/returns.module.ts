@@ -27,6 +27,8 @@ import { FileService } from "../common/file.service";
 
 import { ClientsModule } from "../clients/clients.module";
 
+import { ImageThumbnailService } from "../common/image-thumbnail.service";
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -50,6 +52,7 @@ import { ClientsModule } from "../clients/clients.module";
         CustomersService,
         S3Service,
         FileService,
+        ImageThumbnailService,
     ],
     controllers: [ReturnsController],
 })

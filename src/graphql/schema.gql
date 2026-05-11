@@ -38,7 +38,9 @@ type BankAccount {
 
 type Banner {
   color: String!
-  imageUrl: String!
+  imageUrl(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
+  imageUrlAr: String!
+  imageUrlEn: String!
   isActive: Boolean!
   linkUrl: String!
   placement: String!
@@ -224,6 +226,8 @@ type Product {
   descriptionHtml(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
+  featuredImageUrl: String!
+  featuredThumbnailUrl: String!
   likesCount: Float!
   options: [ProductOption!]!
   procurementId: String
@@ -305,6 +309,7 @@ type ProductVariantImage {
   alt: String!
   dimensions: ProductVariantImageDimensions!
   imageUrl: String!
+  isEnabled: Boolean!
   isFeatured: Boolean!
   position: Int!
   thumbnailUrl: String!

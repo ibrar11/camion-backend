@@ -20,6 +20,10 @@ import { Order } from "../order/entities/order.entity";
 
 import { skipcashWebhookResponse } from "./types";
 
+import { NotificationsService } from "../notifications/notifications.service";
+import { NotificationType } from "../notifications/enums/notification-type.enum";
+import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
+
 @Injectable()
 export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
@@ -27,6 +31,7 @@ export class PaymentsWebhookService {
     constructor(
         @InjectRepository(PaymentTransaction) private readonly paymentRepository: Repository<PaymentTransaction>,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -56,9 +61,8 @@ export class PaymentsWebhookService {
             }
 
             const order = await this.orderRepository.findOne({
-                where: {
-                    uuid: TransactionId
-                }
+                where: { uuid: TransactionId },
+                relations: { customer: true },
             })
 
             if (!order) {
@@ -122,6 +126,17 @@ export class PaymentsWebhookService {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
 
+                if (order.customer) {
+                    this.notificationsService.create({
+                        customerUUID: order.customer.uuid,
+                        type: NotificationType.PAYMENT_SUCCESSFUL,
+                        title: 'Payment Successful',
+                        brief: 'Your payment was processed successfully.',
+                        message: `Payment for order #${order.uuid} was successful. Your order is now being processed.`,
+                        priority: NotificationPriority.HIGH,
+                    }).catch(err => this.logger.warn(`Failed to send PAYMENT_SUCCESSFUL notification: ${err?.message}`));
+                }
+
             } else if (
                 newStatus === PaymentStatus.FAILED ||
                 newStatus === PaymentStatus.CANCELLED
@@ -132,6 +147,17 @@ export class PaymentsWebhookService {
 
                 order.status = OrderStatus.PAYMENT_REJECTED;
                 await this.orderRepository.save(order);
+
+                if (order.customer) {
+                    this.notificationsService.create({
+                        customerUUID: order.customer.uuid,
+                        type: NotificationType.PAYMENT_FAILED,
+                        title: 'Payment Failed',
+                        brief: 'Your payment could not be processed.',
+                        message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
+                        priority: NotificationPriority.HIGH,
+                    }).catch(err => this.logger.warn(`Failed to send PAYMENT_FAILED notification: ${err?.message}`));
+                }
             }
 
             return {

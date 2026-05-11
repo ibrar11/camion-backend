@@ -17,6 +17,7 @@ import { CustomersService } from '../customers/customers.service';
 
 import { ClientsModule } from '../clients/clients.module';
 import { ProcurementModule } from '../procurement/procurement.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 
@@ -42,6 +43,7 @@ import { DispatchProcessor } from './workers/dispatch.processor';
         BullModule.registerQueue({ name: QueueName.WMS_DISPATCH }),
         ClientsModule,
         ProcurementModule,
+        NotificationsModule,
     ],
     providers: [
         UsersService,

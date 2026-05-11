@@ -7,6 +7,7 @@ import {
     Logger,
     InternalServerErrorException,
     NotFoundException,
+    Inject,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
@@ -36,6 +37,8 @@ import { NotificationPriority } from "../notifications/enums/notification-priori
 import { S3Service } from "../common/s3.service";
 import { FileService } from "../common/file.service";
 
+import { ImageThumbnailService } from "../common/image-thumbnail.service";
+
 @Injectable()
 export class ReturnsService {
     private readonly logger = new Logger(ReturnsService.name);
@@ -47,9 +50,10 @@ export class ReturnsService {
         @InjectRepository(OrderItem) private readonly orderItemRepository: Repository<OrderItem>,
         @InjectRepository(InventoryItem) private readonly inventoryItemRepository: Repository<InventoryItem>,
         @InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
-        private readonly notificationsService: NotificationsService,
-        private readonly s3Service: S3Service,
-        private readonly fileService: FileService,
+        @Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
+        @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
+        @Inject(S3Service) private readonly s3Service: S3Service,
+        @Inject(FileService) private readonly fileService: FileService,
     ) { }
 
     async createReturnRequest(customer: Customer, dto: CreateReturnRequestDto): Promise<ReturnRequest> {
@@ -146,10 +150,12 @@ export class ReturnsService {
                 });
             }
 
+            const imagePath = await this.imageThumbnailService.generateImage(file.path);
+
             // Upload the file to s3
-            let params: { key: string; url: string; } | null = null;
+            let imageParams: { key: string, url: string, } | null = null;
             try {
-                params = await this.s3Service.uploadFile("returns", file);
+                imageParams = await this.s3Service.uploadPath("product-images", imagePath, "image/webp");
             } catch (err) {
                 this.logger.error(err);
                 throw new InternalServerErrorException({
@@ -160,24 +166,19 @@ export class ReturnsService {
             // Delete the temporary file.
             await this.fileService.deleteFile(file);
 
-            const segments = params.url?.split("/"); let url = "";
-            if (params.url?.startsWith("s3://")) {
-                url = `https://assets.dev.camiontrading.com/${segments[2]}/${segments[3]}`;
-            }
-
             const evidence = new ReturnEvidence();
             evidence.uuid = crypto.randomUUID();
             evidence.returnRequest = returnRequest;
-            evidence.url = url;
+            evidence.url = imageParams.url;
             evidence.mimeType = file.mimetype;
 
             return this.returnEvidenceRepository.save(evidence);
         } catch (error: any) {
-            this.logger.error(`Error uploading evidence: ${error}`);
+            this.logger.error(`Error uploading evidence: ${error?.response?.error || error}`);
             if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
             throw new InternalServerErrorException({
                 error: "Failed to upload evidence",
-                details: error?.message,
+                details: error?.response?.error || error?.message || error,
             });
         }
     }

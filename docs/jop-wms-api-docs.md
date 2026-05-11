@@ -153,6 +153,10 @@ JOP WMS has no webhooks, so order status must be polled. Four cron jobs run auto
 > [!NOTE]
 > `shelved` is terminal for **inbound** orders (goods are now on warehouse shelves) but triggers outbound creation. It is also terminal for **return** orders (returned goods are re-shelved). Outbound orders are not affected by this trigger.
 
+**Customer notifications sent automatically by the scheduler:**
+- Inbound → `shelved`: sends `ORDER_PROCESSING` to all customers linked to that inbound
+- Outbound receives a waybill number (first time): sends `ORDER_SHIPPED` with the tracking number included in the message
+
 ### Error handling
 
 Each order has an `errorCount` field. If the JOP WMS call fails, `errorCount` is incremented. Once an order accumulates **5 consecutive failures**, it is skipped in future poll cycles. This prevents a permanently broken order from blocking the scheduler.
