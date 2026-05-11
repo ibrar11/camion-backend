@@ -31,14 +31,14 @@ import { Roles } from "../auth/roles.decorator";
 export class ProductOptionValueController {
 	constructor(@Inject(ProductOptionValueService) private readonly productOptionValueService: ProductOptionValueService) { }
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProductOptionValue(@Param('productOptionUUID') productOptionUUID: string, @Body() body: CreateProductOptionValueDto): Promise<ProductOptionValue> {
 		return this.productOptionValueService.createProductOptionValue(productOptionUUID, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductOptionValues(
@@ -51,21 +51,21 @@ export class ProductOptionValueController {
 		return this.productOptionValueService.findAll(productOptionUUID, filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProductOptionValue(@Param('uuid') valueUUID: string): Promise<ProductOptionValue> {
 		return this.productOptionValueService.findOne(valueUUID);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductOptionValue(@Param('uuid') valueUUID: string, @Body() body: UpdateProductOptionValueDto): Promise<ProductOptionValue> {
 		return this.productOptionValueService.updateProductOptionValue(valueUUID, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Delete(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionDeleteProductOptionValue(@Param('uuid') valueUUID: string): Promise<void> {

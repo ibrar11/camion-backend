@@ -31,7 +31,7 @@ import { Roles } from '../auth/roles.decorator';
 export class ProductVariantController {
 	constructor(@Inject(ProductVariantService) private readonly variantService: ProductVariantService) { }
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProductVariant(@Param('productUUID') productUUID: string, @Body() body: CreateProductVariantDto): Promise<ProductVariant> {
@@ -65,7 +65,7 @@ export class ProductVariantController {
 		return this.variantService.updateProductVariant(variantUUID, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Delete(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionDeleteProductVariant(@Param('uuid') variantUUID: string): Promise<void> {
