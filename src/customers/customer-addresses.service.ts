@@ -15,6 +15,7 @@ import { Not, Repository } from "typeorm";
 
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
+import { isPhoneNumberValid } from "../common/phone-number-validation";
 import { getSkipAndTake } from "../common/pagination";
 
 import { CreateCustomerAddressDto } from "./dtos/CreateCustomerAddressDto";
@@ -45,6 +46,13 @@ export class CustomerAddressesService {
 	 */
 	async createCustomerAddress(customerUUID: string, body: CreateCustomerAddressDto): Promise<CustomerAddress> {
 		this.logger.log(`Creating customer address for customer: ${customerUUID}`);
+
+		// Check if the phone number is valid
+		if (!isPhoneNumberValid(body.phoneNumber, body.countryCode)) {
+			throw new BadRequestException({
+				phoneNumber: "Please enter a valid phone number.",
+			});
+		}
 
 		// Remove the prefix + sign from the country code
 		let countryCode = body.countryCode;
@@ -260,7 +268,7 @@ export class CustomerAddressesService {
 	 * @returns
 	 */
 	async updateCustomerAddress(customerUUID: string, customerAddressUUID: string, body: UpdateCustomerAddressDto): Promise<CustomerAddress> {
-		console.log("bodybodybodybodybody",body)
+		console.log("bodybodybodybodybody", body)
 		this.logger.log(`Updating customer address: ${customerAddressUUID}`);
 
 		// Find the customer
@@ -310,13 +318,13 @@ export class CustomerAddressesService {
 
 		// Update the customer address
 		address.fullName = normalized.fullName;
-        address.phoneNumber = normalized.phoneNumber;
-        address.streetAddress = normalized.streetAddress;
+		address.phoneNumber = normalized.phoneNumber;
+		address.streetAddress = normalized.streetAddress;
 		address.apartment = body.apartment.trim();
 		address.zipCode = normalized.postalCode;
-        address.city = normalized.city;
-        address.state = normalized.state;
-        address.country = normalized.country;
+		address.city = normalized.city;
+		address.state = normalized.state;
+		address.country = normalized.country;
 		address.isDefault = body.isDefault;
 		return this.customerAddressRepository.save(address);
 	}
