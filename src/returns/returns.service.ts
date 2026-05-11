@@ -150,7 +150,7 @@ export class ReturnsService {
                 });
             }
 
-            const imagePath = await this.imageThumbnailService.generateImage(file.buffer);
+            const imagePath = await this.imageThumbnailService.generateImage(file.path);
 
             // Upload the file to s3
             let imageParams: { key: string, url: string, } | null = null;
