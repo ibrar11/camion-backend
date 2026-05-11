@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, In, Repository } from 'typeorm';
 
@@ -14,6 +14,8 @@ export class JopWmsScheduler {
     // Max consecutive errors before we stop polling an order
     private readonly MAX_ERRORS = 5;
 
+    private readonly STALE_DAYS = parseInt(process.env.WMS_STALE_INBOUND_DAYS ?? '30', 10);
+
     constructor(
         @InjectRepository(JopWmsOrder)
         private readonly wmsOrderRepository: Repository<JopWmsOrder>,
@@ -22,28 +24,26 @@ export class JopWmsScheduler {
     ) { }
 
     /**
-     * Polls pending inbound orders every 30 minutes.
-     * Inbound (stock receiving) is slower-paced so a longer interval avoids hammering the API.
+     * Polls pending inbound orders every 3 hours.
+     * Also force-expires inbounds that have been pending for >30 days.
      */
-    @Cron(CronExpression.EVERY_30_MINUTES)
+    @Cron('0 0 */3 * * *')
     async pollInboundOrders() {
         await this.pollByType(JopWmsOrderType.INBOUND, 'inboundorder/status', 'customerVoucherNo');
     }
 
     /**
-     * Polls pending outbound orders every 15 minutes.
-     * Outbound (fulfillment) is more time-sensitive — customers are waiting for tracking.
+     * Polls pending outbound orders every 3 hours.
      */
-    @Cron('0 */15 * * * *')
+    @Cron('0 0 */3 * * *')
     async pollOutboundOrders() {
         await this.pollByType(JopWmsOrderType.OUTBOUND, 'outboundorder/status', 'customerVoucherNo');
     }
 
     /**
-     * Polls pending return orders every 30 minutes.
-     * Returns are queried by waybillNo + warehouseCode.
+     * Polls pending return orders every 3 hours.
      */
-    @Cron(CronExpression.EVERY_30_MINUTES)
+    @Cron('0 0 */3 * * *')
     async pollReturnOrders() {
         await this.pollByType(JopWmsOrderType.RETURN, 'returnorder/query', 'waybillNo', {
             warehouseCode: process.env.JOP_WMS_WAREHOUSE_CODE ?? '',
@@ -67,7 +67,19 @@ export class JopWmsScheduler {
 
         this.logger.log(`Polling ${orders.length} ${type} order(s)`);
 
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - this.STALE_DAYS);
+
         for (const order of orders) {
+            // Force-expire inbounds that have been pending for too long
+            if (type === JopWmsOrderType.INBOUND && order.createdAt < cutoff) {
+                this.logger.warn(`Force-expiring stale inbound ${order.orderNo} (created: ${order.createdAt.toISOString()})`);
+                order.status = JopWmsInboundStatus.DELETED;
+                await this.wmsOrderRepository.save(order);
+                await this.wmsService.createOutboundsForInbound(order);
+                continue;
+            }
+
             if (order.errorCount >= this.MAX_ERRORS) {
                 this.logger.warn(`Skipping ${order.orderNo} — exceeded max errors (${this.MAX_ERRORS})`);
                 continue;
