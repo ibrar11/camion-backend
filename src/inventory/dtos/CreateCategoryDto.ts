@@ -41,7 +41,7 @@ export class CreateCategoryDto {
 	pricingFactor: number;
 
 	@IsNumber()
-	@Min(1)
+	@Min(0)
 	@Max(10)
 	discountPercentage: number;
 
