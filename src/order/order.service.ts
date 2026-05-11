@@ -73,6 +73,10 @@ import {
 
 import { ConfigService } from "@nestjs/config";
 
+import { NotificationsService } from "../notifications/notifications.service";
+import { NotificationType } from "../notifications/enums/notification-type.enum";
+import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -90,6 +94,7 @@ export class OrderService {
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     /**
@@ -367,6 +372,15 @@ export class OrderService {
 
             await queryRunner.commitTransaction();
 
+            this.notificationsService.create({
+                customerUUID: customer.uuid,
+                type: NotificationType.ORDER_PLACED,
+                title: 'Order Placed',
+                brief: 'Your order has been placed successfully.',
+                message: `Your order #${order.uuid} has been placed. We'll notify you once it's confirmed.`,
+                priority: NotificationPriority.HIGH,
+            }).catch(err => this.logger.warn(`Failed to send ORDER_PLACED notification: ${err?.message}`));
+
             return order;
         } catch (error: any) {
             await queryRunner.rollbackTransaction();
@@ -504,7 +518,8 @@ export class OrderService {
                             }
                         },
                     },
-                    shippingAddress: true
+                    shippingAddress: true,
+                    customer: true,
                 },
             });
 
@@ -536,7 +551,51 @@ export class OrderService {
 
             order.status = status;
 
-            return this.orderRepository.save(order);
+            const saved = await this.orderRepository.save(order);
+
+            const notificationMap: Partial<Record<OrderStatus, { type: NotificationType; title: string; brief: string; message: string }>> = {
+                [OrderStatus.CONFIRMED]: {
+                    type: NotificationType.ORDER_CONFIRMED,
+                    title: 'Order Confirmed',
+                    brief: 'Your order has been confirmed.',
+                    message: `Your order #${order.uuid} has been confirmed and is being prepared.`,
+                },
+                [OrderStatus.DELIVERED]: {
+                    type: NotificationType.ORDER_DELIVERED,
+                    title: 'Order Delivered',
+                    brief: 'Your order has been delivered.',
+                    message: `Your order #${order.uuid} has been delivered. Enjoy your purchase!`,
+                },
+                [OrderStatus.CANCELLED]: {
+                    type: NotificationType.ORDER_CANCELLED,
+                    title: 'Order Cancelled',
+                    brief: 'Your order has been cancelled.',
+                    message: `Your order #${order.uuid} has been cancelled.`,
+                },
+                [OrderStatus.PAYMENT_SUCCESSFUL]: {
+                    type: NotificationType.PAYMENT_SUCCESSFUL,
+                    title: 'Payment Successful',
+                    brief: 'Your payment was processed successfully.',
+                    message: `Payment for order #${order.uuid} was successful.`,
+                },
+                [OrderStatus.PAYMENT_REJECTED]: {
+                    type: NotificationType.PAYMENT_FAILED,
+                    title: 'Payment Failed',
+                    brief: 'Your payment could not be processed.',
+                    message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
+                },
+            };
+
+            const notif = notificationMap[status];
+            if (notif && order.customer) {
+                this.notificationsService.create({
+                    customerUUID: order.customer.uuid,
+                    ...notif,
+                    priority: NotificationPriority.HIGH,
+                }).catch(err => this.logger.warn(`Failed to send ${notif.type} notification: ${err?.message}`));
+            }
+
+            return saved;
         } catch (error: any) {
             this.logger.error(`Error updating order status: ${error}`);
             throw new InternalServerErrorException({
@@ -561,6 +620,7 @@ export class OrderService {
                         variant: true,
                         warehouse: true
                     },
+                    customer: true,
                 },
             });
 
@@ -608,6 +668,17 @@ export class OrderService {
             order.status = OrderStatus.CANCELLED;
 
             await this.orderRepository.save(order);
+
+            if (order.customer) {
+                this.notificationsService.create({
+                    customerUUID: order.customer.uuid,
+                    type: NotificationType.ORDER_CANCELLED,
+                    title: 'Order Cancelled',
+                    brief: 'Your order has been cancelled.',
+                    message: `Your order #${order.uuid} has been cancelled and your stock has been restored.`,
+                    priority: NotificationPriority.HIGH,
+                }).catch(err => this.logger.warn(`Failed to send ORDER_CANCELLED notification: ${err?.message}`));
+            }
 
         } catch (error: any) {
             this.logger.error(`Error canceling order: ${error}`);

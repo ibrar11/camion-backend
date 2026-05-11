@@ -44,6 +44,8 @@ import { TransactionsService } from '../referral/transactions.service';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
 import { PricingService } from '../pricing/pricing.service';
 
+import { NotificationsModule } from '../notifications/notifications.module';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -65,6 +67,7 @@ import { PricingService } from '../pricing/pricing.service';
             KeyValuePair,
         ]),
         ClientsModule,
+        NotificationsModule,
     ],
     providers: [
         OrderService,

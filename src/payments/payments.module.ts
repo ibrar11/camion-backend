@@ -36,6 +36,8 @@ import { Order } from '../order/entities/order.entity';
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { ExchangeRateService } from '../pricing/exchange-rate.service';
 
+import { NotificationsModule } from '../notifications/notifications.module';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -47,6 +49,7 @@ import { ExchangeRateService } from '../pricing/exchange-rate.service';
             Order,
             ExchangeRate
         ]),
+        NotificationsModule,
     ],
     providers: [
         PaymentsService,
