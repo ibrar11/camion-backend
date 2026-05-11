@@ -38,6 +38,9 @@ export class WarehouseService {
 		warehouse.country = body.country.trim();
 		warehouse.state = body.state.trim();
 		warehouse.city = body.city.trim();
+		warehouse.contactName = body.contactName?.trim() ?? null;
+		warehouse.phone = body.phone?.trim() ?? null;
+		warehouse.postcode = body.postcode?.trim() ?? null;
 		warehouse.isActive = true;
 		return this.warehouseRepository.save(warehouse);
 	}
@@ -107,6 +110,9 @@ export class WarehouseService {
 		warehouse.country = body.country.trim();
 		warehouse.state = body.state.trim();
 		warehouse.city = body.city.trim();
+		warehouse.contactName = body.contactName?.trim() ?? warehouse.contactName;
+		warehouse.phone = body.phone?.trim() ?? warehouse.phone;
+		warehouse.postcode = body.postcode?.trim() ?? warehouse.postcode;
 		return this.warehouseRepository.save(warehouse);
 	}
 
