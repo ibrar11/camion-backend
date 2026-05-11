@@ -30,13 +30,15 @@ One Gulltrans procurement order per shop (all customer orders merged)
 Variants synced to WMS → One WMS inbound per shop group
   (inbound covers all customer orders for that shop)
        ↓
-[Scheduler polls inbound every 30 min]
+[Scheduler polls inbound every 3 hours]
        ↓
 Inbound status → "shelved" (goods received at warehouse)
        ↓
+All inbounds for each customer order shelved? → wait if not
+       ↓
 Scheduler auto-creates one WMS outbound per customer order
        ↓
-[Scheduler polls outbound every 15 min, saves waybill number]
+[Scheduler polls outbound every 3 hours, saves waybill number]
 ```
 
 **Key characteristics:**
@@ -65,7 +67,7 @@ JopWmsService     (business logic — syncs with local DB, tracks orders)
 
 **`JopWmsService`** — business logic layer. For product sync, it reads `ProductVariant` data from the local DB (populated via Gulltrans/1688 procurement) and maps it to the WMS format. For order creation, it automatically registers each order into the `jop_wms_orders` table so it enters the polling loop. The batch dispatch flow (`dispatchApprovedOrders`) runs in the background (fire-and-forget via `setImmediate`): it groups all confirmed orders by 1688 shop, makes one Gulltrans API call per shop, syncs all affected variants to WMS, and creates one WMS inbound per shop group covering all customer orders in it.
 
-**`JopWmsScheduler`** — cron jobs that poll non-terminal orders on a fixed interval. When an inbound order transitions to `shelved`, the scheduler automatically creates one WMS outbound order per customer order that was part of that inbound. See the Polling section below.
+**`JopWmsScheduler`** — cron jobs that poll non-terminal orders on a fixed interval. When an inbound order transitions to `shelved`, the scheduler checks whether every inbound linked to each affected customer order is now shelved; only then does it create one WMS outbound per customer order. This ensures orders spanning multiple shops are consolidated into a single shipment. See the Polling section below.
 
 ---
 
@@ -84,6 +86,9 @@ JOP_WMS_WAREHOUSE_CODE=your_warehouse_code
 
 # Default logistics channel used when auto-creating outbound orders
 JOP_WMS_LOGISTICS_CHANNEL=your_logistics_channel_code
+
+# Days before a non-terminal inbound is force-expired (default: 30)
+WMS_STALE_INBOUND_DAYS=30
 ```
 
 The Gulltrans warehouse address (where 1688 suppliers ship goods to) is read from the **active `Warehouse` record** in the database — not from env vars. Ensure the active warehouse has the following fields populated:
@@ -129,18 +134,18 @@ The following headers are sent on every request:
 Polling
 -------
 
-JOP WMS has no webhooks, so order status must be polled. Two cron jobs run automatically in the background.
+JOP WMS has no webhooks, so order status must be polled. Four cron jobs run automatically in the background.
 
-**Outbound orders** — polled every 15 minutes. Fulfillment orders are time-sensitive because customers are waiting for tracking numbers. Once the WMS returns a waybill number, it is saved to the `jop_wms_orders` table.
+**Inbound, outbound, and return orders** — all polled every **3 hours**. Once the WMS returns a waybill number on an outbound, it is saved to the `jop_wms_orders` table.
 
-**Inbound and return orders** — polled every 30 minutes. These are slower-paced warehouse operations.
+**Stale inbound expiry** — runs daily at midnight. Any inbound order that has been non-terminal for more than 30 days is force-marked as `deleted`, unblocking outbound creation for the linked customer orders. A warning is logged so admins can investigate the missing goods.
 
 ### How polling works
 
 1. When an inbound, outbound, or return order is successfully created via the admin API, it is automatically registered in the `jop_wms_orders` table with `status = pending`.
 2. On each cron tick, the scheduler queries all non-terminal orders of that type.
 3. It calls the appropriate JOP WMS status endpoint and updates `status`, `waybillNo`, and `lastPolledAt` in the DB.
-4. For inbound orders: if the status transitions to `shelved` (goods received at warehouse), the scheduler automatically creates one WMS outbound order per customer order linked to that inbound (stored in `sourceOrderUuids`), using each customer's shipping address and `JOP_WMS_LOGISTICS_CHANNEL`.
+4. For inbound orders: if the status transitions to `shelved` (goods received at warehouse), the scheduler checks whether **all** inbound orders linked to each customer order (via `sourceOrderUuids`) are now shelved. Only when every inbound for a given customer order is shelved does it create one WMS outbound order, using the customer's shipping address and `JOP_WMS_LOGISTICS_CHANNEL`. If any inbound is still pending, outbound creation is deferred until the next poll that completes the set.
 5. Once an order reaches a terminal status, it is excluded from future polls.
 
 **Terminal statuses** (polling stops automatically): `completed`, `cancelled`, `shelved`, `closed`
@@ -164,7 +169,7 @@ Each order has an `errorCount` field. If the JOP WMS call fails, `errorCount` is
 | `lastPolledAt` | Timestamp of last successful poll attempt |
 | `errorCount` | Consecutive poll failures; order is skipped after 5 |
 
-Use `GET /v1/wms/orders/tracked` to inspect this table from the admin dashboard.
+Use `GET /v1/wms/orders` to inspect this table from the admin dashboard.
 
 ---
 
@@ -194,7 +199,7 @@ Batch-dispatches all `CONFIRMED` customer orders that have not yet been procured
 4. Syncs all affected product variants to WMS (`product/synchronize`) before creating inbounds
 5. Creates **one WMS inbound per shop group**, with a combined product list and the `sourceOrderUuids` of all contributing customer orders. The inbound `customerVoucherNo` is a 32-character hex string (UUID with dashes stripped)
 
-When the inbound reaches `shelved`, the scheduler auto-creates one outbound per customer order from the group.
+When the inbound reaches `shelved`, the scheduler checks whether all inbounds for each linked customer order are shelved. Once they all are, it auto-creates one outbound per customer order, consolidating all items into a single shipment.
 
 Products must have been imported via `POST /v1/procurement/import` first — the `shopId`, `shopName`, `procurementId`, and `skuMeta` stored during import are used to build the Gulltrans payload automatically. The warehouse address is read from the active `Warehouse` record in the database.
 
@@ -432,7 +437,7 @@ Used to instruct the warehouse to pick, pack, and ship an order to a customer.
 POST /v1/wms/outbound HTTP/1.1
 ```
 
-After a successful response, the order is automatically registered in `jop_wms_orders`. The scheduler polls it every 15 minutes and saves the waybill number once the WMS provides it.
+After a successful response, the order is automatically registered in `jop_wms_orders`. The scheduler polls it every 3 hours and saves the waybill number once the WMS provides it.
 
 ### Request Body
 ```json
@@ -668,7 +673,7 @@ Notifies the warehouse that a customer is sending stock back.
 POST /v1/wms/returns HTTP/1.1
 ```
 
-After a successful response, the order is automatically registered in `jop_wms_orders` and polled every 30 minutes. Terminal status for returns is `shelved` (goods put back in usable stock) or `cancelled`.
+After a successful response, the order is automatically registered in `jop_wms_orders` and polled every 3 hours. Terminal status for returns is `shelved` (goods put back in usable stock) or `cancelled`.
 
 ### Request Body
 ```json
@@ -734,11 +739,11 @@ Polling State
 Returns all orders currently tracked in the local `jop_wms_orders` table, including their last known status, waybill number, last poll time, and error count.
 
 ```http
-GET /v1/wms/orders/tracked HTTP/1.1
+GET /v1/wms/orders HTTP/1.1
 ```
 
 ```http
-GET /v1/wms/orders/tracked?type=outbound HTTP/1.1
+GET /v1/wms/orders?type=outbound HTTP/1.1
 ```
 
 ### Query Parameters
@@ -796,11 +801,13 @@ End-to-end flow from customer order approval to warehouse fulfillment:
 
 3. GET  /v1/wms/inbound/label            → print inbound shipping label (optional)
 
-4.      [scheduler polls inbound every 30m]
+4.      [scheduler polls inbound every 3h]
+        [daily midnight job expires inbounds pending >30 days]
 
-5. Inbound status → "shelved"            → scheduler auto-creates one outbound per customer order
+5. Inbound status → "shelved"            → scheduler checks all inbounds for each order are terminal
+                                         → creates one outbound per customer order once all are ready
 
-6.      [scheduler polls outbound every 15m, saves waybillNo]
+6.      [scheduler polls outbound every 3h, saves waybillNo]
 
 7. GET  /v1/wms/waybill/:orderNo         → retrieve tracking number on-demand
 ```
@@ -813,8 +820,8 @@ For inbound orders not tied to a customer order (e.g. restocking):
 1. POST /v1/wms/products/sync                    → sync product variant to WMS (required before inbound)
 2. POST /v1/wms/inbound                          → create inbound order (auto-tracked)
 3. GET  /v1/wms/inbound/:orderNo/label           → print label for shipment
-4.      [scheduler polls inboundorder/status every 30m]
-5. GET  /v1/wms/orders/tracked?type=inbound      → check polling state
+4.      [scheduler polls inboundorder/status every 3h]
+5. GET  /v1/wms/orders?type=inbound              → check polling state
 ```
 
 ### Manual Outbound (Order Fulfillment)
@@ -825,7 +832,7 @@ For outbound orders created independently of the dispatch flow:
 1. GET  /v1/wms/logistics?countryCode=...        → get available channels
 2. POST /v1/wms/outbound/estimate-shipping       → get cost estimate
 3. POST /v1/wms/outbound                         → create outbound order (auto-tracked)
-4.      [scheduler polls outboundorder/status every 15m, saves waybillNo]
+4.      [scheduler polls outboundorder/status every 3h, saves waybillNo]
 5. GET  /v1/wms/waybill/:orderNo                 → get tracking number on-demand
 ```
 
@@ -839,6 +846,6 @@ POST /v1/wms/outbound   (new orderNo)
 
 ```
 1. POST /v1/wms/returns                          → create return order (auto-tracked)
-2.      [scheduler polls returnorder/query every 30m]
+2.      [scheduler polls returnorder/query every 3h]
 3. GET  /v1/wms/returns?returnOrderNo=...        → check status on-demand
 ```

@@ -175,7 +175,7 @@ export class JopWmsController {
     // ─── Polling state ────────────────────────────────────────────────────────
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
-    @Get('orders/tracked')
+    @Get('orders')
     @HttpCode(HttpStatus.OK)
     getTrackedOrders(@Query('type') type?: JopWmsOrderType) {
         return this.wmsService.getTrackedOrders(type);
