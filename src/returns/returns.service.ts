@@ -150,7 +150,7 @@ export class ReturnsService {
                 });
             }
 
-            const imagePath = await this.imageThumbnailService.generateImage(file.path);
+            const imagePath = await this.imageThumbnailService.generateImage(file.buffer);
 
             // Upload the file to s3
             let imageParams: { key: string, url: string, } | null = null;
@@ -174,11 +174,11 @@ export class ReturnsService {
 
             return this.returnEvidenceRepository.save(evidence);
         } catch (error: any) {
-            this.logger.error(`Error uploading evidence: ${error}`);
+            this.logger.error(`Error uploading evidence: ${error?.response?.error || error}`);
             if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
             throw new InternalServerErrorException({
                 error: "Failed to upload evidence",
-                details: error?.message,
+                details: error?.response?.error || error?.message || error,
             });
         }
     }
