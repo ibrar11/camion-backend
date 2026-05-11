@@ -14,6 +14,7 @@ import type { Request } from 'express';
 
 import { GoogleMobileAuthDto } from './dtos/GoogleMobileAuthDto';
 import { FacebookMobileAuthDto } from './dtos/FacebookMobileAuthDto';
+import { AppleMobileAuthDto } from './dtos/AppleMobileAuthDto';
 import { VerifyCustomerDto } from './dtos/VerifyCustomerDto';
 import { RegisterCustomerDto } from './dtos/RegisterCustomerDto';
 
@@ -89,6 +90,12 @@ export class CustomerAuthController {
 	@Post('oauth/facebook')
 	actionFacebookMobileAuth(@Body() body: FacebookMobileAuthDto): Promise<CustomerAuthResponse> {
 		return this.customerAuthService.loginWithFacebookMobile(body);
+	}
+
+	@HttpCode(HttpStatus.OK)
+	@Post('oauth/apple')
+	actionAppleMobileAuth(@Body() body: AppleMobileAuthDto): Promise<CustomerAuthResponse> {
+		return this.customerAuthService.loginWithAppleMobile(body);
 	}
 
 	@UseGuards(AuthGuard)

@@ -179,6 +179,64 @@ This endpoint is called by Facebook — do not call it directly.
 
 ---
 
+## Apple
+
+Apple Sign In is **mobile only**. Apple does not provide a web redirect flow compatible with Passport — the iOS app handles the authentication natively and sends the resulting credential to the API.
+
+> **Important:** Apple only includes the user's email in the token on the **first login**. Subsequent logins will not contain an email. The API handles this by looking up the customer by `appleId` first, so returning users are always found regardless.
+
+### Environment variables
+
+| Variable | Description |
+|---|---|
+| `APPLE_AUDIENCE` | iOS bundle ID (e.g. `com.camiontrading.app`) |
+| `APPLE_ISSUER` | Apple token issuer — always `https://appleid.apple.com` |
+| `APPLE_TEAM_ID` | Apple Developer Team ID |
+| `APPLE_KEY_ID` | Key ID of the Sign in with Apple private key |
+| `APPLE_PRIVATE_KEY` | PEM private key from Apple Developer Console (use `\n` for newlines in `.env`) |
+
+---
+
+### Mobile — verify identity token
+
+The iOS app uses the Sign in with Apple SDK and sends either an `identityToken` or an `authorizationCode` (or both) to the API. At least one is required.
+
+```http
+POST /v1/auth/customer/oauth/apple HTTP/1.1
+Content-Type: application/json
+```
+
+**Request body**
+```json
+{
+    "identityToken": "<jwt-from-apple-sdk>",
+    "authorizationCode": "<code-from-apple-sdk>",
+    "fullName": "John Doe"
+}
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `identityToken` | One of these two | JWT from Apple SDK — verified directly |
+| `authorizationCode` | One of these two | Exchanged server-side for an identity token using Apple's token endpoint |
+| `fullName` | No | Only sent by Apple on first login; pass it along when available |
+
+**Response**
+```json
+{
+    "token": "<session-token>",
+    "customer": {
+        "uuid": "...",
+        "fullName": "...",
+        "emailAddress": "..."
+    }
+}
+```
+
+Use the returned `token` as a `Bearer` token on subsequent requests.
+
+---
+
 ## Adding a new provider
 
 To add another social provider:
