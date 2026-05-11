@@ -39,7 +39,7 @@ export class ImageThumbnailService {
 	 * @param imagePath
 	 * @returns
 	 */
-	generateImage(imagePath: string): Promise<string> {
+	generateImage(imagePath: string | Buffer): Promise<string> {
 		return new Promise((resolve, reject) => {
 			const outputPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.webp`);
 
