@@ -53,6 +53,7 @@
     "google-auth-library": "^10.6.2",
     "graphql": "^16.13.2",
     "ioredis": "^5.10.1",
+    "jose": "^6.2.3",
     "libphonenumber-js": "^1.12.38",
     "multer": "^2.1.1",
     "passport": "^0.7.0",
