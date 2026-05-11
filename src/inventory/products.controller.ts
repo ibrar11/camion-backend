@@ -37,7 +37,7 @@ import { Roles } from '../auth/roles.decorator';
 export class ProductsController {
 	constructor(@Inject(ProductsService) private readonly productsService: ProductsService) { }
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProduct(@Body() body: CreateProductDto): Promise<Product> {
@@ -70,7 +70,7 @@ export class ProductsController {
 		return this.productsService.updateProduct(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid/slug')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductSlug(@Param('uuid') uuid: string, @Body() body: UpdateProductSlugDto): Promise<Product> {

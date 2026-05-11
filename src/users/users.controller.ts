@@ -16,6 +16,8 @@ import { CreateUserDto } from './dtos/CreateUserDto';
 import { UpdateUserDto } from './dtos/UpdateUserDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
 import { UpdatePasswordDto } from './dtos/UpdatePasswordDto';
+import { UpdateUserStatusDto } from './dtos/UpdateUserStatusDto';
+import { UpdateUserRoleDto } from './dtos/UpdateUserRoleDto';
 
 import { UserRole } from './enums/UserRole';
 
@@ -72,6 +74,20 @@ export class UsersController {
 	@HttpCode(HttpStatus.OK)
 	actionUpdatePassword(@Param('uuid') uuid: string, @Body() body: UpdatePasswordDto): Promise<User> {
 		return this.usersService.updatePassword(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Put(':uuid/role')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateRole(@Param('uuid') uuid: string, @Body() body: UpdateUserRoleDto): Promise<User> {
+		return this.usersService.updateUserRole(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Put(':uuid/status')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateStatus(@Param('uuid') uuid: string, @Body() body: UpdateUserStatusDto): Promise<User> {
+		return this.usersService.updateUserStatus(uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
