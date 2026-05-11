@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 	ConflictException,
 	ForbiddenException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -23,6 +24,8 @@ import { PatchCustomerAddressDto } from "./dtos/PatchCustomerAddressDto";
 import { Customer } from "./entities/customer.entity";
 import { CustomerAddress } from "./entities/customer-address.entity";
 
+import { AddressNormalizationService } from "../common/address-normalization.service";
+
 @Injectable()
 export class CustomerAddressesService {
 	private readonly logger = new Logger(CustomerAddressesService.name);
@@ -30,6 +33,7 @@ export class CustomerAddressesService {
 	constructor(
 		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
 		@InjectRepository(CustomerAddress) private readonly customerAddressRepository: Repository<CustomerAddress>,
+		@Inject(AddressNormalizationService) private readonly addressNormalizationService: AddressNormalizationService,
 	) { }
 
 	/**
@@ -84,6 +88,17 @@ export class CustomerAddressesService {
 			});
 		}
 
+		// Normalize address for SkipCash compatibility
+		const normalized = this.addressNormalizationService.normalizeForPayment({
+			country: body.country,
+			state: body.state,
+			city: body.city,
+			streetAddress: body.streetAddress,
+			postalCode: body.zipCode,
+			fullName: body.fullName,
+			phoneNumber: body.phoneNumber,
+		});
+
 		// Disable previous addresses as default
 		await this.customerAddressRepository.update({
 			customer: { id: customer.id, },
@@ -95,14 +110,14 @@ export class CustomerAddressesService {
 		const address = new CustomerAddress();
 		address.uuid = crypto.randomUUID();
 		address.customer = customer;
-		address.fullName = body.fullName.trim();
-		address.phoneNumber = body.phoneNumber.trim();
-		address.streetAddress = body.streetAddress.trim();
+		address.fullName = normalized.fullName;
+		address.phoneNumber = normalized.phoneNumber;
+		address.streetAddress = normalized.streetAddress;
 		address.apartment = body.apartment.trim();
-		address.zipCode = body.zipCode.trim();
-		address.city = body.city.trim();
-		address.state = body.state.trim();
-		address.country = body.country.trim();
+		address.zipCode = normalized.postalCode;
+		address.city = normalized.city;
+		address.state = normalized.state;  // ISO code
+		address.country = normalized.country;
 		address.isDefault = true;
 		return this.customerAddressRepository.save(address);
 	}
@@ -245,6 +260,7 @@ export class CustomerAddressesService {
 	 * @returns
 	 */
 	async updateCustomerAddress(customerUUID: string, customerAddressUUID: string, body: UpdateCustomerAddressDto): Promise<CustomerAddress> {
+		console.log("bodybodybodybodybody",body)
 		this.logger.log(`Updating customer address: ${customerAddressUUID}`);
 
 		// Find the customer
@@ -270,6 +286,18 @@ export class CustomerAddressesService {
 			});
 		}
 
+		// Normalize the updated address
+		const normalized = this.addressNormalizationService.normalizeForPayment({
+			country: body.country,
+			state: body.state,
+			city: body.city,
+			streetAddress: body.streetAddress,
+			postalCode: body.zipCode,
+			fullName: body.fullName,
+			phoneNumber: body.phoneNumber,
+		});
+
+
 		// If the current address is set as default, we need to disable other address as default
 		if (body.isDefault) {
 			await this.customerAddressRepository.update({
@@ -281,14 +309,14 @@ export class CustomerAddressesService {
 		}
 
 		// Update the customer address
-		address.fullName = body.fullName.trim();
-		address.phoneNumber = body.phoneNumber.trim();
-		address.streetAddress = body.streetAddress.trim();
+		address.fullName = normalized.fullName;
+        address.phoneNumber = normalized.phoneNumber;
+        address.streetAddress = normalized.streetAddress;
 		address.apartment = body.apartment.trim();
-		address.zipCode = body.zipCode.trim();
-		address.city = body.city.trim();
-		address.state = body.state.trim();
-		address.country = body.country.trim();
+		address.zipCode = normalized.postalCode;
+        address.city = normalized.city;
+        address.state = normalized.state;
+        address.country = normalized.country;
 		address.isDefault = body.isDefault;
 		return this.customerAddressRepository.save(address);
 	}

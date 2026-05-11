@@ -11,7 +11,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Repository } from 'typeorm';
+import { In, IsNull, Like, Repository } from 'typeorm';
 
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
@@ -23,7 +23,7 @@ import { OrderItem } from '../order/entities/order-item.entity';
 import { OrderStatus } from '../order/enums/OrderStatus';
 
 import { JopWmsClient } from './jop-wms.client';
-import { JopWmsOrder, JopWmsOrderType } from './entities/jop-wms-order.entity';
+import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
 
 import { SyncProductDto } from './dtos/SyncProductDto';
 import { QueryProductDto } from './dtos/QueryProductDto';
@@ -439,6 +439,31 @@ export class JopWmsService {
         this.logger.log(`Creating outbounds for inbound ${wmsOrder.orderNo} — ${orderUuids.length} order(s)`);
 
         for (const orderUuid of orderUuids) {
+            const allInboundsForOrder = await this.wmsOrderRepository.find({
+                where: {
+                    type: JopWmsOrderType.INBOUND,
+                    sourceOrderUuids: Like(`%${orderUuid}%`),
+                },
+            });
+            const pendingInbounds = allInboundsForOrder.filter(
+                (o) => !(JOP_WMS_TERMINAL_STATUSES as readonly string[]).includes(o.status),
+            );
+            if (pendingInbounds.length > 0) {
+                this.logger.log(
+                    `Order ${orderUuid} — holding outbound, ${pendingInbounds.length} inbound(s) not yet terminal (${pendingInbounds.map((o) => o.orderNo).join(', ')})`,
+                );
+                continue;
+            }
+
+            const problemInbounds = allInboundsForOrder.filter(
+                (o) => o.status !== JopWmsInboundStatus.STORED,
+            );
+            if (problemInbounds.length > 0) {
+                this.logger.warn(
+                    `Order ${orderUuid} — ${problemInbounds.length} inbound(s) ended without being stored: ${problemInbounds.map((o) => `${o.orderNo}(status:${o.status})`).join(', ')} — outbound will be created with available items only`,
+                );
+            }
+
             const order = await this.orderRepository.findOne({
                 where: { uuid: orderUuid },
                 relations: ['orderItems', 'orderItems.variant', 'shippingAddress'],

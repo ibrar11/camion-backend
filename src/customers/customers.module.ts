@@ -17,6 +17,8 @@ import { CustomerAddressesResolver } from './customer-addresses.resolver';
 
 import { CustomersScheduler } from './customers.scheduler';
 
+import { AddressNormalizationService } from '../common/address-normalization.service';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -32,6 +34,7 @@ import { CustomersScheduler } from './customers.scheduler';
 		CustomerAddressesService,
 		CustomerAddressesResolver,
 		CustomersScheduler,
+		AddressNormalizationService,
 	],
 	controllers: [
 		CustomersController,
