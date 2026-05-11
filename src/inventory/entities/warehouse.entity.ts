@@ -45,14 +45,14 @@ export class Warehouse {
 	@Column()
 	city: string;
 
-	@Column({ nullable: true })
-	postcode: string;
+	@Column({ type: 'varchar', nullable: true })
+	postcode: string | null;
 
-	@Column({ nullable: true })
-	contactName: string;
+	@Column({ type: 'varchar', nullable: true })
+	contactName: string | null;
 
-	@Column({ nullable: true })
-	phone: string;
+	@Column({ type: 'varchar', nullable: true })
+	phone: string | null;
 
 	@OneToMany(() => InventoryLevel, (level) => level.warehouse)
 	levels: Array<InventoryLevel>;
