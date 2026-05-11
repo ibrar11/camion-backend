@@ -95,6 +95,13 @@ export class CouponsService {
 			});
 		}
 
+		// Make sure the expiresAt is not in the past
+		if (new Date().getTime() >= new Date(body.expiresAt).getTime()) {
+			throw new BadRequestException({
+				expiresAt: "Please make sure that the coupon expires in the future.",
+			});
+		}
+
 		// Update the affiliate
 		affiliate.couponsCreated += 1;
 		await this.affiliateRepository.save(affiliate);
