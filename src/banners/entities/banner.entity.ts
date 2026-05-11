@@ -36,8 +36,15 @@ export class Banner {
 	titleAr: string;
 
 	@Field()
-	@Column()
 	imageUrl: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	imageUrlEn: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	imageUrlAr: string;
 
 	@Field()
 	@Column()
