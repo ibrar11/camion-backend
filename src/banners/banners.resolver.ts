@@ -57,15 +57,27 @@ export class BannersResolver {
 	}
 
 	@ResolveField("imageUrl", () => String)
-	getImageUrl(@Parent() banner: Banner): string {
-		if (banner === null || banner.imageUrl === null) {
+	getImageUrl(@Parent() banner: Banner, @Args() args: GetBannersArgs): string {
+		if (banner === null) {
 			return "";
 		}
 
-		const segments = banner.imageUrl.split("/");
-		if (banner.imageUrl.startsWith("https://")) {
+		const language = args.language.toLowerCase() || "en";
+
+		const imageUrlMap = {
+			"en": banner.imageUrlEn,
+			"ar": banner.imageUrlAr,
+		};
+
+		const imageUrl = imageUrlMap[language] ?? banner.imageUrlEn;
+		if (imageUrl === null || imageUrl === undefined || imageUrl.length === 0) {
+			return "";
+		}
+
+		const segments = imageUrl.split("/");
+		if (imageUrl.startsWith("https://")) {
 			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
-		} else if (banner.imageUrl.startsWith("s3://")) {
+		} else if (imageUrl.startsWith("s3://")) {
 			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 

@@ -27,16 +27,18 @@ POST /v1/banners HTTP/1.1
 ```bash
 curl --location --request POST 'http://localhost:8000/v1/banners' \
 --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
---form 'file=@"/C:/m_Direct_Media____YWCMXRBDU8.jpg"'
+--form 'fileEn=@"/C:/Users/Pictures/Test/m_Direct_Media____YWCMXRBDU8.jpg"' \
+--form 'fileAr=@"/C:/Users/Pictures/Test/m_mEZ3PoFGs_k.jpg"'
 ```
 
 ### Response Body
 ```json
 {
-    "uuid": "2d051593-91d1-41bb-b955-35211715599f",
+    "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
     "titleEn": "",
     "titleAr": "",
-    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
+    "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
+    "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
     "linkUrl": "",
     "placement": "",
     "color": "",
@@ -66,20 +68,11 @@ itemsPerPage | The number of results to retrieve in the response | 100
 ```json
 [
     {
-        "uuid": "065ebf39-a638-4bc1-aec0-93fb4286a652",
-        "titleEn": "New Product (English)",
-        "titleAr": "New Product (Arabic)",
-        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1bd64a8f-dd34-4b49-adb5-659bf2b7a151.jpg",
-        "linkUrl": "New Products",
-        "placement": "homepage",
-        "color": "",
-        "isActive": true
-    },
-    {
-        "uuid": "2d051593-91d1-41bb-b955-35211715599f",
+        "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
         "titleEn": "",
         "titleAr": "",
-        "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
+        "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
+        "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
         "linkUrl": "",
         "placement": "",
         "color": "",
@@ -101,12 +94,13 @@ GET /v1/banners/<banner-uuid> HTTP/1.1
 ### Response Body
 ```json
 {
-    "uuid": "2d051593-91d1-41bb-b955-35211715599f",
-    "titleEn": "",
-    "titleAr": "",
-    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
-    "linkUrl": "",
-    "placement": "",
+    "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
+    "titleEn": "New Product (English)",
+    "titleAr": "New Product (Arabic)",
+    "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
+    "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
+    "linkUrl": "New Products",
+    "placement": "homepage",
     "color": "#000000",
     "isActive": true
 }
@@ -132,17 +126,18 @@ PUT /v1/banners/<banner-uuid> HTTP/1.1
     "linkUrl": "New Products",
     "isActive": true,
     "placement": "homepage",
-    "color": "#000000",
+    "color": "#000000"
 }
 ```
 
 ### Response Body
 ```json
 {
-    "uuid": "065ebf39-a638-4bc1-aec0-93fb4286a652",
+    "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
     "titleEn": "New Product (English)",
     "titleAr": "New Product (Arabic)",
-    "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1bd64a8f-dd34-4b49-adb5-659bf2b7a151.jpg",
+    "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
+    "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
     "linkUrl": "New Products",
     "placement": "homepage",
     "color": "#000000",

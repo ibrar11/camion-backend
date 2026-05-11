@@ -1,6 +1,7 @@
 import * as crypto from "node:crypto";
 
 import {
+	BadRequestException,
 	Inject,
 	Injectable,
 	InternalServerErrorException,
@@ -33,32 +34,64 @@ export class BannersService {
 	/**
 	 * Creates a banner
 	 *
-	 * @param file
+	 * @param filesEn
+	 * @param filesAr
 	 * @returns
 	 */
-	async createBanner(file: Express.Multer.File): Promise<Banner> {
+	async createBanner(filesEn: Express.Multer.File[], filesAr: Express.Multer.File[]): Promise<Banner> {
 		this.logger.log(`Attempting to create a banner`);
 
-		// Upload the file to s3
-		let params: { key: string; url: string; } | null;
-		try {
-			params = await this.s3Service.uploadFile("banners", file);
-		} catch (err) {
-			this.logger.error(err);
-			throw new InternalServerErrorException({
-				error: "Failed to upload the banner. Please try again.",
+		// Make sure we have a banner for English
+		if (!Array.isArray(filesEn) || filesEn.length === 0) {
+			throw new BadRequestException({
+				errors: {
+					filesEn: "Please add a banner for English",
+				},
 			});
 		}
 
+		// Make sure we have a banner for Arabic
+		if (!Array.isArray(filesAr) || filesAr.length === 0) {
+			throw new BadRequestException({
+				errors: {
+					filesAr: "Please add a banner for Arabic",
+				},
+			});
+		}
+
+		// Upload the image banners to s3
+		let imageParamsEn: { key: string; url: string; } | null;
+		try {
+			imageParamsEn = await this.s3Service.uploadFile("banners", filesEn[0]);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the English banner. Please try again.",
+			});
+		}
+
+		let imageParamsAr: { key: string; url: string; } | null;
+		try {
+			imageParamsAr = await this.s3Service.uploadFile("banners", filesAr[0]);
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the Arabic banner. Please try again.",
+			});
+		}
+
+
+
 		// Delete the temporary files
-		await this.fileService.deleteFile(file);
+		await this.fileService.deleteFile(filesEn[0]);
 
 		// Create a banner using the uploaded file
 		const banner = new Banner();
 		banner.uuid = crypto.randomUUID();
 		banner.titleEn = "";
 		banner.titleAr = "";
-		banner.imageUrl = params.url;
+		banner.imageUrlEn = imageParamsEn.url;
+		banner.imageUrlAr = imageParamsAr.url;
 		banner.linkUrl = "";
 		banner.isActive = true;
 		banner.placement = "";
