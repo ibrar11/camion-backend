@@ -7,6 +7,11 @@ import { JopWmsClient } from './jop-wms.client';
 import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
 import { JopWmsService } from './jop-wms.service';
 
+import { Order } from '../order/entities/order.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/enums/notification-type.enum';
+import { NotificationPriority } from '../notifications/enums/notification-priority.enum';
+
 @Injectable()
 export class JopWmsScheduler {
     private readonly logger = new Logger(JopWmsScheduler.name);
@@ -19,8 +24,11 @@ export class JopWmsScheduler {
     constructor(
         @InjectRepository(JopWmsOrder)
         private readonly wmsOrderRepository: Repository<JopWmsOrder>,
+        @InjectRepository(Order)
+        private readonly orderRepository: Repository<Order>,
         private readonly client: JopWmsClient,
         private readonly wmsService: JopWmsService,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     /**
@@ -92,6 +100,7 @@ export class JopWmsScheduler {
                 const waybillNo: string | null = data?.data?.waybillNo ?? data?.data?.trackingNo ?? order.waybillNo;
 
                 const prevStatus = order.status;
+                const prevWaybillNo = order.waybillNo;
                 order.status = newStatus;
                 order.waybillNo = waybillNo;
                 order.lastPolledAt = new Date();
@@ -108,12 +117,57 @@ export class JopWmsScheduler {
                 if (order.type === JopWmsOrderType.INBOUND && prevStatus !== JopWmsInboundStatus.STORED && order.status === JopWmsInboundStatus.STORED) {
                     this.logger.log(`Inbound ${order.orderNo} stored — creating outbound orders`);
                     await this.wmsService.createOutboundsForInbound(order);
+                    if (order.sourceOrderUuids) {
+                        await this.notifyOrderCustomers(order.sourceOrderUuids, NotificationType.ORDER_PROCESSING, {
+                            title: 'Order Processing',
+                            brief: 'Your order is being prepared for shipment.',
+                            message: 'Your items have arrived at the warehouse and your order is now being prepared for shipment.',
+                        });
+                    }
+                }
+
+                // Notify customer when outbound order receives a waybill number
+                if (order.type === JopWmsOrderType.OUTBOUND && waybillNo && !prevWaybillNo && order.sourceOrderUuids) {
+                    await this.notifyOrderCustomers(order.sourceOrderUuids, NotificationType.ORDER_SHIPPED, {
+                        title: 'Order Shipped',
+                        brief: 'Your order is on its way.',
+                        message: `Your order has been shipped. Tracking number: ${waybillNo}.`,
+                    });
                 }
             } catch (err: any) {
                 order.errorCount += 1;
                 order.lastPolledAt = new Date();
                 this.logger.error(`Poll failed for ${order.orderNo} (attempt ${order.errorCount}): ${err?.message}`);
                 await this.wmsOrderRepository.save(order);
+            }
+        }
+    }
+
+    private async notifyOrderCustomers(
+        sourceOrderUuids: string,
+        type: NotificationType,
+        content: { title: string; brief: string; message: string },
+    ) {
+        if (!sourceOrderUuids) return;
+
+        const uuids = sourceOrderUuids.split(',').map(u => u.trim()).filter(Boolean);
+
+        for (const uuid of uuids) {
+            try {
+                const order = await this.orderRepository.findOne({
+                    where: { uuid },
+                    relations: { customer: true },
+                });
+                if (!order?.customer) continue;
+
+                await this.notificationsService.create({
+                    customerUUID: order.customer.uuid,
+                    type,
+                    ...content,
+                    priority: NotificationPriority.HIGH,
+                });
+            } catch (err: any) {
+                this.logger.warn(`Failed to send ${type} notification for order ${uuid}: ${err?.message}`);
             }
         }
     }
