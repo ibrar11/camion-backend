@@ -1,4 +1,5 @@
-/// <reference types="multer" />
+import * as os from "node:os";
+
 import {
     Body,
     Controller,
@@ -52,7 +53,7 @@ export class ReturnsController {
 
     @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Post(":uuid/evidence")
-    @UseInterceptors(FileInterceptor("file"))
+    @UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
     @HttpCode(HttpStatus.CREATED)
     uploadEvidence(
         @Param("uuid") uuid: string,
