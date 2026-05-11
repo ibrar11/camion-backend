@@ -2131,7 +2131,7 @@ If the current customer is not an affiliate, this method should return null.
     "data": {
         "getCurrentAffiliate": {
             "uuid": "650c2dab-3347-4223-95be-ed322f915c53",
-            "fullName": "Amin Ullah",
+            "fullName": "James",
             "gender": "Male",
             "nationality": "Saudi",
             "bio": "I am a Saudi",
@@ -2344,7 +2344,7 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         "getCurrentAffiliateCoupons": [
             {
                 "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
-                "code": "amin12",
+                "code": "james12",
                 "discountPercentage": 4,
                 "ordersCount": 0,
                 "expiresAt": "2026-12-31T00:00:00.000Z",
