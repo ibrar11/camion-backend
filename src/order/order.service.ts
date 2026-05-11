@@ -7,6 +7,7 @@ import {
     Logger,
     InternalServerErrorException,
     Inject,
+    HttpException,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
@@ -644,9 +645,9 @@ export class OrderService {
             });
 
             if (!cartItems || cartItems.length === 0) {
-                throw new BadRequestException({
-                    error: 'Cart is empty'
-                });
+                throw new BadRequestException(
+                    'Cart is empty'
+                );
             }
 
             const address = await this.addressRepository.findOne({
@@ -657,9 +658,9 @@ export class OrderService {
             });
 
             if (!address) {
-                throw new BadRequestException({
-                    error: 'User address cannot be found.'
-                });
+                throw new BadRequestException(
+                    'User address cannot be found.'
+                );
             }
 
             // Validate cart items and prepare for shipping calculation
@@ -671,9 +672,9 @@ export class OrderService {
                 const stock = calculateStock(item.variant);
 
                 if (stock < item.quantity) {
-                    throw new BadRequestException({
-                        error: `Insufficient stock for ${item.product.titleEn} - ${item.variant.titleEn}`
-                    });
+                    throw new BadRequestException(
+                        `Insufficient stock for ${item.product.titleEn} - ${item.variant.titleEn}`
+                    );
                 }
 
                 const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
@@ -759,11 +760,15 @@ export class OrderService {
 
             return orderPreview;
         } catch (error: any) {
-            this.logger.error(`Error getting order preview: ${error}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to get order preview',
-                details: error,
-            });
+            this.logger.error(`Error getting order preview: ${error?.response?.error || error}`);
+            if (error instanceof HttpException) {
+                throw error;
+            } else {
+                throw new InternalServerErrorException({
+                    error: 'Failed to get order preview',
+                    details: error?.response?.error || error,
+                });
+            }
         }
     }
 }

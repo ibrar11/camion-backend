@@ -14,23 +14,23 @@ export function calculateCouponDiscount(
     try {
         // Check if coupon is expired
         if (coupon.expiresAt < new Date()) {
-            throw new BadRequestException({
-                error: "This coupon has expired. Please use a different coupon."
-            });
+            throw new BadRequestException(
+                "This coupon has expired. Please use a different coupon."
+            );
         }
 
         // Check if affiliate is active
         if (coupon.affiliate.status !== 'accepted') {
-            throw new BadRequestException({
-                error: "This coupon is currently unavailable."
-            });
+            throw new BadRequestException(
+                "This coupon is currently unavailable."
+            );
         }
 
         // Prevent customer from using their own coupon
         if (customerId && coupon.affiliate.customer?.uuid === customerId) {
-            throw new BadRequestException({
-                error: "You cannot use your own affiliate coupon."
-            });
+            throw new BadRequestException(
+                "You cannot use your own affiliate coupon."
+            );
         }
 
         // Calculate discount amount
