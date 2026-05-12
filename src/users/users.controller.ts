@@ -55,21 +55,21 @@ export class UsersController {
 		return this.usersService.findOne(uuid);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateOne(@Param('uuid') uuid: string, @Body() body: UpdateUserDto): Promise<User> {
 		return this.usersService.updateUser(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid/email-address')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateEmailAddress(@Param('uuid') uuid: string, @Body() body: UpdateEmailAddressDto): Promise<User> {
 		return this.usersService.updateEmailAddress(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid/password')
 	@HttpCode(HttpStatus.OK)
 	actionUpdatePassword(@Param('uuid') uuid: string, @Body() body: UpdatePasswordDto): Promise<User> {
