@@ -233,7 +233,7 @@ export class ProcurementService {
             let descriptionTrans: string = '';
             if (product.descriptionTrans) {
                 descriptionTrans = extractFormattedText(product.descriptionTrans);
-            } else {
+            } else if(description.length > 0) {
                 this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
                 const translation = await await fetch(
                     `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/contextual`,
