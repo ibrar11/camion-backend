@@ -208,32 +208,32 @@ export function calculateShipping(input: ShippingCalculationInput): ShippingCalc
         const { exchangeRates, countryCode, totalWeightKg, declaredValue = 0, customsDuty = 0 } = input;
 
         if (!exchangeRates?.cnyToTarget || !exchangeRates?.usdToTarget) {
-            throw new BadRequestException({
-                error: 'Exchange rates are required'
-            });
+            throw new BadRequestException(
+                'Exchange rates are required'
+            );
         }
 
         const { cnyToTarget, usdToTarget, currency } = exchangeRates;
 
         if (!countryCode) {
-            throw new BadRequestException({
-                error: 'Country code is required.'
-            });
+            throw new BadRequestException(
+                'Country code is required.'
+            );
         }
 
         if (totalWeightKg <= 0) {
-            throw new BadRequestException({
-                error: 'Total weight must be greater than 0'
-            });
+            throw new BadRequestException(
+                'Total weight must be greater than 0'
+            );
         }
 
         // Get shipping rate
         const rateData = getShippingRate(countryCode, totalWeightKg);
 
         if (!rateData) {
-            throw new BadRequestException({
-                error: `No shipping rate found for ${countryCode} with weight ${totalWeightKg}kg`
-            });
+            throw new BadRequestException(
+                `No shipping rate found for ${countryCode} with weight ${totalWeightKg}kg`
+            );
         }
 
         const { rate, countryData } = rateData;
@@ -316,9 +316,9 @@ export function getShippingRate(countryCode: string, weightKg: number): Shipping
     const countryData = SHIPPING_RATES.find(rate => (rate.countryCode === countryCode || rate.country === countryCode));
 
     if (!countryData) {
-        throw new BadRequestException({
-            error: `Unsupported country: ${countryCode}`
-        });
+        throw new BadRequestException(
+            `Unsupported country: ${countryCode} for shiiping calculation`
+        );
     }
 
     const weightRange = countryData.weightRanges.find(
@@ -332,9 +332,9 @@ export function getShippingRate(countryCode: string, weightKg: number): Shipping
                 maxWeight = range.max;
             }
         })
-        throw new BadRequestException({
-            error: `No shipping rate for ${countryCode} at weight ${weightKg}kg, weight should not be more than ${maxWeight}kg`
-        });
+        throw new BadRequestException(
+            `No shipping rate for ${countryCode} at weight ${weightKg}kg, weight should not be more than ${maxWeight}kg`
+        );
     }
 
     return { rate: weightRange, countryData };
@@ -379,9 +379,9 @@ export function calculateVAT(
     const vatConfig = countryData.taxesAndFees?.vat;
 
     if (!vatConfig) {
-        throw new BadRequestException({
-            error: `VAT not configured for ${countryData.country}`
-        });
+        throw new BadRequestException(
+            `VAT not configured for ${countryData.country}`
+        );
     }
 
     let amount = 0;
@@ -410,9 +410,9 @@ export function calculateCustomsFee(countryData: CountryShippingRate): CustomFee
     const customsFee = countryData.taxesAndFees?.customsClearanceFee;
 
     if (!customsFee) {
-        throw new BadRequestException({
-            error: `Customs fee not configured for ${countryData.country}`
-        });
+        throw new BadRequestException(
+            `Customs fee not configured for ${countryData.country}`
+        );
     }
 
     return {
