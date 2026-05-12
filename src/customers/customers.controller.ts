@@ -107,5 +107,4 @@ export class CustomersController {
 	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
 		return this.customersService.delete(uuid);
 	}
-
 }
