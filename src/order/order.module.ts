@@ -45,6 +45,7 @@ import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity'
 import { PricingService } from '../pricing/pricing.service';
 
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
     imports: [
@@ -68,6 +69,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
         ]),
         ClientsModule,
         NotificationsModule,
+        EmailModule,
     ],
     providers: [
         OrderService,

@@ -76,6 +76,7 @@ import { ConfigService } from "@nestjs/config";
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/enums/notification-type.enum";
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
+import { EmailService } from "../email/email.service";
 
 @Injectable()
 export class OrderService {
@@ -95,6 +96,7 @@ export class OrderService {
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
         private readonly notificationsService: NotificationsService,
+        private readonly emailService: EmailService,
     ) { }
 
     /**
@@ -381,6 +383,17 @@ export class OrderService {
                 priority: NotificationPriority.HIGH,
             }).catch(err => this.logger.warn(`Failed to send ORDER_PLACED notification: ${err?.message}`));
 
+            if (customer.emailAddress) {
+                this.logger.log(`[Email] Sending order-confirmed email to ${customer.emailAddress} for order ${order.uuid}`);
+                this.emailService.sendOrderConfirmedEmail(customer.emailAddress, {
+                    customerName: customer.fullName,
+                    orderId: order.uuid,
+                    orderTotal: `${total} ${currency}`,
+                }).catch(err => this.logger.error(`[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`));
+            } else {
+                this.logger.warn(`[Email] Skipping order-confirmed email for order ${order.uuid} — customer has no email address`);
+            }
+
             return order;
         } catch (error: any) {
             await queryRunner.rollbackTransaction();
@@ -595,6 +608,22 @@ export class OrderService {
                 }).catch(err => this.logger.warn(`Failed to send ${notif.type} notification: ${err?.message}`));
             }
 
+            const customerEmail = order.customer?.emailAddress;
+            if (customerEmail) {
+                const customerName = order.customer.fullName;
+                if (status === OrderStatus.DELIVERED) {
+                    this.logger.log(`[Email] Sending order-delivered email to ${customerEmail} for order ${order.uuid}`);
+                    this.emailService.sendOrderDeliveredEmail(customerEmail, { customerName, orderId: order.uuid })
+                        .catch(err => this.logger.error(`[Email] Failed to send order-delivered email for order ${order.uuid}: ${err?.message}`));
+                } else if (status === OrderStatus.CANCELLED) {
+                    this.logger.log(`[Email] Sending order-cancelled email to ${customerEmail} for order ${order.uuid}`);
+                    this.emailService.sendOrderCancelledEmail(customerEmail, { customerName, orderId: order.uuid })
+                        .catch(err => this.logger.error(`[Email] Failed to send order-cancelled email for order ${order.uuid}: ${err?.message}`));
+                }
+            } else {
+                this.logger.warn(`[Email] Skipping email for order ${order.uuid} status=${status} — customer has no email address`);
+            }
+
             return saved;
         } catch (error: any) {
             this.logger.error(`Error updating order status: ${error}`);
@@ -678,6 +707,16 @@ export class OrderService {
                     message: `Your order #${order.uuid} has been cancelled and your stock has been restored.`,
                     priority: NotificationPriority.HIGH,
                 }).catch(err => this.logger.warn(`Failed to send ORDER_CANCELLED notification: ${err?.message}`));
+
+                if (order.customer.emailAddress) {
+                    this.logger.log(`[Email] Sending order-cancelled email to ${order.customer.emailAddress} for order ${order.uuid}`);
+                    this.emailService.sendOrderCancelledEmail(order.customer.emailAddress, {
+                        customerName: order.customer.fullName,
+                        orderId: order.uuid,
+                    }).catch(err => this.logger.error(`[Email] Failed to send order-cancelled email for order ${order.uuid}: ${err?.message}`));
+                } else {
+                    this.logger.warn(`[Email] Skipping order-cancelled email for order ${order.uuid} — customer has no email address`);
+                }
             }
 
         } catch (error: any) {
