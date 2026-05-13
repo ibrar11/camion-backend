@@ -22,7 +22,8 @@ export interface DispatchShopJobData extends BaseJobData {
     shopId: string;
     shopName: string;
     orderUuids: string[];
-    gulltransOrderId?: string;
+    gulltransOrderSn?: string;
+    gulltransResponse?: Record<string, any>;
     inboundVoucherNo: string;
     shipperMethod: number;
     shipperCompany?: string;

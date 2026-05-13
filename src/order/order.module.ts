@@ -44,6 +44,9 @@ import { TransactionsService } from '../referral/transactions.service';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
 import { PricingService } from '../pricing/pricing.service';
 
+import { JopWmsOrder } from '../jop-wms/entities/jop-wms-order.entity';
+import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -63,6 +66,8 @@ import { PricingService } from '../pricing/pricing.service';
             Affiliate,
             Transaction,
             KeyValuePair,
+            JopWmsOrder,
+            JopWmsOrderLink,
         ]),
         ClientsModule,
     ],

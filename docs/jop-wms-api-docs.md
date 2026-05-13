@@ -38,7 +38,9 @@ All inbounds for each customer order shelved? → wait if not
        ↓
 Scheduler auto-creates one WMS outbound per customer order
        ↓
-[Scheduler polls outbound every 3 hours, saves waybill number]
+[Scheduler polls outbound every 3 hours]
+  On transition to SHIPPED → waybillNo/query called immediately
+  fetchMissingWaybillNumbers() retries any SHIPPED orders still missing waybillNo
 ```
 
 **Key characteristics:**
@@ -136,7 +138,7 @@ Polling
 
 JOP WMS has no webhooks, so order status must be polled. Four cron jobs run automatically in the background.
 
-**Inbound, outbound, and return orders** — all polled every **3 hours**. Once the WMS returns a waybill number on an outbound, it is saved to the `jop_wms_orders` table.
+**Inbound, outbound, and return orders** — all polled every **3 hours**. Note: `outboundorder/status` does **not** return a waybill number — it only returns the order status and shipment dimensions. Waybill numbers are fetched separately via `waybillNo/query` (see below).
 
 **Stale inbound expiry** — runs daily at midnight. Any inbound order that has been non-terminal for more than 30 days is force-marked as `deleted`, unblocking outbound creation for the linked customer orders. A warning is logged so admins can investigate the missing goods.
 
@@ -144,9 +146,10 @@ JOP WMS has no webhooks, so order status must be polled. Four cron jobs run auto
 
 1. When an inbound, outbound, or return order is successfully created via the admin API, it is automatically registered in the `jop_wms_orders` table with `status = pending`.
 2. On each cron tick, the scheduler queries all non-terminal orders of that type.
-3. It calls the appropriate JOP WMS status endpoint and updates `status`, `waybillNo`, and `lastPolledAt` in the DB.
-4. For inbound orders: if the status transitions to `shelved` (goods received at warehouse), the scheduler checks whether **all** inbound orders linked to each customer order (via `sourceOrderUuids`) are now shelved. Only when every inbound for a given customer order is shelved does it create one WMS outbound order, using the customer's shipping address and `JOP_WMS_LOGISTICS_CHANNEL`. If any inbound is still pending, outbound creation is deferred until the next poll that completes the set.
-5. Once an order reaches a terminal status, it is excluded from future polls.
+3. It calls the appropriate JOP WMS status endpoint and updates `status` and `lastPolledAt` in the DB.
+4. For outbound orders: `outboundorder/status` returns `status` and shipment dimensions only — **no waybill number**. When the status transitions to `SHIPPED` for the first time, the scheduler immediately calls `waybillNo/query` to fetch and persist the waybill number. A separate `fetchMissingWaybillNumbers()` pass also runs after each outbound poll cycle and retries `waybillNo/query` for any SHIPPED outbound orders that still have `waybillNo = null` (handles cases where the inline fetch failed).
+5. For inbound orders: if the status transitions to `shelved` (goods received at warehouse), the scheduler checks whether **all** inbound orders linked to each customer order (via `jop_wms_order_links`) are now shelved. Only when every inbound for a given customer order is shelved does it create one WMS outbound order, using the customer's shipping address and `JOP_WMS_LOGISTICS_CHANNEL`. If any inbound is still pending, outbound creation is deferred until the next poll that completes the set.
+6. Once an order reaches a terminal status, it is excluded from future polls.
 
 **Terminal statuses** (polling stops automatically): `completed`, `cancelled`, `shelved`, `closed`
 
@@ -161,13 +164,16 @@ Each order has an `errorCount` field. If the JOP WMS call fails, `errorCount` is
 
 | Column | Description |
 |---|---|
-| `orderNo` | The `customerVoucherNo` sent to JOP WMS (unique, max 32 chars). Dispatch-created inbounds use a 32-character hex string (UUID with dashes stripped) per shop group; outbound orders use `<customer-order-uuid>-out` |
+| `orderNo` | The `customerVoucherNo` sent to JOP WMS (unique, max 64 chars). Dispatch-created inbounds use a 32-character hex string (UUID with dashes stripped) per shop group; outbound orders use `<customer-order-uuid>-out` |
 | `type` | `inbound`, `outbound`, or `return` |
 | `status` | Last known status from WMS |
-| `waybillNo` | Tracking number (outbound only, populated once available) |
-| `sourceOrderUuids` | Comma-separated customer `Order.uuid` values linked to this WMS record. For inbounds: all orders in the shop group. For outbounds: the single customer order UUID. Used by the scheduler to create outbound orders on shelved transition |
+| `wmsAssignedId` | The internal order ID assigned by JOP WMS on creation (`inboundOrderId` / `outboundOrderId`). Stored for reference; not required for subsequent API calls |
+| `waybillNo` | Carrier tracking number (outbound only). **Not returned by `outboundorder/status`** — populated via a separate `waybillNo/query` call once the order reaches SHIPPED status |
+| `gulltransResponse` | Full Gulltrans API response payload stored as JSONB on inbound order creation (for audit and debugging) |
 | `lastPolledAt` | Timestamp of last successful poll attempt |
 | `errorCount` | Consecutive poll failures; order is skipped after 5 |
+
+Customer orders linked to each WMS record are stored in the **`jop_wms_order_links`** junction table (`wms_order_id` → `order_id`), replacing the previous comma-separated `sourceOrderUuids` text column.
 
 Use `GET /v1/wms/orders` to inspect this table from the admin dashboard.
 
@@ -195,9 +201,9 @@ Batch-dispatches all `CONFIRMED` customer orders that have not yet been procured
 
 1. Collects all eligible orders and groups their items by 1688 shop (`shopId`)
 2. Makes **one Gulltrans procurement order per shop** (all customer orders merged — e.g. 5 orders with items from the same shop = 1 Gulltrans order). Each SKU's `sku_info` is populated automatically from `ProductVariant.skuMeta` captured during import
-3. Stamps each customer order's `gulltransOrderId` with the returned Gulltrans order ID(s)
+3. Appends the returned Gulltrans order number (e.g. `"DG646"`) to each customer order's `gulltransOrderSns` array — one entry per shop, so a 3-shop order ends up with `["DG100", "DG200", "DG300"]`
 4. Syncs all affected product variants to WMS (`product/synchronize`) before creating inbounds
-5. Creates **one WMS inbound per shop group**, with a combined product list and the `sourceOrderUuids` of all contributing customer orders. The inbound `customerVoucherNo` is a 32-character hex string (UUID with dashes stripped)
+5. Creates **one WMS inbound per shop group**, with a combined product list. The contributing customer order IDs are linked via `jop_wms_order_links`. The inbound `customerVoucherNo` is a 32-character hex string (UUID with dashes stripped)
 
 When the inbound reaches `shelved`, the scheduler checks whether all inbounds for each linked customer order are shelved. Once they all are, it auto-creates one outbound per customer order, consolidating all items into a single shipment.
 
@@ -219,7 +225,7 @@ POST /v1/wms/orders/dispatch HTTP/1.1
 ### Request Body Fields
 | Field | Required | Type | Description |
 |---|---|---|---|
-| orderUuids | No | UUID[] | Specific order UUIDs to dispatch. If omitted, all `CONFIRMED` orders without a `gulltransOrderId` are processed |
+| orderUuids | No | UUID[] | Specific order UUIDs to dispatch. If omitted, all `CONFIRMED` orders with a null `gulltransOrderSns` array are processed |
 | shipperMethod | Yes | Number | Shipping method: `0`=sea, `1`=air, `2`=express, `3`=rail, `4`=land |
 | shipperCompany | No | String | Name of the freight company |
 
@@ -247,10 +253,11 @@ Use the server logs (tagged with `jobId`) to track progress and results.
 ### Notes
 - Orders whose products were not imported from 1688 (missing `shopId`) are skipped with a warning log
 - Products must be re-imported after the `skuMeta` feature was introduced — variants with `skuMeta: null` will send an empty `sku_info` which Gulltrans rejects
-- One customer order spanning items from two shops produces two Gulltrans orders and two WMS inbounds; the `gulltransOrderId` on the order stores both IDs comma-separated
+- One customer order spanning items from two shops produces two Gulltrans orders and two WMS inbounds; both inbounds link back to the same customer order via `jop_wms_order_links`. Outbound creation is deferred until all inbounds for that order are shelved
+- Each customer order's `gulltransOrderSns` is a `text[]` array — one entry per shop (e.g. `["DG100", "DG200", "DG300"]` for a 3-shop order). Each shop job appends its SN concurrently without overwriting. The full Gulltrans response per shop is also stored as JSONB in `jop_wms_orders.gulltransResponse` on the corresponding inbound record
 - Variant sync failures are non-blocking — the inbound is still created with a warning log
 - Box dimensions are derived automatically from `ProductVariant.dimensions` and `ProductVariant.weight`
-- Dispatch is blocked (400) if any provided UUID already appears in `jop_wms_orders.sourceOrderUuids`; omitting `orderUuids` bypasses this check (dispatch-all mode)
+- Dispatch is blocked (400) if any provided UUID already has a row in `jop_wms_order_links`; omitting `orderUuids` bypasses this check (dispatch-all mode)
 
 ---
 
@@ -437,7 +444,7 @@ Used to instruct the warehouse to pick, pack, and ship an order to a customer.
 POST /v1/wms/outbound HTTP/1.1
 ```
 
-After a successful response, the order is automatically registered in `jop_wms_orders`. The scheduler polls it every 3 hours and saves the waybill number once the WMS provides it.
+After a successful response, the order is automatically registered in `jop_wms_orders`. The scheduler polls it every 3 hours via `outboundorder/status`. When the status first transitions to `SHIPPED`, the scheduler immediately calls `waybillNo/query` to fetch the carrier tracking number and saves it to `jop_wms_orders.waybillNo`.
 
 ### Request Body
 ```json
@@ -486,6 +493,9 @@ After a successful response, the order is automatically registered in `jop_wms_o
 GET /v1/wms/outbound/:orderNo/status HTTP/1.1
 ```
 
+> [!NOTE]
+> `outboundorder/status` returns the order status and shipment dimensions only. **It does not return a waybill number.** Use `GET /v1/wms/waybill/:orderNo` to retrieve the tracking number.
+
 ### Response Body
 ```json
 {
@@ -493,7 +503,10 @@ GET /v1/wms/outbound/:orderNo/status HTTP/1.1
     "data": {
         "orderNo": "OUT-2025-001",
         "status": "shipped",
-        "waybillNo": "DHL1234567890"
+        "checkOutWeight": 1200,
+        "checkOutLength": 30,
+        "checkOutWidth": 20,
+        "checkOutHeight": 15
     }
 }
 ```
@@ -642,7 +655,7 @@ Waybill (Tracking)
 
 ### Query Waybill Number
 
-Returns the carrier tracking number for a shipped outbound order. The same number is also stored locally in `jop_wms_orders.waybillNo` once the polling scheduler picks it up.
+Returns the carrier tracking number for a shipped outbound order. The scheduler automatically calls this endpoint when an outbound transitions to SHIPPED and stores the result in `jop_wms_orders.waybillNo`. Use this endpoint to query on-demand if you need the tracking number immediately.
 
 ```http
 GET /v1/wms/waybill/:orderNo HTTP/1.1
@@ -756,25 +769,34 @@ GET /v1/wms/orders?type=outbound HTTP/1.1
 [
     {
         "id": 1,
-        "orderNo": "OUT-2025-001",
-        "type": "outbound",
-        "status": "shipped",
-        "waybillNo": "DHL1234567890",
-        "lastPolledAt": "2025-04-27T10:30:00.000Z",
-        "errorCount": 0,
-        "createdAt": "2025-04-27T08:00:00.000Z",
-        "updatedAt": "2025-04-27T10:30:00.000Z"
-    },
-    {
-        "id": 2,
-        "orderNo": "INB-2025-001",
+        "orderNo": "abc123def456abc123def456abc123de",
         "type": "inbound",
-        "status": "receiving",
+        "status": "14",
+        "wmsAssignedId": "501",
         "waybillNo": null,
         "lastPolledAt": "2025-04-27T10:00:00.000Z",
         "errorCount": 0,
         "createdAt": "2025-04-26T09:00:00.000Z",
-        "updatedAt": "2025-04-27T10:00:00.000Z"
+        "updatedAt": "2025-04-27T10:00:00.000Z",
+        "linkedOrderUuids": [
+            "550e8400-e29b-41d4-a716-446655440000",
+            "550e8400-e29b-41d4-a716-446655440001"
+        ]
+    },
+    {
+        "id": 2,
+        "orderNo": "550e8400-e29b-41d4-a716-446655440000-out",
+        "type": "outbound",
+        "status": "14",
+        "wmsAssignedId": "701",
+        "waybillNo": "DHL1234567890",
+        "lastPolledAt": "2025-04-27T10:30:00.000Z",
+        "errorCount": 0,
+        "createdAt": "2025-04-27T08:00:00.000Z",
+        "updatedAt": "2025-04-27T10:30:00.000Z",
+        "linkedOrderUuids": [
+            "550e8400-e29b-41d4-a716-446655440000"
+        ]
     }
 ]
 ```
@@ -807,7 +829,9 @@ End-to-end flow from customer order approval to warehouse fulfillment:
 5. Inbound status → "shelved"            → scheduler checks all inbounds for each order are terminal
                                          → creates one outbound per customer order once all are ready
 
-6.      [scheduler polls outbound every 3h, saves waybillNo]
+6.      [scheduler polls outbound every 3h via outboundorder/status]
+        [on first SHIPPED transition → waybillNo/query called immediately]
+        [fetchMissingWaybillNumbers() retries any SHIPPED orders still without waybillNo]
 
 7. GET  /v1/wms/waybill/:orderNo         → retrieve tracking number on-demand
 ```
@@ -832,7 +856,10 @@ For outbound orders created independently of the dispatch flow:
 1. GET  /v1/wms/logistics?countryCode=...        → get available channels
 2. POST /v1/wms/outbound/estimate-shipping       → get cost estimate
 3. POST /v1/wms/outbound                         → create outbound order (auto-tracked)
-4.      [scheduler polls outboundorder/status every 3h, saves waybillNo]
+4.      [scheduler polls outboundorder/status every 3h]
+        [outboundorder/status does NOT return waybillNo]
+        [on first SHIPPED transition → waybillNo/query called separately]
+        [fetchMissingWaybillNumbers() retries SHIPPED orders still without waybillNo]
 5. GET  /v1/wms/waybill/:orderNo                 → get tracking number on-demand
 ```
 

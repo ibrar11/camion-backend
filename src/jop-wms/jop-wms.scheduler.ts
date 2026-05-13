@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, In, Repository } from 'typeorm';
+import { Not, In, IsNull, Repository } from 'typeorm';
 
 import { JopWmsClient } from './jop-wms.client';
-import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
+import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JopWmsOutboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
 import { JopWmsService } from './jop-wms.service';
 
 @Injectable()
@@ -33,11 +33,40 @@ export class JopWmsScheduler {
     }
 
     /**
-     * Polls pending outbound orders every 3 hours.
+     * Polls pending outbound orders every 3 hours and backfills missing waybill numbers.
      */
     @Cron('0 0 */3 * * *')
     async pollOutboundOrders() {
         await this.pollByType(JopWmsOrderType.OUTBOUND, 'outboundorder/status', 'customerVoucherNo');
+        await this.fetchMissingWaybillNumbers();
+    }
+
+    private async fetchMissingWaybillNumbers() {
+        const orders = await this.wmsOrderRepository.find({
+            where: {
+                type: JopWmsOrderType.OUTBOUND,
+                status: JopWmsOutboundStatus.SHIPPED,
+                waybillNo: IsNull(),
+            },
+        });
+
+        if (!orders.length) return;
+
+        this.logger.log(`Fetching waybill numbers for ${orders.length} shipped outbound order(s)`);
+
+        for (const order of orders) {
+            try {
+                const data: any = await this.client.post('waybillNo/query', { customerVoucherNo: order.orderNo });
+                const waybillNo: string | null = data?.data?.waybillNo ?? null;
+                if (waybillNo) {
+                    order.waybillNo = waybillNo;
+                    await this.wmsOrderRepository.save(order);
+                    this.logger.log(`${order.orderNo} waybill: ${waybillNo}`);
+                }
+            } catch (err: any) {
+                this.logger.warn(`waybillNo/query failed for ${order.orderNo}: ${err?.message}`);
+            }
+        }
     }
 
     /**
@@ -89,15 +118,24 @@ export class JopWmsScheduler {
                 const data: any = await this.client.post(endpoint, { [orderNoField]: order.orderNo, ...extraFields });
 
                 const newStatus: string = String(data?.data?.status ?? data?.data?.orderStatus ?? order.status).toLowerCase();
-                const waybillNo: string | null = data?.data?.waybillNo ?? data?.data?.trackingNo ?? order.waybillNo;
 
                 const prevStatus = order.status;
                 order.status = newStatus;
-                order.waybillNo = waybillNo;
                 order.lastPolledAt = new Date();
                 order.errorCount = 0;
 
-                this.logger.log(`${order.orderNo} → ${order.status}${waybillNo ? ` (waybill: ${waybillNo})` : ''}`);
+                // outboundorder/status does not return waybillNo — fetch it separately on transition to SHIPPED.
+                // fetchMissingWaybillNumbers() handles retries for orders that remain null after this.
+                if (order.type === JopWmsOrderType.OUTBOUND && prevStatus !== JopWmsOutboundStatus.SHIPPED && order.status === JopWmsOutboundStatus.SHIPPED) {
+                    try {
+                        const waybillData: any = await this.client.post('waybillNo/query', { customerVoucherNo: order.orderNo });
+                        order.waybillNo = waybillData?.data?.waybillNo ?? null;
+                    } catch (err: any) {
+                        this.logger.warn(`waybillNo/query failed for ${order.orderNo}: ${err?.message}`);
+                    }
+                }
+
+                this.logger.log(`${order.orderNo} → ${order.status}${order.waybillNo ? ` (waybill: ${order.waybillNo})` : ''}`);
 
                 // Persist status change BEFORE triggering outbound creation.
                 // If outbound creation fails, the stored status is already committed so

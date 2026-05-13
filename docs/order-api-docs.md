@@ -385,9 +385,33 @@ GET /v1/orders/<order-uuid> HTTP/1.1
                 "currencyCode": "usd"
             }
         }
+    ],
+    "gulltransOrderSns": ["DG100", "DG200", "DG300"],
+    "wmsOrders": [
+        {
+            "id": 1,
+            "orderNo": "abc123def456abc123def456abc123de",
+            "type": "inbound",
+            "status": "14",
+            "wmsAssignedId": "501",
+            "waybillNo": null,
+            "errorCount": 0
+        },
+        {
+            "id": 4,
+            "orderNo": "9f71e265-0343-4cb5-9f00-17b515bfb980-out",
+            "type": "outbound",
+            "status": "14",
+            "wmsAssignedId": "701",
+            "waybillNo": "DHL1234567890",
+            "errorCount": 0
+        }
     ]
 }
 ```
+
+> `gulltransOrderSns` — one entry per 1688 shop involved in this order. Null if the order has not been dispatched yet.
+> `wmsOrders` — all JOP WMS orders (inbounds and outbound) linked to this order. Empty array if not yet dispatched.
 
 Update Order
 --------------
