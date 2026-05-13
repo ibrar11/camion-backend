@@ -40,6 +40,8 @@ addressLine2 | No | String | Address line 2
 country | Yes | String | The country in which the warehouse is based in, must be 3 letter ISO country name.
 state | Yes | String | The state in which the warehouse is based in
 city | Yes | String | The city in which the warehouse is based in
+gulltransWarehouseId | No | String | Gulltrans warehouse ID used when creating procurement orders
+gulltransUserId | No | String | Gulltrans user ID used when creating procurement orders
 
 ### Request Body
 ```json
@@ -50,7 +52,9 @@ city | Yes | String | The city in which the warehouse is based in
     "addressLine2": "Example Building",
     "country": "CHN",
     "state": "Xinjiang",
-    "city": "Xinjiang"
+    "city": "Xinjiang",
+    "gulltransWarehouseId": "12345",
+    "gulltransUserId": "67890"
 }
 ```
 
@@ -65,6 +69,8 @@ city | Yes | String | The city in which the warehouse is based in
     "country": "CHN",
     "state": "Xinjiang",
     "city": "Xinjiang",
+    "gulltransWarehouseId": "12345",
+    "gulltransUserId": "67890",
     "isActive": true
 }
 ```
@@ -99,6 +105,8 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "country": "China",
         "state": "Xingyang",
         "city": "Xingyang",
+        "gulltransWarehouseId": "12345",
+        "gulltransUserId": "67890",
         "isActive": true
     }
 ]
@@ -125,6 +133,8 @@ GET /v1/warehouses/<warehouse-uuid> HTTP/1.1
     "country": "China",
     "state": "Xingyang",
     "city": "Xingyang",
+    "gulltransWarehouseId": "12345",
+    "gulltransUserId": "67890",
     "isActive": true
 }
 ```
@@ -148,6 +158,8 @@ addressLine2 | No | String | Address line 2
 country | Yes | String | The country in which the warehouse is based in, must be 3 letter ISO country name.
 state | Yes | String | The state in which the warehouse is based in
 city | Yes | String | The city in which the warehouse is based in
+gulltransWarehouseId | No | String | Gulltrans warehouse ID used when creating procurement orders
+gulltransUserId | No | String | Gulltrans user ID used when creating procurement orders
 
 ### Request Body
 ```json
@@ -158,7 +170,9 @@ city | Yes | String | The city in which the warehouse is based in
     "addressLine2": "Example Building",
     "country": "CHN",
     "state": "Xingyang",
-    "city": "Xingyang"
+    "city": "Xingyang",
+    "gulltransWarehouseId": "12345",
+    "gulltransUserId": "67890"
 }
 ```
 
@@ -173,6 +187,8 @@ city | Yes | String | The city in which the warehouse is based in
     "country": "CHN",
     "state": "Xingyang",
     "city": "Xingyang",
+    "gulltransWarehouseId": "12345",
+    "gulltransUserId": "67890",
     "isActive": true
 }
 ```
