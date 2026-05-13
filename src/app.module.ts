@@ -131,6 +131,7 @@ import { TranslationModule } from './translation/translation.module';
 
 import { JopWmsModule } from './jop-wms/jop-wms.module';
 import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
+import { JopWmsOrderLink } from './jop-wms/entities/jop-wms-order-link.entity';
 
 @Module({
 	imports: [
@@ -255,6 +256,7 @@ import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 					TranslationItem,
 
 					JopWmsOrder,
+					JopWmsOrderLink,
 				],
 			}),
 		}),

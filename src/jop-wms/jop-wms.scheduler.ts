@@ -98,6 +98,7 @@ export class JopWmsScheduler {
                 type,
                 status: Not(In([...JOP_WMS_TERMINAL_STATUSES])),
             },
+            relations: ['sourceOrders'],
         });
 
         if (!orders.length) return;
@@ -155,8 +156,9 @@ export class JopWmsScheduler {
                 if (order.type === JopWmsOrderType.INBOUND && prevStatus !== JopWmsInboundStatus.STORED && order.status === JopWmsInboundStatus.STORED) {
                     this.logger.log(`Inbound ${order.orderNo} stored — creating outbound orders`);
                     await this.wmsService.createOutboundsForInbound(order);
-                    if (order.sourceOrderUuids) {
-                        await this.notifyOrderCustomers(order.sourceOrderUuids, NotificationType.ORDER_PROCESSING, {
+                    const linkedUuids = order.sourceOrders?.map(l => l.orderUuid) ?? [];
+                    if (linkedUuids.length) {
+                        await this.notifyOrderCustomers(linkedUuids, NotificationType.ORDER_PROCESSING, {
                             title: 'Order Processing',
                             brief: 'Your order is being prepared for shipment.',
                             message: 'Your items have arrived at the warehouse and your order is now being prepared for shipment.',
@@ -165,11 +167,12 @@ export class JopWmsScheduler {
                 }
 
                 // Notify customer when outbound order receives a waybill number
-                if (order.type === JopWmsOrderType.OUTBOUND && waybillNo && !prevWaybillNo && order.sourceOrderUuids) {
-                    await this.notifyOrderCustomers(order.sourceOrderUuids, NotificationType.ORDER_SHIPPED, {
+                const linkedUuids = order.sourceOrders?.map(l => l.orderUuid) ?? [];
+                if (order.type === JopWmsOrderType.OUTBOUND && order.waybillNo && !prevWaybillNo && linkedUuids.length) {
+                    await this.notifyOrderCustomers(linkedUuids, NotificationType.ORDER_SHIPPED, {
                         title: 'Order Shipped',
                         brief: 'Your order is on its way.',
-                        message: `Your order has been shipped. Tracking number: ${waybillNo}.`,
+                        message: `Your order has been shipped. Tracking number: ${order.waybillNo}.`,
                     });
                 }
             } catch (err: any) {
@@ -182,15 +185,11 @@ export class JopWmsScheduler {
     }
 
     private async notifyOrderCustomers(
-        sourceOrderUuids: string,
+        orderUuids: string[],
         type: NotificationType,
         content: { title: string; brief: string; message: string },
     ) {
-        if (!sourceOrderUuids) return;
-
-        const uuids = sourceOrderUuids.split(',').map(u => u.trim()).filter(Boolean);
-
-        for (const uuid of uuids) {
+        for (const uuid of orderUuids) {
             try {
                 const order = await this.orderRepository.findOne({
                     where: { uuid },
