@@ -25,7 +25,7 @@ Create a warehouse
 ------------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
 
 ```http
 POST /v1/warehouses HTTP/1.1
@@ -40,6 +40,9 @@ addressLine2 | No | String | Address line 2
 country | Yes | String | The country in which the warehouse is based in, must be 3 letter ISO country name.
 state | Yes | String | The state in which the warehouse is based in
 city | Yes | String | The city in which the warehouse is based in
+contactName | No | String | Name of the warehouse contact person
+phone | No | String | Contact phone number
+postcode | No | String | Postal/ZIP code
 gulltransWarehouseId | No | String | Gulltrans warehouse ID used when creating procurement orders
 gulltransUserId | No | String | Gulltrans user ID used when creating procurement orders
 
@@ -53,6 +56,9 @@ gulltransUserId | No | String | Gulltrans user ID used when creating procurement
     "country": "CHN",
     "state": "Xinjiang",
     "city": "Xinjiang",
+    "contactName": "John Doe",
+    "phone": "+971501234567",
+    "postcode": "00000",
     "gulltransWarehouseId": "12345",
     "gulltransUserId": "67890"
 }
@@ -67,8 +73,12 @@ gulltransUserId | No | String | Gulltrans user ID used when creating procurement
     "addressLine1": "Example Road",
     "addressLine2": "Example Building",
     "country": "CHN",
+    "countryCode": null,
     "state": "Xinjiang",
     "city": "Xinjiang",
+    "postcode": "00000",
+    "contactName": "John Doe",
+    "phone": "+971501234567",
     "gulltransWarehouseId": "12345",
     "gulltransUserId": "67890",
     "isActive": true
@@ -103,8 +113,12 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "addressLine1": "Example Road",
         "addressLine2": "Example Building",
         "country": "China",
+        "countryCode": null,
         "state": "Xingyang",
         "city": "Xingyang",
+        "postcode": null,
+        "contactName": null,
+        "phone": null,
         "gulltransWarehouseId": "12345",
         "gulltransUserId": "67890",
         "isActive": true
@@ -131,8 +145,12 @@ GET /v1/warehouses/<warehouse-uuid> HTTP/1.1
     "addressLine1": "Example Road",
     "addressLine2": "Example Building",
     "country": "China",
+    "countryCode": null,
     "state": "Xingyang",
     "city": "Xingyang",
+    "postcode": null,
+    "contactName": null,
+    "phone": null,
     "gulltransWarehouseId": "12345",
     "gulltransUserId": "67890",
     "isActive": true
@@ -143,7 +161,7 @@ Update Warehouse
 ----------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
 
 ```http
 PUT /v1/warehouses/<warehouse-uuid> HTTP/1.1
@@ -158,6 +176,9 @@ addressLine2 | No | String | Address line 2
 country | Yes | String | The country in which the warehouse is based in, must be 3 letter ISO country name.
 state | Yes | String | The state in which the warehouse is based in
 city | Yes | String | The city in which the warehouse is based in
+contactName | No | String | Name of the warehouse contact person
+phone | No | String | Contact phone number
+postcode | No | String | Postal/ZIP code
 gulltransWarehouseId | No | String | Gulltrans warehouse ID used when creating procurement orders
 gulltransUserId | No | String | Gulltrans user ID used when creating procurement orders
 
@@ -171,6 +192,9 @@ gulltransUserId | No | String | Gulltrans user ID used when creating procurement
     "country": "CHN",
     "state": "Xingyang",
     "city": "Xingyang",
+    "contactName": "John Doe",
+    "phone": "+971501234567",
+    "postcode": "00000",
     "gulltransWarehouseId": "12345",
     "gulltransUserId": "67890"
 }
@@ -185,8 +209,12 @@ gulltransUserId | No | String | Gulltrans user ID used when creating procurement
     "addressLine1": "Example Road",
     "addressLine2": "Example Building",
     "country": "CHN",
+    "countryCode": null,
     "state": "Xingyang",
     "city": "Xingyang",
+    "postcode": "00000",
+    "contactName": "John Doe",
+    "phone": "+971501234567",
     "gulltransWarehouseId": "12345",
     "gulltransUserId": "67890",
     "isActive": true
@@ -197,7 +225,7 @@ Delete Warehouse
 ----------------
 
 > [!IMPORTANT]
-> Required roles: `SuperAdmin`, `Admin`
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
 
 ```http
 DELETE /v1/warehouses/<warehouse-uuid> HTTP/1.1
