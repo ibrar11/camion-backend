@@ -249,7 +249,7 @@ export class ProcurementService {
             let descriptionTrans: string = '';
             if (product.descriptionTrans) {
                 descriptionTrans = extractFormattedText(product.descriptionTrans);
-            } else {
+            } else if(description.length > 0) {
                 this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
                 const translation = await await fetch(
                     `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/contextual`,
@@ -429,6 +429,7 @@ export class ProcurementService {
                         try {
                             // 1. Fetch product details from 1688
                             const productDetails = await this.getProductDetail(id);
+                            let featuredImageUUID : string = '';
 
                             // 2. create product in database and
                             const product = await this.productService.createProduct({
@@ -575,10 +576,13 @@ export class ProcurementService {
                                                 // Variant already has its own image
                                                 if (variant.image) {
                                                     const imageFile = await fetchImageAsFile(variant.image);
-                                                    await this.variantImageService.createProductVariantImage(
+                                                    const createdImage = await this.variantImageService.createProductVariantImage(
                                                         createdVariant.uuid,
                                                         imageFile,
                                                     );
+                                                    if (!featuredImageUUID) {
+                                                        featuredImageUUID = createdImage.uuid;
+                                                    }
                                                     return;
                                                 }
 
@@ -587,10 +591,13 @@ export class ProcurementService {
                                                     if (Array.isArray(productDetails.images)) {
                                                         for (const img of productDetails.images) {
                                                             const imageFile = await fetchImageAsFile(img);
-                                                            await this.variantImageService.createProductVariantImage(
+                                                            const createdImage = await this.variantImageService.createProductVariantImage(
                                                                 createdVariant.uuid,
                                                                 imageFile,
                                                             );
+                                                            if (!featuredImageUUID) {
+                                                                featuredImageUUID = createdImage.uuid;
+                                                            }
                                                         }
                                                     }
                                                     fallbackImagesAssigned = true;
@@ -603,6 +610,8 @@ export class ProcurementService {
                                     );
                                 }
                             }
+
+                            await this.productService.updateProductFeaturedImage(product.uuid, {imageUUID: featuredImageUUID})
 
                             results.success.push({
                                 externalId: id,

@@ -5,6 +5,8 @@ This document covers the REST APIs for the notifications feature.
 
 Notifications are created by the system or an admin and delivered to customers. Customers can retrieve their notifications and mark them as read.
 
+Many notifications are sent **automatically** by the system when key events occur — no admin action required. See the [System-Generated Notifications](#system-generated-notifications) section below.
+
 > [!IMPORTANT]
 > All REST endpoints require a valid `Bearer` token in the `Authorization` header.
 > `POST /v1/notifications` requires a `super-admin` or `admin` user token.
@@ -52,6 +54,46 @@ Value | Description
 `LOW` | Informational, no urgency
 `MEDIUM` | Standard notification (default)
 `HIGH` | Requires immediate attention
+
+---
+
+System-Generated Notifications
+------------------------------
+
+The following notifications are sent automatically by the system. The customer does not need to take any action to receive them.
+
+### Order Events
+
+| Trigger | Type | Notes |
+|---|---|---|
+| Customer places an order | `ORDER_PLACED` | Fired immediately after the order is created |
+| Admin sets order status → `confirmed` | `ORDER_CONFIRMED` | Via `PATCH /v1/orders/:uuid/status` |
+| Admin sets order status → `delivered` | `ORDER_DELIVERED` | Via `PATCH /v1/orders/:uuid/status` |
+| Admin cancels order | `ORDER_CANCELLED` | Via `DELETE /v1/orders/:uuid` or status update |
+| Admin sets order status → `payment_successful` | `PAYMENT_SUCCESSFUL` | Manual override only; see payment events for automatic |
+| Admin sets order status → `payment_rejected` | `PAYMENT_FAILED` | Manual override only |
+
+### Payment Events
+
+| Trigger | Type | Notes |
+|---|---|---|
+| SkipCash webhook — payment paid | `PAYMENT_SUCCESSFUL` | Sent when SkipCash confirms payment |
+| SkipCash webhook — payment failed or cancelled | `PAYMENT_FAILED` | Sent on failed or cancelled SkipCash transactions |
+
+### Return & Refund Events
+
+| Trigger | Type | Notes |
+|---|---|---|
+| Customer submits return request | `ORDER_RETURNED` | |
+| Admin approves return | `ORDER_REFUNDED` + `PAYMENT_REFUND_INITIATED` | Two notifications sent together |
+| Admin rejects return | `ORDER_RETURNED` | |
+
+### Warehouse (JOP WMS) Events
+
+| Trigger | Type | Notes |
+|---|---|---|
+| Inbound order reaches `shelved` status | `ORDER_PROCESSING` | Sent to all customers linked to that inbound |
+| Outbound order receives a waybill number | `ORDER_SHIPPED` | Includes tracking number in the message |
 
 ---
 

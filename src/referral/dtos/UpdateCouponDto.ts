@@ -4,16 +4,19 @@ import {
 	Matches,
 	Max,
 	MaxLength,
+	Min,
 	MinLength,
 } from "class-validator";
 
 export class UpdateCouponDto {
 	@IsString()
-	@MinLength(1)
-	@MaxLength(32)
+	@MinLength(2)
+	@MaxLength(16)
+	@Matches(/^[A-Za-z0-9_-]{2,16}$/, { message: "Please enter a code with 2-16 characters, uppercase letters, digits, dashes, or underscores." })
 	code: string;
 
 	@IsNumber()
+	@Min(1)
 	@Max(10)
 	discountPercentage: number;
 

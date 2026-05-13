@@ -47,6 +47,9 @@ import { PricingService } from '../pricing/pricing.service';
 import { JopWmsOrder } from '../jop-wms/entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
 
+import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailModule } from '../email/email.module';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -70,6 +73,8 @@ import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
             JopWmsOrderLink,
         ]),
         ClientsModule,
+        NotificationsModule,
+        EmailModule,
     ],
     providers: [
         OrderService,

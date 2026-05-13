@@ -31,7 +31,7 @@ import { Roles } from "../auth/roles.decorator";
 export class WarehouseController {
 	constructor(@Inject(WarehouseService) private readonly warehousesService: WarehouseService) { }
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateWarehouse(@Body() body: CreateWarehouseDto): Promise<Warehouse> {
@@ -57,14 +57,14 @@ export class WarehouseController {
 		return this.warehousesService.findOne(uuid);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateWarehouse(@Param("uuid") uuid: string, @Body() body: UpdateWarehouseDto): Promise<Warehouse> {
 		return this.warehousesService.updateWarehouse(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Delete(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionDeleteProduct(@Param('uuid') uuid: string): Promise<void> {

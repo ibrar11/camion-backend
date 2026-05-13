@@ -16,6 +16,8 @@ import { CreateUserDto } from './dtos/CreateUserDto';
 import { UpdateUserDto } from './dtos/UpdateUserDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
 import { UpdatePasswordDto } from './dtos/UpdatePasswordDto';
+import { UpdateUserStatusDto } from './dtos/UpdateUserStatusDto';
+import { UpdateUserRoleDto } from './dtos/UpdateUserRoleDto';
 
 import { UserRole } from './enums/UserRole';
 
@@ -53,25 +55,39 @@ export class UsersController {
 		return this.usersService.findOne(uuid);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateOne(@Param('uuid') uuid: string, @Body() body: UpdateUserDto): Promise<User> {
 		return this.usersService.updateUser(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid/email-address')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateEmailAddress(@Param('uuid') uuid: string, @Body() body: UpdateEmailAddressDto): Promise<User> {
 		return this.usersService.updateEmailAddress(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid/password')
 	@HttpCode(HttpStatus.OK)
 	actionUpdatePassword(@Param('uuid') uuid: string, @Body() body: UpdatePasswordDto): Promise<User> {
 		return this.usersService.updatePassword(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Put(':uuid/role')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateRole(@Param('uuid') uuid: string, @Body() body: UpdateUserRoleDto): Promise<User> {
+		return this.usersService.updateUserRole(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Put(':uuid/status')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateStatus(@Param('uuid') uuid: string, @Body() body: UpdateUserStatusDto): Promise<User> {
+		return this.usersService.updateUserStatus(uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)

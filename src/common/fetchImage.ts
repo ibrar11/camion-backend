@@ -1,3 +1,7 @@
+import * as fs from "node:fs";
+import * as nodePath from "node:path";
+import * as os from "node:os";
+import * as crypto from "node:crypto";
 
 export async function fetchImageAsFile(imageUrl: string): Promise<Express.Multer.File> {
     try {
@@ -15,23 +19,28 @@ export async function fetchImageAsFile(imageUrl: string): Promise<Express.Multer
         const buffer = Buffer.from(arrayBuffer);
 
         const mimeType =
-            response.headers.get("content-type") || "image/jpeg";
+            response.headers.get("content-type")?.split(";")[0].trim() || "image/jpeg";
 
-        const filename =
+        const originalname =
             imageUrl.split("/").pop()?.split("?")[0] ||
             `image-${Date.now()}.jpg`;
 
+        // Write to a temp file so downstream services (sharp) can read via file.path
+        const tmpFilename = `${crypto.randomUUID()}-${originalname}`;
+        const tmpPath = nodePath.join(os.tmpdir(), tmpFilename);
+        fs.writeFileSync(tmpPath, buffer);
+
         const file: Express.Multer.File = {
             fieldname: "file",
-            originalname: filename,
+            originalname,
             encoding: "7bit",
             mimetype: mimeType,
             size: buffer.length,
             buffer,
             stream: undefined as any,
-            destination: "",
-            filename,
-            path: "",
+            destination: os.tmpdir(),
+            filename: tmpFilename,
+            path: tmpPath,
         };
 
         return file;

@@ -56,21 +56,21 @@ export class CustomersController {
 		return this.customersService.findOne(uuid);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateOne(@Param('uuid') uuid: string, @Body() body: UpdateCustomerDto): Promise<Customer> {
 		return this.customersService.updateCustomer(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid/email-address')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateEmailAddress(@Param('uuid') uuid: string, @Body() body: UpdateEmailAddressDto): Promise<Customer> {
 		return this.customersService.updateEmailAddress(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Put(':uuid/password')
 	@HttpCode(HttpStatus.OK)
 	actionUpdatePassword(@Param('uuid') uuid: string, @Body() body: UpdatePasswordDto): Promise<Customer> {
@@ -107,5 +107,4 @@ export class CustomersController {
 	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
 		return this.customersService.delete(uuid);
 	}
-
 }

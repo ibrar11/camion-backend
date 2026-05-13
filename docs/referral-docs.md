@@ -740,7 +740,7 @@ Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 code | Yes | String | Your coupon code
 discountPercentage | Yes | String | The discount percentage against the coupon
-expiresAt | Yes | String | The expiry code of the coupon
+expiresAt | Yes | String | The expiry code of the coupon, The date must be in `YYYY-MM-DD` format.
 
 ### Request Body
 

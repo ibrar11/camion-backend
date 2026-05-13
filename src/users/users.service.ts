@@ -16,6 +16,8 @@ import { CreateUserDto } from './dtos/CreateUserDto';
 import { UpdateUserDto } from './dtos/UpdateUserDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
 import { UpdatePasswordDto } from './dtos/UpdatePasswordDto';
+import { UpdateUserStatusDto } from "./dtos/UpdateUserStatusDto";
+import { UpdateUserRoleDto } from "./dtos/UpdateUserRoleDto";
 
 import { User } from './entities/user.entity';
 import { UserRole } from './enums/UserRole';
@@ -181,6 +183,50 @@ export class UsersService {
 		}
 
 		user.password = await bcrypt.hash(body.password.trim(), 10);
+		return this.userRepository.save(user);
+	}
+
+	/**
+	 * Updates the role of the user
+	 *
+	 * @param uuid
+	 * @param body
+	 * @returns
+	 */
+	async updateUserRole(uuid: string, body: UpdateUserRoleDto): Promise<User> {
+		this.logger.log(`Updating role of the user: ${uuid}`);
+
+		// Find the user
+		const user = await this.userRepository.findOneBy({ uuid: uuid, });
+		if (user === null) {
+			throw new BadRequestException({
+				error: "Failed to find the user by the provided id. Please check and try again.",
+			});
+		}
+
+		user.role = body.role;
+		return this.userRepository.save(user);
+	}
+
+	/**
+	 * Updates the status of the user
+	 *
+	 * @param uuid
+	 * @param body
+	 * @returns
+	 */
+	async updateUserStatus(uuid: string, body: UpdateUserStatusDto): Promise<User> {
+		this.logger.log(`Updating status of the user: ${uuid}`);
+
+		// Find the user
+		const user = await this.userRepository.findOneBy({ uuid: uuid, });
+		if (user === null) {
+			throw new BadRequestException({
+				error: "Failed to find the user by the provided id. Please check and try again.",
+			});
+		}
+
+		user.isActive = body.isActive;
 		return this.userRepository.save(user);
 	}
 
