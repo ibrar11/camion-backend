@@ -78,6 +78,8 @@ import { NotificationType } from "../notifications/enums/notification-type.enum"
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
 import { EmailService } from "../email/email.service";
 
+import { KeyValuePairType } from "../key-value-pairs/enums/KeyValuePairType.enum";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -226,8 +228,17 @@ export class OrderService {
                 }))?.integerValue
             ) || 0;
 
+            const freeShippingEnabled = Boolean(
+                (await this.keyValuePairRepository.findOne({
+                    where: { 
+                        name: "free_shipping_enabled",
+                        type: KeyValuePairType.Boolean
+                    }
+                }))?.booleanValue
+            ) || false;
+
             // Decide if we should charge shipping
-            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
@@ -808,8 +819,17 @@ export class OrderService {
                 }))?.integerValue
             ) || 0;
 
+            const freeShippingEnabled = Boolean(
+                (await this.keyValuePairRepository.findOne({
+                    where: { 
+                        name: "free_shipping_enabled",
+                        type: KeyValuePairType.Boolean
+                    }
+                }))?.booleanValue
+            ) || false;
+
             // Decide if we should charge shipping
-            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
