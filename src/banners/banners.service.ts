@@ -107,6 +107,29 @@ export class BannersService {
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 */
+	findAllUncached(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Banner>> {
+		this.logger.log("Retrieving a list of banners");
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.bannerRepository.find({
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Finds a list of banners
+	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 */
 	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Banner>> {
 		this.logger.log("Retrieving a list of banners");
 
