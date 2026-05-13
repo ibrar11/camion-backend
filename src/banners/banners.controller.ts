@@ -58,7 +58,7 @@ export class BannersController {
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Banner>> {
-		return this.bannersService.findAll(filters, sort, pageNumber, itemsPerPage);
+		return this.bannersService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
 	}
 
 	@Roles()
