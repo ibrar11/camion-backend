@@ -246,14 +246,32 @@ export class ProductsResolver {
 
 	@ResolveField("featuredImageUrl", () => String)
 	getFeaturedImageUrl(@Parent() product: Product): string {
-		if (product === null || product.featuredImageUrl === null) {
+		if (product === null) {
 			return "";
 		}
 
-		const segments = product.featuredImageUrl.split("/");
-		if (product.featuredImageUrl.startsWith("https://")) {
+		let featuredImageUrl = "";
+
+		// Get the featured image from the featured image field of the product
+		if (product.featuredImageUrl !== null && product.featuredImageUrl !== undefined) {
+			featuredImageUrl = product.featuredImageUrl;
+		}
+
+		// Get the featured image from the first variant of the product
+		if (featuredImageUrl === "" && Array.isArray(product.variants) &&
+			product.variants.length !== 0 &&
+			Array.isArray(product.variants[0].images) &&
+			product.variants[0].images.length !== 0 &&
+			product.variants[0].images[0].imageUrl !== null &&
+			product.variants[0].images[0].imageUrl !== undefined) {
+			featuredImageUrl = product.variants[0].images[0].imageUrl;
+		}
+
+		// Split the path to get the full address.
+		const segments = featuredImageUrl.split("/");
+		if (featuredImageUrl.startsWith("https://")) {
 			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
-		} else if (product.featuredImageUrl.startsWith("s3://")) {
+		} else if (featuredImageUrl.startsWith("s3://")) {
 			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
@@ -262,14 +280,32 @@ export class ProductsResolver {
 
 	@ResolveField("featuredThumbnailUrl", () => String)
 	getFeaturedThumbnailUrl(@Parent() product: Product): string {
-		if (product === null || product.featuredThumbnailUrl === null) {
+		if (product === null) {
 			return "";
 		}
 
-		const segments = product.featuredThumbnailUrl.split("/");
-		if (product.featuredThumbnailUrl.startsWith("https://")) {
+		let featuredThumbnailUrl = "";
+
+		// Get the featured thumbnail from the featured thumbnail field of the product
+		if (product.featuredThumbnailUrl !== null && product.featuredThumbnailUrl !== undefined) {
+			featuredThumbnailUrl = product.featuredThumbnailUrl;
+		}
+
+		// Get the featured thumbnail from the first variant of the product
+		if (featuredThumbnailUrl === "" && Array.isArray(product.variants) &&
+			product.variants.length !== 0 &&
+			Array.isArray(product.variants[0].images) &&
+			product.variants[0].images.length !== 0 &&
+			product.variants[0].images[0].imageUrl !== null &&
+			product.variants[0].images[0].imageUrl !== undefined) {
+			featuredThumbnailUrl = product.variants[0].images[0].thumbnailUrl;
+		}
+
+		// Split the path to get the full address.
+		const segments = featuredThumbnailUrl.split("/");
+		if (featuredThumbnailUrl.startsWith("https://")) {
 			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
-		} else if (product.featuredThumbnailUrl.startsWith("s3://")) {
+		} else if (featuredThumbnailUrl.startsWith("s3://")) {
 			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
 		}
 
