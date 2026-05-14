@@ -26,7 +26,7 @@ export class CreateCustomerAddressDto {
 	apartment: string;
 
 	@IsString()
-	@MinLength(5)
+	@MinLength(4)
 	@MaxLength(5)
 	zipCode: string;
 
