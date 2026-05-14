@@ -44,6 +44,9 @@ import { TransactionsService } from '../referral/transactions.service';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
 import { PricingService } from '../pricing/pricing.service';
 
+import { JopWmsOrder } from '../jop-wms/entities/jop-wms-order.entity';
+import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
+
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EmailModule } from '../email/email.module';
 
@@ -66,6 +69,8 @@ import { EmailModule } from '../email/email.module';
             Affiliate,
             Transaction,
             KeyValuePair,
+            JopWmsOrder,
+            JopWmsOrderLink,
         ]),
         ClientsModule,
         NotificationsModule,

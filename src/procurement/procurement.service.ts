@@ -81,9 +81,15 @@ export class ProcurementService {
         };
     }
 
-    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderId: string | number) {
+    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderSn: string) {
         if (!orderUuid) return;
-        await this.orderRepository.update({ uuid: orderUuid }, { gulltransOrderId: String(gulltransOrderId) });
+        await this.orderRepository
+            .createQueryBuilder()
+            .update()
+            .set({ gulltransOrderSns: () => "array_append(COALESCE(gulltrans_order_sns, '{}'), :sn)" })
+            .setParameter('sn', gulltransOrderSn)
+            .where('uuid = :uuid', { uuid: orderUuid })
+            .execute();
     }
 
     /**
@@ -734,12 +740,12 @@ export class ProcurementService {
 
                         this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
 
-                        const orderId = data?.data?.order_id ?? data?.data?.orderId ?? data?.data?.id;
-                        await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+                        const orderSn: string = data?.data?.order_sn;
+                        await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
 
                         results.success.push({
                             shopId: order.shop_id,
-                            orderId,
+                            orderSn,
                             raw: data?.data,
                         });
                     } catch (error: any) {
@@ -791,12 +797,12 @@ export class ProcurementService {
                 });
             }
 
-            const orderId = data?.data?.order_id;
-            await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+            const orderSn: string = data?.data?.order_sn;
+            await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
 
             return {
                 success: true,
-                orderId,
+                orderSn,
                 raw: data?.data,
             };
         } catch (error: any) {

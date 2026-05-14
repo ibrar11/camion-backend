@@ -73,6 +73,9 @@ import {
 
 import { ConfigService } from "@nestjs/config";
 
+import { JopWmsOrder } from '../jop-wms/entities/jop-wms-order.entity';
+import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
+
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/enums/notification-type.enum";
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
@@ -97,6 +100,7 @@ export class OrderService {
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
+        @InjectRepository(JopWmsOrderLink) private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
     ) { }
@@ -552,6 +556,12 @@ export class OrderService {
             });
 
             order.orderPlacementDate = order.createdAt;
+
+            const wmsLinks = await this.wmsOrderLinkRepository.find({
+                where: { orderUuid: uuid },
+                relations: ['wmsOrder'],
+            });
+            (order as any).wmsOrders = wmsLinks.map(l => l.wmsOrder);
 
             return order;
         } catch (error: any) {

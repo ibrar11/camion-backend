@@ -11,7 +11,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Like, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
@@ -24,6 +24,7 @@ import { OrderStatus } from '../order/enums/OrderStatus';
 
 import { JopWmsClient } from './jop-wms.client';
 import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
+import { JopWmsOrderLink } from './entities/jop-wms-order-link.entity';
 
 import { SyncProductDto } from './dtos/SyncProductDto';
 import { QueryProductDto } from './dtos/QueryProductDto';
@@ -57,17 +58,39 @@ export class JopWmsService {
         private readonly orderRepository: Repository<Order>,
         @InjectRepository(Warehouse)
         private readonly warehouseRepository: Repository<Warehouse>,
+        @InjectRepository(JopWmsOrderLink)
+        private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         private readonly client: JopWmsClient,
         @InjectQueue(QueueName.WMS_DISPATCH)
         private readonly dispatchQueue: Queue,
     ) { }
 
-    private async trackOrder(orderNo: string, type: JopWmsOrderType, sourceOrderUuids?: string) {
+    private async trackOrder(orderNo: string, type: JopWmsOrderType, orderUuids?: string[], wmsAssignedId?: string) {
         const existing = await this.wmsOrderRepository.findOne({ where: { orderNo } });
         if (existing) return;
-        await this.wmsOrderRepository.save(
-            this.wmsOrderRepository.create({ orderNo, type, status: 'pending', sourceOrderUuids: sourceOrderUuids ?? null }),
+
+        const wmsOrder = await this.wmsOrderRepository.save(
+            this.wmsOrderRepository.create({ orderNo, type, status: 'pending', wmsAssignedId: wmsAssignedId ?? null }),
         );
+
+        if (orderUuids?.length) {
+            await this.linkOrdersToWmsOrder(wmsOrder.id, orderUuids);
+        }
+    }
+
+    private async linkOrdersToWmsOrder(wmsOrderId: number, orderUuids: string[]): Promise<void> {
+        const orders = await this.orderRepository.find({ where: { uuid: In(orderUuids) }, select: ['id', 'uuid'] });
+        if (!orders.length) return;
+        const links = orders.map(order =>
+            this.wmsOrderLinkRepository.create({ wmsOrderId, orderId: order.id, orderUuid: order.uuid }),
+        );
+        await this.wmsOrderLinkRepository
+            .createQueryBuilder()
+            .insert()
+            .into(JopWmsOrderLink)
+            .values(links)
+            .orIgnore()
+            .execute();
     }
 
     // ISO8601 with timezone for deposeDate fields
@@ -150,7 +173,8 @@ export class JopWmsService {
             memo: dto.memo ?? '',
             boxList: dto.boxList,
         });
-        await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.INBOUND, dto.sourceOrderUuids);
+        const wmsAssignedId = String((result as any)?.data?.inboundOrderId ?? '');
+        await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.INBOUND, dto.sourceOrderUuids ?? [], wmsAssignedId || undefined);
         return result;
     }
 
@@ -196,7 +220,8 @@ export class JopWmsService {
             consignee: dto.consignee,
             productList: dto.productList,
         });
-        await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.OUTBOUND);
+        const wmsAssignedId = String((result as any)?.data?.outboundOrderId ?? '');
+        await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.OUTBOUND, [], wmsAssignedId || undefined);
         return result;
     }
 
@@ -278,16 +303,26 @@ export class JopWmsService {
 
     async dispatchApprovedOrders(dto: DispatchOrdersDto): Promise<{ jobId: string }> {
         if (dto.orderUuids?.length) {
-            const existingInbounds = await this.wmsOrderRepository.find({
-                where: { type: JopWmsOrderType.INBOUND },
-                select: ['orderNo', 'sourceOrderUuids'],
+            const linkedOrders = await this.orderRepository.find({
+                where: { uuid: In(dto.orderUuids) },
+                select: ['id', 'uuid'],
             });
+            const linkedOrderIds = linkedOrders.map(o => o.id);
 
-            const alreadyDispatched = dto.orderUuids.filter(uuid =>
-                existingInbounds.some(w => w.sourceOrderUuids?.split(',').includes(uuid))
-            );
+            const existingLinks = linkedOrderIds.length
+                ? await this.wmsOrderLinkRepository
+                    .createQueryBuilder('link')
+                    .innerJoin('link.wmsOrder', 'wmsOrder', 'wmsOrder.type = :type', { type: JopWmsOrderType.INBOUND })
+                    .where('link.orderId IN (:...orderIds)', { orderIds: linkedOrderIds })
+                    .select(['link.orderId'])
+                    .getMany()
+                : [];
 
-            if (alreadyDispatched.length) {
+            if (existingLinks.length) {
+                const dispatchedIds = new Set(existingLinks.map(l => l.orderId));
+                const alreadyDispatched = linkedOrders
+                    .filter(o => dispatchedIds.has(o.id))
+                    .map(o => o.uuid);
                 throw new BadRequestException({
                     message: 'Some orders have already been dispatched to WMS',
                     alreadyDispatched,
@@ -296,7 +331,7 @@ export class JopWmsService {
         }
 
         // ── Load eligible orders ───────────────────────────────────────────────
-        const where: any = { status: OrderStatus.CONFIRMED, gulltransOrderId: IsNull() };
+        const where: any = { status: OrderStatus.CONFIRMED, gulltransOrderSns: IsNull() };
         if (dto.orderUuids?.length) where.uuid = In(dto.orderUuids);
 
         const orders = await this.orderRepository.find({
@@ -438,8 +473,13 @@ export class JopWmsService {
     }
 
     async createOutboundsForInbound(wmsOrder: JopWmsOrder): Promise<void> {
-        if (!wmsOrder.sourceOrderUuids) {
-            this.logger.warn(`Skipping outbound creation for inbound ${wmsOrder.orderNo} — no sourceOrderUuids`);
+        const links = await this.wmsOrderLinkRepository.find({
+            where: { wmsOrderId: wmsOrder.id },
+            relations: ['order'],
+        });
+
+        if (!links.length) {
+            this.logger.warn(`Skipping outbound creation for inbound ${wmsOrder.orderNo} — no linked source orders`);
             return;
         }
 
@@ -449,16 +489,17 @@ export class JopWmsService {
             return;
         }
 
-        const orderUuids = wmsOrder.sourceOrderUuids.split(',').filter(Boolean);
+        const orderUuids = links.map(l => l.order.uuid);
         this.logger.log(`Creating outbounds for inbound ${wmsOrder.orderNo} — ${orderUuids.length} order(s)`);
 
         for (const orderUuid of orderUuids) {
-            const allInboundsForOrder = await this.wmsOrderRepository.find({
-                where: {
-                    type: JopWmsOrderType.INBOUND,
-                    sourceOrderUuids: Like(`%${orderUuid}%`),
-                },
-            });
+            const allInboundsForOrder = await this.wmsOrderRepository
+                .createQueryBuilder('wmsOrder')
+                .innerJoin('wmsOrder.sourceOrders', 'link')
+                .innerJoin('link.order', 'order', 'order.uuid = :uuid', { uuid: orderUuid })
+                .where('wmsOrder.type = :type', { type: JopWmsOrderType.INBOUND })
+                .getMany();
+
             const pendingInbounds = allInboundsForOrder.filter(
                 (o) => !(JOP_WMS_TERMINAL_STATUSES as readonly string[]).includes(o.status),
             );
@@ -519,10 +560,12 @@ export class JopWmsService {
                     })),
                 });
 
-                await this.wmsOrderRepository.update(
-                    { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },
-                    { sourceOrderUuids: order.uuid },
-                );
+                const outbound = await this.wmsOrderRepository.findOne({
+                    where: { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },
+                });
+                if (outbound) {
+                    await this.linkOrdersToWmsOrder(outbound.id, [order.uuid]);
+                }
 
                 this.logger.log(`Outbound created for order ${order.uuid} → ${customerVoucherNo}`);
             } catch (err: any) {
@@ -533,10 +576,16 @@ export class JopWmsService {
 
     // ─── Tracked Orders (polling state) ──────────────────────────────────────
 
-    getTrackedOrders(type?: JopWmsOrderType) {
-        return this.wmsOrderRepository.find({
+    async getTrackedOrders(type?: JopWmsOrderType) {
+        const orders = await this.wmsOrderRepository.find({
             where: type ? { type } : {},
+            relations: ['sourceOrders'],
             order: { createdAt: 'DESC' },
         });
+        return orders.map(order => ({
+            ...order,
+            linkedOrderUuids: order.sourceOrders.map(l => l.orderUuid),
+            sourceOrders: undefined,
+        }));
     }
 }

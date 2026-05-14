@@ -74,10 +74,10 @@ export class Order {
     @Column({ type: "varchar", length: 64 })
     eta: string;
 
-    // Set once a Gulltrans procurement order is created for this order. Null means not yet procured.
-    @Field(() => String, { nullable: true })
-    @Column({ type: "varchar", length: 128, nullable: true, default: null })
-    gulltransOrderId: string | null;
+    // One entry per 1688 shop involved in this order. Null means not yet procured.
+    @Field(() => [String], { nullable: true })
+    @Column({ type: 'text', array: true, nullable: true, default: null, name: 'gulltrans_order_sns' })
+    gulltransOrderSns: string[] | null;
 
     @Field(() => [OrderItem])
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
