@@ -38,6 +38,11 @@ import { ExchangeRateService } from '../pricing/exchange-rate.service';
 
 import { NotificationsModule } from '../notifications/notifications.module';
 
+import { Notification } from '../notifications/entities/notification.entity';
+import { PushNotificationService } from '../common/push-notification.service';
+
+import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -47,7 +52,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
             Client,
             ClientRefreshToken,
             Order,
-            ExchangeRate
+            ExchangeRate,
+            Notification
         ]),
         NotificationsModule,
     ],
@@ -62,6 +68,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
         ClientsService,
         OauthService,
         ExchangeRateService,
+        PushNotificationService,
+        FirebaseAdminProvider,
     ],
     controllers: [
         PaymentsController,

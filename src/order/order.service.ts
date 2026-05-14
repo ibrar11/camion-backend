@@ -83,6 +83,8 @@ import { EmailService } from "../email/email.service";
 
 import { KeyValuePairType } from "../key-value-pairs/enums/KeyValuePairType.enum";
 
+import { PushNotificationService } from "../common/push-notification.service";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -100,6 +102,7 @@ export class OrderService {
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
+        @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         @InjectRepository(JopWmsOrderLink) private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
@@ -389,13 +392,18 @@ export class OrderService {
 
             await queryRunner.commitTransaction();
 
-            this.notificationsService.create({
+            const notification = await this.notificationsService.create({
                 customerUUID: customer.uuid,
                 type: NotificationType.ORDER_PLACED,
                 title: 'Order Placed',
                 brief: 'Your order has been placed successfully.',
                 message: `Your order #${order.uuid} has been placed. We'll notify you once it's confirmed.`,
                 priority: NotificationPriority.HIGH,
+                payload: {
+                    type: NotificationType.ORDER_PLACED,
+                    priority: NotificationPriority.HIGH,
+                    isRead: String(false),
+                },
             }).catch(err => this.logger.warn(`Failed to send ORDER_PLACED notification: ${err?.message}`));
 
             if (customer.emailAddress) {
@@ -407,6 +415,11 @@ export class OrderService {
                 }).catch(err => this.logger.error(`[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`));
             } else {
                 this.logger.warn(`[Email] Skipping order-confirmed email for order ${order.uuid} — customer has no email address`);
+            }
+
+            if (notification?.uuid) {
+                this.logger.log(`Attempting to create psuh notification for order placement: ${JSON.stringify(order.uuid)}`);
+                await this.pushNotificationService.sendToToken(notification?.uuid)
             }
 
             return order;
@@ -635,11 +648,16 @@ export class OrderService {
 
             const notif = notificationMap[status];
             if (notif && order.customer) {
-                this.notificationsService.create({
+                const notification = await this.notificationsService.create({
                     customerUUID: order.customer.uuid,
                     ...notif,
                     priority: NotificationPriority.HIGH,
                 }).catch(err => this.logger.warn(`Failed to send ${notif.type} notification: ${err?.message}`));
+
+                if (notification?.uuid) {
+                    this.logger.log(`Attempting to create psuh notification for order placement: ${JSON.stringify(order.uuid)}`);
+                    await this.pushNotificationService.sendToToken(notification?.uuid)
+                }
             }
 
             const customerEmail = order.customer?.emailAddress;

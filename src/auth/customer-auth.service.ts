@@ -141,6 +141,7 @@ export class CustomerAuthService {
 		customer.password = "";
 		customer.role = CustomerRole.Customer;
 		customer.isActive = true;
+		customer.firebaseDeviceToken = body.firebaseDeviceToken;
 		await this.customerRepository.save(customer);
 
 		// merge the customer guest cart
@@ -237,6 +238,9 @@ export class CustomerAuthService {
 				error: "Account is deactivated.",
 			});
 		}
+
+		customer.firebaseDeviceToken = body.firebaseDeviceToken;
+		await this.customerRepository.save(customer);
 
 		// merge the customer gurst cart
 		if (body.guestUUID) {
@@ -378,6 +382,9 @@ export class CustomerAuthService {
 				error: "Account is deactivated.",
 			});
 		}
+
+		customer.firebaseDeviceToken = body.firebaseDeviceToken;
+		await this.customerRepository.save(customer);
 
 		// merge the customer gurst cart
 		if (body.guestUUID) {

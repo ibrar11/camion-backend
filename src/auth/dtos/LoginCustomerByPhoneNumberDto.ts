@@ -18,4 +18,8 @@ export class LoginCustomerByPhoneNumberDto {
 	@IsString()
 	@IsUUID('4')
 	guestUUID?: string;
+
+	@IsString()
+	@MinLength(1)
+	firebaseDeviceToken: string;
 }
