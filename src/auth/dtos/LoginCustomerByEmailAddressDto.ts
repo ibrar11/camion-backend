@@ -3,6 +3,7 @@ import {
 	IsOptional,
 	IsString,
 	IsUUID,
+	MinLength,
 } from "class-validator";
 
 export class LoginCustomerByEmailAddressDto {
@@ -13,4 +14,8 @@ export class LoginCustomerByEmailAddressDto {
 	@IsString()
 	@IsUUID('4')
 	guestUUID?: string;
+
+	@IsString()
+	@MinLength(1)
+	firebaseDeviceToken: string;
 }

@@ -133,6 +133,7 @@ import { JopWmsModule } from './jop-wms/jop-wms.module';
 import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from './jop-wms/entities/jop-wms-order-link.entity';
 import { DataModule } from './data/data.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
 	imports: [
@@ -315,6 +316,7 @@ import { DataModule } from './data/data.module';
 		TranslationModule,
 		JopWmsModule,
 		DataModule,
+		FirebaseModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
