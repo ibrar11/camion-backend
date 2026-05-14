@@ -155,6 +155,19 @@ export class CategoriesService {
 	}
 
 	/**
+     * Returns the estimated count of categories
+     *
+     * @returns
+     */
+    async countAll(): Promise<number> {
+        const result = await this.categoryRepository.manager.query(`SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'categories'`);
+        if (Array.isArray(result) && result.length !== 0) {
+            return Math.max(0, Number(result[0].estimate));
+        }
+        return 0;
+    }
+
+	/**
 	 * Finds a list of product categories uncached
 	 *
 	 * @param filters

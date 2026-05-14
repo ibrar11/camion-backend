@@ -98,6 +98,10 @@ import { TranslationService } from 'src/translation/translation.service';
 		ClientsModule,
 		PricingModule,
 	],
+	exports: [
+		CategoriesService,
+		ProductsService,
+	],
 	providers: [
 		S3Service,
 		UsersService,

@@ -132,6 +132,7 @@ import { TranslationModule } from './translation/translation.module';
 import { JopWmsModule } from './jop-wms/jop-wms.module';
 import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from './jop-wms/entities/jop-wms-order-link.entity';
+import { DataModule } from './data/data.module';
 
 @Module({
 	imports: [
@@ -313,6 +314,7 @@ import { JopWmsOrderLink } from './jop-wms/entities/jop-wms-order-link.entity';
 		QueueModule,
 		TranslationModule,
 		JopWmsModule,
+		DataModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

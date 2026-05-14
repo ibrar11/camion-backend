@@ -27,6 +27,9 @@ import { ClientsModule } from '../clients/clients.module';
 		]),
 		ClientsModule,
 	],
+	exports: [
+		BannersService
+	],
 	providers: [
 		S3Service,
 		UsersService,
