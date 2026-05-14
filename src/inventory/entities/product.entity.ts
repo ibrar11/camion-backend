@@ -23,6 +23,7 @@ import { ProductOption } from "./product-option.entity";
 import { ProductVariant } from "./product-variant.entity";
 import { ProductCategory } from "./product-category.entity";
 import { ProductReview } from "./product-review.entity";
+import { ProductView } from "./product-view.entity";
 
 import { CartItem } from "../../cart/entities/cart-items.entity";
 
@@ -132,6 +133,11 @@ export class Product {
 	@Column({ type: "integer", nullable: false, default: 0, })
 	reviewsCount: number;
 
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
+	viewsCount: number;
+
 	@Column({ type: "integer", nullable: false, default: 0, })
 	ratingSum: number;
 
@@ -177,6 +183,9 @@ export class Product {
 	@Field(() => [ProductReview])
 	@OneToMany(() => ProductReview, (review) => review.product, { cascade: true, })
 	reviews: Array<ProductReview>;
+
+	@OneToMany(() => ProductView, (view) => view.product, { cascade: true, })
+	views: Array<ProductView>;
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;

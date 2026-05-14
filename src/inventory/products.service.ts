@@ -35,6 +35,8 @@ import {
 
 import { TranslationService } from "../translation/translation.service";
 import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
+import { Customer } from "src/customers/entities/customer.entity";
+import { ProductView } from "./entities/product-view.entity";
 
 @Injectable()
 export class ProductsService {
@@ -45,6 +47,7 @@ export class ProductsService {
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
 		@InjectRepository(ProductVariantImage) private readonly productImageVariantImageRepository: Repository<ProductVariantImage>,
+		@InjectRepository(ProductView) private readonly productViewRepository: Repository<ProductView>,
 		@Inject(TranslationService) private readonly translationService: TranslationService,
 	) { }
 
@@ -119,6 +122,39 @@ export class ProductsService {
 		}
 
 		return product;
+	}
+
+	/**
+	 * Registers a product view
+	 *
+	 * @param customer
+	 * @param product
+	 * @returns
+	 */
+	async registerProductView(customer: Customer, product: Product): Promise<ProductView> {
+		this.logger.log(`Registering a product view`);
+
+		// Check if an existing view exists
+		const existingView = await this.productViewRepository.findOne({
+			where: {
+				customer: { id: customer.id, },
+				product: { id: product.id, },
+			},
+		});
+
+		// Update the existing view
+		if (existingView) {
+			existingView.viewsCount += 1;
+			return this.productViewRepository.save(existingView);
+		}
+
+		// Create a new view
+		const view = new ProductView();
+		view.uuid = crypto.randomUUID();
+		view.customer = customer;
+		view.product = product;
+		view.viewsCount = 1;
+		return this.productViewRepository.save(view);
 	}
 
 	/**
@@ -301,8 +337,9 @@ export class ProductsService {
 			},
 		});
 
+		// Get other products as fallback
 		if (category === null) {
-			return [];
+			return this.findAll("", ProductSort.Desc, pageNumber, itemsPerPage);
 		}
 
 		// Get pagination params
@@ -338,37 +375,43 @@ export class ProductsService {
 	/**
 	 * Returns a list of recently viewed products by a customer
 	 *
-	 * @param customerUUID
+	 * @param customer
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getRecentlyViewedProducts(customerUUID: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getRecentlyViewedProducts(customer: Customer, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of recenty viewed products`);
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		const products = await this.productRepository.find({
-			cache: true,
-			relationLoadStrategy: "query",
+		// Get the most recently viewed items
+		const views = await this.productViewRepository.find({
 			where: {
-				status: ProductStatus.ACTIVE,
+				customer: {
+					id: customer.id,
+				},
 			},
 			relations: {
-				variants: {
-					images: true,
-				},
-				productCategories: {
-					category: true,
+				product: {
+					variants: {
+						images: true,
+					},
+					productCategories: {
+						category: true,
+					},
 				},
 			},
 			order: {
-				id: "DESC",
+				updatedAt: "DESC",
 			},
 			skip: skip,
 			take: take,
 		});
+
+		// Create a list of products
+		const products: Array<Product> = views.map(view => view.product);
 
 		return sliceProductVariants(products);
 	}
@@ -765,28 +808,47 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		// TODO: Return a list of featured products
-
-		const products = await this.productRepository.find({
+		// Get the featured category
+		const category = await this.categoryRepository.findOne({
 			cache: true,
-			relationLoadStrategy: "query",
 			where: {
-				status: ProductStatus.ACTIVE,
+				isFeaturedOnHomepage: true,
 			},
-			relations: {
-				variants: {
-					images: true,
-				},
-				productCategories: {
-					category: true,
-				},
-			},
-			order: {
-				id: "DESC",
-			},
-			skip: skip,
-			take: take,
 		});
+
+		// Get other products as fallback
+		if (category === null) {
+			return this.findAll("", ProductSort.Desc, pageNumber, itemsPerPage);
+		}
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Populate variants and their specific option value mappings
+			.leftJoinAndSelect("product.variants", "variant")
+			.leftJoinAndSelect("variant.images", "image")
+
+			// Many-to-many join
+			.innerJoin("product.productCategories", "productCategory")
+			.innerJoin("productCategory.category", "category")
+			.where("category.id = :id", {
+				id: category.id,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		// Fallback to all products
+		if (Array.isArray(products) && products.length === 0) {
+			return this.findAll("", ProductSort.Desc, pageNumber, itemsPerPage);
+		}
 
 		return sliceProductVariants(products);
 	}
@@ -804,8 +866,7 @@ export class ProductsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		// TODO: Return a list of popular products
-
+		// Returns a list of products based on the number of views
 		const products = await this.productRepository.find({
 			cache: true,
 			relationLoadStrategy: "query",
@@ -821,7 +882,7 @@ export class ProductsService {
 				},
 			},
 			order: {
-				id: "DESC",
+				viewsCount: "DESC",
 			},
 			skip: skip,
 			take: take,
@@ -967,11 +1028,12 @@ export class ProductsService {
 	/**
 	 * Finds a product by its slug
 	 *
+	 * @param customer
 	 * @param slug
 	 * @returns
 	 */
-	async findOneBySlug(slug: string): Promise<Product> {
-		this.logger.log(`Retrieving product by slug: ${slug}`);
+	async findOneBySlug(customer: Customer, slug: string): Promise<Product> {
+		this.logger.log(`Retrieving product by slug: ${slug} for customer: ${customer?.uuid ?? "N/A"}`);
 
 		// Find the product
 		const product = await this.productRepository.findOne({
@@ -1006,6 +1068,15 @@ export class ProductsService {
 				error: "Failed to find the product. Please check and try again.",
 			});
 		}
+
+		// Register a view for the customer
+		if (customer !== null && product !== null) {
+			await this.registerProductView(customer, product);
+		}
+
+		// Increment the number of views on the product
+		product.viewsCount += 1;
+		await this.productRepository.save(product);
 
 		return product;
 	}

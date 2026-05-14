@@ -52,6 +52,7 @@ import { ProductVariant } from "./inventory/entities/product-variant.entity";
 import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
 import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
 import { ProductVariantOptionValue } from "./inventory/entities/product-variant-option-value.entity";
+import { ProductView } from "./inventory/entities/product-view.entity";
 
 import { InventoryItem } from "./inventory/entities/inventory-item.entity";
 import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
@@ -210,6 +211,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 					ProductVariantImage,
 					ProductVariantInventoryItem,
 					ProductVariantOptionValue,
+					ProductView,
 
 					InventoryItem,
 					InventoryLevel,
