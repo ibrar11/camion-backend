@@ -114,6 +114,10 @@ export class Customer {
 	affiliate: Affiliate;
 
 	@Exclude()
+	@Column({ type: "varchar", length: 64, default: "", })
+	firebaseDeviceToken: string;
+
+	@Exclude()
 	@UpdateDateColumn({
 		name: "updated_at",
 		type: "timestamptz",
