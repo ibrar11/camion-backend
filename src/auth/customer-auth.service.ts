@@ -141,7 +141,7 @@ export class CustomerAuthService {
 		customer.password = "";
 		customer.role = CustomerRole.Customer;
 		customer.isActive = true;
-		customer.firebaseDeviceToken = body.firebaseDeviceToken;
+		customer.firebaseDeviceToken = body.firebaseDeviceToken || '';
 		await this.customerRepository.save(customer);
 
 		// merge the customer guest cart
@@ -239,7 +239,7 @@ export class CustomerAuthService {
 			});
 		}
 
-		customer.firebaseDeviceToken = body.firebaseDeviceToken;
+		customer.firebaseDeviceToken = body.firebaseDeviceToken || '';
 		await this.customerRepository.save(customer);
 
 		// merge the customer gurst cart
@@ -383,7 +383,7 @@ export class CustomerAuthService {
 			});
 		}
 
-		customer.firebaseDeviceToken = body.firebaseDeviceToken;
+		customer.firebaseDeviceToken = body.firebaseDeviceToken || '';
 		await this.customerRepository.save(customer);
 
 		// merge the customer gurst cart
