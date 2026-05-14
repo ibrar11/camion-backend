@@ -50,6 +50,11 @@ import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EmailModule } from '../email/email.module';
 
+import { Notification } from '../notifications/entities/notification.entity';
+import { PushNotificationService } from '../common/push-notification.service';
+
+import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -71,6 +76,7 @@ import { EmailModule } from '../email/email.module';
             KeyValuePair,
             JopWmsOrder,
             JopWmsOrderLink,
+            Notification,
         ]),
         ClientsModule,
         NotificationsModule,
@@ -89,7 +95,9 @@ import { EmailModule } from '../email/email.module';
         PaymentStrategyFactory,
         ExchangeRateService,
         TransactionsService,
-        PricingService
+        PricingService,
+        PushNotificationService,
+        FirebaseAdminProvider,
     ],
     controllers: [
         OrderController

@@ -113,6 +113,9 @@ export class Customer {
 	@OneToOne(() => Affiliate, (affiliate) => affiliate.customer)
 	affiliate: Affiliate;
 
+	@Column({ type: "varchar", length: 64, default: "", })
+	firebaseDeviceToken: string;
+
 	@Exclude()
 	@UpdateDateColumn({
 		name: "updated_at",
