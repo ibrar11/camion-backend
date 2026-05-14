@@ -6,9 +6,9 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
-import { 
-    OrderItemResolver, 
-    OrderResolver 
+import {
+    OrderItemResolver,
+    OrderResolver
 } from './order.resolver';
 
 import { ClientsModule } from '../clients/clients.module';
@@ -75,6 +75,9 @@ import { EmailModule } from '../email/email.module';
         ClientsModule,
         NotificationsModule,
         EmailModule,
+    ],
+    exports: [
+        OrderService,
     ],
     providers: [
         OrderService,

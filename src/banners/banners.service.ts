@@ -147,6 +147,19 @@ export class BannersService {
 	}
 
 	/**
+	 * Returns the estimated count of banners
+	 *
+	 * @returns
+	 */
+	async countAll(): Promise<number> {
+		const result = await this.bannerRepository.manager.query(`SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'banners'`);
+		if (Array.isArray(result) && result.length !== 0) {
+			return Math.max(0, Number(result[0].estimate));
+		}
+		return 0;
+	}
+
+	/**
 	 * Finds a banner
 	 *
 	 * @param uuid

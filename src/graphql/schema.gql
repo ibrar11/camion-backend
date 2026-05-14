@@ -157,7 +157,7 @@ type Notification {
 type Order {
   discount: Money!
   eta: String!
-  gulltransOrderId: String
+  gulltransOrderSns: [String!]
   orderItems: [OrderItem!]!
   orderPlacementDate: DateTime!
   shippingAddress: CustomerAddress!
