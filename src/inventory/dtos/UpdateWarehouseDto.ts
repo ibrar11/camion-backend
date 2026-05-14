@@ -58,4 +58,14 @@ export class UpdateWarehouseDto {
 	@IsString()
 	@MaxLength(16)
 	postcode?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(64)
+	gulltransWarehouseId?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(64)
+	gulltransUserId?: string;
 }

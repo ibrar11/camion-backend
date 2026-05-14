@@ -54,6 +54,12 @@ export class Warehouse {
 	@Column({ type: 'varchar', nullable: true })
 	phone: string | null;
 
+	@Column({ type: 'varchar', nullable: true })
+	gulltransWarehouseId: string | null;
+
+	@Column({ type: 'varchar', nullable: true })
+	gulltransUserId: string | null;
+
 	@OneToMany(() => InventoryLevel, (level) => level.warehouse)
 	levels: Array<InventoryLevel>;
 

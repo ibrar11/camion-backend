@@ -73,10 +73,15 @@ import {
 
 import { ConfigService } from "@nestjs/config";
 
+import { JopWmsOrder } from '../jop-wms/entities/jop-wms-order.entity';
+import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
+
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/enums/notification-type.enum";
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
 import { EmailService } from "../email/email.service";
+
+import { KeyValuePairType } from "../key-value-pairs/enums/KeyValuePairType.enum";
 
 @Injectable()
 export class OrderService {
@@ -95,6 +100,7 @@ export class OrderService {
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
+        @InjectRepository(JopWmsOrderLink) private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
     ) { }
@@ -226,8 +232,17 @@ export class OrderService {
                 }))?.integerValue
             ) || 0;
 
+            const freeShippingEnabled = Boolean(
+                (await this.keyValuePairRepository.findOne({
+                    where: { 
+                        name: "free_shipping_enabled",
+                        type: KeyValuePairType.Boolean
+                    }
+                }))?.booleanValue
+            ) || false;
+
             // Decide if we should charge shipping
-            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
@@ -542,6 +557,12 @@ export class OrderService {
 
             order.orderPlacementDate = order.createdAt;
 
+            const wmsLinks = await this.wmsOrderLinkRepository.find({
+                where: { orderUuid: uuid },
+                relations: ['wmsOrder'],
+            });
+            (order as any).wmsOrders = wmsLinks.map(l => l.wmsOrder);
+
             return order;
         } catch (error: any) {
             this.logger.error(`Error fetching order: ${error}`);
@@ -808,8 +829,17 @@ export class OrderService {
                 }))?.integerValue
             ) || 0;
 
+            const freeShippingEnabled = Boolean(
+                (await this.keyValuePairRepository.findOne({
+                    where: { 
+                        name: "free_shipping_enabled",
+                        type: KeyValuePairType.Boolean
+                    }
+                }))?.booleanValue
+            ) || false;
+
             // Decide if we should charge shipping
-            const shouldApplyShipping = freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({

@@ -47,6 +47,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
+import { Warehouse } from '../inventory/entities/warehouse.entity';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
@@ -69,11 +70,26 @@ export class ProcurementService {
         @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
         @Inject(QueueService) private readonly queueService: QueueService,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+        @InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
     ) { }
 
-    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderId: string | number) {
+    private async getActiveWarehouseGulltransIds(): Promise<{ warehouseId: string; userId: string }> {
+        const warehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
+        return {
+            warehouseId: warehouse?.gulltransWarehouseId ?? '',
+            userId: warehouse?.gulltransUserId ?? '',
+        };
+    }
+
+    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderSn: string) {
         if (!orderUuid) return;
-        await this.orderRepository.update({ uuid: orderUuid }, { gulltransOrderId: String(gulltransOrderId) });
+        await this.orderRepository
+            .createQueryBuilder()
+            .update()
+            .set({ gulltransOrderSns: () => "array_append(COALESCE(gulltrans_order_sns, '{}'), :sn)" })
+            .setParameter('sn', gulltransOrderSn)
+            .where('uuid = :uuid', { uuid: orderUuid })
+            .execute();
     }
 
     /**
@@ -683,6 +699,7 @@ export class ProcurementService {
         const results: BulkCreateOrderResponse = { success: [], failed: [] };
 
         const grouped = this.groupOrdersByShop(dto.orders);
+        const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
 
         const BATCH_SIZE = 3;
 
@@ -705,8 +722,8 @@ export class ProcurementService {
                                 body: JSON.stringify({
                                     ...order,
                                     address: dto.address,
-                                    warehouse_id: process.env.GULLTRANS_WAREHOUSE_ID || '',
-                                    user_id: process.env.GULLTRANS_USER_ID || '',
+                                    warehouse_id: warehouseId,
+                                    user_id: userId,
                                 }),
                             },
                         );
@@ -723,12 +740,12 @@ export class ProcurementService {
 
                         this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
 
-                        const orderId = data?.data?.order_id ?? data?.data?.orderId ?? data?.data?.id;
-                        await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+                        const orderSn: string = data?.data?.order_sn;
+                        await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
 
                         results.success.push({
                             shopId: order.shop_id,
-                            orderId,
+                            orderSn,
                             raw: data?.data,
                         });
                     } catch (error: any) {
@@ -752,6 +769,7 @@ export class ProcurementService {
      * @returns
      */
     async createOrder(dto: CreateProcurementOrderDto): Promise<CreateOrderResponse> {
+        const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
         try {
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
@@ -765,8 +783,8 @@ export class ProcurementService {
                     },
                     body: JSON.stringify({
                         ...dto,
-                        warehouse_id: process.env.GULLTRANS_WAREHOUSE_ID || '',
-                        user_id: process.env.GULLTRANS_USER_ID || '',
+                        warehouse_id: warehouseId,
+                        user_id: userId,
                     }),
                 },
             );
@@ -779,12 +797,12 @@ export class ProcurementService {
                 });
             }
 
-            const orderId = data?.data?.order_id;
-            await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+            const orderSn: string = data?.data?.order_sn;
+            await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
 
             return {
                 success: true,
-                orderId,
+                orderSn,
                 raw: data?.data,
             };
         } catch (error: any) {

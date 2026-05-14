@@ -73,8 +73,9 @@ export class CreateInboundOrderDto {
     memo?: string;
 
     @IsOptional()
-    @IsString()
-    sourceOrderUuids?: string;
+    @IsArray()
+    @IsString({ each: true })
+    sourceOrderUuids?: string[];
 
     @IsArray()
     @ValidateNested({ each: true })
