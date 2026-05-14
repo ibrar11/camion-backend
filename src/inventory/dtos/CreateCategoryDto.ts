@@ -47,4 +47,7 @@ export class CreateCategoryDto {
 
 	@IsBoolean()
 	isFeatured: boolean;
+
+	@IsBoolean()
+	isFeaturedOnHomepage: boolean = false;
 }

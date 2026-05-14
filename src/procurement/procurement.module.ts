@@ -32,6 +32,8 @@ import { ProductVariantService } from '../inventory/product-variant.service';
 import { ProductVariantImage } from '../inventory/entities/product-variant-image.entity';
 import { ProductVariantImageService } from '../inventory/product-variant-image.service';
 
+import { ProductView } from '../inventory/entities/product-view.entity';
+
 import { ProductVariantOptionValue } from '../inventory/entities/product-variant-option-value.entity';
 
 import { InventoryItem } from '../inventory/entities/inventory-item.entity';
@@ -54,9 +56,11 @@ import { TranslationService } from '../translation/translation.service';
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
-			User,
-			Customer,
 			Category,
+			Customer,
+			InventoryItem,
+			InventoryLevel,
+			Order,
 			Product,
 			ProductCategory,
 			ProductOption,
@@ -64,10 +68,9 @@ import { TranslationService } from '../translation/translation.service';
 			ProductVariant,
 			ProductVariantImage,
 			ProductVariantOptionValue,
-			InventoryItem,
-			InventoryLevel,
+			ProductView,
+			User,
 			Warehouse,
-			Order,
 		]),
 		ClientsModule,
 		QueueModule,

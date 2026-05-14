@@ -37,6 +37,7 @@ import { ProductVariantImage } from "./inventory/entities/product-variant-image.
 import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
 import { ProductVariantOptionValue } from "./inventory/entities/product-variant-option-value.entity";
 import { Warehouse } from "./inventory/entities/warehouse.entity";
+import { ProductView } from "./inventory/entities/product-view.entity";
 
 // languages
 import { Language } from "./languages/entities/language.entity";
@@ -135,6 +136,7 @@ export const CamionDataSource = new DataSource({
 		ProductVariantImage,
 		ProductVariantInventoryItem,
 		ProductVariantOptionValue,
+		ProductView,
 		Story,
 		StoryFrame,
 		Transaction,
