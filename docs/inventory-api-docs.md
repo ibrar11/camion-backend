@@ -257,6 +257,7 @@ name.ar | Yes | String | The name of the category in Arabic
 pricingFactor | Yes | Number | The pricing factor of the category
 discountPercentage | Yes | Number | The discount percentage of the category
 isFeatured | Yes | Boolean | Determines if the category is featured.
+isFeaturedOnHomepage | Yes | Boolean | Determines if the category is featured on the homepage
 
 ### Request Body
 ```json
@@ -269,7 +270,8 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
     },
     "pricingFactor": 10,
     "discountPercentage": 5,
-    "isFeatured": true
+    "isFeatured": true,
+    "isFeaturedOnHomepage": true
 }
 ```
 
@@ -283,6 +285,7 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
     "pricingFactor": 10,
     "discountPercentage": 5,
     "isFeatured": true,
+    "isFeaturedOnHomepage": true,
     "parent": null
 }
 ```
@@ -316,6 +319,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "pricingFactor": "1.2",
         "discountPercentage": "5",
         "isFeatured": true,
+        "isFeaturedOnHomepage": true,
         "children": [
             {
                 "uuid": "f5d519fa-9b21-435c-97ab-8c06e1fb782c",
@@ -325,6 +329,7 @@ itemsPerPage | The number of results to retrieve in the response | 100
                 "pricingFactor": "1.2",
                 "discountPercentage": "5",
                 "isFeatured": true,
+                "isFeaturedOnHomepage": true,
                 "children": []
             }
         ]
@@ -351,7 +356,8 @@ GET /v1/categories/<category-uuid> HTTP/1.1
     "nameAr": "sneakers",
     "pricingFactor": 1.4,
     "discountPercentage": 5,
-    "isFeatured": true
+    "isFeatured": true,
+    "isFeaturedOnHomepage": true
 }
 ```
 
@@ -373,6 +379,7 @@ name.ar | Yes | String | The name of the category in Arabic
 pricingFactor | Yes | Number | The pricing factor of the category
 discountPercentage | Yes | Number | The discount percentage on products in this category
 isFeatured | Yes | Boolean | Determines if the category is featured.
+isFeaturedOnHomepage | Yes | Boolean | Determines if the category is featured on the homepage
 
 ### Request Body
 ```json
@@ -384,7 +391,8 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
     },
     "pricingFactor": 1.4,
     "discountPercentage": 5,
-    "isFeatured": true
+    "isFeatured": true,
+    "isFeaturedOnHomepage": false
 }
 ```
 
@@ -397,7 +405,8 @@ isFeatured | Yes | Boolean | Determines if the category is featured.
     "nameAr": "أحذية رياضية",
     "pricingFactor": 1.4,
     "discountPercentage": 5,
-    "isFeatured": true
+    "isFeatured": true,
+    "isFeaturedOnHomepage": false
 }
 ```
 

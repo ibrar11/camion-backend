@@ -250,6 +250,7 @@ type Product {
   titleEn: String!
   uuid: String!
   variants(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
+  viewsCount: Float!
 }
 
 type ProductCategory {

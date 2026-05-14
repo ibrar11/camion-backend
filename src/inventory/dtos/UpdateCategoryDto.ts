@@ -41,4 +41,7 @@ export class UpdateCategoryDto {
 
 	@IsBoolean()
 	isFeatured: boolean;
+
+	@IsBoolean()
+	isFeaturedOnHomepage: boolean = false;
 }
