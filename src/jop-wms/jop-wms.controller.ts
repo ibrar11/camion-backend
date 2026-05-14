@@ -6,12 +6,14 @@ import {
     HttpStatus,
     Param,
     Post,
+    Put,
     Query,
     UseGuards,
 } from '@nestjs/common';
 
 import { JopWmsOrderType } from './entities/jop-wms-order.entity';
 import { DispatchOrdersDto } from './dtos/DispatchOrdersDto';
+import { RecoverInboundDto } from './dtos/RecoverInboundDto';
 
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -172,6 +174,25 @@ export class JopWmsController {
         return this.wmsService.dispatchApprovedOrders(body);
     }
 
+    // ─── Recovery ─────────────────────────────────────────────────────────────
+
+    @Roles(UserRole.SuperAdmin)
+    @Get('inbound/unlinked-orders')
+    @HttpCode(HttpStatus.OK)
+    getUnlinkedOrders(@Query('before') before?: string) {
+        return this.wmsService.getUnlinkedOrders(before);
+    }
+
+    @Roles(UserRole.SuperAdmin)
+    @Put('inbound/:orderNo/recover')
+    @HttpCode(HttpStatus.OK)
+    recoverInbound(
+        @Param('orderNo') orderNo: string,
+        @Body() body: RecoverInboundDto,
+    ) {
+        return this.wmsService.recoverInbound(orderNo, body);
+    }
+
     // ─── Polling state ────────────────────────────────────────────────────────
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
@@ -179,5 +200,14 @@ export class JopWmsController {
     @HttpCode(HttpStatus.OK)
     getTrackedOrders(@Query('type') type?: JopWmsOrderType) {
         return this.wmsService.getTrackedOrders(type);
+    }
+
+    // ─── Order Links ──────────────────────────────────────────────────────────
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get('order-links')
+    @HttpCode(HttpStatus.OK)
+    getOrderLinks() {
+        return this.wmsService.getOrderLinks();
     }
 }
