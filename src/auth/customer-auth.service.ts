@@ -652,7 +652,7 @@ export class CustomerAuthService {
 	}
 
 	async loginWithGoogleMobile(dto: GoogleMobileAuthDto): Promise<CustomerAuthResponse> {
-		const { idToken } = dto;
+		const { idToken, firebaseDeviceToken } = dto;
 
 		const allowedAudiences: string[] = [];
 		const iosClientId = this.configService.get<string>('GOOGLE_IOS_CLIENT_ID');
@@ -685,7 +685,7 @@ export class CustomerAuthService {
 			throw new UnauthorizedException({ error: 'Email or Google ID not found in token.' });
 		}
 
-		return this.findOrCreateGoogleCustomer({ email, fullName, googleId });
+		return this.findOrCreateGoogleCustomer({ email, fullName, googleId, firebaseDeviceToken });
 	}
 
 	async loginWithGoogleWeb(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
@@ -726,16 +726,17 @@ export class CustomerAuthService {
 
 		const email = profileData.email || '';
 		const fullName = profileData.name || '';
+		const firebaseDeviceToken = dto.firebaseDeviceToken || '';
 
-		return this.findOrCreateFacebookCustomer({ email, fullName, facebookId });
+		return this.findOrCreateFacebookCustomer({ email, fullName, facebookId, firebaseDeviceToken });
 	}
 
 	async loginWithFacebookWeb(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
 		return this.findOrCreateFacebookCustomer(profile);
 	}
 
-	private async findOrCreateFacebookCustomer(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
-		const { email, fullName, facebookId } = profile;
+	private async findOrCreateFacebookCustomer(profile: { email: string; fullName: string; facebookId: string, firebaseDeviceToken?: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, facebookId, firebaseDeviceToken } = profile;
 
 		let customer = await this.customerRepository.findOneBy({ facebookId });
 
@@ -746,6 +747,7 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.facebookId = facebookId;
+					customer.firebaseDeviceToken = firebaseDeviceToken || '';
 					customer = await this.customerRepository.save(customer);
 				}
 			}
@@ -763,6 +765,7 @@ export class CustomerAuthService {
 				newCustomer.facebookId = facebookId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
+				newCustomer.firebaseDeviceToken = firebaseDeviceToken || '';
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
@@ -788,8 +791,8 @@ export class CustomerAuthService {
 		return { token, customer };
 	}
 
-	private async findOrCreateGoogleCustomer(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
-		const { email, fullName, googleId } = profile;
+	private async findOrCreateGoogleCustomer(profile: { email: string; fullName: string; googleId: string, firebaseDeviceToken?: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, googleId, firebaseDeviceToken } = profile;
 
 		let customer = await this.customerRepository.findOneBy({ googleId });
 
@@ -800,6 +803,7 @@ export class CustomerAuthService {
 
 			if (customer) {
 				customer.googleId = googleId;
+				customer.firebaseDeviceToken = firebaseDeviceToken || '';
 				customer = await this.customerRepository.save(customer);
 			} else {
 				const newCustomer = new Customer();
@@ -811,6 +815,7 @@ export class CustomerAuthService {
 				newCustomer.googleId = googleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
+				newCustomer.firebaseDeviceToken = firebaseDeviceToken || '';
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
@@ -837,7 +842,7 @@ export class CustomerAuthService {
 	}
 
 	async loginWithAppleMobile(dto: AppleMobileAuthDto): Promise<CustomerAuthResponse> {
-		const { identityToken, authorizationCode, fullName } = dto;
+		const { identityToken, authorizationCode, fullName, firebaseDeviceToken } = dto;
 
 		if (!identityToken && !authorizationCode) {
 			throw new BadRequestException({ error: 'Identity token or authorization code is required.' });
@@ -876,7 +881,7 @@ export class CustomerAuthService {
 		const email = (payload['email'] as string) || '';
 		const name = (payload['name'] as string) || fullName || '';
 
-		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId });
+		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId, firebaseDeviceToken });
 	}
 
 	private async exchangeAppleCode(code: string, audience: string, issuer: string): Promise<string> {
@@ -921,8 +926,8 @@ export class CustomerAuthService {
 		return data.id_token;
 	}
 
-	private async findOrCreateAppleCustomer(profile: { email: string; fullName: string; appleId: string }): Promise<CustomerAuthResponse> {
-		const { email, fullName, appleId } = profile;
+	private async findOrCreateAppleCustomer(profile: { email: string; fullName: string; appleId: string, firebaseDeviceToken?: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, appleId, firebaseDeviceToken } = profile;
 
 		let customer = await this.customerRepository.findOneBy({ appleId });
 
@@ -933,6 +938,7 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.appleId = appleId;
+					customer.firebaseDeviceToken = firebaseDeviceToken || '';
 					customer = await this.customerRepository.save(customer);
 				}
 			}
@@ -950,6 +956,7 @@ export class CustomerAuthService {
 				newCustomer.appleId = appleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
+				newCustomer.firebaseDeviceToken = firebaseDeviceToken || '';
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
