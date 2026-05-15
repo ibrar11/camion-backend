@@ -32,7 +32,7 @@ import { ProductVariantImageService } from '../inventory/product-variant-image.s
 import {
     ProductAttribute,
     ProductDetail,
-    ProductSku,
+    ProductVariant as ProcurementProductVariant,
     SearchProductItem,
     SearchProducts,
     SkuAttribute,
@@ -48,6 +48,8 @@ import { Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
+import { Product } from '../inventory/entities/product.entity';
+import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
@@ -71,7 +73,119 @@ export class ProcurementService {
         @Inject(QueueService) private readonly queueService: QueueService,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
         @InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
+        @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+        @InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
     ) { }
+
+    private isSameObject(a: unknown, b: unknown): boolean {
+        return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    }
+
+    async resyncInventoryVariantsByProducts(productUuids: string[]): Promise<{
+        productsRequested: number;
+        productsFound: number;
+        productsWithProcurementId: number;
+        variantsMatched: number;
+        variantsUpdated: number;
+        variantsMissingInSource: number;
+        productsSkippedWithoutProcurementId: string[];
+    }> {
+        const products = await this.productRepository.find({
+            where: productUuids.map((uuid) => ({ uuid })),
+            relations: {
+                variants: true,
+            },
+        });
+
+        const productsSkippedWithoutProcurementId: string[] = [];
+        let variantsMatched = 0;
+        let variantsUpdated = 0;
+        let variantsMissingInSource = 0;
+        let productsWithProcurementId = 0;
+
+        for (const product of products) {
+            if (!product.procurementId) {
+                productsSkippedWithoutProcurementId.push(product.uuid);
+                continue;
+            }
+
+            productsWithProcurementId += 1;
+            const sourceProduct = await this.getProductDetail(product.procurementId);
+            const sourceBySku = new Map<string, ProcurementProductVariant>();
+
+            for (const sourceVariant of sourceProduct.variants ?? []) {
+                sourceBySku.set(String(sourceVariant.skuId), sourceVariant);
+            }
+
+            for (const localVariant of product.variants ?? []) {
+                const sourceVariant = sourceBySku.get(localVariant.sku);
+                if (!sourceVariant) {
+                    variantsMissingInSource += 1;
+                    continue;
+                }
+
+                variantsMatched += 1;
+                let changed = false;
+
+                const nextTitleEn = (sourceVariant.title || "").slice(0, 128);
+                const nextTitleAr = (sourceVariant.title || "").slice(0, 128);
+                if (localVariant.titleEn !== nextTitleEn) {
+                    localVariant.titleEn = nextTitleEn;
+                    changed = true;
+                }
+                if (localVariant.titleAr !== nextTitleAr) {
+                    localVariant.titleAr = nextTitleAr;
+                    changed = true;
+                }
+
+                if (localVariant.weight.amount !== sourceVariant.shipping.weight) {
+                    localVariant.weight.amount = sourceVariant.shipping.weight;
+                    changed = true;
+                }
+                if (localVariant.weight.unit !== WeightUnit.Kilograms) {
+                    localVariant.weight.unit = WeightUnit.Kilograms;
+                    changed = true;
+                }
+
+                if (localVariant.dimensions.width !== sourceVariant.shipping.width) {
+                    localVariant.dimensions.width = sourceVariant.shipping.width;
+                    changed = true;
+                }
+                if (localVariant.dimensions.height !== sourceVariant.shipping.height) {
+                    localVariant.dimensions.height = sourceVariant.shipping.height;
+                    changed = true;
+                }
+                if (localVariant.dimensions.length !== sourceVariant.shipping.length) {
+                    localVariant.dimensions.length = sourceVariant.shipping.length;
+                    changed = true;
+                }
+                if (localVariant.dimensions.unit !== DimensionsUnit.Centimeter) {
+                    localVariant.dimensions.unit = DimensionsUnit.Centimeter;
+                    changed = true;
+                }
+
+                if (!this.isSameObject(localVariant.skuMeta, sourceVariant.skuMeta)) {
+                    localVariant.skuMeta = sourceVariant.skuMeta as Record<string, any>;
+                    changed = true;
+                }
+
+                if (changed) {
+                    await this.productVariantRepository.save(localVariant);
+                    variantsUpdated += 1;
+                }
+            }
+        }
+
+        return {
+            productsRequested: productUuids.length,
+            productsFound: products.length,
+            productsWithProcurementId,
+            variantsMatched,
+            variantsUpdated,
+            variantsMissingInSource,
+            productsSkippedWithoutProcurementId,
+        };
+    }
 
     private async getActiveWarehouseGulltransIds(): Promise<{ warehouseId: string; userId: string }> {
         const warehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
