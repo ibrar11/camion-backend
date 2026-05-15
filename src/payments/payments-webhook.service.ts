@@ -78,7 +78,6 @@ export class PaymentsWebhookService {
 
             const transaction = await this.paymentRepository.findOne({
                 where: {
-                    transactionId: TransactionId,
                     order: {id: order.id}
                 },
             });
