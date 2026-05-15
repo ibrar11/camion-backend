@@ -141,7 +141,9 @@ export class CustomerAuthService {
 		customer.password = "";
 		customer.role = CustomerRole.Customer;
 		customer.isActive = true;
-		customer.firebaseDeviceToken = body.firebaseDeviceToken || '';
+		if (body.firebaseDeviceToken) {
+			customer.firebaseDeviceToken = body.firebaseDeviceToken;
+		}
 		await this.customerRepository.save(customer);
 
 		// merge the customer guest cart
@@ -239,8 +241,10 @@ export class CustomerAuthService {
 			});
 		}
 
-		customer.firebaseDeviceToken = body.firebaseDeviceToken || '';
-		await this.customerRepository.save(customer);
+		if (body.firebaseDeviceToken) {
+			customer.firebaseDeviceToken = body.firebaseDeviceToken;
+			await this.customerRepository.save(customer);
+		}
 
 		// merge the customer gurst cart
 		if (body.guestUUID) {
@@ -383,8 +387,10 @@ export class CustomerAuthService {
 			});
 		}
 
-		customer.firebaseDeviceToken = body.firebaseDeviceToken || '';
-		await this.customerRepository.save(customer);
+		if (body.firebaseDeviceToken) {
+			customer.firebaseDeviceToken = body.firebaseDeviceToken;
+			await this.customerRepository.save(customer);
+		}
 
 		// merge the customer gurst cart
 		if (body.guestUUID) {
@@ -747,7 +753,9 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.facebookId = facebookId;
-					customer.firebaseDeviceToken = firebaseDeviceToken || '';
+					if(firebaseDeviceToken) {
+						customer.firebaseDeviceToken = firebaseDeviceToken;
+					}
 					customer = await this.customerRepository.save(customer);
 				}
 			}
@@ -765,7 +773,9 @@ export class CustomerAuthService {
 				newCustomer.facebookId = facebookId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
-				newCustomer.firebaseDeviceToken = firebaseDeviceToken || '';
+				if(firebaseDeviceToken) {
+					newCustomer.firebaseDeviceToken = firebaseDeviceToken;
+				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
@@ -803,7 +813,9 @@ export class CustomerAuthService {
 
 			if (customer) {
 				customer.googleId = googleId;
-				customer.firebaseDeviceToken = firebaseDeviceToken || '';
+				if(firebaseDeviceToken) {
+					customer.firebaseDeviceToken = firebaseDeviceToken;
+				}
 				customer = await this.customerRepository.save(customer);
 			} else {
 				const newCustomer = new Customer();
@@ -815,7 +827,9 @@ export class CustomerAuthService {
 				newCustomer.googleId = googleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
-				newCustomer.firebaseDeviceToken = firebaseDeviceToken || '';
+				if(firebaseDeviceToken) {
+					newCustomer.firebaseDeviceToken = firebaseDeviceToken;
+				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
@@ -938,7 +952,9 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.appleId = appleId;
-					customer.firebaseDeviceToken = firebaseDeviceToken || '';
+					if(firebaseDeviceToken) {
+						customer.firebaseDeviceToken = firebaseDeviceToken;
+					}
 					customer = await this.customerRepository.save(customer);
 				}
 			}
@@ -956,7 +972,9 @@ export class CustomerAuthService {
 				newCustomer.appleId = appleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
-				newCustomer.firebaseDeviceToken = firebaseDeviceToken || '';
+				if(firebaseDeviceToken) {
+					newCustomer.firebaseDeviceToken = firebaseDeviceToken;
+				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}

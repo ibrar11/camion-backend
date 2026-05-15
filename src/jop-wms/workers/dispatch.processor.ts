@@ -68,10 +68,12 @@ export class DispatchProcessor extends WorkerHost {
         } else {
             // ── Step 3: Sync variants to WMS (idempotent, non-blocking) ──────
             for (const variantData of variantSyncData) {
+                this.logger.log(`Dispatch ${dispatchJobId}: syncing variant ${variantData.sku} to WMS`);
                 try {
                     await this.client.post('product/synchronize', variantData);
+                    this.logger.log(`Dispatch ${dispatchJobId}: variant ${variantData.sku} synced`);
                 } catch (err: any) {
-                    this.logger.warn(`Variant sync failed for ${variantData.sku}: ${err?.message}`);
+                    this.logger.warn(`Dispatch ${dispatchJobId}: variant sync failed for ${variantData.sku} — ${err?.message}`);
                 }
             }
 
@@ -118,6 +120,7 @@ export class DispatchProcessor extends WorkerHost {
 
         // ── Step 6: Create WMS inbound ────────────────────────────────────────
 
+        this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: creating WMS inbound ${inboundVoucherNo} (${wmsBoxList.length} box(es))`);
         const inboundResult: any = await this.client.post('inboundorder/create', {
             warehouseCode: this.warehouseCode,
             customerVoucherNo: inboundVoucherNo,
@@ -132,6 +135,7 @@ export class DispatchProcessor extends WorkerHost {
         });
 
         const wmsAssignedId = String(inboundResult?.data?.inboundOrderId ?? '') || null;
+        this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: WMS inbound ${inboundVoucherNo} created — WMS ID ${wmsAssignedId ?? 'N/A'}`);
 
         const inbound = await this.wmsOrderRepository.save(
             this.wmsOrderRepository.create({

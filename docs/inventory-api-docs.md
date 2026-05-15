@@ -1203,7 +1203,7 @@ dimensions.height | Yes | Number | The actual height of this variant from the su
 dimensions.length | Yes | Number | The actual length of this variant from the supplier.
 dimensions.unit | Yes | String | The unit of measurement for dimensions. A value from, `mm, cm, m, km, in, ft, yd, mi` must be provided.
 optionValues | No | List[UUID] | A list of UUIDs of option-values
-skuMeta | No | Object | Supplier SKU metadata required for Gulltrans procurement orders. **Must be provided for any variant sourced from a 1688 supplier.** If omitted, `sku_info` will be sent as an empty object to Gulltrans, meaning the daigou agent cannot identify the correct color/size variant to purchase. See structure below.
+skuMeta | Yes | Object | Supplier SKU metadata required for Gulltrans procurement orders. **Must be provided for any variant sourced from a 1688 supplier.** If omitted, `sku_info` will be sent as an empty object to Gulltrans, meaning the daigou agent cannot identify the correct color/size variant to purchase. See structure below.
 
 > [!WARNING]
 > **Procurement impact of missing or placeholder data**
@@ -1427,7 +1427,7 @@ dimensions.width | Yes | Number | The actual width of this variant. **Do not use
 dimensions.height | Yes | Number | The actual height of this variant.
 dimensions.length | Yes | Number | The actual length of this variant.
 dimensions.unit | Yes | String | The unit of measurement for dimensions. A value from, `mm, cm, m, km, in, ft, yd, mi` must be provided.
-skuMeta | No | Object | Supplier SKU metadata. Use this to backfill `skuMeta` on variants that were created without it. See the Create Variant section for the full field structure.
+skuMeta | Yes | Object | Supplier SKU metadata. Use this to backfill `skuMeta` on variants that were created without it. See the Create Variant section for the full field structure.
 
 ### Request Body
 ```json

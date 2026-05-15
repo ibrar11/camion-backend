@@ -40,3 +40,9 @@ export class OrderPreviewResponse {
 export interface OrderFilters {
     status?: OrderStatus
 }
+
+export interface NotificationPayload {
+    type:string;
+    priority: string;
+    isRead: string,
+}
