@@ -67,6 +67,7 @@ import {
 import { smartRoundInt } from "../common/smartRound";
 
 import {
+    NotificationPayload,
     OrderFilters,
     OrderPreviewResponse,
 } from "./types";
@@ -613,41 +614,67 @@ export class OrderService {
 
             const saved = await this.orderRepository.save(order);
 
-            const notificationMap: Partial<Record<OrderStatus, { type: NotificationType; title: string; brief: string; message: string }>> = {
+            const notificationMap: Partial<Record<OrderStatus, { type: NotificationType; title: string; brief: string; message: string, payload: NotificationPayload }>> = {
                 [OrderStatus.CONFIRMED]: {
                     type: NotificationType.ORDER_CONFIRMED,
                     title: 'Order Confirmed',
                     brief: 'Your order has been confirmed.',
                     message: `Your order #${order.uuid} has been confirmed and is being prepared.`,
+                    payload: {
+                        type: NotificationType.ORDER_PLACED,
+                        priority: NotificationPriority.HIGH,
+                        isRead: String(false),
+                    },
                 },
                 [OrderStatus.DELIVERED]: {
                     type: NotificationType.ORDER_DELIVERED,
                     title: 'Order Delivered',
                     brief: 'Your order has been delivered.',
                     message: `Your order #${order.uuid} has been delivered. Enjoy your purchase!`,
+                    payload: {
+                        type: NotificationType.ORDER_PLACED,
+                        priority: NotificationPriority.HIGH,
+                        isRead: String(false),
+                    },
                 },
                 [OrderStatus.CANCELLED]: {
                     type: NotificationType.ORDER_CANCELLED,
                     title: 'Order Cancelled',
                     brief: 'Your order has been cancelled.',
                     message: `Your order #${order.uuid} has been cancelled.`,
+                    payload: {
+                        type: NotificationType.ORDER_PLACED,
+                        priority: NotificationPriority.HIGH,
+                        isRead: String(false),
+                    },
                 },
                 [OrderStatus.PAYMENT_SUCCESSFUL]: {
                     type: NotificationType.PAYMENT_SUCCESSFUL,
                     title: 'Payment Successful',
                     brief: 'Your payment was processed successfully.',
                     message: `Payment for order #${order.uuid} was successful.`,
+                    payload: {
+                        type: NotificationType.ORDER_PLACED,
+                        priority: NotificationPriority.HIGH,
+                        isRead: String(false),
+                    },
                 },
                 [OrderStatus.PAYMENT_REJECTED]: {
                     type: NotificationType.PAYMENT_FAILED,
                     title: 'Payment Failed',
                     brief: 'Your payment could not be processed.',
                     message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
+                    payload: {
+                        type: NotificationType.ORDER_PLACED,
+                        priority: NotificationPriority.HIGH,
+                        isRead: String(false),
+                    },
                 },
             };
 
             const notif = notificationMap[status];
             if (notif && order.customer) {
+                this.logger.log(`Attempting to create notification for order status update: ${JSON.stringify(order)}`);
                 const notification = await this.notificationsService.create({
                     customerUUID: order.customer.uuid,
                     ...notif,
@@ -655,7 +682,7 @@ export class OrderService {
                 }).catch(err => this.logger.warn(`Failed to send ${notif.type} notification: ${err?.message}`));
 
                 if (notification?.uuid) {
-                    this.logger.log(`Attempting to create psuh notification for order placement: ${JSON.stringify(order.uuid)}`);
+                    this.logger.log(`Attempting to create psuh notification for order status update: ${JSON.stringify(order.uuid)}`);
                     await this.pushNotificationService.sendToToken(notification?.uuid)
                 }
             }
