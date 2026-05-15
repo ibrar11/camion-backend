@@ -1189,49 +1189,86 @@ PUT /v1/products/<product-uuid>/variants HTTP/1.1
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 warehouse | Yes | UUID | UUID of the warehouse from which this product-variant will be sourced
-title.en | Yes | String | Title of the variant in English
+title.en | Yes | String | Title of the variant in English — must be specific to this variant (e.g. "Brown / Single size: 90-140cm"), not the product-level title
 title.ar | Yes | String | Title of the variant in Arabic
 sku | Yes | String | The sku of the variant
 quantity | Yes | Number | The quantity of the variant in the warehouse
 barcode | Yes | String | The unique barcode of the variant
 price.amount | Yes | Number | The amount in which we will charge the customer
 price.currencyCode | Yes | String | The currency code of the price amount
-weight.amount | Yes | Number | The amount of the weight
+weight.amount | Yes | Number | The actual weight of this variant from the supplier. **Do not use placeholder values** — this is sent to JOP WMS for inbound declarations and affects shipping calculations.
 weight.unit | Yes | String| The weight-unit of the variant. A value from, `g, kg, oz, lb` must be provided.
-dimensions.width | Yes | Number | The width of the variant
-dimensions.height | Yes | Number | The height of the variant
-dimensions.length | Yes | Number | The length of the variant
+dimensions.width | Yes | Number | The actual width of this variant from the supplier. **Do not use placeholder values.**
+dimensions.height | Yes | Number | The actual height of this variant from the supplier.
+dimensions.length | Yes | Number | The actual length of this variant from the supplier.
 dimensions.unit | Yes | String | The unit of measurement for dimensions. A value from, `mm, cm, m, km, in, ft, yd, mi` must be provided.
 optionValues | No | List[UUID] | A list of UUIDs of option-values
+skuMeta | No | Object | Supplier SKU metadata required for Gulltrans procurement orders. **Must be provided for any variant sourced from a 1688 supplier.** If omitted, `sku_info` will be sent as an empty object to Gulltrans, meaning the daigou agent cannot identify the correct color/size variant to purchase. See structure below.
+
+> [!WARNING]
+> **Procurement impact of missing or placeholder data**
+>
+> Variants created via the frontend without `skuMeta`, or with placeholder `weight`/`dimensions` values (e.g. `1 kg`, `1×1×1 mm`), will cause failures in the WMS dispatch flow:
+> - `skuMeta: null` → Gulltrans receives `sku_info: {}` — the daigou agent cannot identify which supplier variant to buy (`spec_id` and `specs` are missing)
+> - Placeholder weight → wrong total weight declared on JOP WMS inbound and wrong shipping estimates
+> - Placeholder dimensions → wrong box size sent to WMS product sync
+>
+> Variants imported via the bulk procurement import API populate all three fields automatically from the supplier API response. When creating variants manually, always copy these values from the supplier listing.
+
+**`skuMeta` object structure** (sourced from the 1688 supplier API at import time):
+
+Field | Type | Description
+------|------|------------
+shop_id | String | Supplier's shop ID on 1688
+shop_name | String | Supplier's shop name
+spec_id | String | 1688 SKU spec ID — identifies the exact color/size combination
+sku_img | String | URL of the SKU-specific image
+min_order_quantity | String | Minimum order quantity as a string
+batch_number | String | Batch number (usually `"1"`)
+imgs | Array | Product-level images from the supplier
+specs | Array | Array of `{ label, value }` pairs for each spec attribute (e.g. `[{ "label": "Color", "value": "Brown" }, { "label": "Size", "value": "Single size: 90-140cm" }]`)
 
 ### Request Body
 ```json
 {
     "warehouse": "09d89f39-755b-4959-a5df-654c4f28c35f",
     "title": {
-        "en": "iPhone 17 Lavender 256 GB",
-        "ar": "iPhone 17 Lavender 256 GB"
+        "en": "Brown / Single size: 90-140cm",
+        "ar": "بني / مقاس واحد: 90-140 سم"
     },
-    "sku": "iphone-17-lavender-256",
+    "sku": "6063095111989",
     "quantity": 100,
-    "barcode": "10000",
+    "barcode": "6063095111989",
     "price": {
         "amount": 1000,
         "currencyCode": "qar"
     },
     "weight": {
-        "amount": 1,
+        "amount": 0.5,
         "unit": "kg"
     },
     "dimensions": {
-        "width": 1000,
-        "height": 1000,
-        "length": 1000,
-        "unit": "in"
+        "width": 30,
+        "height": 10,
+        "length": 40,
+        "unit": "cm"
     },
     "optionValues": [
         "443d0325-c769-49eb-8867-9287b18c2318"
-    ]
+    ],
+    "skuMeta": {
+        "shop_id": "BBByHrSBdD6rcCxxTgxjQEQ6g",
+        "shop_name": "南通市飞凡梦纺织品有限公司",
+        "spec_id": "1234567890",
+        "sku_img": "https://...",
+        "min_order_quantity": "1",
+        "batch_number": "1",
+        "imgs": [],
+        "specs": [
+            { "label": "Color", "value": "Brown" },
+            { "label": "Size", "value": "Single size: 90-140cm" }
+        ]
+    }
 }
 ```
 
@@ -1239,36 +1276,49 @@ optionValues | No | List[UUID] | A list of UUIDs of option-values
 ```json
 {
     "uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-    "titleEn": "iPhone 17 Lavender 256 GB",
-    "titleAr": "iPhone 17 Lavender 256 GB",
-    "sku": "iphone-17-lavender-256",
-    "barcode": "10000",
+    "titleEn": "Brown / Single size: 90-140cm",
+    "titleAr": "بني / مقاس واحد: 90-140 سم",
+    "sku": "6063095111989",
+    "barcode": "6063095111989",
     "price": {
         "amount": 1000,
         "currencyCode": "qar"
     },
     "weight": {
-        "amount": 1,
+        "amount": 0.5,
         "unit": "kg"
     },
     "dimensions": {
-        "width": 1000,
-        "height": 1000,
-        "length": 1000,
-        "unit": "in"
+        "width": 30,
+        "height": 10,
+        "length": 40,
+        "unit": "cm"
+    },
+    "skuMeta": {
+        "shop_id": "BBByHrSBdD6rcCxxTgxjQEQ6g",
+        "shop_name": "南通市飞凡梦纺织品有限公司",
+        "spec_id": "1234567890",
+        "sku_img": "https://...",
+        "min_order_quantity": "1",
+        "batch_number": "1",
+        "imgs": [],
+        "specs": [
+            { "label": "Color", "value": "Brown" },
+            { "label": "Size", "value": "Single size: 90-140cm" }
+        ]
     },
     "product": {
-        "uuid": "6cfd4dec-10a3-47e6-a2be-96df08cee2ac",
-        "slug": "iphone-17",
-        "titleEn": "iPhone 17",
-        "titleAr": "آيفون 17",
-        "briefEn": "From $799 or $33.29/mo. per month for 24 months",
-        "briefAr": "ابتداءً من 799 دولارًا أو 33.29 دولارًا شهريًا لمدة 24 شهرًا",
-        "descriptionEn": "Your new iPhone awaits. Make it yours.",
-        "descriptionAr": "جهاز آيفون الجديد بانتظارك. اجعله ملكك.",
-        "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
-        "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
-        "status": "DRAFT"
+        "uuid": "4a91cd1d-c006-4fd9-af85-03c0275dab86",
+        "slug": "light-luxury-sofa-cover",
+        "titleEn": "Light Luxury Sofa Cover",
+        "titleAr": "غطاء أريكة فاخر",
+        "briefEn": "",
+        "briefAr": "",
+        "descriptionEn": "Light Luxury Sofa Cover",
+        "descriptionAr": "غطاء أريكة فاخر",
+        "descriptionHtmlEn": "<p>Light Luxury Sofa Cover</p>",
+        "descriptionHtmlAr": "<p>غطاء أريكة فاخر</p>",
+        "status": "active"
     }
 }
 ```
@@ -1365,41 +1415,55 @@ PUT /v1/products/<product-uuid>/variants/<variant-uuid> HTTP/1.1
 
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
-title.en | Yes | String | Title of the variant in English
+title.en | Yes | String | Title of the variant in English — must be specific to this variant, not the product-level title
 title.ar | Yes | String | Title of the variant in Arabic
 sku | Yes | String | The sku of the variant
 barcode | Yes | String | The unique barcode of the variant
 price.amount | Yes | Number | The amount in which we will charge the customer
 price.currencyCode | Yes | String | The currency code of the price amount
-weight.amount | Yes | Number | The amount of the weight
+weight.amount | Yes | Number | The actual weight of this variant. **Do not use placeholder values.**
 weight.unit | Yes | String| The weight-unit of the variant. A value from, `g, kg, oz, lb` must be provided.
-dimensions.width | Yes | Number | The width of the variant
-dimensions.height | Yes | Number | The height of the variant
-dimensions.length | Yes | Number | The length of the variant
+dimensions.width | Yes | Number | The actual width of this variant. **Do not use placeholder values.**
+dimensions.height | Yes | Number | The actual height of this variant.
+dimensions.length | Yes | Number | The actual length of this variant.
 dimensions.unit | Yes | String | The unit of measurement for dimensions. A value from, `mm, cm, m, km, in, ft, yd, mi` must be provided.
+skuMeta | No | Object | Supplier SKU metadata. Use this to backfill `skuMeta` on variants that were created without it. See the Create Variant section for the full field structure.
 
 ### Request Body
 ```json
 {
     "title": {
-        "en": "A new laptop (in english)",
-        "ar": "A new laptop (in arabic)"
+        "en": "Brown / Single size: 90-140cm",
+        "ar": "بني / مقاس واحد: 90-140 سم"
     },
-    "sku": "dell-xps-2026",
-    "barcode": "1212321",
+    "sku": "6063095111989",
+    "barcode": "6063095111989",
     "price": {
         "amount": 1000,
         "currencyCode": "qar"
     },
     "weight": {
-        "amount": 1,
+        "amount": 0.5,
         "unit": "kg"
     },
     "dimensions": {
-        "width": 1000,
-        "height": 1000,
-        "length": 1000,
-        "unit": "in"
+        "width": 30,
+        "height": 10,
+        "length": 40,
+        "unit": "cm"
+    },
+    "skuMeta": {
+        "shop_id": "BBByHrSBdD6rcCxxTgxjQEQ6g",
+        "shop_name": "南通市飞凡梦纺织品有限公司",
+        "spec_id": "1234567890",
+        "sku_img": "https://...",
+        "min_order_quantity": "1",
+        "batch_number": "1",
+        "imgs": [],
+        "specs": [
+            { "label": "Color", "value": "Brown" },
+            { "label": "Size", "value": "Single size: 90-140cm" }
+        ]
     }
 }
 ```
@@ -1408,23 +1472,36 @@ dimensions.unit | Yes | String | The unit of measurement for dimensions. A value
 ```json
 {
     "uuid": "f1f6fb3a-f1d1-43b3-95b6-e213a020ca08",
-    "titleEn": "A new laptop (in english)",
-    "titleAr": "A new laptop (in arabic)",
-    "sku": "dell-xps-2026",
-    "barcode": "1212321",
+    "titleEn": "Brown / Single size: 90-140cm",
+    "titleAr": "بني / مقاس واحد: 90-140 سم",
+    "sku": "6063095111989",
+    "barcode": "6063095111989",
     "price": {
         "amount": 1000,
         "currencyCode": "qar"
     },
     "weight": {
-        "amount": 1,
+        "amount": 0.5,
         "unit": "kg"
     },
     "dimensions": {
-        "width": 1000,
-        "height": 1000,
-        "length": 1000,
-        "unit": "in"
+        "width": 30,
+        "height": 10,
+        "length": 40,
+        "unit": "cm"
+    },
+    "skuMeta": {
+        "shop_id": "BBByHrSBdD6rcCxxTgxjQEQ6g",
+        "shop_name": "南通市飞凡梦纺织品有限公司",
+        "spec_id": "1234567890",
+        "sku_img": "https://...",
+        "min_order_quantity": "1",
+        "batch_number": "1",
+        "imgs": [],
+        "specs": [
+            { "label": "Color", "value": "Brown" },
+            { "label": "Size", "value": "Single size: 90-140cm" }
+        ]
     }
 }
 ```
