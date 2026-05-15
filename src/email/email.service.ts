@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, UnprocessableEntityException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import sgMail from "@sendgrid/mail";
 
@@ -161,7 +161,7 @@ export class EmailService {
 			this.logger.log(`Email sent to ${to} using template ${templateId}`);
 		} catch (err) {
 			this.logger.error(`Failed to send email to ${to}: ${(err as Error).message}`);
-			throw err;
+			throw new UnprocessableEntityException({ error: 'Failed to send email. Please try again.' });
 		}
 	}
 }
