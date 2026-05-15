@@ -78,9 +78,11 @@ export class PaymentsWebhookService {
 
             const transaction = await this.paymentRepository.findOne({
                 where: {
-                    transactionId: TransactionId,
                     order: {id: order.id}
                 },
+                relations: {
+                    order: true
+                }
             });
 
             if (!transaction) {
@@ -141,6 +143,7 @@ export class PaymentsWebhookService {
                         message: `Payment for order #${order.uuid} was successful. Your order is now being processed.`,
                         priority: NotificationPriority.HIGH,
                     }).catch(err => this.logger.warn(`Failed to send PAYMENT_SUCCESSFUL notification: ${err?.message}`));
+                    this.logger.log(`Create notification for payment status success: ${JSON.stringify(notification)}`);
                 }
 
             } else if (
@@ -163,6 +166,7 @@ export class PaymentsWebhookService {
                         message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
                         priority: NotificationPriority.HIGH,
                     }).catch(err => this.logger.warn(`Failed to send PAYMENT_FAILED notification: ${err?.message}`));
+                    this.logger.log(`Create notification for payment status failed: ${JSON.stringify(notification)}`);
                 }
             }
 

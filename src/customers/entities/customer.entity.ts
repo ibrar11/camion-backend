@@ -117,11 +117,7 @@ export class Customer {
 	@OneToOne(() => Affiliate, (affiliate) => affiliate.customer)
 	affiliate: Affiliate;
 
-	@Column({ type: "varchar", length: 64, default: "", })
-	firebaseDeviceToken: string;
-
-	@Exclude()
-	@Column({ type: "varchar", length: 64, default: "", })
+	@Column({ type: "text", default: "", })
 	firebaseDeviceToken: string;
 
 	@Exclude()
