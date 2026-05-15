@@ -49,6 +49,8 @@ export class PushNotificationService {
                 }
             });
 
+            this.logger.log(`Pushing notification: ${notification}`);
+
             if(!notification) {
                 throw new BadRequestException(
                     "Notification not found"
@@ -56,6 +58,8 @@ export class PushNotificationService {
             }
 
             const customer = notification.customer;
+
+            this.logger.log(`Pushing notification for customer: ${customer} with token: ${customer.firebaseDeviceToken}`);
 
             if(!customer) {
                 throw new BadRequestException(
