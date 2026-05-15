@@ -32,6 +32,7 @@ import { ProductVariantImageService } from '../inventory/product-variant-image.s
 import {
     ProductAttribute,
     ProductDetail,
+    ProductSku,
     ProductVariant as ProcurementProductVariant,
     SearchProductItem,
     SearchProducts,
