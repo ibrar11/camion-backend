@@ -709,6 +709,7 @@ export class ProcurementService {
             await Promise.all(
                 batch.map(async (order) => {
                     try {
+                        this.logger.log(`Gulltrans: creating order for shop ${order.shop_id} (${order.skus?.length ?? 0} SKU(s), goods amount: ${order.goods_amount})`);
                         const response = await fetch(
                             `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                             {
@@ -731,6 +732,7 @@ export class ProcurementService {
                         const data = await response.json();
 
                         if (data.ret !== 1) {
+                            this.logger.error(`Gulltrans: order creation failed for shop ${order.shop_id} — ${data.msg}`);
                             results.failed.push({
                                 shopId: order.shop_id,
                                 reason: data.msg,
@@ -738,7 +740,7 @@ export class ProcurementService {
                             return;
                         }
 
-                        this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
+                        this.logger.log(`Gulltrans: order created for shop ${order.shop_id} — order_sn ${data?.data?.order_sn}`);
 
                         const orderSn: string = data?.data?.order_sn;
                         await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
@@ -749,7 +751,7 @@ export class ProcurementService {
                             raw: data?.data,
                         });
                     } catch (error: any) {
-                        this.logger.error(`Error creating order for shop ${order.shop_id}: ${error?.message}`);
+                        this.logger.error(`Gulltrans: order creation threw for shop ${order.shop_id} — ${error?.message}`);
                         results.failed.push({
                             shopId: order.shop_id,
                             reason: error?.message || 'Unknown error',
@@ -771,6 +773,7 @@ export class ProcurementService {
     async createOrder(dto: CreateProcurementOrderDto): Promise<CreateOrderResponse> {
         const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
         try {
+            this.logger.log(`Gulltrans: creating single order for shop ${(dto as any).shop_id ?? 'unknown'}`);
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                 {
@@ -792,12 +795,14 @@ export class ProcurementService {
             const data = await response.json();
 
             if (data.ret !== 1) {
+                this.logger.error(`Gulltrans: single order creation failed — ${data.msg}`);
                 throw new BadRequestException({
                     error: data.msg,
                 });
             }
 
             const orderSn: string = data?.data?.order_sn;
+            this.logger.log(`Gulltrans: single order created — order_sn ${orderSn}`);
             await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
 
             return {
@@ -806,7 +811,7 @@ export class ProcurementService {
                 raw: data?.data,
             };
         } catch (error: any) {
-            this.logger.error(`Error creating order: ${error?.message}`);
+            this.logger.error(`Gulltrans: single order creation threw — ${error?.message}`);
             throw new InternalServerErrorException({
                 error: 'Failed to create order',
                 details: error.response?.error || error.message,

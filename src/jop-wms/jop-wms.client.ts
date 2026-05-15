@@ -32,7 +32,7 @@ export class JopWmsClient {
         const bodyJson = JSON.stringify(payload);
         const signature = this.buildSignature(bodyJson, timestamp);
 
-        this.logger.log(`JOP WMS → ${endpoint}`);
+        this.logger.log(`JOP WMS: starting request to ${endpoint}`);
 
         const response = await fetch(`${this.baseUrl}/${endpoint}`, {
             method: 'POST',
@@ -53,10 +53,11 @@ export class JopWmsClient {
         // WMS returns code=0 for success regardless of HTTP status
         if (json?.code !== 0) {
             const msg = json?.msg ?? json?.message ?? 'Unknown WMS error';
-            this.logger.error(`JOP WMS ${endpoint} error code ${json?.code}: ${msg}`);
+            this.logger.error(`JOP WMS ${endpoint} failed — code ${json?.code}: ${msg}`);
             throw new InternalServerErrorException(msg);
         }
 
+        this.logger.log(`JOP WMS ${endpoint} succeeded`);
         return json as T;
     }
 }
