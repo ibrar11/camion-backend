@@ -1,4 +1,4 @@
-import { Injectable, HttpException } from "@nestjs/common";
+import { Injectable, UnprocessableEntityException } from "@nestjs/common";
 import crypto from "crypto";
 
 @Injectable()
@@ -48,25 +48,18 @@ export class NewsletterService {
 
 			if (!response.ok) {
 				const errorBody = await response.json().catch(() => null);
-
-				throw new HttpException(
-					{
-						error: errorBody?.detail || "Failed to subscribe to newsletter",
-					},
-					response.status,
-				);
+				throw new UnprocessableEntityException({
+					error: errorBody?.detail || "Failed to subscribe to newsletter",
+				});
 			}
 		} catch (error: unknown) {
-			if (error instanceof HttpException) {
+			if (error instanceof UnprocessableEntityException) {
 				throw error;
 			}
 
-			throw new HttpException(
-				{
-					error: "Failed to subscribe to newsletter",
-				},
-				500,
-			);
+			throw new UnprocessableEntityException({
+				error: "Failed to subscribe to newsletter",
+			});
 		}
 	}
 }
