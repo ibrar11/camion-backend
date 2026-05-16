@@ -49,8 +49,8 @@ export class PushNotificationService {
                 }
             });
 
-            
-            if(!notification) {
+
+            if (!notification) {
                 throw new BadRequestException(
                     "Notification not found"
                 );
@@ -62,25 +62,38 @@ export class PushNotificationService {
 
             this.logger.log(`Pushing notification for customer: ${customer} with token: ${JSON.stringify(customer.firebaseDeviceToken)}`);
 
-            if(!customer) {
+            if (!customer) {
                 throw new BadRequestException(
                     "Customer not found"
                 );
             }
 
-            const message: admin.messaging.Message = {
-                token: customer.firebaseDeviceToken,
-                notification: { 
-                    title: notification.title, 
-                    body: notification.message 
-                },
-                data: notification.payload || {},
-            };
+            const pushNotification: string[] = [];
+            const deviceTokens = customer?.firebaseDeviceToken || [];
 
-            const res = await this.firebase.messaging().send(message);
+            if (deviceTokens?.length > 0) {
+                for (let i = 0; i < deviceTokens.length; i++) {
+                    try {
+                        const message: admin.messaging.Message = {
+                            token: customer.firebaseDeviceToken[i],
+                            notification: {
+                                title: notification.title,
+                                body: notification.message
+                            },
+                            data: notification.payload || {},
+                        };
 
-            this.logger.log(`Sent push to ${customer.firebaseDeviceToken.slice(0, 10)}... ✅ (${res})`);
-            return { id: res };
+                        const res = await this.firebase.messaging().send(message);
+                        pushNotification.push(res);
+
+                        this.logger.log(`Sent push to ${customer.firebaseDeviceToken.slice(0, 10)}... ✅ (${res})`);
+                    } catch (error: any) {
+                        this.logger.error(`Error sending push to ${customer.firebaseDeviceToken.slice(0, 10)}`);
+                        throw error;
+                    }
+                }
+            }
+            return { ids: pushNotification };
         } catch (err: any) {
             this.logger.error(`FCM error: ${err?.message || err}`);
             throw err;
