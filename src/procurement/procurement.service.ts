@@ -5,6 +5,8 @@ import {
     InternalServerErrorException,
     Inject,
 } from '@nestjs/common';
+import { Job } from 'bullmq';
+import * as crypto from 'node:crypto';
 
 import { generateSlug } from '../common/slug';
 import { fetchImageAsFile } from '../common/fetchImage';
@@ -45,7 +47,7 @@ import {
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
@@ -54,8 +56,11 @@ import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { QueueService } from 'src/queue/queue.service';
 import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
+import { QueueName } from 'src/queue/enums/QueueTypes.enum';
+import { InventoryResyncJobData } from 'src/queue/types';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -80,6 +85,78 @@ export class ProcurementService {
 
     private isSameObject(a: unknown, b: unknown): boolean {
         return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    }
+
+    async enqueueInventoryVariantsResync(body: ResyncInventoryVariantsDto): Promise<{
+        jobId: string;
+        status: "queued";
+        scope: "all" | "selected";
+        productsCount: number;
+    }> {
+        const scope = body.scope ?? "selected";
+
+        if (scope === "all") {
+            if (body.productUuids?.length) {
+                throw new BadRequestException({
+                    message: "productUuids is not allowed when scope is all",
+                });
+            }
+
+            const products = await this.productRepository.find({
+                select: { uuid: true },
+                where: { procurementId: Not(IsNull()) },
+            });
+            const productUuids = products.map((p) => p.uuid);
+            if (!productUuids.length) {
+                throw new BadRequestException({
+                    message: "No products with procurementId found for resync",
+                });
+            }
+
+            const queued = await this.queueService.addInventoryResyncJob(productUuids);
+            return { ...queued, scope, productsCount: productUuids.length };
+        }
+
+        const productUuids = body.productUuids ?? [];
+        if (!productUuids.length) {
+            throw new BadRequestException({
+                message: "productUuids must be a non-empty array when scope is selected",
+            });
+        }
+
+        const queued = await this.queueService.addInventoryResyncJob(productUuids);
+        return { ...queued, scope, productsCount: productUuids.length };
+    }
+
+    async getInventoryVariantsResyncJob(jobId: string): Promise<{
+        jobId: string;
+        status: "queued" | "active" | "completed" | "failed" | "not_found";
+        progress?: string | number | boolean | object;
+        result?: any;
+        failedReason?: string | null;
+    }> {
+        const job = await this.queueService.getJob(QueueName.INVENTORY_RESYNC, jobId) as Job<InventoryResyncJobData> | null;
+        if (!job) {
+            return { jobId, status: "not_found" };
+        }
+
+        const state = await job.getState();
+        const statusMap: Record<string, "queued" | "active" | "completed" | "failed"> = {
+            waiting: "queued",
+            delayed: "queued",
+            paused: "queued",
+            active: "active",
+            completed: "completed",
+            failed: "failed",
+        };
+
+        return {
+            jobId,
+            status: statusMap[state] ?? "queued",
+            progress: job.progress,
+            result: job.returnvalue,
+            failedReason: job.failedReason ?? null,
+        };
     }
 
     async resyncInventoryVariantsByProducts(productUuids: string[]): Promise<{

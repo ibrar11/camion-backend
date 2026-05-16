@@ -90,6 +90,15 @@ export class ProcurementController {
     resyncInventoryVariants(
         @Body() body: ResyncInventoryVariantsDto
     ) {
-        return this.procurementService.resyncInventoryVariantsByProducts(body.productUuids);
+        return this.procurementService.enqueueInventoryVariantsResync(body);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Get('resync-variants/job/:jobId')
+    @HttpCode(HttpStatus.OK)
+    getResyncInventoryVariantsJob(
+        @Param('jobId') jobId: string
+    ) {
+        return this.procurementService.getInventoryVariantsResyncJob(jobId);
     }
 }

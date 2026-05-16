@@ -68,6 +68,7 @@ import { TranslationItemService } from 'src/translation/translation-item.service
         BullModule.registerQueue(
             { name: QueueName.TRANSLATION },
             { name: QueueName.FIELD_TRANSLATION },
+            { name: QueueName.INVENTORY_RESYNC },
         ),
         TypeOrmModule.forFeature([
             Product,
