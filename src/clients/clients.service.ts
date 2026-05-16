@@ -139,9 +139,12 @@ export class ClientsService {
      * @param uuid - The UUID of the client
      * @returns The client entity including secret, or null if not found
      */
-    async findByUuidWithSecret(uuid: string): Promise<Client | null> {
+    async findOneCached(uuid: string): Promise<Client | null> {
         return this.clientRepository.findOne({
-            where: { uuid },
+            cache: true,
+            where: {
+                uuid: uuid,
+            },
         });
     }
 

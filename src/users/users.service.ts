@@ -107,6 +107,29 @@ export class UsersService {
 	}
 
 	/**
+	 * Finds a user using a cached query
+	 *
+	 * @param uuid
+	 * @returns
+	 */
+	async findOneCached(uuid: string): Promise<User> {
+		this.logger.log(`Retrieving cached user: ${uuid}`);
+		const user = await this.userRepository.findOne({
+			cache: true,
+			where: {
+				uuid: uuid,
+			},
+		});
+
+		if (user === null) {
+			throw new NotFoundException({
+				error: "Failed to find the user. Please check and try again.",
+			});
+		}
+		return user;
+	}
+
+	/**
 	 * Updates a user
 	 *
 	 * @param uuid
