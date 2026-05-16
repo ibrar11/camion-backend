@@ -142,7 +142,10 @@ export class CustomerAuthService {
 		customer.role = CustomerRole.Customer;
 		customer.isActive = true;
 		if (body.firebaseDeviceToken) {
-			customer.firebaseDeviceToken = body.firebaseDeviceToken;
+			const tokenExists = customer.firebaseDeviceToken.includes(body.firebaseDeviceToken);
+			if (!tokenExists) {
+				customer.firebaseDeviceToken.push(body.firebaseDeviceToken);
+			}
 		}
 		await this.customerRepository.save(customer);
 
@@ -242,8 +245,11 @@ export class CustomerAuthService {
 		}
 
 		if (body.firebaseDeviceToken) {
-			customer.firebaseDeviceToken = body.firebaseDeviceToken;
-			await this.customerRepository.save(customer);
+			const tokenExists = customer.firebaseDeviceToken.includes(body.firebaseDeviceToken);
+			if (!tokenExists) {
+				customer.firebaseDeviceToken.push(body.firebaseDeviceToken);
+				await this.customerRepository.save(customer);
+			}
 		}
 
 		// merge the customer gurst cart
@@ -388,8 +394,11 @@ export class CustomerAuthService {
 		}
 
 		if (body.firebaseDeviceToken) {
-			customer.firebaseDeviceToken = body.firebaseDeviceToken;
-			await this.customerRepository.save(customer);
+			const tokenExists = customer.firebaseDeviceToken.includes(body.firebaseDeviceToken);
+			if (!tokenExists) {
+				customer.firebaseDeviceToken.push(body.firebaseDeviceToken);
+				await this.customerRepository.save(customer);
+			}
 		}
 
 		// merge the customer gurst cart
@@ -753,10 +762,13 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.facebookId = facebookId;
-					if(firebaseDeviceToken) {
-						customer.firebaseDeviceToken = firebaseDeviceToken;
+					if (firebaseDeviceToken) {
+						const tokenExists = customer.firebaseDeviceToken.includes(firebaseDeviceToken);
+						if (!tokenExists) {
+							customer.firebaseDeviceToken.push(firebaseDeviceToken);
+							await this.customerRepository.save(customer);
+						}
 					}
-					customer = await this.customerRepository.save(customer);
 				}
 			}
 
@@ -773,8 +785,8 @@ export class CustomerAuthService {
 				newCustomer.facebookId = facebookId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
-				if(firebaseDeviceToken) {
-					newCustomer.firebaseDeviceToken = firebaseDeviceToken;
+				if (firebaseDeviceToken) {
+					newCustomer.firebaseDeviceToken.push(firebaseDeviceToken);
 				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
@@ -813,8 +825,12 @@ export class CustomerAuthService {
 
 			if (customer) {
 				customer.googleId = googleId;
-				if(firebaseDeviceToken) {
-					customer.firebaseDeviceToken = firebaseDeviceToken;
+				if (firebaseDeviceToken) {
+					const tokenExists = customer.firebaseDeviceToken.includes(firebaseDeviceToken);
+					if (!tokenExists) {
+						customer.firebaseDeviceToken.push(firebaseDeviceToken);
+						await this.customerRepository.save(customer);
+					}
 				}
 				customer = await this.customerRepository.save(customer);
 			} else {
@@ -827,8 +843,8 @@ export class CustomerAuthService {
 				newCustomer.googleId = googleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
-				if(firebaseDeviceToken) {
-					newCustomer.firebaseDeviceToken = firebaseDeviceToken;
+				if (firebaseDeviceToken) {
+					newCustomer.firebaseDeviceToken.push(firebaseDeviceToken);
 				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
@@ -952,8 +968,12 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.appleId = appleId;
-					if(firebaseDeviceToken) {
-						customer.firebaseDeviceToken = firebaseDeviceToken;
+					if (firebaseDeviceToken) {
+						const tokenExists = customer.firebaseDeviceToken.includes(firebaseDeviceToken);
+						if (!tokenExists) {
+							customer.firebaseDeviceToken.push(firebaseDeviceToken);
+							await this.customerRepository.save(customer);
+						}
 					}
 					customer = await this.customerRepository.save(customer);
 				}
@@ -972,8 +992,8 @@ export class CustomerAuthService {
 				newCustomer.appleId = appleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
-				if(firebaseDeviceToken) {
-					newCustomer.firebaseDeviceToken = firebaseDeviceToken;
+				if (firebaseDeviceToken) {
+					newCustomer.firebaseDeviceToken.push(firebaseDeviceToken);
 				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
