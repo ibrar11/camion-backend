@@ -166,6 +166,7 @@ export class JopWmsService {
     // ─── Inbound Orders ───────────────────────────────────────────────────────
 
     async createInboundOrder(dto: CreateInboundOrderDto) {
+        this.logger.log(`WMS inbound: creating order ${dto.customerVoucherNo} (${dto.boxList?.length ?? 0} box(es))`);
         const result = await this.client.post('inboundorder/create', {
             warehouseCode: this.warehouseCode,
             customerVoucherNo: dto.customerVoucherNo,
@@ -179,6 +180,7 @@ export class JopWmsService {
             boxList: dto.boxList,
         });
         const wmsAssignedId = String((result as any)?.data?.inboundOrderId ?? '');
+        this.logger.log(`WMS inbound: order ${dto.customerVoucherNo} created — WMS ID ${wmsAssignedId || 'N/A'}`);
         await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.INBOUND, dto.sourceOrderUuids ?? [], wmsAssignedId || undefined);
         return result;
     }
@@ -209,6 +211,7 @@ export class JopWmsService {
     // ─── Outbound Orders ──────────────────────────────────────────────────────
 
     async createOutboundOrder(dto: CreateOutboundOrderDto) {
+        this.logger.log(`WMS outbound: creating order ${dto.customerVoucherNo} (${dto.productList?.length ?? 0} SKU(s))`);
         const result = await this.client.post('outboundorder/create', {
             warehouseCode: this.warehouseCode,
             customerVoucherNo: dto.customerVoucherNo,
@@ -226,6 +229,7 @@ export class JopWmsService {
             productList: dto.productList,
         });
         const wmsAssignedId = String((result as any)?.data?.outboundOrderId ?? '');
+        this.logger.log(`WMS outbound: order ${dto.customerVoucherNo} created — WMS ID ${wmsAssignedId || 'N/A'}`);
         await this.trackOrder(dto.customerVoucherNo, JopWmsOrderType.OUTBOUND, [], wmsAssignedId || undefined);
         return result;
     }
