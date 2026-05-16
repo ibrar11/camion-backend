@@ -54,6 +54,8 @@ import { ProductReviewController } from './product-review.controller';
 import { ProductReviewImage } from './entities/product-review-image.entity';
 import { ProductReviewImageService } from './product-review-image.service';
 
+import { ProductView } from './entities/product-view.entity';
+
 import { ProductVariantInventoryItem } from './entities/product-variant-inventory-item.entity';
 import { ProductVariantOptionValue } from './entities/product-variant-option-value.entity';
 
@@ -76,9 +78,11 @@ import { TranslationService } from 'src/translation/translation.service';
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
-			User,
-			Customer,
+			CartItem,
 			Category,
+			Customer,
+			InventoryItem,
+			InventoryLevel,
 			Product,
 			ProductCategory,
 			ProductOption,
@@ -89,11 +93,10 @@ import { TranslationService } from 'src/translation/translation.service';
 			ProductVariantImage,
 			ProductVariantInventoryItem,
 			ProductVariantOptionValue,
-			InventoryItem,
-			InventoryLevel,
+			ProductView,
+			Translation,
+			User,
 			Warehouse,
-			CartItem,
-			Translation
 		]),
 		ClientsModule,
 		PricingModule,

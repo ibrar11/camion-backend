@@ -1,3 +1,5 @@
+import type { Request } from "express";
+
 import {
 	Inject,
 	UseGuards,
@@ -6,6 +8,7 @@ import {
 import {
 	Args,
 	ArgsType,
+	Context,
 	Field,
 	Int,
 	Parent,
@@ -30,6 +33,7 @@ import { CurrencyCode } from "./enums/CurrencyCode.enum";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
 import { Category } from "./entities/category.entity";
 import { ConfigService } from "@nestjs/config";
+import { Customer } from "src/customers/entities/customer.entity";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -328,9 +332,9 @@ export class ProductsResolver {
 	}
 
 	@Query(() => Product, { nullable: true, })
-	async getProduct(@Args() args: GetProductArgs): Promise<Product | null> {
+	async getProduct(@Context('req') req: Request & { jti: string, customer: Customer, }, @Args() args: GetProductArgs): Promise<Product | null> {
 		try {
-			return await this.productsService.findOneBySlug(args.slug);
+			return await this.productsService.findOneBySlug(req.customer, args.slug);
 		} catch {
 			return Promise.resolve(null);
 		}
@@ -362,8 +366,8 @@ export class ProductsResolver {
 	}
 
 	@Query(() => [Product])
-	getRecentlyViewedProducts(@Args() args: GetRecentlyViewedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getRecentlyViewedProducts("", args.pageNumber, args.itemsPerPage);
+	getRecentlyViewedProducts(@Context('req') req: Request & { jti: string, customer: Customer, }, @Args() args: GetRecentlyViewedProductsArgs): Promise<Array<Product>> {
+		return this.productsService.getRecentlyViewedProducts(req.customer, args.pageNumber, args.itemsPerPage);
 	}
 }
 

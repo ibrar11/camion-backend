@@ -16,8 +16,8 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ClientStatus } from "../clients/enums/client-status";
 
 import { UsersService } from "../users/users.service";
-import { CustomersService } from "src/customers/customers.service";
-import { ClientsService } from "src/clients/clients.service";
+import { CustomersService } from "../customers/customers.service";
+import { ClientsService } from "../clients/clients.service";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -46,55 +46,27 @@ export class AuthGuard implements CanActivate {
 				throw new UnauthorizedException();
 			}
 
-			// We don't store the guest auth token in cache since guest are already logged out
-			// So, if the payload type is guest, we just allow them to continue
-			if (payload.type === "guest") {
-				const customer = await this.customersService.findOne(payload.sub);
-				if (customer === null || !customer.isActive) {
+			if (payload.type === "client") {
+				// Fetch the client for the request
+				const client = await this.clientsService.findOneCached(payload.sub);
+				if (client === null || client.status !== ClientStatus.ACTIVE) {
 					throw new UnauthorizedException();
 				}
 
 				request["jti"] = payload.jti;
-				request["customer"] = customer;
-				return true;
-			}
-
-			// Make sure the token exists in the cache
-			const tokenExists = await this.cacheManager.get(
-				payload.type === "user"
-					? `auth:user-session:${payload.jti}`
-					: payload.type === "customer"
-						? `auth:customer-session:${payload.jti}`
-						: ""
-			);
-
-			// Make sure the token exists in the cache.
-			if (payload.type !== "client" && (tokenExists === null || tokenExists === undefined)) {
-				throw new UnauthorizedException();
-			}
-
-			if (payload.type === "client") {
-				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
-				if (!client || client.status !== ClientStatus.ACTIVE) {
-					throw new UnauthorizedException();
-				}
-
 				request["client"] = client;
 				return true;
 			}
 
 			if (payload.type === "user") {
 				// Make sure the token exists in the cache
-				const tokenExists = await this.cacheManager.get(
-					`auth:user-session:${payload.jti}`
-				);
-
+				const tokenExists = await this.cacheManager.get(`auth:user-session:${payload.jti}`);
 				if (tokenExists === null || tokenExists === undefined) {
 					throw new UnauthorizedException();
 				}
 
 				// Fetch the user for the request
-				const user = await this.usersService.findOne(payload.sub);
+				const user = await this.usersService.findOneCached(payload.sub);
 				if (user === null || !user.isActive) {
 					throw new UnauthorizedException();
 				}
@@ -105,17 +77,29 @@ export class AuthGuard implements CanActivate {
 			}
 
 			// Fetch the customer/guest for the request
-			if (payload.type === "customer" || payload.type === "guest") {
-				const tokenExists = await this.cacheManager.get(
-					`auth:customer-session:${payload.jti}`
-				);
-
-				if (!tokenExists) {
+			if (payload.type === "customer") {
+				// Make sure the token exists in the cache
+				const tokenExists = await this.cacheManager.get(`auth:customer-session:${payload.jti}`);
+				if (tokenExists === null || tokenExists === undefined) {
 					throw new UnauthorizedException();
 				}
 
-				const customer = await this.customersService.findOne(payload.sub);
+				// Find the customer for the request
+				const customer = await this.customersService.findOneCached(payload.sub);
 				if (customer === null || !customer.isActive || customer.deletedAt) {
+					throw new UnauthorizedException();
+				}
+
+				request["jti"] = payload.jti;
+				request["customer"] = customer;
+				return true;
+			}
+
+			// We don't store the guest auth token in cache since guest are already logged out
+			// So, if the payload type is guest, we just allow them to continue
+			if (payload.type === "guest") {
+				const customer = await this.customersService.findOneCached(payload.sub);
+				if (customer === null || !customer.isActive) {
 					throw new UnauthorizedException();
 				}
 

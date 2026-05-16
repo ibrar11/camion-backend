@@ -127,10 +127,33 @@ export class CustomersService {
 	 * @returns
 	 */
 	async findOne(uuid: string): Promise<Customer> {
+		this.logger.log(`Retrieving customer: ${uuid}`);
 		const customer = await this.customerRepository.findOneBy({ uuid: uuid, });
 		if (customer === null) {
 			throw new NotFoundException({
-				error: "Faild",
+				error: "Failed to find the customer. Please check and try again.",
+			});
+		}
+		return customer;
+	}
+
+	/**
+	 * Finds a customer using a cached query
+	 *
+	 * @param uuid
+	 * @returns
+	 */
+	async findOneCached(uuid: string): Promise<Customer> {
+		this.logger.log(`Retrieving cached customer: ${uuid}`);
+		const customer = await this.customerRepository.findOne({
+			cache: true,
+			where: {
+				uuid: uuid,
+			},
+		});
+		if (customer === null) {
+			throw new NotFoundException({
+				error: "Failed to find the customer. Please check and try again.",
 			});
 		}
 		return customer;

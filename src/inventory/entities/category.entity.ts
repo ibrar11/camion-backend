@@ -65,6 +65,10 @@ export class Category {
 	@Column({ name: "is_featured", type: "boolean", default: false, })
 	isFeatured: boolean;
 
+	@Column({ name: "is_featured_on_homepage", type: "boolean", default: false, })
+	@Index()
+	isFeaturedOnHomepage: boolean;
+
 	@Exclude()
 	@Column({ nullable: true, })
 	parentId: number | null;

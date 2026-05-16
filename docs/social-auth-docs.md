@@ -121,9 +121,9 @@ This endpoint is called by Google — do not call it directly.
 
 ---
 
-### Mobile — verify access token
+### Mobile — verify token (standard login + iOS Limited Login)
 
-The mobile app authenticates with Facebook natively and sends the resulting access token to the API.
+The mobile app authenticates with Facebook natively and sends the resulting token to the API using the same field regardless of login type. The API auto-detects the token format.
 
 ```http
 POST /v1/auth/customer/oauth/facebook HTTP/1.1
@@ -133,9 +133,19 @@ Content-Type: application/json
 **Request body**
 ```json
 {
-    "accessToken": "<facebook-access-token-from-native-sdk>"
+    "accessToken": "<token-from-facebook-sdk>"
 }
 ```
+
+| Field | Required | Description |
+|---|---|---|
+| `accessToken` | Yes | Standard access token **or** iOS Limited Login OIDC JWT — send whichever the SDK returns |
+| `firebaseDeviceToken` | No | Device token for push notifications |
+
+**How the API distinguishes the two:**
+
+- **Standard access token** — opaque string (e.g. `EAABsbCS4ZD...`). Verified via Facebook's Graph API `debug_token` endpoint.
+- **iOS Limited Login ID token** — OIDC JWT with three dot-separated segments. Verified against Facebook's JWKS endpoint (`https://limited.facebook.com/.well-known/oauth/openid/jwks/`); user claims (`sub`, `name`, `email`) are extracted directly from the token with no Graph API call.
 
 **Response**
 ```json
@@ -148,8 +158,6 @@ Content-Type: application/json
     }
 }
 ```
-
-> **Note:** The API verifies the token against `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` using Facebook's Graph API (`debug_token`). Email permission must be granted by the user — login will be rejected if email is not returned.
 
 Use the returned `token` as a `Bearer` token on subsequent requests.
 

@@ -67,3 +67,7 @@ export interface DispatchShopJobData extends BaseJobData {
         productList: Array<{ sku: string; qty: number }>;
     }>;
 }
+
+export interface InventoryResyncJobData extends BaseJobData {
+    productUuids: string[];
+}
