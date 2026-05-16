@@ -113,8 +113,8 @@ export class Customer {
 	@OneToOne(() => Affiliate, (affiliate) => affiliate.customer)
 	affiliate: Affiliate;
 
-	@Column({ type: 'json', nullable: true })
-	firebaseDeviceToken: string[];
+	@Column({ type: 'jsonb',default: () => "'[]'"})
+	firebaseDeviceToken: string[] = [];
 
 	@Exclude()
 	@UpdateDateColumn({
