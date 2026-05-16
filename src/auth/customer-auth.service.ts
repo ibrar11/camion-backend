@@ -103,7 +103,7 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Make sure we don't have a customer using the same email address
@@ -219,12 +219,12 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Find the customer using their phone number
 		const customer = await this.customerRepository.findOneBy({
-			phoneNumber: body.phoneNumber.trim(),
+			phoneNumber: body.phoneNumber?.trim(),
 		});
 
 		if (customer === null) {
@@ -1030,7 +1030,7 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Make sure we don't have a customer using the same email address
