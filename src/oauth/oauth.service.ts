@@ -97,7 +97,7 @@ export class OauthService {
         token_type: string;
         expires_in: number;
     }> {
-        const client = await this.clientsService.findByUuidWithSecret(client_id);
+        const client = await this.clientsService.findOneCached(client_id);
 
         if (!client) {
             throw new UnauthorizedException({
@@ -184,7 +184,7 @@ export class OauthService {
             });
         }
 
-        const client = await this.clientsService.findByUuidWithSecret(existingToken.clientUuid);
+        const client = await this.clientsService.findOneCached(existingToken.clientUuid);
 
         if (!client || client.status !== ClientStatus.ACTIVE) {
             throw new UnauthorizedException({
