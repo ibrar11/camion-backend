@@ -686,6 +686,8 @@ export class CustomerAuthService {
 	}
 
 	async loginWithGoogleMobile(dto: GoogleMobileAuthDto): Promise<CustomerAuthResponse> {
+		this.logger.log(`Attempting to login customer by google mobile: ${JSON.stringify(dto)}`);
+
 		const { idToken, firebaseDeviceToken } = dto;
 
 		const allowedAudiences: string[] = [];
@@ -727,6 +729,8 @@ export class CustomerAuthService {
 	}
 
 	async loginWithFacebookMobile(dto: FacebookMobileAuthDto): Promise<CustomerAuthResponse> {
+		this.logger.log(`Attempting to login customer by facebook mobile: ${JSON.stringify(dto)}`);
+
 		const appId = this.configService.get<string>('FACEBOOK_APP_ID');
 		const appSecret = this.configService.get<string>('FACEBOOK_APP_SECRET');
 
@@ -781,6 +785,9 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.facebookId = facebookId;
+
+					this.logger.log(`Attempting to store firebase device token: ${firebaseDeviceToken} for facebookId: ${facebookId}`);
+
 					if (firebaseDeviceToken?.trim()) {
 						const token = firebaseDeviceToken.trim();
 						customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
@@ -812,6 +819,9 @@ export class CustomerAuthService {
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
 				newCustomer.firebaseDeviceToken = [];
+
+				this.logger.log(`Attempting to store firebase device token in facebook mobile logi: ${firebaseDeviceToken}`);
+
 				if (firebaseDeviceToken?.trim()) {
 					newCustomer.firebaseDeviceToken = [firebaseDeviceToken.trim()];
 				}
@@ -852,6 +862,9 @@ export class CustomerAuthService {
 
 			if (customer) {
 				customer.googleId = googleId;
+
+				this.logger.log(`Attempting to store firebase device token: ${firebaseDeviceToken} for googleId: ${googleId}`);
+
 				if (firebaseDeviceToken?.trim()) {
 					const token = firebaseDeviceToken.trim();
 					customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
@@ -877,6 +890,9 @@ export class CustomerAuthService {
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
 				newCustomer.firebaseDeviceToken = [];
+
+				this.logger.log(`Attempting to store firebase device token in google mobile logi: ${firebaseDeviceToken}`);
+
 				if (firebaseDeviceToken?.trim()) {
 					newCustomer.firebaseDeviceToken = [firebaseDeviceToken.trim()];
 				}
@@ -906,6 +922,8 @@ export class CustomerAuthService {
 	}
 
 	async loginWithAppleMobile(dto: AppleMobileAuthDto): Promise<CustomerAuthResponse> {
+		this.logger.log(`Attempting to login customer by apple mobile: ${JSON.stringify(dto)}`);
+
 		const { identityToken, authorizationCode, fullName, firebaseDeviceToken } = dto;
 
 		if (!identityToken && !authorizationCode) {
@@ -1002,6 +1020,7 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.appleId = appleId;
+					this.logger.log(`Attempting to store firebase device token: ${firebaseDeviceToken} for appleId: ${appleId}`);
 					if (firebaseDeviceToken?.trim()) {
 						const token = firebaseDeviceToken.trim();
 						customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
@@ -1033,6 +1052,9 @@ export class CustomerAuthService {
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
 				newCustomer.firebaseDeviceToken = [];
+
+				this.logger.log(`Attempting to store firebase device token in apple mobile login: ${firebaseDeviceToken}`);
+
 				if (firebaseDeviceToken?.trim()) {
 					newCustomer.firebaseDeviceToken = [firebaseDeviceToken.trim()];
 				}
