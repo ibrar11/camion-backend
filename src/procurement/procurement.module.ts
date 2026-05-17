@@ -48,8 +48,8 @@ import { S3Service } from '../common/s3.service';
 import { FileService } from '../common/file.service';
 import { ImageThumbnailService } from '../common/image-thumbnail.service';
 
-import { QueueService } from '../queue/queue.service';
 import { QueueModule } from '../queue/queue.module';
+import { InventoryResyncProcessor } from './workers/inventory-resync.processor';
 
 import { TranslationService } from '../translation/translation.service';
 
@@ -87,9 +87,9 @@ import { TranslationService } from '../translation/translation.service';
 		ProductVariantImageService,
 		S3Service,
 		FileService,
-		QueueService,
 		ImageThumbnailService,
 		TranslationService,
+		InventoryResyncProcessor,
 	],
 	controllers: [ProcurementController],
 	exports: [ProcurementService],

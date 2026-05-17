@@ -15,11 +15,7 @@ import { JwtService } from "@nestjs/jwt";
 
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
-import { ClientStatus } from "../clients/enums/client-status";
-
-import { UsersService } from "../users/users.service";
-import { CustomersService } from "src/customers/customers.service";
-import { ClientsService } from "src/clients/clients.service";
+import { CustomersService } from "../customers/customers.service";
 
 @Injectable()
 export class GqlAuthGuard implements CanActivate {
@@ -28,9 +24,7 @@ export class GqlAuthGuard implements CanActivate {
 	constructor(
 		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 		private readonly jwtService: JwtService,
-		private readonly usersService: UsersService,
 		private readonly customersService: CustomersService,
-		private readonly clientsService: ClientsService,
 	) { }
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -48,11 +42,17 @@ export class GqlAuthGuard implements CanActivate {
 				throw new UnauthorizedException();
 			}
 
-			// We don't store the guest auth token in cache since guest are already logged out
-			// So, if the payload type is guest, we just allow them to continue
-			if (payload.type === "guest") {
-				const customer = await this.customersService.findOne(payload.sub);
-				if (customer === null || !customer.isActive) {
+			// Fetch the customer/guest for the request
+			if (payload.type === "customer") {
+				// Make sure the token exists in the cache
+				const tokenExists = await this.cacheManager.get(`auth:customer-session:${payload.jti}`);
+				if (tokenExists === null || tokenExists === undefined) {
+					throw new UnauthorizedException();
+				}
+
+				// Find the customer for the request
+				const customer = await this.customersService.findOneCached(payload.sub);
+				if (customer === null || !customer.isActive || customer.deletedAt) {
 					throw new UnauthorizedException();
 				}
 
@@ -61,45 +61,10 @@ export class GqlAuthGuard implements CanActivate {
 				return true;
 			}
 
-			// Make sure the token exists in the cache
-			const tokenExists = await this.cacheManager.get(
-				payload.type === "user"
-					? `auth:user-session:${payload.jti}`
-					: payload.type === "customer"
-						? `auth:customer-session:${payload.jti}`
-						: ""
-			);
-
-			if (tokenExists === null || tokenExists === undefined) {
-				throw new UnauthorizedException();
-			}
-
-			if (payload.type === "client") {
-				const client = await this.clientsService.findByUuidWithSecret(payload.sub);
-
-				if (!client || client.status !== ClientStatus.ACTIVE) {
-					throw new UnauthorizedException();
-				}
-
-				request["client"] = client;
-				return true;
-			}
-
-			// Fetch the user for the request
-			if (payload.type === "user") {
-				const user = await this.usersService.findOne(payload.sub);
-				if (user === null || !user.isActive) {
-					throw new UnauthorizedException();
-				}
-
-				request["jti"] = payload.jti;
-				request["user"] = user;
-				return true;
-			}
-
-			// Fetch the customer for the request
-			if (payload.type === "customer" || payload.type === "guest") {
-				const customer = await this.customersService.findOne(payload.sub);
+			// We don't store the guest auth token in cache since guest are already logged out
+			// So, if the payload type is guest, we just allow them to continue
+			if (payload.type === "guest") {
+				const customer = await this.customersService.findOneCached(payload.sub);
 				if (customer === null || !customer.isActive) {
 					throw new UnauthorizedException();
 				}

@@ -217,14 +217,14 @@ export class JopWmsService {
             customerVoucherNo: dto.customerVoucherNo,
             logisticsChannelCode: dto.logisticsChannelCode,
             orderSource: dto.orderSource ?? 4,
-            waybillNo: dto.waybillNo ?? '',
-            logisticsLabelInfo: dto.logisticsLabelInfo ?? '',
-            memo: dto.memo ?? '',
+            ...(dto.waybillNo && { waybillNo: dto.waybillNo }),
+            ...(dto.logisticsLabelInfo && { logisticsLabelInfo: dto.logisticsLabelInfo }),
+            ...(dto.memo && { memo: dto.memo }),
             insurance: dto.insurance ?? 0,
-            insuranceValue: dto.insuranceValue ?? 0,
-            insuranceCurrency: dto.insuranceCurrency ?? '',
-            orderSaleSum: dto.orderSaleSum ?? 0,
-            orderSaleCurrency: dto.orderSaleCurrency ?? '',
+            ...(dto.insuranceValue && { insuranceValue: dto.insuranceValue }),
+            ...(dto.insuranceCurrency && { insuranceCurrency: dto.insuranceCurrency }),
+            ...(dto.orderSaleSum && { orderSaleSum: dto.orderSaleSum }),
+            ...(dto.orderSaleCurrency && { orderSaleCurrency: dto.orderSaleCurrency }),
             consignee: dto.consignee,
             productList: dto.productList,
         });
@@ -492,11 +492,7 @@ export class JopWmsService {
             return;
         }
 
-        const logisticsChannelCode = process.env.JOP_WMS_LOGISTICS_CHANNEL ?? '';
-        if (!logisticsChannelCode) {
-            this.logger.warn(`JOP_WMS_LOGISTICS_CHANNEL not set — skipping outbounds for inbound ${wmsOrder.orderNo}`);
-            return;
-        }
+        const logisticsChannelCode = 'SZ2_ZF'; // TODO: move back to env
 
         const orderUuids = links.map(l => l.order.uuid);
         this.logger.log(`Creating outbounds for inbound ${wmsOrder.orderNo} — ${orderUuids.length} order(s)`);
@@ -538,7 +534,7 @@ export class JopWmsService {
                 continue;
             }
 
-            const customerVoucherNo = `${order.uuid}-out`;
+            const customerVoucherNo = `${order.uuid.replace(/-/g, '')}out`;
 
             const existingOutbound = await this.wmsOrderRepository.findOne({
                 where: { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },

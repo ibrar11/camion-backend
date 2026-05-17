@@ -19,6 +19,7 @@ import {
 
 import {
     BaseJobData,
+    InventoryResyncJobData,
     TranslationJobData,
 } from './types';
 
@@ -29,6 +30,7 @@ export class QueueService {
     constructor(
         @InjectQueue(QueueName.TRANSLATION) private readonly translationQueue:Queue,
         @InjectQueue(QueueName.FIELD_TRANSLATION) private readonly fieldTranslationQueue:Queue,
+        @InjectQueue(QueueName.INVENTORY_RESYNC) private readonly inventoryResyncQueue: Queue,
     ) { }
 
     /**
@@ -108,6 +110,30 @@ export class QueueService {
         });
     }
 
+    async addInventoryResyncJob(productUuids: string[]): Promise<{ jobId: string; status: "queued" }> {
+        const jobData: InventoryResyncJobData = {
+            jobId: crypto.randomUUID(),
+            productUuids,
+            createdAt: new Date(),
+            maxRetries: 3,
+        };
+
+        await this.addJob(
+            QueueName.INVENTORY_RESYNC,
+            `inventory-resync-${jobData.jobId}`,
+            jobData,
+            JobPriority.HIGH,
+            0,
+        );
+
+        return { jobId: jobData.jobId, status: "queued" };
+    }
+
+    async getJob(queueName: QueueName, jobId: string): Promise<Job | null> {
+        const queue = this.getQueue(queueName);
+        return (await queue.getJob(jobId)) ?? null;
+    }
+
     /**
      * Queue stats
      */
@@ -144,6 +170,8 @@ export class QueueService {
                 return this.translationQueue;
             case QueueName.FIELD_TRANSLATION:
                 return this.fieldTranslationQueue;
+            case QueueName.INVENTORY_RESYNC:
+                return this.inventoryResyncQueue;
 
             default:
                 throw new Error(`Queue ${queueName} not found`);
