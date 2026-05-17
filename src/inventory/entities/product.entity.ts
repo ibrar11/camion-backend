@@ -59,6 +59,29 @@ export class Product {
 	@Column({ type: "varchar", length: 128, })
 	titleAr: string;
 
+	/*
+	ALTER TABLE "products" ADD "search_vector_en" tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(title_en, ''))) STORED;
+	CREATE INDEX "idx_products_search_en" ON "products" USING gin("search_vector_en");
+	*/
+
+	@Column({
+		type: 'tsvector',
+		asExpression: `to_tsvector('english', coalesce(title_en, ''))`,
+		generatedType: 'STORED',
+		nullable: true,
+	})
+	@Index('idx_products_search_en', { unique: false })
+	tsvTitleEn: string;
+
+	@Column({
+		type: 'tsvector',
+		asExpression: `to_tsvector('arabic', coalesce(title_ar, ''))`,
+		generatedType: 'STORED',
+		nullable: true,
+	})
+	@Index('idx_products_search_ar', { unique: false })
+	tsvTitleAr: string;
+
 	@Field(() => String, { name: "brief" })
 	brief: string;
 
