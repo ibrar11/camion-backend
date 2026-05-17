@@ -17,7 +17,7 @@ export class TwilioService {
 
         if (this.smsEnabled) {
             const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
-            const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+            const authToken = 'fff9f13762c1288a0f1f1b6b74d0df11'; // TODO: move back to env
             this.client = Twilio(accountSid, authToken);
             this.logger.log(`Twilio initialised — accountSid: ${accountSid}, messagingServiceSid: ${this.messagingServiceSid || '(not set)'}`);
         } else {
