@@ -283,10 +283,14 @@ export class OrderService {
                     },
                 });
 
-                if (coupon) {
-                    discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                    discount = smartRoundInt(discount);
+                if (!coupon) {
+                    throw new BadRequestException(
+                        "Coupon does not exists. Pleasae try again with valid coupon."
+                    )
                 }
+
+                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                discount = smartRoundInt(discount);
             }
             const total = subTotal + shippingCost - discount;
 
@@ -936,9 +940,12 @@ export class OrderService {
                     },
                 });
 
-                if (coupon) {
-                    discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                if (!coupon) {
+                    throw new BadRequestException(
+                        "Coupon does not exists. Pleasae try again with valid coupon."
+                    )
                 }
+                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
             }
 
             // Calculate total order amount
