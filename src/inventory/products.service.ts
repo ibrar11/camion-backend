@@ -567,16 +567,19 @@ export class ProductsService {
 	async searchProducts(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Searching for products, query: ${query}, language: ${language}`);
 
-		// Language to title column name mapping
-		const titleColumnMap: Record<string, string> = {
-			"en": "product.titleEn",
-			"ar": "product.titleAr",
+		// Clean the search query
+		const searchQuery = query.trim().split(/\s+/).map(w => `${w}:*`).join(' & ');
+
+		// Determine the search column based on the language
+		const tsvTitleColumnsMap = {
+			"en": "product.tsv_title_en",
+			"ar": "product.tsv_title_ar",
 		};
 
-		// Language to description column name mapping
-		const descriptionColumnMap: Record<string, string> = {
-			"en": "product.descriptionEn",
-			"ar": "product.descriptionAr",
+		// Get the config language
+		const configLanguageMap = {
+			"en": "english",
+			"ar": "arabic",
 		};
 
 		// Normalize the short code
@@ -607,8 +610,11 @@ export class ProductsService {
 					.leftJoinAndSelect("product.variants", "variant")
 					.leftJoinAndSelect('variant.images', 'image')
 
-					// Filter by product text column
-					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+					// Search Filter
+					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
+						configLanguage: configLanguageMap[language],
+						searchQuery: searchQuery,
+					})
 
 					// Filter active products
 					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
@@ -643,8 +649,10 @@ export class ProductsService {
 					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Search Filter
-					// Filter by product text column
-					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
+						configLanguage: configLanguageMap[language],
+						searchQuery: searchQuery,
+					})
 
 					// Filter active products
 					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
@@ -681,8 +689,10 @@ export class ProductsService {
 					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Search Filter
-					// Filter by product text column
-					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
+						configLanguage: configLanguageMap[language],
+						searchQuery: searchQuery,
+					})
 
 					// Filter active products
 					.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
