@@ -1,4 +1,4 @@
-import { IsString, MaxLength } from "class-validator";
+import { IsIBAN, IsString, MaxLength } from "class-validator";
 
 export class CreateBankAccountDto {
 	@IsString()
@@ -15,6 +15,7 @@ export class CreateBankAccountDto {
 
 	@IsString()
 	@MaxLength(32)
+	@IsIBAN()
 	iban: string;
 
 	@IsString()
