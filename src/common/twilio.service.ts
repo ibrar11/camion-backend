@@ -42,12 +42,35 @@ export class TwilioService {
 
         this.logger.log(`Sending OTP via Twilio to ${to}`);
         try {
-            await this.client!.messages.create({
-                to,
-                messagingServiceSid: this.messagingServiceSid,
-                body: `Your CAMION verification code is: ${otp}`,
+            // Twilio option (kept commented for later switch back):
+            // await this.client!.messages.create({
+            //     to,
+            //     messagingServiceSid: this.messagingServiceSid,
+            //     body: `Your CAMION verification code is: ${otp}`,
+            // });
+            // this.logger.log(`OTP sent successfully to ${to}`);
+
+            const response = await fetch('https://api.myalice.ai/stable/open/whatsapp/send-template-message', {
+                method: 'POST',
+                headers: {
+                    'X-Myalice-Api-Key': 'a7fc891a333c11f1a75e6a83850c7ff0',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    template_id: '1324887296463284',
+                    channel_id: '26510',
+                    customer_phone: to,
+                    attributes: {
+                        verification_code: otp,
+                    },
+                }),
             });
-            this.logger.log(`OTP sent successfully to ${to}`);
+            const data = await response.json();
+            if (!response.ok || data?.status !== 'finished' || data?.extra?.success !== true) {
+                this.logger.error(`MyAlice send failed for ${to}: ${JSON.stringify(data)}`);
+                throw new UnprocessableEntityException({ error: 'Failed to send OTP. Please try again.' });
+            }
+            this.logger.log(`OTP sent successfully via MyAlice to ${to}`);
         } catch (err) {
             this.logger.error(`Failed to send OTP to ${to}: ${(err as Error).message}`, (err as Error).stack);
             throw new UnprocessableEntityException({ error: 'Failed to send OTP. Please try again.' });
