@@ -30,10 +30,10 @@ export class TwilioService {
      * Does nothing when TWILIO_SMS_ENABLED is not "true" or in local env.
      */
     async sendOtp(to: string, otp: string): Promise<void> {
-        // if (this.isLocal) {
-        //     this.logger.debug(`[LOCAL] Skipping SMS to ${to}`);
-        //     return;
-        // }
+        if (this.isLocal) {
+            this.logger.debug(`[LOCAL] Skipping SMS to ${to}`);
+            return;
+        }
 
         if (!this.smsEnabled) {
             this.logger.debug(`SMS disabled — skipping OTP to ${to}`);
