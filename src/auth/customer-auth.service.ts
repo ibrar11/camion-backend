@@ -731,6 +731,8 @@ export class CustomerAuthService {
 	async loginWithFacebookMobile(dto: FacebookMobileAuthDto): Promise<CustomerAuthResponse> {
 		this.logger.log(`Attempting to login customer by facebook mobile: ${JSON.stringify(dto)}`);
 
+		this.logger.log(`Face mobile login firebase device token: ${dto.firebaseDeviceToken}`)
+
 		const appId = this.configService.get<string>('FACEBOOK_APP_ID');
 		const appSecret = this.configService.get<string>('FACEBOOK_APP_SECRET');
 
