@@ -103,7 +103,7 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Make sure we don't have a customer using the same email address
@@ -225,12 +225,12 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Find the customer using their phone number
 		const customer = await this.customerRepository.findOneBy({
-			phoneNumber: body.phoneNumber.trim(),
+			phoneNumber: body.phoneNumber?.trim(),
 		});
 
 		if (customer === null) {
@@ -733,6 +733,16 @@ export class CustomerAuthService {
 
 		this.logger.log(`Face mobile login firebase device token: ${dto.firebaseDeviceToken}`)
 
+		const isJwt = dto.accessToken.split('.').length === 3;
+
+		if (isJwt) {
+			return this.loginWithFacebookLimitedLogin(dto.accessToken, dto.firebaseDeviceToken);
+		}
+
+		return this.loginWithFacebookAccessToken(dto.accessToken, dto.firebaseDeviceToken);
+	}
+
+	private async loginWithFacebookAccessToken(accessToken: string, firebaseDeviceToken?: string): Promise<CustomerAuthResponse> {
 		const appId = this.configService.get<string>('FACEBOOK_APP_ID');
 		const appSecret = this.configService.get<string>('FACEBOOK_APP_SECRET');
 
@@ -743,7 +753,7 @@ export class CustomerAuthService {
 		const appAccessToken = `${appId}|${appSecret}`;
 
 		const debugRes = await fetch(
-			`https://graph.facebook.com/debug_token?input_token=${dto.accessToken}&access_token=${appAccessToken}`,
+			`https://graph.facebook.com/debug_token?input_token=${accessToken}&access_token=${appAccessToken}`,
 		);
 		const debugData = (await debugRes.json()) as { data?: { is_valid?: boolean; app_id?: string } };
 
@@ -755,7 +765,7 @@ export class CustomerAuthService {
 		}
 
 		const profileRes = await fetch(
-			`https://graph.facebook.com/me?fields=id,name,email&access_token=${dto.accessToken}`,
+			`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`,
 		);
 		const profileData = (await profileRes.json()) as { id?: string; name?: string; email?: string };
 
@@ -764,11 +774,43 @@ export class CustomerAuthService {
 			throw new UnauthorizedException({ error: 'Facebook ID not found.' });
 		}
 
-		const email = profileData.email || '';
-		const fullName = profileData.name || '';
-		const firebaseDeviceToken = dto.firebaseDeviceToken || '';
+		return this.findOrCreateFacebookCustomer({
+			email: profileData.email || '',
+			fullName: profileData.name || '',
+			facebookId,
+			firebaseDeviceToken: firebaseDeviceToken || '',
+		});
+	}
 
-		return this.findOrCreateFacebookCustomer({ email, fullName, facebookId, firebaseDeviceToken });
+	private async loginWithFacebookLimitedLogin(idToken: string, firebaseDeviceToken?: string): Promise<CustomerAuthResponse> {
+		const appId = this.configService.get<string>('FACEBOOK_APP_ID');
+		if (!appId) {
+			throw new UnauthorizedException({ error: 'Facebook authentication not configured.' });
+		}
+
+		let payload: { sub?: string; name?: string; email?: string; aud?: string | string[] };
+		try {
+			const JWKS = createRemoteJWKSet(new URL('https://limited.facebook.com/.well-known/oauth/openid/jwks/'));
+			const { payload: verified } = await jwtVerify(idToken, JWKS, {
+				issuer: 'https://www.facebook.com',
+				audience: appId,
+			});
+			payload = verified as typeof payload;
+		} catch {
+			throw new UnauthorizedException({ error: 'Invalid Facebook Limited Login token.' });
+		}
+
+		const facebookId = payload.sub;
+		if (!facebookId) {
+			throw new UnauthorizedException({ error: 'Facebook ID not found in token.' });
+		}
+
+		return this.findOrCreateFacebookCustomer({
+			email: payload.email || '',
+			fullName: payload.name || '',
+			facebookId,
+			firebaseDeviceToken: firebaseDeviceToken || '',
+		});
 	}
 
 	async loginWithFacebookWeb(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
@@ -1115,7 +1157,7 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Make sure we don't have a customer using the same email address

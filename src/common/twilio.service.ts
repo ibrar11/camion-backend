@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Twilio from 'twilio';
 
@@ -50,7 +50,7 @@ export class TwilioService {
             this.logger.log(`OTP sent successfully to ${to}`);
         } catch (err) {
             this.logger.error(`Failed to send OTP to ${to}: ${(err as Error).message}`, (err as Error).stack);
-            throw err;
+            throw new UnprocessableEntityException({ error: 'Failed to send OTP. Please try again.' });
         }
     }
 }
