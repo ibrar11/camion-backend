@@ -118,6 +118,9 @@ export class WishlistService {
             // cache: true,
             relationLoadStrategy: "query",
             where: {
+                product: {
+                    status: ProductStatus.ACTIVE,
+                },
                 customer: {
                     id: customer.id,
                 },
