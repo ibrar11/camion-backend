@@ -70,11 +70,13 @@ import {
     NotificationPayload,
     OrderFilters,
     OrderPreviewResponse,
+    OrderTracking,
 } from "./types";
+
+import { JopWmsOrder, JopWmsOrderType } from '../jop-wms/entities/jop-wms-order.entity';
 
 import { ConfigService } from "@nestjs/config";
 
-import { JopWmsOrder } from '../jop-wms/entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
 
 import { NotificationsService } from "../notifications/notifications.service";
@@ -108,6 +110,64 @@ export class OrderService {
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
     ) { }
+
+    private static readonly INBOUND_TRACKING_STATUS: Record<string, string> = {
+        pending: 'Procurement in Progress',
+        '10': 'Procurement in Progress',
+        '11': 'Goods Being Sourced',
+        '12': 'Goods Arrived at Warehouse',
+        '13': 'Goods Being Processed',
+        '14': 'Ready to Ship',
+        '15': 'Processing Complete',
+        '16': 'Order Issue — Contact Support',
+    };
+
+    private static readonly OUTBOUND_TRACKING_STATUS: Record<string, string> = {
+        pending: 'Preparing Your Shipment',
+        '10': 'Preparing Your Shipment',
+        '11': 'Shipment in Progress',
+        '12': 'Shipment Delayed',
+        '13': 'Shipment Ready',
+        '14': 'Shipped',
+        '15': 'Shipment Cancelled',
+    };
+
+    private async attachTracking(orders: Order[]): Promise<void> {
+        if (!orders.length) return;
+
+        const uuids = orders.map(o => o.uuid);
+
+        const links = await this.wmsOrderLinkRepository.find({
+            where: { orderUuid: In(uuids) },
+            relations: ['wmsOrder'],
+        });
+
+        const wmsOrdersByUuid = new Map<string, { inbound?: JopWmsOrder; outbound?: JopWmsOrder }>();
+        for (const link of links) {
+            if (!link.wmsOrder) continue;
+            const entry = wmsOrdersByUuid.get(link.orderUuid) ?? {};
+            if (link.wmsOrder.type === JopWmsOrderType.INBOUND) entry.inbound = link.wmsOrder;
+            if (link.wmsOrder.type === JopWmsOrderType.OUTBOUND) entry.outbound = link.wmsOrder;
+            wmsOrdersByUuid.set(link.orderUuid, entry);
+        }
+
+        for (const order of orders) {
+            const { inbound = null, outbound = null } = wmsOrdersByUuid.get(order.uuid) ?? {};
+            const stage: OrderTracking['stage'] = outbound ? 'outbound' : inbound ? 'inbound' : 'order';
+
+            const status = outbound
+                ? (OrderService.OUTBOUND_TRACKING_STATUS[outbound.status] ?? 'Shipment in Progress')
+                : inbound
+                ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ?? 'Procurement in Progress')
+                : 'Order Confirmed';
+
+            order.tracking = {
+                stage,
+                status,
+                waybillNo: outbound?.waybillNo ?? null,
+            };
+        }
+    }
 
     /**
      * Creates a new order
@@ -475,10 +535,12 @@ export class OrderService {
                 skip: skip,
                 take: take,
             });
-            return orders.map((order) => {
+            const result = orders.map((order) => {
                 order.orderPlacementDate = order.createdAt;
                 return order;
-            })
+            });
+            await this.attachTracking(result);
+            return result;
         } catch (error: any) {
             this.logger.error(`Error fetching orders: ${error}`);
             throw new InternalServerErrorException({
@@ -536,10 +598,12 @@ export class OrderService {
                 skip: skip,
                 take: take,
             });
-            return orders.map((order) => {
+            const result = orders.map((order) => {
                 order.orderPlacementDate = order.createdAt;
                 return order;
-            })
+            });
+            await this.attachTracking(result);
+            return result;
         } catch (error: any) {
             this.logger.error(`Error fetching my orders: ${error}`);
             throw new InternalServerErrorException({
@@ -591,6 +655,7 @@ export class OrderService {
                 relations: ['wmsOrder'],
             });
             (order as any).wmsOrders = wmsLinks.map(l => l.wmsOrder);
+            await this.attachTracking([order]);
 
             return order;
         } catch (error: any) {
@@ -600,6 +665,17 @@ export class OrderService {
                 details: error,
             });
         }
+    }
+
+    async getOrderTracking(orderUuid: string, customerUuid?: string): Promise<Order> {
+        const whereClause: any = { uuid: orderUuid };
+        if (customerUuid) whereClause.customer = { uuid: customerUuid };
+
+        const order = await this.orderRepository.findOne({ where: whereClause });
+        if (!order) throw new NotFoundException({ error: 'Order not found' });
+
+        await this.attachTracking([order]);
+        return order;
     }
 
     /**

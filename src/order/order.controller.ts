@@ -83,6 +83,17 @@ export class OrderController {
         return this.orderService.findOne(uuid);
     }
 
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+    @Get(':uuid/tracking')
+    @HttpCode(HttpStatus.OK)
+    getTracking(
+        @Param('uuid') uuid: string,
+        @GetCustomer() customer: Customer,
+    ): Promise<Order> {
+        const customerUuid = customer?.uuid ?? undefined;
+        return this.orderService.getOrderTracking(uuid, customerUuid);
+    }
+
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Patch(':uuid/status')
     @HttpCode(HttpStatus.OK)

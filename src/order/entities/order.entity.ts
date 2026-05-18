@@ -13,6 +13,8 @@ import {
     UpdateDateColumn
 } from "typeorm";
 
+import { OrderTracking } from "../types";
+
 import { Exclude } from "class-transformer";
 
 import { OrderStatus } from "../enums/OrderStatus";
@@ -95,10 +97,12 @@ export class Order {
     updatedAt: Date;
 
     // <!--
-    // This field is not part of the schema. Please don't add it to the database.
+    // These fields are not part of the schema. Please don't add them to the database.
 
     @Field(() => Date, { name: "orderPlacementDate" })
     orderPlacementDate: Date;
+
+    tracking?: OrderTracking;
 
     // -->
 

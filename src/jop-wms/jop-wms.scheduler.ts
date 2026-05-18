@@ -133,6 +133,7 @@ export class JopWmsScheduler {
                 order.status = newStatus;
                 order.lastPolledAt = new Date();
                 order.errorCount = 0;
+                order.lastError = null;
 
                 // outboundorder/status does not return waybillNo — fetch it separately on transition to SHIPPED.
                 // fetchMissingWaybillNumbers() handles retries for orders that remain null after this.
@@ -178,7 +179,8 @@ export class JopWmsScheduler {
             } catch (err: any) {
                 order.errorCount += 1;
                 order.lastPolledAt = new Date();
-                this.logger.error(`Poll failed for ${order.orderNo} (attempt ${order.errorCount}): ${err?.message}`);
+                order.lastError = err?.message ?? 'Unknown error';
+                this.logger.error(`Poll failed for ${order.orderNo} (attempt ${order.errorCount}): ${order.lastError}`);
                 await this.wmsOrderRepository.save(order);
             }
         }

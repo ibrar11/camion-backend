@@ -114,29 +114,42 @@ Retrieve Orders
 GET /v1/orders HTTP/1.1
 ```
 
+### Query Parameters
+Name | Description | Default
+-----|-------------|--------
+status | Filter by order status | _(all)_
+pageNumber | Page number | `1`
+itemsPerPage | Results per page | `100`
+
 ### Response Body
 ```json
 [
     {
         "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-        "status": "payment_pending",
+        "status": "confirmed",
         "subTotal": {
             "amount": 688,
-            "currencyCode": "usd"
+            "currencyCode": "qar"
         },
         "shippingCost": {
             "amount": 321,
-            "currencyCode": "usd"
+            "currencyCode": "qar"
         },
         "discount": {
             "amount": 0,
-            "currencyCode": "usd"
+            "currencyCode": "qar"
         },
         "total": {
             "amount": 1009,
-            "currencyCode": "usd"
+            "currencyCode": "qar"
         },
         "eta": "6-10 working days",
+        "tracking": {
+            "stage": "inbound",
+            "status": "Goods Being Sourced",
+            "waybillNo": null
+        },
+        "orderPlacementDate": "2026-05-15T14:05:23.594Z",
         "orderItems": [
             {
                 "uuid": "8183c409-82dd-48fe-95ad-ef45853b6635",
@@ -159,7 +172,7 @@ GET /v1/orders HTTP/1.1
                     "barcode": "5627530595058",
                     "price": {
                         "amount": 688,
-                        "currencyCode": "usd"
+                        "currencyCode": "qar"
                     },
                     "weight": {
                         "amount": 16,
@@ -174,12 +187,12 @@ GET /v1/orders HTTP/1.1
                 },
                 "price": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "quantity": 1,
                 "total": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 }
             }
         ]
@@ -322,24 +335,30 @@ GET /v1/orders/<order-uuid> HTTP/1.1
 ```json
 {
     "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-    "status": "payment_pending",
+    "status": "confirmed",
     "subTotal": {
         "amount": 688,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "shippingCost": {
         "amount": 321,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "discount": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "total": {
         "amount": 1009,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "eta": "6-10 working days",
+    "tracking": {
+        "stage": "outbound",
+        "status": "Shipped",
+        "waybillNo": "DHL1234567890"
+    },
+    "orderPlacementDate": "2026-05-15T14:05:23.594Z",
     "orderItems": [
         {
             "uuid": "8183c409-82dd-48fe-95ad-ef45853b6635",
@@ -362,7 +381,7 @@ GET /v1/orders/<order-uuid> HTTP/1.1
                 "barcode": "5627530595058",
                 "price": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "weight": {
                     "amount": 16,
@@ -377,7 +396,7 @@ GET /v1/orders/<order-uuid> HTTP/1.1
             },
             "price": {
                 "amount": 688,
-                "currencyCode": "usd"
+                "currencyCode": "qar"
             },
             "quantity": 1,
             "total": {
@@ -410,14 +429,24 @@ GET /v1/orders/<order-uuid> HTTP/1.1
 }
 ```
 
-> `gulltransOrderSns` — one entry per 1688 shop involved in this order. Null if the order has not been dispatched yet.
-> `wmsOrders` — all JOP WMS orders (inbounds and outbound) linked to this order. Empty array if not yet dispatched.
+| Field | Type | Description |
+|---|---|---|
+| `gulltransOrderSns` | `String[] \| null` | One Gulltrans order ID per 1688 shop involved in this order. `null` if not yet dispatched. |
+| `wmsOrders` | `Object[]` | All JOP WMS orders (inbound and outbound) linked to this order via the link table. Empty array if not yet dispatched. |
+| `wmsOrders[].id` | Number | Internal WMS order record ID |
+| `wmsOrders[].orderNo` | String | JOP WMS `customerVoucherNo` |
+| `wmsOrders[].type` | `"inbound" \| "outbound" \| "return"` | WMS order type |
+| `wmsOrders[].status` | String | Raw JOP WMS status code |
+| `wmsOrders[].wmsAssignedId` | `String \| null` | WMS-assigned order ID returned on creation |
+| `wmsOrders[].waybillNo` | `String \| null` | Carrier tracking number (outbound only, once shipped) |
+| `wmsOrders[].errorCount` | Number | Consecutive poll failures; orders with 5+ are skipped |
+| `wmsOrders[].lastError` | `String \| null` | Last poll error message; cleared on next successful poll |
 
 Update Order
 --------------
 
 ```http
-PATCH /v1/orders/<order-uuid> HTTP/1.1
+PATCH /v1/orders/<order-uuid>/status HTTP/1.1
 ```
 
 Parameter Name | Required | Type | Description
@@ -507,4 +536,111 @@ Cancel Order
 
 ```http
 DELETE /v1/orders/<order-uuid> HTTP/1.1
+```
+
+---
+
+Order Tracking
+--------------
+
+Tracking is computed on the backend and embedded as a `tracking` object on every order response — no separate call needed. The `/tracking` endpoint is a convenience alias that returns the same order shape.
+
+Customers can only retrieve tracking for their own orders; admins can query any order.
+
+```http
+GET /v1/orders/<order-uuid>/tracking HTTP/1.1
+```
+
+The response is the full order object (same shape as `GET /v1/orders/<order-uuid>`) with `tracking` populated.
+
+### `tracking` Object
+
+| Field | Type | Description |
+|---|---|---|
+| `stage` | String | Furthest fulfillment stage reached — see values below |
+| `status` | String | Customer-friendly status label computed from internal WMS state |
+| `waybillNo` | String \| null | Carrier tracking number — populated once the order is shipped |
+
+### `stage` Values
+
+| Value | Meaning |
+|---|---|
+| `order` | Order placed, not yet dispatched to warehouse |
+| `inbound` | Goods being procured and shipped to the warehouse |
+| `outbound` | Goods shipped to the customer |
+
+### `status` Labels by Stage
+
+**`order` stage**
+
+| Status |
+|--------|
+| Order Confirmed |
+
+**`inbound` stage** (goods being sourced / arriving at warehouse)
+
+| Status |
+|--------|
+| Procurement in Progress |
+| Goods Being Sourced |
+| Goods Arrived at Warehouse |
+| Goods Being Processed |
+| Ready to Ship |
+| Processing Complete |
+| Order Issue — Contact Support |
+
+**`outbound` stage** (goods on the way to the customer)
+
+| Status |
+|--------|
+| Preparing Your Shipment |
+| Shipment in Progress |
+| Shipment Delayed |
+| Shipment Ready |
+| Shipped |
+| Shipment Cancelled |
+
+### Example — order not yet dispatched
+
+```json
+{
+    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
+    "status": "confirmed",
+    "tracking": {
+        "stage": "order",
+        "status": "Order Confirmed",
+        "waybillNo": null
+    },
+    ...
+}
+```
+
+### Example — goods en route to warehouse
+
+```json
+{
+    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
+    "status": "confirmed",
+    "tracking": {
+        "stage": "inbound",
+        "status": "Goods Being Sourced",
+        "waybillNo": null
+    },
+    ...
+}
+```
+
+### Example — shipped to customer
+
+```json
+{
+    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
+    "status": "confirmed",
+    "tracking": {
+        "stage": "outbound",
+        "status": "Shipped",
+        "waybillNo": "DHL1234567890"
+    },
+    ...
+}
 ```
