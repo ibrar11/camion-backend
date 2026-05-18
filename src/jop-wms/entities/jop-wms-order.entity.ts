@@ -78,6 +78,10 @@ export class JopWmsOrder {
     @Column({ type: 'integer', default: 0 })
     errorCount: number;
 
+    // Last error message from a failed poll; cleared on the next successful poll
+    @Column({ type: 'text', nullable: true, default: null })
+    lastError: string | null;
+
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt: Date;
 

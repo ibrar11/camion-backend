@@ -354,7 +354,7 @@ After a successful response, the order is automatically registered in `jop_wms_o
 ### Request Body
 ```json
 {
-    "orderNo": "INB-2025-001",
+    "orderNo": "3792156ba31c4bf0923794c34798f8d2",
     "items": [
         { "sku": "ABC-001", "quantity": 100 },
         { "sku": "ABC-002", "quantity": 50 }
@@ -377,7 +377,7 @@ After a successful response, the order is automatically registered in `jop_wms_o
 ### Get Inbound Order Status
 
 ```http
-GET /v1/wms/inbound/status?orderNo=INB-2025-001 HTTP/1.1
+GET /v1/wms/inbound/status?orderNo=3792156ba31c4bf0923794c34798f8d2 HTTP/1.1
 ```
 
 ### Query Parameters
@@ -390,7 +390,7 @@ GET /v1/wms/inbound/status?orderNo=INB-2025-001 HTTP/1.1
 {
     "code": 200,
     "data": {
-        "orderNo": "INB-2025-001",
+        "orderNo": "3792156ba31c4bf0923794c34798f8d2",
         "status": "receiving",
         "items": [
             { "sku": "ABC-001", "expectedQty": 100, "receivedQty": 60 }
@@ -430,7 +430,7 @@ GET /v1/wms/inbound/:orderNo/label HTTP/1.1
 {
     "code": 200,
     "data": {
-        "labelUrl": "https://wms.example.com/labels/INB-2025-001.pdf"
+        "labelUrl": "https://wms.example.com/labels/3792156ba31c4bf0923794c34798f8d2.pdf"
     }
 }
 ```
@@ -453,7 +453,7 @@ After a successful response, the order is automatically registered in `jop_wms_o
 ### Request Body
 ```json
 {
-    "orderNo": "OUT-2025-001",
+    "orderNo": "9f71e2650343cb59f0017b515bfb980out",
     "logisticsCode": "DHL-EXPRESS",
     "recipient": {
         "name": "John Doe",
@@ -505,7 +505,7 @@ GET /v1/wms/outbound/:orderNo/status HTTP/1.1
 {
     "code": 200,
     "data": {
-        "orderNo": "OUT-2025-001",
+        "orderNo": "9f71e2650343cb59f0017b515bfb980out",
         "status": "shipped",
         "checkOutWeight": 1200,
         "checkOutLength": 30,
@@ -670,7 +670,7 @@ GET /v1/wms/waybill/:orderNo HTTP/1.1
 {
     "code": 200,
     "data": {
-        "orderNo": "OUT-2025-001",
+        "orderNo": "9f71e2650343cb59f0017b515bfb980out",
         "waybillNo": "DHL1234567890",
         "carrier": "DHL"
     }
@@ -696,7 +696,7 @@ After a successful response, the order is automatically registered in `jop_wms_o
 ```json
 {
     "returnOrderNo": "RET-2025-001",
-    "originalOrderNo": "OUT-2025-001",
+    "originalOrderNo": "9f71e2650343cb59f0017b515bfb980out",
     "items": [
         { "sku": "ABC-001", "quantity": 1 }
     ],
@@ -773,10 +773,20 @@ GET /v1/wms/orders?type=outbound HTTP/1.1
 [
     {
         "id": 1,
-        "orderNo": "abc123def456abc123def456abc123de",
-        "type": "inbound",
+        "orderNo": "9f71e2650343cb59f0017b515bfb980out",
+        "type": "outbound",
         "status": "14",
-        "wmsAssignedId": "501",
+        "waybillNo": "DHL1234567890",
+        "lastPolledAt": "2025-04-27T10:30:00.000Z",
+        "errorCount": 0,
+        "createdAt": "2025-04-27T08:00:00.000Z",
+        "updatedAt": "2025-04-27T10:30:00.000Z"
+    },
+    {
+        "id": 2,
+        "orderNo": "3792156ba31c4bf0923794c34798f8d2",
+        "type": "inbound",
+        "status": "11",
         "waybillNo": null,
         "lastPolledAt": "2025-04-27T10:00:00.000Z",
         "errorCount": 0,
@@ -804,6 +814,32 @@ GET /v1/wms/orders?type=outbound HTTP/1.1
     }
 ]
 ```
+
+### Inbound Status Codes
+
+| Code | Label | Notes |
+|---|---|---|
+| `pending` | Pending | Initial state — not yet polled |
+| `10` | Draft | |
+| `11` | Forecasted | Announced to the warehouse |
+| `12` | Received | Goods signed for at warehouse |
+| `13` | Partially Stored | Some items shelved |
+| `14` | Stored | All goods shelved — **triggers auto outbound creation** |
+| `15` | Warehouse Closed | Terminal |
+| `16` | Deleted | Terminal |
+
+### Outbound Status Codes
+
+| Code | Label | Notes |
+|---|---|---|
+| `pending` | Pending | Initial state — not yet polled |
+| `10` | Draft | |
+| `11` | Processing | Forecast in progress |
+| `12` | Processing Failed | Forecast failed — cancel and recreate |
+| `13` | Processing Complete | Forecast confirmed |
+| `14` | Shipped | `waybillNo` is available |
+| `15` | Invalidated | Terminal |
+
 
 ---
 

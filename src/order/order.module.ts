@@ -44,7 +44,6 @@ import { TransactionsService } from '../referral/transactions.service';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
 import { PricingService } from '../pricing/pricing.service';
 
-import { JopWmsOrder } from '../jop-wms/entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
 
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -74,7 +73,6 @@ import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
             Affiliate,
             Transaction,
             KeyValuePair,
-            JopWmsOrder,
             JopWmsOrderLink,
             Notification,
         ]),

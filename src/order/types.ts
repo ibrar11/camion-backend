@@ -46,3 +46,11 @@ export interface NotificationPayload {
     priority: string;
     isRead: string,
 }
+
+export interface OrderTracking {
+    stage: 'order' | 'inbound' | 'outbound';
+    /** Customer-friendly status label */
+    status: string;
+    /** Populated once outbound is shipped */
+    waybillNo: string | null;
+}
