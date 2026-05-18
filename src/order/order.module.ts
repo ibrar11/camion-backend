@@ -54,6 +54,8 @@ import { PushNotificationService } from '../common/push-notification.service';
 
 import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
+import { Product } from '../inventory/entities/product.entity';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -75,6 +77,7 @@ import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
             KeyValuePair,
             JopWmsOrderLink,
             Notification,
+            Product,
         ]),
         ClientsModule,
         NotificationsModule,
