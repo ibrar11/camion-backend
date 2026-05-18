@@ -9,19 +9,32 @@ export class TwilioService {
     private readonly messagingServiceSid: string;
     private readonly smsEnabled: boolean;
     private readonly isLocal: boolean;
+    private readonly myAliceBaseUrl: string;
+    private readonly myAliceApiKey: string;
+    private readonly myAliceTemplateId: string;
+    private readonly myAliceChannelId: string;
 
     constructor(private readonly configService: ConfigService) {
         this.smsEnabled = this.configService.get<string>('TWILIO_SMS_ENABLED') === 'true';
         this.isLocal = this.configService.get<string>('NODE_ENV') === 'local';
         this.messagingServiceSid = this.configService.get<string>('TWILIO_MESSAGING_SERVICE_SID') ?? '';
+        
+        this.myAliceBaseUrl = this.configService.get<string>('MYALICE_BASE_URL') ?? 'https://api.myalice.ai';
+        this.myAliceApiKey = this.configService.get<string>('MYALICE_API_KEY') ?? '0e7f541a52a511f1aed3120879644360';
+        this.myAliceTemplateId = this.configService.get<string>('MYALICE_TEMPLATE_ID') ?? '1033607165678904';
+        this.myAliceChannelId = this.configService.get<string>('MYALICE_CHANNEL_ID') ?? '29229';
 
         if (this.smsEnabled) {
-            const accountSid = "AC15e0a0fb7e75075cc887a157f91286d3"
-            const authToken = 'fff9f13762c1288a0f1f1b6b74d0df11'; // TODO: move back to env
+            const accountSid = "AC15e0a0fb7e75075cc887a157f91286d3";
+            const authToken = 'fff9f13762c1288a0f1f1b6b74d0df11';
             this.client = Twilio(accountSid, authToken);
             this.logger.log(`Twilio initialised — accountSid: ${accountSid}, messagingServiceSid: ${this.messagingServiceSid || '(not set)'}`);
         } else {
             this.logger.warn(`Twilio SMS is disabled (TWILIO_SMS_ENABLED != "true")`);
+        }
+
+        if (!this.myAliceApiKey) {
+            this.logger.warn('MYALICE_API_KEY is not set');
         }
     }
 
@@ -50,15 +63,15 @@ export class TwilioService {
             // });
             // this.logger.log(`OTP sent successfully to ${to}`);
 
-            const response = await fetch('https://api.myalice.ai/stable/open/whatsapp/send-template-message', {
+            const response = await fetch(`${this.myAliceBaseUrl}/stable/open/whatsapp/send-template-message`, {
                 method: 'POST',
                 headers: {
-                    'X-Myalice-Api-Key': 'a7fc891a333c11f1a75e6a83850c7ff0',
+                    'X-Myalice-Api-Key': this.myAliceApiKey,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    template_id: '1324887296463284',
-                    channel_id: '26510',
+                    template_id: this.myAliceTemplateId,
+                    channel_id: this.myAliceChannelId,
                     customer_phone: to,
                     attributes: {
                         verification_code: otp,
