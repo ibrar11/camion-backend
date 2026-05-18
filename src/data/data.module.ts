@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { BannersModule } from '../banners/banners.module';
+import { CustomersModule } from '../customers/customers.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { OrderModule } from '../order/order.module';
 import { StoriesModule } from '../stories/stories.module';
@@ -10,10 +11,11 @@ import { DataController } from './data.controller';
 
 @Module({
 	imports: [
+		BannersModule,
+		CustomersModule,
 		InventoryModule,
 		OrderModule,
 		StoriesModule,
-		BannersModule,
 	],
 	controllers: [DataController],
 	providers: [DataService],

@@ -9,6 +9,7 @@ import { CategoriesService } from '../inventory/categories.service';
 import { OrderService } from '../order/order.service';
 import { ProductsService } from '../inventory/products.service';
 import { StoriesService } from '../stories/stories.service';
+import { CustomersService } from 'src/customers/customers.service';
 
 @Injectable()
 export class DataService {
@@ -17,6 +18,7 @@ export class DataService {
 	constructor(
 		@Inject(BannersService) private readonly bannersService: BannersService,
 		@Inject(CategoriesService) private readonly categoriesService: CategoriesService,
+		@Inject(CustomersService) private readonly customersService: CustomersService,
 		@Inject(OrderService) private readonly orderService: OrderService,
 		@Inject(ProductsService) private readonly productsService: ProductsService,
 		@Inject(StoriesService) private readonly storiesService: StoriesService,
@@ -30,6 +32,7 @@ export class DataService {
 	async getCounts(): Promise<{
 		banners: number,
 		categories: number,
+		customers: number,
 		orders: number,
 		products: number,
 		stories: number,
@@ -39,6 +42,7 @@ export class DataService {
 		const res = {
 			banners: 0,
 			categories: 0,
+			customers: 0,
 			orders: 0,
 			products: 0,
 			stories: 0,
@@ -49,6 +53,9 @@ export class DataService {
 
 		// Count the categories
 		res.categories = await this.categoriesService.countAll();
+
+		// Count the customers
+		res.customers = await this.customersService.countAll();
 
 		// Count the orders
 		res.orders = await this.orderService.countAll();
