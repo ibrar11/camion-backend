@@ -88,6 +88,8 @@ import { PushNotificationService } from "../common/push-notification.service";
 
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
 
+import { Product } from "../inventory/entities/product.entity";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -102,6 +104,7 @@ export class OrderService {
         @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
         @InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
         @InjectRepository(KeyValuePair) private readonly keyValuePairRepository: Repository<KeyValuePair>,
+        @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
@@ -156,13 +159,27 @@ export class OrderService {
                 });
             }
 
-            cartItems.forEach((item) => {
-                if(item?.product?.status !== ProductStatus.ACTIVE) {
-                    throw new BadRequestException({
-                        error: `Cannot create order for the non-active product ${item?.product.slug}`,
+            await Promise.all(
+                cartItems.map(async (item) => {
+                    const checkProduct = await this.productRepository.findOne({
+                        where: {
+                            id: item.product.id,
+                        },
                     });
-                }
-            })
+
+                    if (!checkProduct) {
+                        throw new BadRequestException({
+                            error: `Product not found`,
+                        });
+                    }
+
+                    if (checkProduct.status !== ProductStatus.ACTIVE) {
+                        throw new BadRequestException({
+                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
+                        });
+                    }
+                })
+            );
 
             let subTotal = 0;
             const orderItems: OrderItem[] = [];
@@ -850,6 +867,28 @@ export class OrderService {
                     'Cart is empty'
                 );
             }
+
+            await Promise.all(
+                cartItems.map(async (item) => {
+                    const checkProduct = await this.productRepository.findOne({
+                        where: {
+                            id: item.product.id,
+                        },
+                    });
+
+                    if (!checkProduct) {
+                        throw new BadRequestException({
+                            error: `Product not found`,
+                        });
+                    }
+
+                    if (checkProduct.status !== ProductStatus.ACTIVE) {
+                        throw new BadRequestException({
+                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
+                        });
+                    }
+                })
+            );
 
             const address = await this.addressRepository.findOne({
                 where: {
