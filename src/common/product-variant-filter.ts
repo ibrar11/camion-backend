@@ -20,13 +20,13 @@ export const formatProductVariants = (products: Array<Product>, sort: ProductSor
 		.map(product => {
 			switch (sort) {
 				case ProductSort.PriceHighToLow:
-					product.variants.sort((variantA, variantB) => variantB.cost.amount - variantA.cost.amount).slice(0, 1);
+					product.variants = product.variants.sort((variantA, variantB) => variantB.cost.amount - variantA.cost.amount).slice(0, 1);
 					break;
 				case ProductSort.PriceLowToHigh:
-					product.variants.sort((variantA, variantB) => variantA.cost.amount - variantB.cost.amount).slice(0, 1);
+					product.variants = product.variants.sort((variantA, variantB) => variantA.cost.amount - variantB.cost.amount).slice(0, 1);
 					break;
 				default:
-					product.variants.slice(0, 1);
+					product.variants = product.variants.slice(0, 1);
 					break;
 			}
 			return product;
