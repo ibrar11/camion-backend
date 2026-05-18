@@ -78,6 +78,7 @@ export class UsersService {
 		user.emailAddress = body.emailAddress.trim().toLowerCase();
 		user.password = await bcrypt.hash(body.password.trim(), 10);
 		user.role = role;
+		user.isActive = body.isActive;
 		return this.userRepository.save(user);
 	}
 
