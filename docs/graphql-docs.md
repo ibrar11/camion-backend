@@ -2382,6 +2382,12 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
             currencyCode
         }
         eta
+        tracking {
+            stage
+            status
+            waybillNo
+        }
+        orderPlacementDate
         shippingAddress {
             uuid
             fullName
@@ -2585,6 +2591,12 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
             currencyCode
         }
         eta
+        tracking {
+            stage
+            status
+            waybillNo
+        }
+        orderPlacementDate
         shippingAddress {
             uuid
             fullName
@@ -2695,41 +2707,47 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
 ```json
 {
     "data": {
-        "getCurrentCustomerOrders":{
+        "getCurrentCustomerOrder":{
             "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
-            "status": "payment_pending",
+            "status": "confirmed",
             "subTotal": {
                 "amount": 688,
-                "currencyCode": "usd"
+                "currencyCode": "qar"
             },
             "shippingCost": {
-                "amount": 0,
-                "currencyCode": "usd"
+                "amount": 321,
+                "currencyCode": "qar"
             },
             "discount": {
                 "amount": 0,
-                "currencyCode": "usd"
+                "currencyCode": "qar"
             },
             "total": {
-                "amount": 688,
-                "currencyCode": "usd"
+                "amount": 1009,
+                "currencyCode": "qar"
             },
             "eta": "6-10 working days",
+            "tracking": {
+                "stage": "inbound",
+                "status": "Goods Being Sourced",
+                "waybillNo": null
+            },
+            "orderPlacementDate": "2026-05-15T14:05:23.594Z",
             "orderItems": [
                 {
                     "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                     "price": {
                         "amount": 688,
-                        "currencyCode": "usd"
+                        "currencyCode": "qar"
                     },
                     "discountedPrice": {
                         "amount": 688,
-                        "currencyCode": "USD"
+                        "currencyCode": "qar"
                     },
                     "quantity": 1,
                     "total": {
                         "amount": 688,
-                        "currencyCode": "usd"
+                        "currencyCode": "qar"
                     },
                     "product": {
                         "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
