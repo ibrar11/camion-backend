@@ -471,16 +471,6 @@ export class OrderService {
                 },
             }).catch(err => this.logger.warn(`Failed to send ORDER_PLACED notification: ${err?.message}`));
 
-            if (customer.emailAddress) {
-                this.logger.log(`[Email] Sending order-confirmed email to ${customer.emailAddress} for order ${order.uuid}`);
-                this.emailService.sendOrderConfirmedEmail(customer.emailAddress, {
-                    customerName: customer.fullName,
-                    orderId: order.uuid,
-                    orderTotal: `${total} ${currency}`,
-                }).catch(err => this.logger.error(`[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`));
-            } else {
-                this.logger.warn(`[Email] Skipping order-confirmed email for order ${order.uuid} — customer has no email address`);
-            }
 
             if (notification?.uuid) {
                 this.logger.log(`Attempting to create psuh notification for order placement: ${JSON.stringify(order.uuid)}`);
@@ -768,7 +758,14 @@ export class OrderService {
             const customerEmail = order.customer?.emailAddress;
             if (customerEmail) {
                 const customerName = order.customer.fullName;
-                if (status === OrderStatus.DELIVERED) {
+                if (status === OrderStatus.CONFIRMED) {
+                    this.logger.log(`[Email] Sending order-confirmed email to ${customerEmail} for order ${order.uuid}`);
+                    this.emailService.sendOrderConfirmedEmail(customerEmail, {
+                        customerName,
+                        orderId: order.uuid,
+                        orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
+                    }).catch(err => this.logger.error(`[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`));
+                } else if (status === OrderStatus.DELIVERED) {
                     this.logger.log(`[Email] Sending order-delivered email to ${customerEmail} for order ${order.uuid}`);
                     this.emailService.sendOrderDeliveredEmail(customerEmail, { customerName, orderId: order.uuid })
                         .catch(err => this.logger.error(`[Email] Failed to send order-delivered email for order ${order.uuid}: ${err?.message}`));
