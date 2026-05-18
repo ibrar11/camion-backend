@@ -547,6 +547,8 @@ Tracking is computed on the backend and embedded as a `tracking` object on every
 
 Customers can only retrieve tracking for their own orders; admins can query any order.
 
+> **GraphQL**: The `tracking` field is available on both `getCurrentCustomerOrder` and `getCurrentCustomerOrders`. No separate query needed — just add `tracking { stage status waybillNo }` to the existing selection set.
+
 ```http
 GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 ```

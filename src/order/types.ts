@@ -47,10 +47,14 @@ export interface NotificationPayload {
     isRead: string,
 }
 
-export interface OrderTracking {
-    stage: 'order' | 'inbound' | 'outbound';
-    /** Customer-friendly status label */
+@ObjectType()
+export class OrderTracking {
+    @Field()
+    stage: string;
+
+    @Field()
     status: string;
-    /** Populated once outbound is shipped */
+
+    @Field(() => String, { nullable: true })
     waybillNo: string | null;
 }

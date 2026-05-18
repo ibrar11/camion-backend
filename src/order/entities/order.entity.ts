@@ -102,6 +102,7 @@ export class Order {
     @Field(() => Date, { name: "orderPlacementDate" })
     orderPlacementDate: Date;
 
+    @Field(() => OrderTracking, { nullable: true })
     tracking?: OrderTracking;
 
     // -->
