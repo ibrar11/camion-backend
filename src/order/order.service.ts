@@ -88,6 +88,8 @@ import { KeyValuePairType } from "../key-value-pairs/enums/KeyValuePairType.enum
 
 import { PushNotificationService } from "../common/push-notification.service";
 
+import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -213,6 +215,14 @@ export class OrderService {
                     error: "Invalid cart items",
                 });
             }
+
+            cartItems.forEach((item) => {
+                if(item?.product?.status !== ProductStatus.ACTIVE) {
+                    throw new BadRequestException({
+                        error: `Cannot create order for the non-active product ${item?.product.slug}`,
+                    });
+                }
+            })
 
             let subTotal = 0;
             const orderItems: OrderItem[] = [];
