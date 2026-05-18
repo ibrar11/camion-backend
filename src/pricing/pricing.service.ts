@@ -101,6 +101,12 @@ export class PricingService {
 			};
 		}
 
+		this.logger.log('----------------------------');
+		this.logger.log(`Product title: ${product.titleEn}`);
+		this.logger.log(`Product categories: `);
+		this.logger.log(product.productCategories);
+		this.logger.log('----------------------------');
+
 		// Find the last category applied on the product
 		let lastCategory: Category | null = null;
 		if (product !== null && Array.isArray(product.productCategories)) {
