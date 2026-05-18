@@ -42,7 +42,7 @@ export class CreateCategoryDto {
 
 	@IsNumber()
 	@Min(0)
-	@Max(10)
+	@Max(99)
 	discountPercentage: number;
 
 	@IsBoolean()

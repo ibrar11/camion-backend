@@ -29,14 +29,15 @@ import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage } from "./entities/product-variant-image.entity";
 import {
-	sliceProductVariants,
-	sliceProductVariantsWithDrafts,
+	formatProductVariants,
+	formatProductVariantsWithDrafts,
 } from "../common/product-variant-filter";
 
 import { TranslationService } from "../translation/translation.service";
 import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
 import { Customer } from "src/customers/entities/customer.entity";
 import { ProductView } from "./entities/product-view.entity";
+import { retry } from "rxjs";
 
 @Injectable()
 export class ProductsService {
@@ -210,7 +211,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return sliceProductVariantsWithDrafts(products);
+		return formatProductVariantsWithDrafts(products);
 	}
 
 	/**
@@ -250,7 +251,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -313,7 +314,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -367,7 +368,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -411,7 +412,7 @@ export class ProductsService {
 		// Create a list of products
 		const products: Array<Product> = views.map(view => view.product);
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -427,16 +428,19 @@ export class ProductsService {
 	async searchProductsUncached(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Searching for products uncached, query: ${query}, language: ${language}`);
 
-		// Language to title column name mapping
-		const titleColumnMap: Record<string, string> = {
-			"en": "product.titleEn",
-			"ar": "product.titleAr",
+		// Clean the search query
+		const searchQuery = query.trim().split(/\s+/).map(w => `${w}:*`).join(' & ');
+
+		// Determine the search column based on the language
+		const tsvTitleColumnsMap = {
+			"en": "product.tsv_title_en",
+			"ar": "product.tsv_title_ar",
 		};
 
-		// Language to description column name mapping
-		const descriptionColumnMap: Record<string, string> = {
-			"en": "product.descriptionEn",
-			"ar": "product.descriptionAr",
+		// Get the config language
+		const configLanguageMap = {
+			"en": "english",
+			"ar": "arabic",
 		};
 
 		// Normalize the short code
@@ -466,15 +470,19 @@ export class ProductsService {
 					.leftJoinAndSelect("product.variants", "variant")
 					.leftJoinAndSelect("variant.images", "image")
 
-					// Filter by product text column
-					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+					// Search Filter
+					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
+						configLanguage: configLanguageMap[language],
+						searchQuery: searchQuery,
+					})
 
 					.distinct(true)
 					.orderBy("product.id", "DESC")
 					.skip(skip)
 					.take(take)
 					.getMany();
-				break;
+
+				return formatProductVariants(products, ProductSort.BestMatch);
 
 			case ProductSort.PriceLowToHigh:
 				// Subquery to sort variants of a product by minimum price
@@ -498,8 +506,10 @@ export class ProductsService {
 					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Search Filter
-					// Filter by product text column
-					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
+						configLanguage: configLanguageMap[language],
+						searchQuery: searchQuery,
+					})
 
 					// Add the subquery result as a virtual column for sorting
 					.addSelect(`(${leastExpensiveVariantQuery})`, 'least_expensive_variant_price')
@@ -509,7 +519,8 @@ export class ProductsService {
 					.take(take)
 					.skip(skip)
 					.getMany();
-				break;
+
+				return formatProductVariants(products, ProductSort.PriceLowToHigh);
 
 			case ProductSort.PriceHighToLow:
 				const mostExpensiveVariantQuery = this.productRepository
@@ -532,8 +543,10 @@ export class ProductsService {
 					.leftJoinAndSelect('productCategories.category', 'category')
 
 					// Search Filter
-					// Filter by product text column
-					.where(`${titleColumnMap[language]} ILIKE :query OR ${descriptionColumnMap[language]} ILIKE :query`, { query: `%${query}%` })
+					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
+						configLanguage: configLanguageMap[language],
+						searchQuery: searchQuery,
+					})
 
 					// Add the subquery result as a virtual column for sorting
 					.addSelect(`(${mostExpensiveVariantQuery})`, 'most_expensive_variant_price')
@@ -543,13 +556,14 @@ export class ProductsService {
 					.take(take)
 					.skip(skip)
 					.getMany();
-				break;
+
+				return formatProductVariants(products, ProductSort.PriceHighToLow);
 
 			default: // do nothing
 				break;
 		}
 
-		return sliceProductVariants(products);
+		return [];
 	}
 
 	/**
@@ -622,7 +636,8 @@ export class ProductsService {
 					.skip(skip)
 					.take(take)
 					.getMany();
-				break;
+
+				return formatProductVariants(products, ProductSort.BestMatch);
 
 			case ProductSort.PriceLowToHigh:
 				// Subquery to sort variants of a product by minimum price
@@ -663,7 +678,8 @@ export class ProductsService {
 					.take(take)
 					.skip(skip)
 					.getMany();
-				break;
+
+				return formatProductVariants(products, ProductSort.PriceLowToHigh);
 
 			case ProductSort.PriceHighToLow:
 				const mostExpensiveVariantQuery = this.productRepository
@@ -703,13 +719,14 @@ export class ProductsService {
 					.take(take)
 					.skip(skip)
 					.getMany();
-				break;
+
+				return formatProductVariants(products, ProductSort.PriceHighToLow);
 
 			default: // do nothing
 				break;
 		}
 
-		return sliceProductVariants(products);
+		return [];
 	}
 
 	/**
@@ -800,7 +817,7 @@ export class ProductsService {
 			});
 		}
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -858,7 +875,7 @@ export class ProductsService {
 			return this.findAll("", ProductSort.Desc, pageNumber, itemsPerPage);
 		}
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -896,7 +913,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -987,7 +1004,7 @@ export class ProductsService {
 			});
 		}
 
-		return sliceProductVariants(products);
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**

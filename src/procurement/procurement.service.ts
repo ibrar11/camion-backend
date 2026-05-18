@@ -87,6 +87,11 @@ export class ProcurementService {
         return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
     }
 
+    private toFiniteNumberOrFallback(value: unknown, fallback: number): number {
+        const parsed = typeof value === "number" ? value : Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
     async enqueueInventoryVariantsResync(body: ResyncInventoryVariantsDto): Promise<{
         jobId: string;
         status: "queued";
@@ -204,20 +209,32 @@ export class ProcurementService {
 
                 variantsMatched += 1;
                 let changed = false;
+                const nextWeightAmount = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.weight,
+                    localVariant.weight.amount,
+                );
+                const nextWidth = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.width,
+                    localVariant.dimensions.width,
+                );
+                const nextHeight = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.height,
+                    localVariant.dimensions.height,
+                );
+                const nextLength = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.length,
+                    localVariant.dimensions.length,
+                );
 
                 const nextTitleEn = (sourceVariant.title || "").slice(0, 128);
-                const nextTitleAr = (sourceVariant.title || "").slice(0, 128);
+                // const nextTitleAr = (sourceVariant.title || "").slice(0, 128);
                 if (localVariant.titleEn !== nextTitleEn) {
                     localVariant.titleEn = nextTitleEn;
                     changed = true;
                 }
-                if (localVariant.titleAr !== nextTitleAr) {
-                    localVariant.titleAr = nextTitleAr;
-                    changed = true;
-                }
 
-                if (localVariant.weight.amount !== sourceVariant.shipping.weight) {
-                    localVariant.weight.amount = sourceVariant.shipping.weight;
+                if (localVariant.weight.amount !== nextWeightAmount) {
+                    localVariant.weight.amount = nextWeightAmount;
                     changed = true;
                 }
                 if (localVariant.weight.unit !== WeightUnit.Kilograms) {
@@ -225,16 +242,16 @@ export class ProcurementService {
                     changed = true;
                 }
 
-                if (localVariant.dimensions.width !== sourceVariant.shipping.width) {
-                    localVariant.dimensions.width = sourceVariant.shipping.width;
+                if (localVariant.dimensions.width !== nextWidth) {
+                    localVariant.dimensions.width = nextWidth;
                     changed = true;
                 }
-                if (localVariant.dimensions.height !== sourceVariant.shipping.height) {
-                    localVariant.dimensions.height = sourceVariant.shipping.height;
+                if (localVariant.dimensions.height !== nextHeight) {
+                    localVariant.dimensions.height = nextHeight;
                     changed = true;
                 }
-                if (localVariant.dimensions.length !== sourceVariant.shipping.length) {
-                    localVariant.dimensions.length = sourceVariant.shipping.length;
+                if (localVariant.dimensions.length !== nextLength) {
+                    localVariant.dimensions.length = nextLength;
                     changed = true;
                 }
                 if (localVariant.dimensions.unit !== DimensionsUnit.Centimeter) {
