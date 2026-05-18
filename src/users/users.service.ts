@@ -12,6 +12,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { getSkipAndTake } from "../common/pagination";
+
 import { CreateUserDto } from './dtos/CreateUserDto';
 import { UpdateUserDto } from './dtos/UpdateUserDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
@@ -82,11 +84,25 @@ export class UsersService {
 	/**
 	 * Finds a list of users
 	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAll(): Promise<User[]> {
+	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<User[]> {
 		this.logger.log(`Retrieving users`);
-		return this.userRepository.find();
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.userRepository.find({
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
 	}
 
 	/**
