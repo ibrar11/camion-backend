@@ -17,6 +17,21 @@ import { Translation } from './entities/translation.entity';
 import { TranslationService } from './translation.service';
 import { TranslationItemService } from './translation-item.service';
 
+import { TranslationScannerService } from './translation-scanner.service';
+import { TranslationScannerController } from './translation-scanner.controller';
+
+import { User } from 'src/users/entities/user.entity';
+import { UsersService } from 'src/users/users.service';
+
+import { Customer } from 'src/customers/entities/customer.entity';
+import { CustomersService } from 'src/customers/customers.service';
+
+import { Client } from 'src/clients/entities/client.entity';
+import { ClientsService } from 'src/clients/clients.service';
+
+import { ClientRefreshToken } from 'src/oauth/entities/oauth-refresh-token.entity';
+import { OauthService } from 'src/oauth/oauth.service';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -28,12 +43,24 @@ import { TranslationItemService } from './translation-item.service';
             Translation,
             TranslationItem,
             Language,
+            User,
+            Customer,
+            Client,
+            ClientRefreshToken
         ]),
     ],
     providers: [
         ProductTranslationProvider,
         TranslationService,
         TranslationItemService,
+        TranslationScannerService,
+        UsersService,
+        CustomersService,
+        ClientsService,
+        OauthService,
     ],
+    controllers: [
+        TranslationScannerController,
+    ]
 })
 export class TranslationModule { }
