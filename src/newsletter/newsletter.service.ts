@@ -3,8 +3,8 @@ import crypto from "crypto";
 
 @Injectable()
 export class NewsletterService {
-	private readonly apiKey = process.env.MAILCHIMP_API_KEY;
-	private readonly audienceId = process.env.MAILCHIMP_AUDIENCE_ID;
+	private readonly apiKey = '7d6a18b29d1d5a5f9f733852c9d9ee9c-us3';
+	private readonly audienceId = '907cac3cf9'
 
 	private get dataCenter(): string {
 		if (!this.apiKey) {
