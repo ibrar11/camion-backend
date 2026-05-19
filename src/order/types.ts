@@ -35,6 +35,9 @@ export class OrderPreviewResponse {
 
     @Field()
     eta: string;
+
+    @Field({ defaultValue: "", })
+    orderTotalWarning?: string;
 }
 
 export interface OrderFilters {
