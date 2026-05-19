@@ -53,7 +53,6 @@ import { IsNull, Not, DataSource, Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
-import { Product } from '../inventory/entities/product.entity';
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
