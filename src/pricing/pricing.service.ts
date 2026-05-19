@@ -122,7 +122,7 @@ export class PricingService {
 		}
 
 		// Calculate the base price based on the cost and the exchange rate.
-		const basePrice = variant.cost.amount * pricingFactor * exchangeRateFactor;
+		const basePrice = Math.max(5, variant.cost.amount * pricingFactor * exchangeRateFactor);
 
 		// Apply discount if there is any
 		const discountedPrice = basePrice * (1 - (discountPercentage / 100));
