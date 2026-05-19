@@ -2927,6 +2927,7 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
         shippingTotal
         grand_total
         eta
+        orderTotalWarning
     }
 }
 ```
@@ -3048,7 +3049,8 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
             "discount": 0,
             "shippingTotal": 231,
             "grand_total": 1221,
-            "eta": "6-10 working days"
+            "eta": "6-10 working days",
+            "orderTotalWarning": "Order value should not be less than 250 QAR",
         }
     }
 }

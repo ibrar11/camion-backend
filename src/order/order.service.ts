@@ -163,8 +163,8 @@ export class OrderService {
             const status = outbound
                 ? (OrderService.OUTBOUND_TRACKING_STATUS[outbound.status] ?? 'Shipment in Progress')
                 : inbound
-                ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ?? 'Procurement in Progress')
-                : 'Order Confirmed';
+                    ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ?? 'Procurement in Progress')
+                    : 'Order Confirmed';
 
             order.tracking = {
                 stage,
@@ -196,9 +196,9 @@ export class OrderService {
             });
 
             if (!address) {
-                throw new BadRequestException({
-                    error: 'User address cannot be found.'
-                });
+                throw new BadRequestException(
+                    'User address cannot be found.'
+                )
             }
             // get cart items
             const cartItems = await this.cartRepository.find({
@@ -214,9 +214,9 @@ export class OrderService {
             });
 
             if (cartItems.length !== dto.cartItemUuids.length) {
-                throw new BadRequestException({
-                    error: "Invalid cart items",
-                });
+                throw new BadRequestException(
+                    "Invalid cart items",
+                );
             }
 
             await Promise.all(
@@ -228,15 +228,15 @@ export class OrderService {
                     });
 
                     if (!checkProduct) {
-                        throw new BadRequestException({
-                            error: `Product not found`,
-                        });
+                        throw new BadRequestException(
+                            `Product not found`,
+                        );
                     }
 
                     if (checkProduct.status !== ProductStatus.ACTIVE) {
-                        throw new BadRequestException({
-                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
-                        });
+                        throw new BadRequestException(
+                            `Cannot create order for the non-active product ${checkProduct.slug}`,
+                        );
                     }
                 })
             );
@@ -259,9 +259,9 @@ export class OrderService {
                 });
 
                 if (!inventoryItem || !inventoryItem.levels.length) {
-                    throw new BadRequestException({
-                        error: `No inventory found for ${variant.sku}`,
-                    });
+                    throw new BadRequestException(
+                        `No inventory found for ${variant.sku}`,
+                    );
                 }
 
                 // Find a warehouse with enough stock
@@ -270,9 +270,9 @@ export class OrderService {
                 );
 
                 if (!level) {
-                    throw new BadRequestException({
-                        error: `Insufficient stock for ${variant.sku}`
-                    });
+                    throw new BadRequestException(
+                        `Insufficient stock for ${variant.sku}`
+                    );
                 }
 
                 // Deduct inventory within transaction
@@ -379,6 +379,29 @@ export class OrderService {
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
                 discount = smartRoundInt(discount);
             }
+
+            let subTotalInQar = subTotal;
+            if (dto.currency.toLowerCase().trim() !== "qar") {
+
+                const exchangeRate = exchangeRates
+                    .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === dto.currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
+                    .at(0) ?? null;
+
+                if (!exchangeRate) {
+                    throw new NotFoundException({
+                        error: `Exchange Rate for ${dto.currency} to qar not found`
+                    });
+                }
+
+                subTotalInQar = subTotal * exchangeRate.factor;
+            }
+
+            if (subTotalInQar < 250) {
+                throw new BadRequestException(
+                    "Order value should not be less than 250 QAR"
+                );
+            }
+
             const total = subTotal + shippingCost - discount;
 
             // create a order within transaction
@@ -424,9 +447,9 @@ export class OrderService {
                     });
 
                     if (!wallet) {
-                        throw new BadRequestException({
-                            error: `Wallet not found: ${walletId}`
-                        });
+                        throw new BadRequestException(
+                            `Wallet not found: ${walletId}`
+                        );
                     }
 
                     // Create affiliate commission transaction record within the same transaction
@@ -517,11 +540,15 @@ export class OrderService {
             return order;
         } catch (error: any) {
             await queryRunner.rollbackTransaction();
-            this.logger.error(`Error placing order: ${error}`);
-            throw new InternalServerErrorException({
-                error: 'Failed to place order',
-                details: error?.response?.error || error?.message || error,
-            });
+            this.logger.error(`Error placing order: ${error?.response?.error || error}`);
+            if (error instanceof HttpException) {
+                throw error;
+            } else {
+                throw new InternalServerErrorException({
+                    error: 'Failed to place order',
+                    details: error?.response?.error || error?.message || error,
+                });
+            }
         } finally {
             await queryRunner.release();
         }
@@ -779,7 +806,7 @@ export class OrderService {
 
             const notif = notificationMap[status];
             if (notif && order.customer) {
-                this.logger.log(`Attempting to create notification for order status update: ${JSON.stringify(order)}`);
+                this.logger.log(`Attempting to create notification for order status update: ${JSON.stringify(order.uuid)}`);
                 const notification = await this.notificationsService.create({
                     customerUUID: order.customer.uuid,
                     ...notif,
@@ -1026,17 +1053,16 @@ export class OrderService {
             // Decide if we should charge shipping
             const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
 
+            const [exchangeRates] = await Promise.all([
+                this.exchangeRateService.findAll("", "")
+            ]);
+            const currency = cartItems[0]?.subTotal.currencyCode;
+
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
                     weight: item.variant.weight,
                     quantity: item.quantity,
                 }));
-
-                const [exchangeRates] = await Promise.all([
-                    this.exchangeRateService.findAll("", "")
-                ]);
-
-                const currency = cartItems[0]?.subTotal.currencyCode;
 
                 shippingCalculation = calculateCartShipping(
                     shippingCartItems,
@@ -1071,11 +1097,27 @@ export class OrderService {
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
             }
 
+            let subTotalInQar = subTotal;
+            if (currency.toLowerCase().trim() !== "qar") {
+
+                const exchangeRate = exchangeRates
+                    .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
+                    .at(0) ?? null;
+
+                if (!exchangeRate) {
+                    throw new NotFoundException({
+                        error: `Exchange Rate for ${currency} to qar not found`
+                    });
+                }
+
+                subTotalInQar = subTotal * exchangeRate.factor;
+            }
+
             // Calculate total order amount
             const totalAmount = subTotal + shippingCost - discount;
 
             // Return complete order preview
-            const orderPreview = {
+            const orderPreview : OrderPreviewResponse = {
                 items: validatedItems,
                 shippingAddress: address,
                 cart_total: subTotal,
@@ -1085,6 +1127,10 @@ export class OrderService {
                 grand_total: totalAmount,
                 eta: eta,
             };
+
+            if (subTotalInQar < 250) {
+                orderPreview.orderTotalWarning = "Order value should not be less than 250 QAR"
+            }
 
             return orderPreview;
         } catch (error: any) {
