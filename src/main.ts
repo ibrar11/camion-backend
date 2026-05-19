@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 
+import express from "express";
 import compression from "compression";
 
 import {
@@ -92,6 +93,10 @@ async function bootstrap() {
 
 	// Add logging interceptor
 	app.useGlobalInterceptors(new LoggingInterceptor());
+
+	// Increase the payload limit
+	app.use(express.json({ limit: "50mb" }));
+	app.use(express.urlencoded({ limit: "50mb", extended: true, }));
 
 	await app.listen(process.env.PORT ?? 3000);
 }
