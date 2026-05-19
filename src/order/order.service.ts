@@ -398,7 +398,7 @@ export class OrderService {
 
             if (subTotalInQar < 250) {
                 throw new BadRequestException({
-                    erro: "Order value should not be less than 250 QAR"
+                    error: "Order value should not be less than 250 QAR"
                 });
             }
 
