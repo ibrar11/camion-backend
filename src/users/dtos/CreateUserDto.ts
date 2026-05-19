@@ -1,4 +1,5 @@
 import {
+	IsBoolean,
 	IsEmail,
 	IsEnum,
 	IsNotEmpty,
@@ -26,4 +27,7 @@ export class CreateUserDto {
 	@IsString()
 	@IsEnum(UserRole)
 	role: UserRole;
+
+	@IsBoolean()
+	isActive: boolean = false;
 }

@@ -15,6 +15,7 @@ import { Repository } from 'typeorm';
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { isPhoneNumberValid } from "../common/phone-number-validation";
+import { getSkipAndTake } from "../common/pagination";
 
 import { CreateCustomerDto } from './dtos/CreateCustomerDto';
 import { UpdateCustomerDto } from "./dtos/UpdateCustomerDto";
@@ -114,10 +115,36 @@ export class CustomersService {
 	/**
 	 * Finds a list of customers
 	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAll(): Promise<Customer[]> {
-		return this.customerRepository.find();
+	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Customer[]> {
+		this.logger.log(`Retrieving customers for graphql`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.customerRepository.find({
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Returns the estimated count of categories
+	 *
+	 * @returns
+	 */
+	countAll(): Promise<number> {
+		return this.customerRepository.count({
+			cache: true,
+		});
 	}
 
 	/**
@@ -127,10 +154,33 @@ export class CustomersService {
 	 * @returns
 	 */
 	async findOne(uuid: string): Promise<Customer> {
+		this.logger.log(`Retrieving customer: ${uuid}`);
 		const customer = await this.customerRepository.findOneBy({ uuid: uuid, });
 		if (customer === null) {
 			throw new NotFoundException({
-				error: "Faild",
+				error: "Failed to find the customer. Please check and try again.",
+			});
+		}
+		return customer;
+	}
+
+	/**
+	 * Finds a customer using a cached query
+	 *
+	 * @param uuid
+	 * @returns
+	 */
+	async findOneCached(uuid: string): Promise<Customer> {
+		this.logger.log(`Retrieving cached customer: ${uuid}`);
+		const customer = await this.customerRepository.findOne({
+			cache: true,
+			where: {
+				uuid: uuid,
+			},
+		});
+		if (customer === null) {
+			throw new NotFoundException({
+				error: "Failed to find the customer. Please check and try again.",
 			});
 		}
 		return customer;

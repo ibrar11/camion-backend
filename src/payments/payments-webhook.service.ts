@@ -1,4 +1,5 @@
 import {
+    Inject,
     Injectable,
     Logger,
     UnauthorizedException,
@@ -20,9 +21,11 @@ import { Order } from "../order/entities/order.entity";
 
 import { skipcashWebhookResponse } from "./types";
 
+import { Notification } from "../notifications/entities/notification.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/enums/notification-type.enum";
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
+import { PushNotificationService } from "../common/push-notification.service";
 
 @Injectable()
 export class PaymentsWebhookService {
@@ -31,6 +34,7 @@ export class PaymentsWebhookService {
     constructor(
         @InjectRepository(PaymentTransaction) private readonly paymentRepository: Repository<PaymentTransaction>,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+        @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
     ) { }
 
@@ -74,9 +78,11 @@ export class PaymentsWebhookService {
 
             const transaction = await this.paymentRepository.findOne({
                 where: {
-                    transactionId: TransactionId,
                     order: {id: order.id}
                 },
+                relations: {
+                    order: true
+                }
             });
 
             if (!transaction) {
@@ -118,6 +124,8 @@ export class PaymentsWebhookService {
                 `Transaction ${transaction.id} updated to ${newStatus}`,
             );
 
+            let notification: Notification | void = undefined; 
+
             if (newStatus === PaymentStatus.PAID) {
                 this.logger.log(
                     `Payment SUCCESS for transaction: ${TransactionId}`,
@@ -127,7 +135,7 @@ export class PaymentsWebhookService {
                 await this.orderRepository.save(order);
 
                 if (order.customer) {
-                    this.notificationsService.create({
+                    notification = await this.notificationsService.create({
                         customerUUID: order.customer.uuid,
                         type: NotificationType.PAYMENT_SUCCESSFUL,
                         title: 'Payment Successful',
@@ -135,6 +143,7 @@ export class PaymentsWebhookService {
                         message: `Payment for order #${order.uuid} was successful. Your order is now being processed.`,
                         priority: NotificationPriority.HIGH,
                     }).catch(err => this.logger.warn(`Failed to send PAYMENT_SUCCESSFUL notification: ${err?.message}`));
+                    this.logger.log(`Create notification for payment status success: ${JSON.stringify(notification)}`);
                 }
 
             } else if (
@@ -149,7 +158,7 @@ export class PaymentsWebhookService {
                 await this.orderRepository.save(order);
 
                 if (order.customer) {
-                    this.notificationsService.create({
+                    notification = await this.notificationsService.create({
                         customerUUID: order.customer.uuid,
                         type: NotificationType.PAYMENT_FAILED,
                         title: 'Payment Failed',
@@ -157,7 +166,13 @@ export class PaymentsWebhookService {
                         message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
                         priority: NotificationPriority.HIGH,
                     }).catch(err => this.logger.warn(`Failed to send PAYMENT_FAILED notification: ${err?.message}`));
+                    this.logger.log(`Create notification for payment status failed: ${JSON.stringify(notification)}`);
                 }
+            }
+
+            if(notification?.uuid) {
+                this.logger.log(`Attempting to create psuh notification for payment status: ${JSON.stringify(transaction.order.uuid)}`);
+                await this.pushNotificationService.sendToToken(notification?.uuid)
             }
 
             return {

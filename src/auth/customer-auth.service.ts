@@ -103,7 +103,7 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Make sure we don't have a customer using the same email address
@@ -141,6 +141,15 @@ export class CustomerAuthService {
 		customer.password = "";
 		customer.role = CustomerRole.Customer;
 		customer.isActive = true;
+		if (body.firebaseDeviceToken?.trim()) {
+			customer.firebaseDeviceToken ??= [];
+
+			const token = body.firebaseDeviceToken.trim();
+
+			if (!customer.firebaseDeviceToken.includes(token)) {
+				customer.firebaseDeviceToken.push(token);
+			}
+		}
 		await this.customerRepository.save(customer);
 
 		// merge the customer guest cart
@@ -216,12 +225,12 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Find the customer using their phone number
 		const customer = await this.customerRepository.findOneBy({
-			phoneNumber: body.phoneNumber.trim(),
+			phoneNumber: body.phoneNumber?.trim(),
 		});
 
 		if (customer === null) {
@@ -236,6 +245,22 @@ export class CustomerAuthService {
 			throw new UnauthorizedException({
 				error: "Account is deactivated.",
 			});
+		}
+
+		if (body.firebaseDeviceToken?.trim()) {
+			const firebaseToken = body.firebaseDeviceToken.trim();
+			customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
+				? customer.firebaseDeviceToken
+				: [];
+
+			customer.firebaseDeviceToken = [
+				...new Set([
+					...customer.firebaseDeviceToken,
+					firebaseToken,
+				]),
+			];
+
+			await this.customerRepository.save(customer);
 		}
 
 		// merge the customer gurst cart
@@ -377,6 +402,22 @@ export class CustomerAuthService {
 			throw new UnauthorizedException({
 				error: "Account is deactivated.",
 			});
+		}
+
+		if (body.firebaseDeviceToken?.trim()) {
+			const firebaseToken = body.firebaseDeviceToken.trim();
+			customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
+				? customer.firebaseDeviceToken
+				: [];
+
+			customer.firebaseDeviceToken = [
+				...new Set([
+					...customer.firebaseDeviceToken,
+					firebaseToken,
+				]),
+			];
+
+			await this.customerRepository.save(customer);
 		}
 
 		// merge the customer gurst cart
@@ -645,7 +686,9 @@ export class CustomerAuthService {
 	}
 
 	async loginWithGoogleMobile(dto: GoogleMobileAuthDto): Promise<CustomerAuthResponse> {
-		const { idToken } = dto;
+		this.logger.log(`Attempting to login customer by google mobile: ${JSON.stringify(dto)}`);
+
+		const { idToken, firebaseDeviceToken } = dto;
 
 		const allowedAudiences: string[] = [];
 		const iosClientId = this.configService.get<string>('GOOGLE_IOS_CLIENT_ID');
@@ -678,7 +721,7 @@ export class CustomerAuthService {
 			throw new UnauthorizedException({ error: 'Email or Google ID not found in token.' });
 		}
 
-		return this.findOrCreateGoogleCustomer({ email, fullName, googleId });
+		return this.findOrCreateGoogleCustomer({ email, fullName, googleId, firebaseDeviceToken });
 	}
 
 	async loginWithGoogleWeb(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
@@ -686,6 +729,20 @@ export class CustomerAuthService {
 	}
 
 	async loginWithFacebookMobile(dto: FacebookMobileAuthDto): Promise<CustomerAuthResponse> {
+		this.logger.log(`Attempting to login customer by facebook mobile: ${JSON.stringify(dto)}`);
+
+		this.logger.log(`Face mobile login firebase device token: ${dto.firebaseDeviceToken}`)
+
+		const isJwt = dto.accessToken.split('.').length === 3;
+
+		if (isJwt) {
+			return this.loginWithFacebookLimitedLogin(dto.accessToken, dto.firebaseDeviceToken);
+		}
+
+		return this.loginWithFacebookAccessToken(dto.accessToken, dto.firebaseDeviceToken);
+	}
+
+	private async loginWithFacebookAccessToken(accessToken: string, firebaseDeviceToken?: string): Promise<CustomerAuthResponse> {
 		const appId = this.configService.get<string>('FACEBOOK_APP_ID');
 		const appSecret = this.configService.get<string>('FACEBOOK_APP_SECRET');
 
@@ -696,7 +753,7 @@ export class CustomerAuthService {
 		const appAccessToken = `${appId}|${appSecret}`;
 
 		const debugRes = await fetch(
-			`https://graph.facebook.com/debug_token?input_token=${dto.accessToken}&access_token=${appAccessToken}`,
+			`https://graph.facebook.com/debug_token?input_token=${accessToken}&access_token=${appAccessToken}`,
 		);
 		const debugData = (await debugRes.json()) as { data?: { is_valid?: boolean; app_id?: string } };
 
@@ -708,7 +765,7 @@ export class CustomerAuthService {
 		}
 
 		const profileRes = await fetch(
-			`https://graph.facebook.com/me?fields=id,name,email&access_token=${dto.accessToken}`,
+			`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`,
 		);
 		const profileData = (await profileRes.json()) as { id?: string; name?: string; email?: string };
 
@@ -717,18 +774,51 @@ export class CustomerAuthService {
 			throw new UnauthorizedException({ error: 'Facebook ID not found.' });
 		}
 
-		const email = profileData.email || '';
-		const fullName = profileData.name || '';
+		return this.findOrCreateFacebookCustomer({
+			email: profileData.email || '',
+			fullName: profileData.name || '',
+			facebookId,
+			firebaseDeviceToken: firebaseDeviceToken || '',
+		});
+	}
 
-		return this.findOrCreateFacebookCustomer({ email, fullName, facebookId });
+	private async loginWithFacebookLimitedLogin(idToken: string, firebaseDeviceToken?: string): Promise<CustomerAuthResponse> {
+		const appId = this.configService.get<string>('FACEBOOK_APP_ID');
+		if (!appId) {
+			throw new UnauthorizedException({ error: 'Facebook authentication not configured.' });
+		}
+
+		let payload: { sub?: string; name?: string; email?: string; aud?: string | string[] };
+		try {
+			const JWKS = createRemoteJWKSet(new URL('https://limited.facebook.com/.well-known/oauth/openid/jwks/'));
+			const { payload: verified } = await jwtVerify(idToken, JWKS, {
+				issuer: 'https://www.facebook.com',
+				audience: appId,
+			});
+			payload = verified as typeof payload;
+		} catch {
+			throw new UnauthorizedException({ error: 'Invalid Facebook Limited Login token.' });
+		}
+
+		const facebookId = payload.sub;
+		if (!facebookId) {
+			throw new UnauthorizedException({ error: 'Facebook ID not found in token.' });
+		}
+
+		return this.findOrCreateFacebookCustomer({
+			email: payload.email || '',
+			fullName: payload.name || '',
+			facebookId,
+			firebaseDeviceToken: firebaseDeviceToken || '',
+		});
 	}
 
 	async loginWithFacebookWeb(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
 		return this.findOrCreateFacebookCustomer(profile);
 	}
 
-	private async findOrCreateFacebookCustomer(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
-		const { email, fullName, facebookId } = profile;
+	private async findOrCreateFacebookCustomer(profile: { email: string; fullName: string; facebookId: string, firebaseDeviceToken?: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, facebookId, firebaseDeviceToken } = profile;
 
 		let customer = await this.customerRepository.findOneBy({ facebookId });
 
@@ -739,6 +829,22 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.facebookId = facebookId;
+
+					this.logger.log(`Attempting to store firebase device token: ${firebaseDeviceToken} for facebookId: ${facebookId}`);
+
+					if (firebaseDeviceToken?.trim()) {
+						const token = firebaseDeviceToken.trim();
+						customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
+							? customer.firebaseDeviceToken
+							: [];
+
+						if (!customer.firebaseDeviceToken.includes(token)) {
+							customer.firebaseDeviceToken = [
+								...customer.firebaseDeviceToken,
+								token,
+							];
+						}
+					}
 					customer = await this.customerRepository.save(customer);
 				}
 			}
@@ -756,6 +862,13 @@ export class CustomerAuthService {
 				newCustomer.facebookId = facebookId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
+				newCustomer.firebaseDeviceToken = [];
+
+				this.logger.log(`Attempting to store firebase device token in facebook mobile logi: ${firebaseDeviceToken}`);
+
+				if (firebaseDeviceToken?.trim()) {
+					newCustomer.firebaseDeviceToken = [firebaseDeviceToken.trim()];
+				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
@@ -781,8 +894,8 @@ export class CustomerAuthService {
 		return { token, customer };
 	}
 
-	private async findOrCreateGoogleCustomer(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
-		const { email, fullName, googleId } = profile;
+	private async findOrCreateGoogleCustomer(profile: { email: string; fullName: string; googleId: string, firebaseDeviceToken?: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, googleId, firebaseDeviceToken } = profile;
 
 		let customer = await this.customerRepository.findOneBy({ googleId });
 
@@ -793,6 +906,22 @@ export class CustomerAuthService {
 
 			if (customer) {
 				customer.googleId = googleId;
+
+				this.logger.log(`Attempting to store firebase device token: ${firebaseDeviceToken} for googleId: ${googleId}`);
+
+				if (firebaseDeviceToken?.trim()) {
+					const token = firebaseDeviceToken.trim();
+					customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
+						? customer.firebaseDeviceToken
+						: [];
+
+					if (!customer.firebaseDeviceToken.includes(token)) {
+						customer.firebaseDeviceToken = [
+							...customer.firebaseDeviceToken,
+							token,
+						];
+					}
+				}
 				customer = await this.customerRepository.save(customer);
 			} else {
 				const newCustomer = new Customer();
@@ -804,6 +933,13 @@ export class CustomerAuthService {
 				newCustomer.googleId = googleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
+				newCustomer.firebaseDeviceToken = [];
+
+				this.logger.log(`Attempting to store firebase device token in google mobile logi: ${firebaseDeviceToken}`);
+
+				if (firebaseDeviceToken?.trim()) {
+					newCustomer.firebaseDeviceToken = [firebaseDeviceToken.trim()];
+				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
@@ -830,7 +966,9 @@ export class CustomerAuthService {
 	}
 
 	async loginWithAppleMobile(dto: AppleMobileAuthDto): Promise<CustomerAuthResponse> {
-		const { identityToken, authorizationCode, fullName } = dto;
+		this.logger.log(`Attempting to login customer by apple mobile: ${JSON.stringify(dto)}`);
+
+		const { identityToken, authorizationCode, fullName, firebaseDeviceToken } = dto;
 
 		if (!identityToken && !authorizationCode) {
 			throw new BadRequestException({ error: 'Identity token or authorization code is required.' });
@@ -869,7 +1007,7 @@ export class CustomerAuthService {
 		const email = (payload['email'] as string) || '';
 		const name = (payload['name'] as string) || fullName || '';
 
-		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId });
+		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId, firebaseDeviceToken });
 	}
 
 	private async exchangeAppleCode(code: string, audience: string, issuer: string): Promise<string> {
@@ -914,8 +1052,8 @@ export class CustomerAuthService {
 		return data.id_token;
 	}
 
-	private async findOrCreateAppleCustomer(profile: { email: string; fullName: string; appleId: string }): Promise<CustomerAuthResponse> {
-		const { email, fullName, appleId } = profile;
+	private async findOrCreateAppleCustomer(profile: { email: string; fullName: string; appleId: string, firebaseDeviceToken?: string }): Promise<CustomerAuthResponse> {
+		const { email, fullName, appleId, firebaseDeviceToken } = profile;
 
 		let customer = await this.customerRepository.findOneBy({ appleId });
 
@@ -926,6 +1064,20 @@ export class CustomerAuthService {
 				});
 				if (customer) {
 					customer.appleId = appleId;
+					this.logger.log(`Attempting to store firebase device token: ${firebaseDeviceToken} for appleId: ${appleId}`);
+					if (firebaseDeviceToken?.trim()) {
+						const token = firebaseDeviceToken.trim();
+						customer.firebaseDeviceToken = Array.isArray(customer.firebaseDeviceToken)
+							? customer.firebaseDeviceToken
+							: [];
+
+						if (!customer.firebaseDeviceToken.includes(token)) {
+							customer.firebaseDeviceToken = [
+								...customer.firebaseDeviceToken,
+								token,
+							];
+						}
+					}
 					customer = await this.customerRepository.save(customer);
 				}
 			}
@@ -943,6 +1095,13 @@ export class CustomerAuthService {
 				newCustomer.appleId = appleId;
 				newCustomer.role = CustomerRole.Customer;
 				newCustomer.isActive = true;
+				newCustomer.firebaseDeviceToken = [];
+
+				this.logger.log(`Attempting to store firebase device token in apple mobile login: ${firebaseDeviceToken}`);
+
+				if (firebaseDeviceToken?.trim()) {
+					newCustomer.firebaseDeviceToken = [firebaseDeviceToken.trim()];
+				}
 				customer = await this.customerRepository.save(newCustomer);
 			}
 		}
@@ -998,7 +1157,7 @@ export class CustomerAuthService {
 
 		// Format the phone number if a country code is provided
 		if (body.phoneNumber !== null && countryCode !== null) {
-			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false, })?.formatInternational() as string;
+			body.phoneNumber = parsePhoneNumberFromString(body.phoneNumber, { defaultCallingCode: countryCode, extract: false })?.formatInternational() ?? body.phoneNumber;
 		}
 
 		// Make sure we don't have a customer using the same email address

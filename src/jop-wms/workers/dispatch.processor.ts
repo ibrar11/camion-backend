@@ -11,6 +11,7 @@ import { OrderAddressDto } from '../../procurement/dtos/CreateProcurementOrderDt
 
 import { Order } from '../../order/entities/order.entity';
 import { JopWmsOrder, JopWmsOrderType } from '../entities/jop-wms-order.entity';
+import { JopWmsOrderLink } from '../entities/jop-wms-order-link.entity';
 import { JopWmsClient } from '../jop-wms.client';
 import { ProcurementService } from '../../procurement/procurement.service';
 
@@ -26,6 +27,8 @@ export class DispatchProcessor extends WorkerHost {
         private readonly orderRepository: Repository<Order>,
         @InjectRepository(JopWmsOrder)
         private readonly wmsOrderRepository: Repository<JopWmsOrder>,
+        @InjectRepository(JopWmsOrderLink)
+        private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         private readonly client: JopWmsClient,
         private readonly procurementService: ProcurementService,
         private readonly dataSource: DataSource,
@@ -42,30 +45,39 @@ export class DispatchProcessor extends WorkerHost {
 
         this.logger.log(`Processing dispatch shop job: dispatchJobId=${dispatchJobId} shop=${shopId} orders=${orderUuids.length}`);
 
-        // ── Step 1: Idempotency check — job data takes precedence (survives DB failures)
-        //    then fall back to DB in case this is a fresh retry on a different worker
-        const orders = await this.orderRepository.find({ where: { uuid: In(orderUuids) } });
-        const existingId =
-            job.data.gulltransOrderId ??
-            orders.find(o => o.gulltransOrderId)?.gulltransOrderId ??
-            null;
+        // ── Step 1: Full-job idempotency — inbound existing means the entire job completed ──
+        const existingInbound = await this.wmsOrderRepository.findOne({
+            where: { orderNo: inboundVoucherNo },
+        });
+        if (existingInbound) {
+            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: inbound ${inboundVoucherNo} already tracked — done`);
+            return;
+        }
 
-        let gulltransOrderId: string;
+        // ── Step 2: Gulltrans idempotency — ONLY use the BullMQ job-data checkpoint ─────────
+        //    Do NOT fall back to orders.gulltransOrderSn from the DB. That column is written by
+        //    every shop job for the same customer orders, so a competing shop job completing first
+        //    would make this job falsely believe its own Gulltrans order was already created.
+        const existingSn = job.data.gulltransOrderSn ?? null;
 
-        if (existingId) {
-            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans already created (${existingId}) — skipping`);
-            gulltransOrderId = existingId;
+        let gulltransOrderSn: string;
+
+        if (existingSn) {
+            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans already created (${existingSn}) — skipping`);
+            gulltransOrderSn = existingSn;
         } else {
-            // ── Step 2: Sync variants to WMS (idempotent, non-blocking) ──────
+            // ── Step 3: Sync variants to WMS (idempotent, non-blocking) ──────
             for (const variantData of variantSyncData) {
+                this.logger.log(`Dispatch ${dispatchJobId}: syncing variant ${variantData.sku} to WMS`);
                 try {
                     await this.client.post('product/synchronize', variantData);
+                    this.logger.log(`Dispatch ${dispatchJobId}: variant ${variantData.sku} synced`);
                 } catch (err: any) {
-                    this.logger.warn(`Variant sync failed for ${variantData.sku}: ${err?.message}`);
+                    this.logger.warn(`Dispatch ${dispatchJobId}: variant sync failed for ${variantData.sku} — ${err?.message}`);
                 }
             }
 
-            // ── Step 3: Create Gulltrans procurement order ────────────────────
+            // ── Step 4: Create Gulltrans procurement order ────────────────────
             const result = await this.procurementService.bulkCreateOrder({
                 orders: gulltransItems,
                 address: warehouseAddress as OrderAddressDto,
@@ -77,19 +89,24 @@ export class DispatchProcessor extends WorkerHost {
                 throw new Error(`Gulltrans failed for shop ${shopId}: ${failure?.reason ?? 'no success entry returned'}`);
             }
 
-            gulltransOrderId = String(shopResult.orderId);
-            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans order ${gulltransOrderId} created`);
+            gulltransOrderSn = shopResult.orderSn;
+            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans order ${gulltransOrderSn} created`);
 
             // Checkpoint into job data so retries skip Gulltrans even if the DB write below fails
-            await job.updateData({ ...job.data, gulltransOrderId });
+            await job.updateData({ ...job.data, gulltransOrderSn, gulltransResponse: shopResult.raw });
 
-            // ── Step 4: Persist gulltransOrderId (all-or-nothing transaction) ─
+            // ── Step 5: Append gulltransOrderSn to each order's array (all-or-nothing) ─
             const runner = this.dataSource.createQueryRunner();
             await runner.connect();
             await runner.startTransaction();
             try {
                 for (const orderUuid of orderUuids) {
-                    await runner.manager.update(Order, { uuid: orderUuid }, { gulltransOrderId });
+                    await runner.query(
+                        `UPDATE orders
+                         SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1)
+                         WHERE uuid = $2`,
+                        [gulltransOrderSn, orderUuid],
+                    );
                 }
                 await runner.commitTransaction();
             } catch (err: any) {
@@ -101,17 +118,10 @@ export class DispatchProcessor extends WorkerHost {
             }
         }
 
-        // ── Step 5: Create WMS inbound (idempotent via orderNo uniqueness) ────
-        const existingInbound = await this.wmsOrderRepository.findOne({
-            where: { orderNo: inboundVoucherNo },
-        });
+        // ── Step 6: Create WMS inbound ────────────────────────────────────────
 
-        if (existingInbound) {
-            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: inbound ${inboundVoucherNo} already tracked — done`);
-            return;
-        }
-
-        await this.client.post('inboundorder/create', {
+        this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: creating WMS inbound ${inboundVoucherNo} (${wmsBoxList.length} box(es))`);
+        const inboundResult: any = await this.client.post('inboundorder/create', {
             warehouseCode: this.warehouseCode,
             customerVoucherNo: inboundVoucherNo,
             shipperMethod,
@@ -124,14 +134,35 @@ export class DispatchProcessor extends WorkerHost {
             boxList: wmsBoxList,
         });
 
-        await this.wmsOrderRepository.save(
+        const wmsAssignedId = String(inboundResult?.data?.inboundOrderId ?? '') || null;
+        this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: WMS inbound ${inboundVoucherNo} created — WMS ID ${wmsAssignedId ?? 'N/A'}`);
+
+        const inbound = await this.wmsOrderRepository.save(
             this.wmsOrderRepository.create({
                 orderNo: inboundVoucherNo,
                 type: JopWmsOrderType.INBOUND,
                 status: 'pending',
-                sourceOrderUuids: orderUuids.join(','),
+                wmsAssignedId,
+                gulltransResponse: job.data.gulltransResponse ?? null,
             }),
         );
+
+        const orders = await this.orderRepository.find({
+            where: { uuid: In(orderUuids) },
+            select: ['id', 'uuid'],
+        });
+        if (orders.length) {
+            const links = orders.map(o =>
+                this.wmsOrderLinkRepository.create({ wmsOrderId: inbound.id, orderId: o.id, orderUuid: o.uuid }),
+            );
+            await this.wmsOrderLinkRepository
+                .createQueryBuilder()
+                .insert()
+                .into(JopWmsOrderLink)
+                .values(links)
+                .orIgnore()
+                .execute();
+        }
 
         this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: inbound ${inboundVoucherNo} created covering ${orderUuids.length} order(s)`);
     }

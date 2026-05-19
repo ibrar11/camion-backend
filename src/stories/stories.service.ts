@@ -88,6 +88,17 @@ export class StoriesService {
 	}
 
 	/**
+	 * Returns the estimated count of stories
+	 *
+	 * @returns
+	 */
+	countAll(): Promise<number> {
+		return this.storyRepository.count({
+			cache: true,
+		});
+	}
+
+	/**
 	 * Retrives a list of stories
 	 *
 	 * @param filters

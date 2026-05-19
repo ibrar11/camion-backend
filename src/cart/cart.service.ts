@@ -167,6 +167,9 @@ export class CartItemsService {
             // cache: true,
             relationLoadStrategy: "query",
             where: {
+                product: {
+                    status: ProductStatus.ACTIVE,
+                },
                 customer: {
                     uuid: customer.uuid,
                 },

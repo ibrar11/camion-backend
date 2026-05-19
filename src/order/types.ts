@@ -35,8 +35,29 @@ export class OrderPreviewResponse {
 
     @Field()
     eta: string;
+
+    @Field({ defaultValue: "", })
+    orderTotalWarning?: string;
 }
 
 export interface OrderFilters {
     status?: OrderStatus
+}
+
+export interface NotificationPayload {
+    type:string;
+    priority: string;
+    isRead: string,
+}
+
+@ObjectType()
+export class OrderTracking {
+    @Field()
+    stage: string;
+
+    @Field()
+    status: string;
+
+    @Field(() => String, { nullable: true })
+    waybillNo: string | null;
 }

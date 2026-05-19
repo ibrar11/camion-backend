@@ -147,6 +147,17 @@ export class BannersService {
 	}
 
 	/**
+	 * Returns the estimated count of banners
+	 *
+	 * @returns
+	 */
+	countAll(): Promise<number> {
+		return this.bannerRepository.count({
+			cache: true,
+		});
+	}
+
+	/**
 	 * Finds a banner
 	 *
 	 * @param uuid

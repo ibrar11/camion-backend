@@ -9,6 +9,7 @@ import {
 	Param,
 	Post,
 	Put,
+	Query,
 	UseGuards,
 } from '@nestjs/common';
 
@@ -44,8 +45,13 @@ export class UsersController {
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@HttpCode(HttpStatus.OK)
 	@Get()
-	actionFindAll(): Promise<Array<User>> {
-		return this.usersService.findAll();
+	actionFindAll(
+		@Query("filters") filters: string,
+		@Query("sort") sort: string,
+		@Query("pageNumber") pageNumber: number,
+		@Query("itemsPerPage") itemsPerPage: number,
+	): Promise<Array<User>> {
+		return this.usersService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)

@@ -12,4 +12,8 @@ export class AppleMobileAuthDto {
 	@IsOptional()
 	@IsString()
 	fullName?: string;
+
+	@IsOptional()
+	@IsString()
+	firebaseDeviceToken?: string;
 }

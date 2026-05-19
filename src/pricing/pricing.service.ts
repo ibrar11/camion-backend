@@ -15,7 +15,6 @@ import {
 
 import { ExchangeRate } from './entities/exchange-rate.entity';
 import { Product } from '../inventory/entities/product.entity';
-import { Category } from '../inventory/entities/category.entity';
 
 @Injectable()
 export class PricingService {
@@ -101,19 +100,16 @@ export class PricingService {
 			};
 		}
 
-		// Find the last category applied on the product
-		let lastCategory: Category | null = null;
-		if (product !== null && Array.isArray(product.productCategories)) {
-			lastCategory = product.productCategories.sort((a, b) => b.id - a.id).at(0)?.category ?? null;
-		}
-
-		// Find the pricing factor based on the last category applied on the product
-		let pricingFactor: number = 1,
-			discountPercentage: number = 0;
-
-		if (lastCategory !== null) {
-			pricingFactor = lastCategory.pricingFactor;
-			discountPercentage = lastCategory.discountPercentage;
+		// Set the pricing based on the maximum pricing factor and discount percentage
+		let pricingFactor: number = 1, discountPercentage: number = 0;
+		if (product !== null && Array.isArray(product.productCategories) && product.productCategories.length !== 0) {
+			for (let i = 0; i < product.productCategories.length; i++) {
+				if (!product.productCategories[i].category) {
+					continue;
+				}
+				pricingFactor = Math.max(pricingFactor, Number(product.productCategories[i].category.pricingFactor));
+				discountPercentage = Math.max(discountPercentage, Number(product.productCategories[i].category.discountPercentage));
+			}
 		}
 
 		// Calculate exchange rate factor

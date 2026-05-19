@@ -31,6 +31,9 @@ import { ClientsModule } from '../clients/clients.module';
 		]),
 		ClientsModule,
 	],
+	exports: [
+		StoriesService,
+	],
 	providers: [
 		S3Service,
 		FileService,

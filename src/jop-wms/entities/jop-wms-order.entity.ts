@@ -3,9 +3,12 @@ import {
     CreateDateColumn,
     Entity,
     Index,
+    OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
+
+import { JopWmsOrderLink } from './jop-wms-order-link.entity';
 
 export enum JopWmsOrderType {
     INBOUND = 'inbound',
@@ -53,6 +56,10 @@ export class JopWmsOrder {
     @Index()
     status: string;
 
+    // WMS-assigned order ID returned on creation (inboundOrderId / outboundOrderId)
+    @Column({ type: 'varchar', length: 64, nullable: true, default: null })
+    wmsAssignedId: string | null;
+
     // Populated once WMS provides a waybill (outbound only)
     @Column({ type: 'varchar', length: 128, nullable: true })
     waybillNo: string | null;
@@ -60,13 +67,20 @@ export class JopWmsOrder {
     @Column({ type: 'timestamptz', nullable: true })
     lastPolledAt: Date | null;
 
-    // Comma-separated Order.uuid values — one inbound can cover multiple customer orders
-    @Column({ type: 'text', nullable: true, default: null })
-    sourceOrderUuids: string | null;
+    @OneToMany(() => JopWmsOrderLink, (link) => link.wmsOrder)
+    sourceOrders: JopWmsOrderLink[];
+
+    // Full Gulltrans API response payload stored on inbound order creation
+    @Column({ type: 'jsonb', nullable: true, default: null })
+    gulltransResponse: Record<string, any> | null;
 
     // Incremented on consecutive errors; used for exponential-backoff decisions
     @Column({ type: 'integer', default: 0 })
     errorCount: number;
+
+    // Last error message from a failed poll; cleared on the next successful poll
+    @Column({ type: 'text', nullable: true, default: null })
+    lastError: string | null;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt: Date;

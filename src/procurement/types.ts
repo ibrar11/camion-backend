@@ -165,17 +165,18 @@ export interface importedProduct {
 }
 
 export interface GulltransOrderResult {
-    order_id: string | number;
+    id: string | number;
+    order_sn: string;
     [key: string]: any;
 }
 
 export interface CreateOrderResponse {
     success: boolean;
-    orderId: string | number;
+    orderSn: string;
     raw: GulltransOrderResult;
 }
 
 export interface BulkCreateOrderResponse {
-    success: { shopId: string | undefined; orderId: string | number; raw: GulltransOrderResult }[];
+    success: { shopId: string | undefined; orderSn: string; raw: GulltransOrderResult }[];
     failed: { shopId: string | undefined; reason: string }[];
 }

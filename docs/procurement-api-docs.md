@@ -97,20 +97,53 @@ GET /v1/procurement/<product-id> HTTP/1.1
     "minOrderQuantity": 2,
     "variants": [
         {
-            "skuId": "sku-1",
-            "price": 25.5,
-            "stock": 100,
+            "title": "Rose gold watch8 40mm",
+            "skuId": 5858847709563,
+            "price": 2.8,
+            "stock": 7433,
             "attributes": [
                 {
                     "name": "Color",
-                    "value": "Red"
+                    "value": "Rose gold"
                 },
                 {
-                    "name": "Size",
-                    "value": "42"
+                    "name": "Specification",
+                    "value": "watch8 40mm"
                 }
             ],
-            "image": "https://example.com/variant.jpg"
+            "image": "https://cbu01.alicdn.com/img/ibank/O1CN01Lnx5Sg22d5m6dtzOX_!!2926577142-0-cib.jpg",
+            "shipping": {
+                "weight": 1,
+                "length": 12,
+                "width": 8,
+                "height": 1,
+                "origin": "广东省深圳市"
+            },
+            "skuMeta": {
+                "shop_id": "BBBMeGcgNWTp_mA8CQOcU8mmA",
+                "shop_name": "深圳市联盛兴业科技有限公司",
+                "spec_id": "5a6dd69c1bfd22e4453a9a0a96ea4706",
+                "sku_img": "https://cbu01.alicdn.com/img/ibank/O1CN01Lnx5Sg22d5m6dtzOX_!!2926577142-0-cib.jpg",
+                "min_order_quantity": "1",
+                "batch_number": "1",
+                "imgs": [
+                    "https://cbu01.alicdn.com/img/ibank/O1CN01aXdZQK22d5m3aDbJw_!!2926577142-0-cib.jpg",
+                    "https://cbu01.alicdn.com/img/ibank/O1CN01MDVJWg22d5m4r92kV_!!2926577142-0-cib.jpg",
+                    "https://cbu01.alicdn.com/img/ibank/O1CN01OAJUpH22d5m5vzTmi_!!2926577142-0-cib.jpg",
+                    "https://cbu01.alicdn.com/img/ibank/O1CN01SBzsAy22d5m6dHiuF_!!2926577142-0-cib.jpg",
+                    "https://cbu01.alicdn.com/img/ibank/O1CN01gK03LX22d5m5w0DVu_!!2926577142-0-cib.jpg"
+                ],
+                "specs": [
+                    {
+                        "label": "颜色",
+                        "value": "玫瑰金"
+                    },
+                    {
+                        "label": "规格",
+                        "value": "watch8 40mm"
+                    }
+                ]
+            }
         }
     ],
     "options": [

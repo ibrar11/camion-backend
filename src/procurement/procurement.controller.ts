@@ -13,6 +13,7 @@ import {
 import { ImportProductDto } from './dtos/ImportProductDto';
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { SaveProcurementToStoreDto } from './dtos/SaveProcurementToStoreDto';
 
 import { UserRole } from '../users/enums/UserRole';
@@ -91,5 +92,23 @@ export class ProcurementController {
         @Body() body: BulkCreateProcurementOrderDto
     ): Promise<BulkCreateOrderResponse> {
         return this.procurementService.bulkCreateOrder(body);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Post('resync-variants')
+    @HttpCode(HttpStatus.OK)
+    resyncInventoryVariants(
+        @Body() body: ResyncInventoryVariantsDto
+    ) {
+        return this.procurementService.enqueueInventoryVariantsResync(body);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Get('resync-variants/job/:jobId')
+    @HttpCode(HttpStatus.OK)
+    getResyncInventoryVariantsJob(
+        @Param('jobId') jobId: string
+    ) {
+        return this.procurementService.getInventoryVariantsResyncJob(jobId);
     }
 }

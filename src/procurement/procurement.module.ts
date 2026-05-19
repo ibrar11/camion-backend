@@ -32,6 +32,8 @@ import { ProductVariantService } from '../inventory/product-variant.service';
 import { ProductVariantImage } from '../inventory/entities/product-variant-image.entity';
 import { ProductVariantImageService } from '../inventory/product-variant-image.service';
 
+import { ProductView } from '../inventory/entities/product-view.entity';
+
 import { ProductVariantOptionValue } from '../inventory/entities/product-variant-option-value.entity';
 
 import { InventoryItem } from '../inventory/entities/inventory-item.entity';
@@ -46,17 +48,19 @@ import { S3Service } from '../common/s3.service';
 import { FileService } from '../common/file.service';
 import { ImageThumbnailService } from '../common/image-thumbnail.service';
 
-import { QueueService } from '../queue/queue.service';
 import { QueueModule } from '../queue/queue.module';
+import { InventoryResyncProcessor } from './workers/inventory-resync.processor';
 
 import { TranslationService } from '../translation/translation.service';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
-			User,
-			Customer,
 			Category,
+			Customer,
+			InventoryItem,
+			InventoryLevel,
+			Order,
 			Product,
 			ProductCategory,
 			ProductOption,
@@ -64,10 +68,9 @@ import { TranslationService } from '../translation/translation.service';
 			ProductVariant,
 			ProductVariantImage,
 			ProductVariantOptionValue,
-			InventoryItem,
-			InventoryLevel,
+			ProductView,
+			User,
 			Warehouse,
-			Order,
 		]),
 		ClientsModule,
 		QueueModule,
@@ -84,9 +87,9 @@ import { TranslationService } from '../translation/translation.service';
 		ProductVariantImageService,
 		S3Service,
 		FileService,
-		QueueService,
 		ImageThumbnailService,
 		TranslationService,
+		InventoryResyncProcessor,
 	],
 	controllers: [ProcurementController],
 	exports: [ProcurementService],

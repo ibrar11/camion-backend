@@ -25,3 +25,19 @@ export interface TranslatedFieldResult {
     success: boolean;
     error?: string;
 }
+
+export interface ProductTranslationScan {
+    scanned: number;
+    queued: number;
+    highPriorityCount: number;
+    normalPriorityCount: number;
+}
+
+export interface ProductTranslationStats {
+    totalProducts: number;
+    productsWithVariants: number;
+    fullyTranslated: number;
+    partiallyTranslated: number;
+    untranslated: number;
+    translationCoveragePercentage: number;
+}

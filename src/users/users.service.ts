@@ -12,6 +12,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { getSkipAndTake } from "../common/pagination";
+
 import { CreateUserDto } from './dtos/CreateUserDto';
 import { UpdateUserDto } from './dtos/UpdateUserDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
@@ -76,17 +78,32 @@ export class UsersService {
 		user.emailAddress = body.emailAddress.trim().toLowerCase();
 		user.password = await bcrypt.hash(body.password.trim(), 10);
 		user.role = role;
+		user.isActive = body.isActive;
 		return this.userRepository.save(user);
 	}
 
 	/**
 	 * Finds a list of users
 	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAll(): Promise<User[]> {
+	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<User[]> {
 		this.logger.log(`Retrieving users`);
-		return this.userRepository.find();
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.userRepository.find({
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
 	}
 
 	/**
@@ -98,6 +115,29 @@ export class UsersService {
 	async findOne(uuid: string): Promise<User> {
 		this.logger.log(`Retrieving user: ${uuid}`);
 		const user = await this.userRepository.findOneBy({ uuid: uuid, });
+		if (user === null) {
+			throw new NotFoundException({
+				error: "Failed to find the user. Please check and try again.",
+			});
+		}
+		return user;
+	}
+
+	/**
+	 * Finds a user using a cached query
+	 *
+	 * @param uuid
+	 * @returns
+	 */
+	async findOneCached(uuid: string): Promise<User> {
+		this.logger.log(`Retrieving cached user: ${uuid}`);
+		const user = await this.userRepository.findOne({
+			cache: true,
+			where: {
+				uuid: uuid,
+			},
+		});
+
 		if (user === null) {
 			throw new NotFoundException({
 				error: "Failed to find the user. Please check and try again.",

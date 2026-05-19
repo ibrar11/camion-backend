@@ -27,7 +27,7 @@ export class UpdateCustomerAddressDto {
 	apartment: string;
 
 	@IsString()
-	@MinLength(1)
+	@MinLength(4)
 	@MaxLength(5)
 	zipCode: string;
 

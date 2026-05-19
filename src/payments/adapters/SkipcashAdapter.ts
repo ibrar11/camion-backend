@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import {
+    HttpException,
     Injectable,
     InternalServerErrorException,
     Logger,
@@ -82,9 +83,9 @@ export class SkipCashAdapter {
                     message = "Forbidden: Signature does not match or invalid credentials";
                 }
 
-                throw new InternalServerErrorException({
-                    error: message,
-                });
+                throw new InternalServerErrorException(
+                    message,
+                );
             }
             this.logger.log(`Completed create skipcash payment for order ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
 
@@ -97,10 +98,15 @@ export class SkipCashAdapter {
         } catch (error: any) {
             console.log("SkipCash payment failed:", error)
             this.logger.error(`SkipCash payment failed: ${error}`);
-            throw new InternalServerErrorException({
-                error: "SkipCash payment failed",
-                details: error?.response?.data || error?.message || error,
-            });
+            if (error instanceof HttpException) {
+                throw error;
+            } else {
+                throw new InternalServerErrorException({
+                    error: "SkipCash payment failed",
+                    details: error?.response?.data || error?.message || error,
+                });
+            }
+
         }
     }
 }

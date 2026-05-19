@@ -10,7 +10,7 @@ import {
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
-import { IsNull, Repository } from "typeorm";
+import { IsNull, Not, Repository } from "typeorm";
 
 import { S3Service } from "../common/s3.service";
 import { FileService } from "../common/file.service";
@@ -80,7 +80,19 @@ export class CategoriesService {
 		category.pricingFactor = body.pricingFactor;
 		category.discountPercentage = body.discountPercentage;
 		category.isFeatured = body.isFeatured;
-		return this.categoryRepository.save(category);
+		category.isFeaturedOnHomepage = body.isFeaturedOnHomepage;
+		await this.categoryRepository.save(category);
+
+		// Make sure we don't have multiple featured on homepage categories
+		if (body.isFeaturedOnHomepage) {
+			await this.categoryRepository.update({
+				id: Not(category.id),
+			}, {
+				isFeaturedOnHomepage: false,
+			});
+		}
+
+		return category;
 	}
 
 	/**
@@ -151,6 +163,17 @@ export class CategoriesService {
 			},
 			skip: skip,
 			take: take,
+		});
+	}
+
+	/**
+	 * Returns the estimated count of categories
+	 *
+	 * @returns
+	 */
+	countAll(): Promise<number> {
+		return this.categoryRepository.count({
+			cache: true,
 		});
 	}
 
@@ -267,6 +290,15 @@ export class CategoriesService {
 			});
 		}
 
+		// Make sure we don't have multiple featured on homepage categories
+		if (body.isFeaturedOnHomepage) {
+			await this.categoryRepository.update({
+				id: Not(category.id),
+			}, {
+				isFeaturedOnHomepage: false,
+			});
+		}
+
 		// Update the category
 		category.slug = generateSlug(body.slug);
 		category.nameEn = body.name.en.trim();
@@ -274,6 +306,7 @@ export class CategoriesService {
 		category.pricingFactor = body.pricingFactor;
 		category.discountPercentage = body.discountPercentage;
 		category.isFeatured = body.isFeatured;
+		category.isFeaturedOnHomepage = body.isFeaturedOnHomepage;
 		return this.categoryRepository.save(category);
 	}
 

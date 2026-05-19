@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, In, Repository } from 'typeorm';
+import { Not, In, IsNull, Repository } from 'typeorm';
 
 import { JopWmsClient } from './jop-wms.client';
-import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
+import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JopWmsOutboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
 import { JopWmsService } from './jop-wms.service';
 
 import { Order } from '../order/entities/order.entity';
@@ -41,11 +41,40 @@ export class JopWmsScheduler {
     }
 
     /**
-     * Polls pending outbound orders every 3 hours.
+     * Polls pending outbound orders every 3 hours and backfills missing waybill numbers.
      */
     @Cron('0 0 */3 * * *')
     async pollOutboundOrders() {
         await this.pollByType(JopWmsOrderType.OUTBOUND, 'outboundorder/status', 'customerVoucherNo');
+        await this.fetchMissingWaybillNumbers();
+    }
+
+    private async fetchMissingWaybillNumbers() {
+        const orders = await this.wmsOrderRepository.find({
+            where: {
+                type: JopWmsOrderType.OUTBOUND,
+                status: JopWmsOutboundStatus.SHIPPED,
+                waybillNo: IsNull(),
+            },
+        });
+
+        if (!orders.length) return;
+
+        this.logger.log(`Fetching waybill numbers for ${orders.length} shipped outbound order(s)`);
+
+        for (const order of orders) {
+            try {
+                const data: any = await this.client.post('waybillNo/query', { customerVoucherNo: order.orderNo });
+                const waybillNo: string | null = data?.data?.waybillNo ?? null;
+                if (waybillNo) {
+                    order.waybillNo = waybillNo;
+                    await this.wmsOrderRepository.save(order);
+                    this.logger.log(`${order.orderNo} waybill: ${waybillNo}`);
+                }
+            } catch (err: any) {
+                this.logger.warn(`waybillNo/query failed for ${order.orderNo}: ${err?.message}`);
+            }
+        }
     }
 
     /**
@@ -69,6 +98,7 @@ export class JopWmsScheduler {
                 type,
                 status: Not(In([...JOP_WMS_TERMINAL_STATUSES])),
             },
+            relations: ['sourceOrders'],
         });
 
         if (!orders.length) return;
@@ -97,16 +127,26 @@ export class JopWmsScheduler {
                 const data: any = await this.client.post(endpoint, { [orderNoField]: order.orderNo, ...extraFields });
 
                 const newStatus: string = String(data?.data?.status ?? data?.data?.orderStatus ?? order.status).toLowerCase();
-                const waybillNo: string | null = data?.data?.waybillNo ?? data?.data?.trackingNo ?? order.waybillNo;
 
                 const prevStatus = order.status;
                 const prevWaybillNo = order.waybillNo;
                 order.status = newStatus;
-                order.waybillNo = waybillNo;
                 order.lastPolledAt = new Date();
                 order.errorCount = 0;
+                order.lastError = null;
 
-                this.logger.log(`${order.orderNo} → ${order.status}${waybillNo ? ` (waybill: ${waybillNo})` : ''}`);
+                // outboundorder/status does not return waybillNo — fetch it separately on transition to SHIPPED.
+                // fetchMissingWaybillNumbers() handles retries for orders that remain null after this.
+                if (order.type === JopWmsOrderType.OUTBOUND && prevStatus !== JopWmsOutboundStatus.SHIPPED && order.status === JopWmsOutboundStatus.SHIPPED) {
+                    try {
+                        const waybillData: any = await this.client.post('waybillNo/query', { customerVoucherNo: order.orderNo });
+                        order.waybillNo = waybillData?.data?.waybillNo ?? null;
+                    } catch (err: any) {
+                        this.logger.warn(`waybillNo/query failed for ${order.orderNo}: ${err?.message}`);
+                    }
+                }
+
+                this.logger.log(`${order.orderNo} → ${order.status}${order.waybillNo ? ` (waybill: ${order.waybillNo})` : ''}`);
 
                 // Persist status change BEFORE triggering outbound creation.
                 // If outbound creation fails, the stored status is already committed so
@@ -117,8 +157,9 @@ export class JopWmsScheduler {
                 if (order.type === JopWmsOrderType.INBOUND && prevStatus !== JopWmsInboundStatus.STORED && order.status === JopWmsInboundStatus.STORED) {
                     this.logger.log(`Inbound ${order.orderNo} stored — creating outbound orders`);
                     await this.wmsService.createOutboundsForInbound(order);
-                    if (order.sourceOrderUuids) {
-                        await this.notifyOrderCustomers(order.sourceOrderUuids, NotificationType.ORDER_PROCESSING, {
+                    const linkedUuids = order.sourceOrders?.map(l => l.orderUuid) ?? [];
+                    if (linkedUuids.length) {
+                        await this.notifyOrderCustomers(linkedUuids, NotificationType.ORDER_PROCESSING, {
                             title: 'Order Processing',
                             brief: 'Your order is being prepared for shipment.',
                             message: 'Your items have arrived at the warehouse and your order is now being prepared for shipment.',
@@ -127,32 +168,30 @@ export class JopWmsScheduler {
                 }
 
                 // Notify customer when outbound order receives a waybill number
-                if (order.type === JopWmsOrderType.OUTBOUND && waybillNo && !prevWaybillNo && order.sourceOrderUuids) {
-                    await this.notifyOrderCustomers(order.sourceOrderUuids, NotificationType.ORDER_SHIPPED, {
+                const linkedUuids = order.sourceOrders?.map(l => l.orderUuid) ?? [];
+                if (order.type === JopWmsOrderType.OUTBOUND && order.waybillNo && !prevWaybillNo && linkedUuids.length) {
+                    await this.notifyOrderCustomers(linkedUuids, NotificationType.ORDER_SHIPPED, {
                         title: 'Order Shipped',
                         brief: 'Your order is on its way.',
-                        message: `Your order has been shipped. Tracking number: ${waybillNo}.`,
+                        message: `Your order has been shipped. Tracking number: ${order.waybillNo}.`,
                     });
                 }
             } catch (err: any) {
                 order.errorCount += 1;
                 order.lastPolledAt = new Date();
-                this.logger.error(`Poll failed for ${order.orderNo} (attempt ${order.errorCount}): ${err?.message}`);
+                order.lastError = err?.message ?? 'Unknown error';
+                this.logger.error(`Poll failed for ${order.orderNo} (attempt ${order.errorCount}): ${order.lastError}`);
                 await this.wmsOrderRepository.save(order);
             }
         }
     }
 
     private async notifyOrderCustomers(
-        sourceOrderUuids: string,
+        orderUuids: string[],
         type: NotificationType,
         content: { title: string; brief: string; message: string },
     ) {
-        if (!sourceOrderUuids) return;
-
-        const uuids = sourceOrderUuids.split(',').map(u => u.trim()).filter(Boolean);
-
-        for (const uuid of uuids) {
+        for (const uuid of orderUuids) {
             try {
                 const order = await this.orderRepository.findOne({
                     where: { uuid },

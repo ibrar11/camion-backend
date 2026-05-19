@@ -10,6 +10,7 @@ import {
 	Patch,
 	Post,
 	Put,
+	Query,
 	Req,
 	UseGuards,
 } from '@nestjs/common';
@@ -45,14 +46,19 @@ export class CustomersController {
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@Get()
 	@HttpCode(HttpStatus.OK)
-	actionGetCustomers() {
-		return this.customersService.findAll();
+	actionGetCustomers(
+		@Query("filters") filters: string,
+		@Query("sort") sort: string,
+		@Query("pageNumber") pageNumber: number,
+		@Query("itemsPerPage") itemsPerPage: number,
+	): Promise<Array<Customer>> {
+		return this.customersService.findAll(filters, sort, pageNumber, itemsPerPage);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
-	actionGetCustomer(@Param('uuid') uuid: string) {
+	actionGetCustomer(@Param('uuid') uuid: string): Promise<Customer> {
 		return this.customersService.findOne(uuid);
 	}
 
@@ -77,29 +83,29 @@ export class CustomersController {
 		return this.customersService.updatePassword(uuid, body);
 	}
 
-    @Roles(CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
-    @Delete('me')
-    @HttpCode(HttpStatus.OK)
-    async deleteMyAccount(
-        @Req() req: Request & { customer: Customer },
-    ): Promise<{ message: string }> {
-        await this.customersService.requestAccountDeletion(req.customer.uuid);
+	@Roles(CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Delete('me')
+	@HttpCode(HttpStatus.OK)
+	async deleteMyAccount(
+		@Req() req: Request & { customer: Customer },
+	): Promise<{ message: string }> {
+		await this.customersService.requestAccountDeletion(req.customer.uuid);
 
-        return {
-            message: 'Account marked for deletion',
-        };
-    }
+		return {
+			message: 'Account marked for deletion',
+		};
+	}
 
-    @Roles(CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
-    @Patch('me/cancel-deletion')
-    @HttpCode(HttpStatus.OK)
-    async cancelDeletion(@Req() req: Request & { customer: Customer }) {
-        await this.customersService.cancelDeletion(req.customer.uuid);
+	@Roles(CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Patch('me/cancel-deletion')
+	@HttpCode(HttpStatus.OK)
+	async cancelDeletion(@Req() req: Request & { customer: Customer }) {
+		await this.customersService.cancelDeletion(req.customer.uuid);
 
-        return {
-            message: 'Account deletion cancelled',
-        };
-    }
+		return {
+			message: 'Account deletion cancelled',
+		};
+	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Delete(':uuid')

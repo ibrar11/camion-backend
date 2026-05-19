@@ -5,6 +5,8 @@ import {
     InternalServerErrorException,
     Inject,
 } from '@nestjs/common';
+import { Job } from 'bullmq';
+import * as crypto from 'node:crypto';
 
 import { generateSlug } from '../common/slug';
 import { fetchImageAsFile } from '../common/fetchImage';
@@ -35,6 +37,7 @@ import {
     ProductAttribute,
     ProductDetail,
     ProductSku,
+    ProductVariant as ProcurementProductVariant,
     SearchProductItem,
     SearchProducts,
     SkuAttribute,
@@ -46,15 +49,20 @@ import {
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { IsNull, Not, DataSource, Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
+import { Product } from '../inventory/entities/product.entity';
+import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { QueueService } from 'src/queue/queue.service';
 import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
+import { QueueName } from 'src/queue/enums/QueueTypes.enum';
+import { InventoryResyncJobData } from 'src/queue/types';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -74,7 +82,207 @@ export class ProcurementService {
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
         @InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+        @InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
     ) { }
+
+    private isSameObject(a: unknown, b: unknown): boolean {
+        return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    }
+
+    private toFiniteNumberOrFallback(value: unknown, fallback: number): number {
+        const parsed = typeof value === "number" ? value : Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    async enqueueInventoryVariantsResync(body: ResyncInventoryVariantsDto): Promise<{
+        jobId: string;
+        status: "queued";
+        scope: "all" | "selected";
+        productsCount: number;
+    }> {
+        const scope = body.scope ?? "selected";
+
+        if (scope === "all") {
+            if (body.productUuids?.length) {
+                throw new BadRequestException({
+                    message: "productUuids is not allowed when scope is all",
+                });
+            }
+
+            const products = await this.productRepository.find({
+                select: { uuid: true },
+                where: { procurementId: Not(IsNull()) },
+            });
+            const productUuids = products.map((p) => p.uuid);
+            if (!productUuids.length) {
+                throw new BadRequestException({
+                    message: "No products with procurementId found for resync",
+                });
+            }
+
+            const queued = await this.queueService.addInventoryResyncJob(productUuids);
+            return { ...queued, scope, productsCount: productUuids.length };
+        }
+
+        const productUuids = body.productUuids ?? [];
+        if (!productUuids.length) {
+            throw new BadRequestException({
+                message: "productUuids must be a non-empty array when scope is selected",
+            });
+        }
+
+        const queued = await this.queueService.addInventoryResyncJob(productUuids);
+        return { ...queued, scope, productsCount: productUuids.length };
+    }
+
+    async getInventoryVariantsResyncJob(jobId: string): Promise<{
+        jobId: string;
+        status: "queued" | "active" | "completed" | "failed" | "not_found";
+        progress?: string | number | boolean | object;
+        result?: any;
+        failedReason?: string | null;
+    }> {
+        const job = await this.queueService.getJob(QueueName.INVENTORY_RESYNC, jobId) as Job<InventoryResyncJobData> | null;
+        if (!job) {
+            return { jobId, status: "not_found" };
+        }
+
+        const state = await job.getState();
+        const statusMap: Record<string, "queued" | "active" | "completed" | "failed"> = {
+            waiting: "queued",
+            delayed: "queued",
+            paused: "queued",
+            active: "active",
+            completed: "completed",
+            failed: "failed",
+        };
+
+        return {
+            jobId,
+            status: statusMap[state] ?? "queued",
+            progress: job.progress,
+            result: job.returnvalue,
+            failedReason: job.failedReason ?? null,
+        };
+    }
+
+    async resyncInventoryVariantsByProducts(productUuids: string[]): Promise<{
+        productsRequested: number;
+        productsFound: number;
+        productsWithProcurementId: number;
+        variantsMatched: number;
+        variantsUpdated: number;
+        variantsMissingInSource: number;
+        productsSkippedWithoutProcurementId: string[];
+    }> {
+        const products = await this.productRepository.find({
+            where: productUuids.map((uuid) => ({ uuid })),
+            relations: {
+                variants: true,
+            },
+        });
+
+        const productsSkippedWithoutProcurementId: string[] = [];
+        let variantsMatched = 0;
+        let variantsUpdated = 0;
+        let variantsMissingInSource = 0;
+        let productsWithProcurementId = 0;
+
+        for (const product of products) {
+            if (!product.procurementId) {
+                productsSkippedWithoutProcurementId.push(product.uuid);
+                continue;
+            }
+
+            productsWithProcurementId += 1;
+            const sourceProduct = await this.getProductDetail(product.procurementId);
+            const sourceBySku = new Map<string, ProcurementProductVariant>();
+
+            for (const sourceVariant of sourceProduct.variants ?? []) {
+                sourceBySku.set(String(sourceVariant.skuId), sourceVariant);
+            }
+
+            for (const localVariant of product.variants ?? []) {
+                const sourceVariant = sourceBySku.get(localVariant.sku);
+                if (!sourceVariant) {
+                    variantsMissingInSource += 1;
+                    continue;
+                }
+
+                variantsMatched += 1;
+                let changed = false;
+                const nextWeightAmount = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.weight,
+                    localVariant.weight.amount,
+                );
+                const nextWidth = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.width,
+                    localVariant.dimensions.width,
+                );
+                const nextHeight = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.height,
+                    localVariant.dimensions.height,
+                );
+                const nextLength = this.toFiniteNumberOrFallback(
+                    sourceVariant.shipping?.length,
+                    localVariant.dimensions.length,
+                );
+
+                const nextTitleEn = (sourceVariant.title || "").slice(0, 128);
+                // const nextTitleAr = (sourceVariant.title || "").slice(0, 128);
+                if (localVariant.titleEn !== nextTitleEn) {
+                    localVariant.titleEn = nextTitleEn;
+                    changed = true;
+                }
+
+                if (localVariant.weight.amount !== nextWeightAmount) {
+                    localVariant.weight.amount = nextWeightAmount;
+                    changed = true;
+                }
+                if (localVariant.weight.unit !== WeightUnit.Kilograms) {
+                    localVariant.weight.unit = WeightUnit.Kilograms;
+                    changed = true;
+                }
+
+                if (localVariant.dimensions.width !== nextWidth) {
+                    localVariant.dimensions.width = nextWidth;
+                    changed = true;
+                }
+                if (localVariant.dimensions.height !== nextHeight) {
+                    localVariant.dimensions.height = nextHeight;
+                    changed = true;
+                }
+                if (localVariant.dimensions.length !== nextLength) {
+                    localVariant.dimensions.length = nextLength;
+                    changed = true;
+                }
+                if (localVariant.dimensions.unit !== DimensionsUnit.Centimeter) {
+                    localVariant.dimensions.unit = DimensionsUnit.Centimeter;
+                    changed = true;
+                }
+
+                if (!this.isSameObject(localVariant.skuMeta, sourceVariant.skuMeta)) {
+                    localVariant.skuMeta = sourceVariant.skuMeta as Record<string, any>;
+                    changed = true;
+                }
+
+                if (changed) {
+                    await this.productVariantRepository.save(localVariant);
+                    variantsUpdated += 1;
+                }
+            }
+        }
+
+        return {
+            productsRequested: productUuids.length,
+            productsFound: products.length,
+            productsWithProcurementId,
+            variantsMatched,
+            variantsUpdated,
+            variantsMissingInSource,
+            productsSkippedWithoutProcurementId,
+        };
+    }
 
     private async getActiveWarehouseGulltransIds(): Promise<{ warehouseId: string; userId: string }> {
         const warehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
@@ -84,9 +292,15 @@ export class ProcurementService {
         };
     }
 
-    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderId: string | number) {
+    private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderSn: string) {
         if (!orderUuid) return;
-        await this.orderRepository.update({ uuid: orderUuid }, { gulltransOrderId: String(gulltransOrderId) });
+        await this.orderRepository
+            .createQueryBuilder()
+            .update()
+            .set({ gulltransOrderSns: () => "array_append(COALESCE(gulltrans_order_sns, '{}'), :sn)" })
+            .setParameter('sn', gulltransOrderSn)
+            .where('uuid = :uuid', { uuid: orderUuid })
+            .execute();
     }
 
     /**
@@ -930,6 +1144,7 @@ export class ProcurementService {
             await Promise.all(
                 batch.map(async (order) => {
                     try {
+                        this.logger.log(`Gulltrans: creating order for shop ${order.shop_id} (${order.skus?.length ?? 0} SKU(s), goods amount: ${order.goods_amount})`);
                         const response = await fetch(
                             `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                             {
@@ -952,6 +1167,7 @@ export class ProcurementService {
                         const data = await response.json();
 
                         if (data.ret !== 1) {
+                            this.logger.error(`Gulltrans: order creation failed for shop ${order.shop_id} — ${data.msg}`);
                             results.failed.push({
                                 shopId: order.shop_id,
                                 reason: data.msg,
@@ -959,18 +1175,18 @@ export class ProcurementService {
                             return;
                         }
 
-                        this.logger.log(`Gulltrans order created for shop ${order.shop_id}`);
+                        this.logger.log(`Gulltrans: order created for shop ${order.shop_id} — order_sn ${data?.data?.order_sn}`);
 
-                        const orderId = data?.data?.order_id ?? data?.data?.orderId ?? data?.data?.id;
-                        await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+                        const orderSn: string = data?.data?.order_sn;
+                        await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
 
                         results.success.push({
                             shopId: order.shop_id,
-                            orderId,
+                            orderSn,
                             raw: data?.data,
                         });
                     } catch (error: any) {
-                        this.logger.error(`Error creating order for shop ${order.shop_id}: ${error?.message}`);
+                        this.logger.error(`Gulltrans: order creation threw for shop ${order.shop_id} — ${error?.message}`);
                         results.failed.push({
                             shopId: order.shop_id,
                             reason: error?.message || 'Unknown error',
@@ -992,6 +1208,7 @@ export class ProcurementService {
     async createOrder(dto: CreateProcurementOrderDto): Promise<CreateOrderResponse> {
         const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
         try {
+            this.logger.log(`Gulltrans: creating single order for shop ${(dto as any).shop_id ?? 'unknown'}`);
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                 {
@@ -1013,21 +1230,23 @@ export class ProcurementService {
             const data = await response.json();
 
             if (data.ret !== 1) {
+                this.logger.error(`Gulltrans: single order creation failed — ${data.msg}`);
                 throw new BadRequestException({
                     error: data.msg,
                 });
             }
 
-            const orderId = data?.data?.order_id;
-            await this.markGulltransOrderCreated(dto.orderUuid, orderId);
+            const orderSn: string = data?.data?.order_sn;
+            this.logger.log(`Gulltrans: single order created — order_sn ${orderSn}`);
+            await this.markGulltransOrderCreated(dto.orderUuid, orderSn);
 
             return {
                 success: true,
-                orderId,
+                orderSn,
                 raw: data?.data,
             };
         } catch (error: any) {
-            this.logger.error(`Error creating order: ${error?.message}`);
+            this.logger.error(`Gulltrans: single order creation threw — ${error?.message}`);
             throw new InternalServerErrorException({
                 error: 'Failed to create order',
                 details: error.response?.error || error.message,

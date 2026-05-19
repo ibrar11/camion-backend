@@ -6,9 +6,9 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
-import { 
-    OrderItemResolver, 
-    OrderResolver 
+import {
+    OrderItemResolver,
+    OrderResolver
 } from './order.resolver';
 
 import { ClientsModule } from '../clients/clients.module';
@@ -44,8 +44,17 @@ import { TransactionsService } from '../referral/transactions.service';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
 import { PricingService } from '../pricing/pricing.service';
 
+import { JopWmsOrderLink } from '../jop-wms/entities/jop-wms-order-link.entity';
+
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EmailModule } from '../email/email.module';
+
+import { Notification } from '../notifications/entities/notification.entity';
+import { PushNotificationService } from '../common/push-notification.service';
+
+import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
+
+import { Product } from '../inventory/entities/product.entity';
 
 @Module({
     imports: [
@@ -66,10 +75,16 @@ import { EmailModule } from '../email/email.module';
             Affiliate,
             Transaction,
             KeyValuePair,
+            JopWmsOrderLink,
+            Notification,
+            Product,
         ]),
         ClientsModule,
         NotificationsModule,
         EmailModule,
+    ],
+    exports: [
+        OrderService,
     ],
     providers: [
         OrderService,
@@ -81,7 +96,9 @@ import { EmailModule } from '../email/email.module';
         PaymentStrategyFactory,
         ExchangeRateService,
         TransactionsService,
-        PricingService
+        PricingService,
+        PushNotificationService,
+        FirebaseAdminProvider,
     ],
     controllers: [
         OrderController

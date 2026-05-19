@@ -13,6 +13,8 @@ import {
     UpdateDateColumn
 } from "typeorm";
 
+import { OrderTracking } from "../types";
+
 import { Exclude } from "class-transformer";
 
 import { OrderStatus } from "../enums/OrderStatus";
@@ -74,10 +76,10 @@ export class Order {
     @Column({ type: "varchar", length: 64 })
     eta: string;
 
-    // Set once a Gulltrans procurement order is created for this order. Null means not yet procured.
-    @Field(() => String, { nullable: true })
-    @Column({ type: "varchar", length: 128, nullable: true, default: null })
-    gulltransOrderId: string | null;
+    // One entry per 1688 shop involved in this order. Null means not yet procured.
+    @Field(() => [String], { nullable: true })
+    @Column({ type: 'text', array: true, nullable: true, default: null, name: 'gulltrans_order_sns' })
+    gulltransOrderSns: string[] | null;
 
     @Field(() => [OrderItem])
     @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
@@ -95,10 +97,13 @@ export class Order {
     updatedAt: Date;
 
     // <!--
-    // This field is not part of the schema. Please don't add it to the database.
+    // These fields are not part of the schema. Please don't add them to the database.
 
     @Field(() => Date, { name: "orderPlacementDate" })
     orderPlacementDate: Date;
+
+    @Field(() => OrderTracking, { nullable: true })
+    tracking?: OrderTracking;
 
     // -->
 

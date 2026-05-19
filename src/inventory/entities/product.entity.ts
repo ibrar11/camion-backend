@@ -23,6 +23,7 @@ import { ProductOption } from "./product-option.entity";
 import { ProductVariant } from "./product-variant.entity";
 import { ProductCategory } from "./product-category.entity";
 import { ProductReview } from "./product-review.entity";
+import { ProductView } from "./product-view.entity";
 
 import { CartItem } from "../../cart/entities/cart-items.entity";
 
@@ -57,6 +58,29 @@ export class Product {
 	@Field(() => String)
 	@Column({ type: "varchar", length: 128, })
 	titleAr: string;
+
+	/*
+	ALTER TABLE "products" ADD "search_vector_en" tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(title_en, ''))) STORED;
+	CREATE INDEX "idx_products_search_en" ON "products" USING gin("search_vector_en");
+	*/
+
+	@Column({
+		type: 'tsvector',
+		asExpression: `to_tsvector('english', coalesce(title_en, ''))`,
+		generatedType: 'STORED',
+		nullable: true,
+	})
+	@Index('idx_products_search_en', { unique: false })
+	tsvTitleEn: string;
+
+	@Column({
+		type: 'tsvector',
+		asExpression: `to_tsvector('arabic', coalesce(title_ar, ''))`,
+		generatedType: 'STORED',
+		nullable: true,
+	})
+	@Index('idx_products_search_ar', { unique: false })
+	tsvTitleAr: string;
 
 	@Field(() => String, { name: "brief" })
 	brief: string;
@@ -132,6 +156,11 @@ export class Product {
 	@Column({ type: "integer", nullable: false, default: 0, })
 	reviewsCount: number;
 
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
+	viewsCount: number;
+
 	@Column({ type: "integer", nullable: false, default: 0, })
 	ratingSum: number;
 
@@ -177,6 +206,9 @@ export class Product {
 	@Field(() => [ProductReview])
 	@OneToMany(() => ProductReview, (review) => review.product, { cascade: true, })
 	reviews: Array<ProductReview>;
+
+	@OneToMany(() => ProductView, (view) => view.product, { cascade: true, })
+	views: Array<ProductView>;
 
 	@OneToMany(() => CartItem, (cartItem) => cartItem.product, { cascade: true, })
 	cartItems: Array<CartItem>;

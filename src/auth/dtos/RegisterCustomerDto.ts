@@ -28,4 +28,8 @@ export class RegisterCustomerDto {
 	@IsString()
 	@IsUUID('4')
 	guestUUID?: string;
+
+	@IsOptional()
+	@IsString()
+	firebaseDeviceToken?: string;
 }
