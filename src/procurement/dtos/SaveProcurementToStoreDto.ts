@@ -2,224 +2,382 @@ import {
     IsArray,
     ArrayMinSize,
     IsBoolean,
-    IsInt,
     IsNotEmpty,
     IsOptional,
     IsString,
     IsUUID,
-    Length,
-    Min,
     ValidateNested,
+    MinLength,
+    MaxLength,
+    IsNumber,
+    IsDefined,
+    IsNotEmptyObject,
+    IsObject,
+    IsUrl,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-import { CurrencyCode } from '../../inventory/enums/CurrencyCode.enum';
-import { WeightUnit } from 'src/inventory/enums/WeightUnit.enum';
-import { DimensionsUnit } from 'src/inventory/enums/DimensionsUnit.enum';
-
-class LocalizedTextDto {
-    @IsString()
-    @IsNotEmpty()
-    en!: string;
-
-    @IsString()
-    @IsNotEmpty()
-    ar: string; // allow empty string
-}
+import { BriefField, DescriptionField, DescriptionHtmlField, TitleField } from '../../inventory/dtos/CreateProductDto';
+import { NameField } from '../../inventory/dtos/CreateCategoryDto';
+import { ValueField } from '../../inventory/dtos/CreateProductOptionValueDto';
+import { Dimensions, Money, Weight } from '../../inventory/entities/product-variant.entity';
 
 class ImportOptionValueDto {
-    @ValidateNested()
-    @Type(() => LocalizedTextDto)
-    value!: LocalizedTextDto;
+    @ValidateNested({
+        message: 'Option value object is invalid',
+    })
+    @Type(() => ValueField)
+    value: ValueField;
 
-    @IsInt()
-    @Min(0)
-    position!: number;
+    @IsNumber(
+        {},
+        {
+            message: 'Option value position must be a number',
+        },
+    )
+    position: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/*                                   OPTIONS                                  */
+/* -------------------------------------------------------------------------- */
+
 class ImportOptionDto {
-    @ValidateNested()
-    @Type(() => LocalizedTextDto)
-    name!: LocalizedTextDto;
+    @ValidateNested({
+        message: 'Option name is invalid',
+    })
+    @Type(() => NameField)
+    name: NameField;
 
-    @IsInt()
-    @Min(0)
-    position!: number;
+    @IsNumber(
+        {},
+        {
+            message: 'Option position must be a number',
+        },
+    )
+    position: number;
 
-    @IsArray()
-    @ValidateNested({ each: true })
+    @IsArray({
+        message: 'Option values must be an array',
+    })
+    @ValidateNested({
+        each: true,
+        message: 'Each option value must be valid',
+    })
     @Type(() => ImportOptionValueDto)
     values!: ImportOptionValueDto[];
 }
 
+/* -------------------------------------------------------------------------- */
+/*                             VARIANT ATTRIBUTES                             */
+/* -------------------------------------------------------------------------- */
+
 class ImportVariantAttributeDto {
-    @IsString()
-    @IsNotEmpty()
+    @IsString({
+        message: 'Variant attribute optionNameEn must be a string',
+    })
+    @IsNotEmpty({
+        message: 'Variant attribute optionNameEn is required',
+    })
     optionNameEn!: string;
 
-    @IsString()
     @IsOptional()
+    @IsString({
+        message: 'Variant attribute optionNameAr must be a string',
+    })
     optionNameAr?: string;
 
-    @IsString()
-    @IsNotEmpty()
+    @IsString({
+        message: 'Variant attribute optionValueEn must be a string',
+    })
+    @IsNotEmpty({
+        message: 'Variant attribute optionValueEn is required',
+    })
     optionValueEn!: string;
 
-    @IsString()
     @IsOptional()
+    @IsString({
+        message: 'Variant attribute optionValueAr must be a string',
+    })
     optionValueAr?: string;
 }
 
-class MoneyDto {
-    @IsInt()
-    @Min(0)
-    amount!: number;
-
-    @IsString()
-    @Length(3, 3)
-    currencyCode!: CurrencyCode; // cny, qar, etc
-}
-
-class WeightDto {
-    @IsInt()
-    @Min(0)
-    amount!: number;
-
-    @IsString()
-    @IsNotEmpty()
-    unit!: WeightUnit; // kg
-}
-
-class DimensionsDto {
-    @IsInt()
-    @Min(0)
-    width!: number;
-
-    @IsInt()
-    @Min(0)
-    height!: number;
-
-    @IsInt()
-    @Min(0)
-    length!: number;
-
-    @IsString()
-    @IsNotEmpty()
-    unit!: DimensionsUnit; // mm
-}
+/* -------------------------------------------------------------------------- */
+/*                                  VARIANTS                                  */
+/* -------------------------------------------------------------------------- */
 
 class ImportVariantDto {
-    @ValidateNested()
-    @Type(() => LocalizedTextDto)
-    title!: LocalizedTextDto;
+    @ValidateNested({
+        message: 'Variant title is invalid',
+    })
+    @Type(() => TitleField)
+    title: TitleField;
 
-    @IsString()
-    @IsNotEmpty()
-    sku!: string;
+    @IsString({
+        message: 'Variant SKU must be a string',
+    })
+    @MinLength(1, {
+        message: 'Variant SKU cannot be empty',
+    })
+    sku: string;
 
-    @IsString()
-    @IsNotEmpty()
-    barcode!: string;
+    @IsNumber(
+        {},
+        {
+            message: 'Variant quantity must be a number',
+        },
+    )
+    quantity: number;
 
-    @IsInt()
-    @Min(0)
-    quantity!: number;
+    @IsString({
+        message: 'Variant barcode must be a string',
+    })
+    @MinLength(1, {
+        message: 'Variant barcode cannot be empty',
+    })
+    barcode: string;
 
-    @ValidateNested()
-    @Type(() => MoneyDto)
-    cost!: MoneyDto;
+    @IsDefined({
+        message: 'Variant cost is required',
+    })
+    @IsNotEmptyObject(
+        {},
+        {
+            message: 'Variant cost cannot be empty',
+        },
+    )
+    @IsObject({
+        message: 'Variant cost must be an object',
+    })
+    @ValidateNested({
+        message: 'Variant cost object is invalid',
+    })
+    @Type(() => Money)
+    cost: Money;
 
-    @ValidateNested()
-    @Type(() => WeightDto)
-    weight!: WeightDto;
+    @IsDefined({
+        message: 'Variant weight is required',
+    })
+    @IsNotEmptyObject(
+        {},
+        {
+            message: 'Variant weight cannot be empty',
+        },
+    )
+    @IsObject({
+        message: 'Variant weight must be an object',
+    })
+    @ValidateNested({
+        message: 'Variant weight object is invalid',
+    })
+    @Type(() => Weight)
+    weight: Weight;
 
-    @ValidateNested()
-    @Type(() => DimensionsDto)
-    dimensions!: DimensionsDto;
+    @IsDefined({
+        message: 'Variant dimensions are required',
+    })
+    @IsNotEmptyObject(
+        {},
+        {
+            message: 'Variant dimensions cannot be empty',
+        },
+    )
+    @IsObject({
+        message: 'Variant dimensions must be an object',
+    })
+    @ValidateNested({
+        message: 'Variant dimensions object is invalid',
+    })
+    @Type(() => Dimensions)
+    dimensions: Dimensions;
 
-    @IsString()
-    @IsNotEmpty()
-    imageUrl!: string; // RAW URL from procurement source
+    @IsArray({
+        message: 'Variant optionValues must be an array',
+    })
+    @IsUUID('4', {
+        each: true,
+        message:
+            'Each variant optionValue must be a valid UUID v4',
+    })
+    optionValues: Array<string>;
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ImportVariantAttributeDto)
     @IsOptional()
+    @IsObject({
+        message: 'Variant skuMeta must be an object',
+    })
+    skuMeta?: Record<string, any>;
+
+    @IsString({
+        message: 'Variant imageUrl must be a string',
+    })
+    @IsNotEmpty({
+        message: 'Variant imageUrl is required',
+    })
+    @IsUrl(
+        {},
+        {
+            message: 'Variant imageUrl must be a valid URL',
+        },
+    )
+    imageUrl!: string;
+
+    @IsOptional()
+    @IsArray({
+        message: 'Variant attributes must be an array',
+    })
+    @ValidateNested({
+        each: true,
+        message: 'Each variant attribute must be valid',
+    })
+    @Type(() => ImportVariantAttributeDto)
     attributes?: ImportVariantAttributeDto[];
 }
 
-class ImportImageDto {
-    @IsString()
-    @IsNotEmpty()
-    url!: string; // RAW URL from procurement source
+/* -------------------------------------------------------------------------- */
+/*                                   IMAGES                                   */
+/* -------------------------------------------------------------------------- */
 
-    @IsBoolean()
-    isFeatured!: boolean; // one should be true
+class ImportImageDto {
+    @IsString({
+        message: 'Image URL must be a string',
+    })
+    @IsNotEmpty({
+        message: 'Image URL is required',
+    })
+    @IsUrl(
+        {},
+        {
+            message: 'Image URL must be valid',
+        },
+    )
+    url!: string;
+
+    @IsBoolean({
+        message: 'Image isFeatured must be boolean',
+    })
+    isFeatured!: boolean;
 }
 
+/* -------------------------------------------------------------------------- */
+/*                                    ITEM                                    */
+/* -------------------------------------------------------------------------- */
+
 export class SaveProcurementToStoreItemDto {
-    @IsString()
-    @IsNotEmpty()
-    externalId!: string;
+    @IsString({
+        message: 'Slug must be a string',
+    })
+    @MinLength(1, {
+        message: 'Slug cannot be empty',
+    })
+    @MaxLength(64, {
+        message: 'Slug cannot exceed 64 characters',
+    })
+    slug: string;
 
-    @IsString()
-    @IsNotEmpty()
-    slug!: string; // frontend trims to 62
+    @ValidateNested({
+        message: 'Title object is invalid',
+    })
+    @Type(() => TitleField)
+    title: TitleField;
 
-    @ValidateNested()
-    @Type(() => LocalizedTextDto)
-    title!: LocalizedTextDto;
+    @ValidateNested({
+        message: 'Brief object is invalid',
+    })
+    @Type(() => BriefField)
+    brief: BriefField;
 
-    @ValidateNested()
-    @Type(() => LocalizedTextDto)
-    brief!: LocalizedTextDto;
+    @ValidateNested({
+        message: 'Description object is invalid',
+    })
+    @Type(() => DescriptionField)
+    description: DescriptionField;
 
-    @ValidateNested()
-    @Type(() => LocalizedTextDto)
-    description!: LocalizedTextDto;
+    @ValidateNested({
+        message: 'DescriptionHtml object is invalid',
+    })
+    @Type(() => DescriptionHtmlField)
+    descriptionHtml: DescriptionHtmlField;
 
-    @ValidateNested()
-    @Type(() => LocalizedTextDto)
-    descriptionHtml!: LocalizedTextDto;
+    @IsArray({
+        message: 'Categories must be an array',
+    })
+    @IsUUID('4', {
+        each: true,
+        message: 'Each category must be a valid UUID v4',
+    })
+    categories: Array<string>;
 
-    @IsString()
     @IsOptional()
+    @IsString({
+        message: 'shopId must be a string',
+    })
     shopId?: string;
 
-    @IsString()
     @IsOptional()
+    @IsString({
+        message: 'shopName must be a string',
+    })
     shopName?: string;
 
-    @IsArray()
-    @ArrayMinSize(1)
-    @IsUUID('4', { each: true })
-    categories!: string[];
+    @IsString({
+        message: 'externalId must be a string',
+    })
+    externalId: string;
 
-    @IsUUID()
+    @IsUUID('4', {
+        message: 'warehouseUUID must be a valid UUID v4',
+    })
     warehouseUUID!: string;
 
-    @IsArray()
-    @ValidateNested({ each: true })
+    @IsArray({
+        message: 'Options must be an array',
+    })
+    @ValidateNested({
+        each: true,
+        message: 'Each option must be valid',
+    })
     @Type(() => ImportOptionDto)
     options!: ImportOptionDto[];
 
-    @IsArray()
-    @ArrayMinSize(1)
-    @ValidateNested({ each: true })
+    @IsArray({
+        message: 'Variants must be an array',
+    })
+    @ArrayMinSize(1, {
+        message: 'At least one variant is required',
+    })
+    @ValidateNested({
+        each: true,
+        message: 'Each variant must be valid',
+    })
     @Type(() => ImportVariantDto)
     variants!: ImportVariantDto[];
 
-    @IsArray()
-    @ValidateNested({ each: true })
+    @IsArray({
+        message: 'Images must be an array',
+    })
+    @ValidateNested({
+        each: true,
+        message: 'Each image must be valid',
+    })
     @Type(() => ImportImageDto)
     images!: ImportImageDto[];
 }
 
-// top-level array DTO
+/* -------------------------------------------------------------------------- */
+/*                               TOP LEVEL DTO                                */
+/* -------------------------------------------------------------------------- */
+
 export class SaveProcurementToStoreDto {
-    @IsArray()
-    @ArrayMinSize(1)
-    @ValidateNested({ each: true })
+    @IsArray({
+        message: 'Items must be an array',
+    })
+    @ArrayMinSize(1, {
+        message: 'At least one item is required',
+    })
+    @ValidateNested({
+        each: true,
+        message: 'Each item must be valid',
+    })
     @Type(() => SaveProcurementToStoreItemDto)
     items!: SaveProcurementToStoreItemDto[];
 }
