@@ -88,15 +88,14 @@ export class PushNotificationService {
 
                         this.logger.log(`Sent push to ${customer.firebaseDeviceToken.slice(0, 10)}... ✅ (${res})`);
                     } catch (error: any) {
+                        this.logger.error(`Error sending push: ${error}`);
                         this.logger.error(`Error sending push to ${customer.firebaseDeviceToken.slice(0, 10)}`);
-                        throw error;
                     }
                 }
             }
             return { ids: pushNotification };
         } catch (err: any) {
             this.logger.error(`FCM error: ${err?.message || err}`);
-            throw err;
         }
     }
 
