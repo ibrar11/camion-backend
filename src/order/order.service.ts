@@ -196,9 +196,9 @@ export class OrderService {
             });
 
             if (!address) {
-                throw new BadRequestException(
-                    'User address cannot be found.'
-                )
+                throw new BadRequestException({
+                    error: 'User address cannot be found.'
+                })
             }
             // get cart items
             const cartItems = await this.cartRepository.find({
@@ -214,9 +214,9 @@ export class OrderService {
             });
 
             if (cartItems.length !== dto.cartItemUuids.length) {
-                throw new BadRequestException(
-                    "Invalid cart items",
-                );
+                throw new BadRequestException({
+                    error: "Invalid cart items",
+                });
             }
 
             await Promise.all(
@@ -228,15 +228,15 @@ export class OrderService {
                     });
 
                     if (!checkProduct) {
-                        throw new BadRequestException(
-                            `Product not found`,
-                        );
+                        throw new BadRequestException({
+                            error: `Product not found`,
+                        });
                     }
 
                     if (checkProduct.status !== ProductStatus.ACTIVE) {
-                        throw new BadRequestException(
-                            `Cannot create order for the non-active product ${checkProduct.slug}`,
-                        );
+                        throw new BadRequestException({
+                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
+                        });
                     }
                 })
             );
@@ -259,9 +259,9 @@ export class OrderService {
                 });
 
                 if (!inventoryItem || !inventoryItem.levels.length) {
-                    throw new BadRequestException(
-                        `No inventory found for ${variant.sku}`,
-                    );
+                    throw new BadRequestException({
+                        error: `No inventory found for ${variant.sku}`,
+                    });
                 }
 
                 // Find a warehouse with enough stock
@@ -270,9 +270,9 @@ export class OrderService {
                 );
 
                 if (!level) {
-                    throw new BadRequestException(
-                        `Insufficient stock for ${variant.sku}`
-                    );
+                    throw new BadRequestException({
+                        error: `Insufficient stock for ${variant.sku}`
+                    });
                 }
 
                 // Deduct inventory within transaction
@@ -397,9 +397,9 @@ export class OrderService {
             }
 
             if (subTotalInQar < 250) {
-                throw new BadRequestException(
-                    "Order value should not be less than 250 QAR"
-                );
+                throw new BadRequestException({
+                    erro: "Order value should not be less than 250 QAR"
+                });
             }
 
             const total = subTotal + shippingCost - discount;
@@ -447,9 +447,9 @@ export class OrderService {
                     });
 
                     if (!wallet) {
-                        throw new BadRequestException(
-                            `Wallet not found: ${walletId}`
-                        );
+                        throw new BadRequestException({
+                            error: `Wallet not found: ${walletId}`
+                        });
                     }
 
                     // Create affiliate commission transaction record within the same transaction
@@ -1117,7 +1117,7 @@ export class OrderService {
             const totalAmount = subTotal + shippingCost - discount;
 
             // Return complete order preview
-            const orderPreview : OrderPreviewResponse = {
+            const orderPreview: OrderPreviewResponse = {
                 items: validatedItems,
                 shippingAddress: address,
                 cart_total: subTotal,
