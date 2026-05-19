@@ -13,6 +13,7 @@ import {
 import { ImportProductDto } from './dtos/ImportProductDto';
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { SaveProcurementToStoreDto } from './dtos/SaveProcurementToStoreDto';
 import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 
 import { UserRole } from '../users/enums/UserRole';
@@ -64,6 +65,15 @@ export class ProcurementController {
         @Body() body: ImportProductDto
     ) {
         return this.procurementService.importProduct(body)
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Post('save')
+    @HttpCode(HttpStatus.OK)
+    saveProduct(
+        @Body() body: SaveProcurementToStoreDto
+    ) {
+        return this.procurementService.saveProduct(body)
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
