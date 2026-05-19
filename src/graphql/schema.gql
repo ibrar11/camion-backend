@@ -186,6 +186,7 @@ type OrderPreviewResponse {
   eta: String!
   grand_total: Float!
   items: [CartItem!]!
+  orderTotalWarning: String!
   shippingAddress: CustomerAddress!
   shippingTotal: Float!
 }

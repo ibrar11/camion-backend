@@ -49,7 +49,7 @@ import {
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { IsNull, Not, DataSource, Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
