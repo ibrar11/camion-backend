@@ -302,8 +302,9 @@ export class ProductsService {
 			.leftJoinAndSelect('variants.images', 'images')
 
 			// Many-to-many join
-			.innerJoin("product.productCategories", "productCategory")
-			.innerJoin("productCategory.category", "category")
+			.innerJoinAndSelect("product.productCategories", "productCategory")
+			.innerJoinAndSelect("productCategory.category", "category")
+
 			.where("category.id = :id", {
 				id: category.id,
 			})
@@ -356,8 +357,9 @@ export class ProductsService {
 			.leftJoinAndSelect("variant.images", "image")
 
 			// Many-to-many join
-			.innerJoin("product.productCategories", "productCategory")
-			.innerJoin("productCategory.category", "category")
+			.innerJoinAndSelect("product.productCategories", "productCategory")
+			.innerJoinAndSelect("productCategory.category", "category")
+
 			.where("category.id = :id", {
 				id: category.id,
 			})
@@ -462,13 +464,13 @@ export class ProductsService {
 						relationLoadStrategy: "query",
 					})
 
-					// Only join products that actually have categories
-					.innerJoin("product.productCategories", "productCategory")
-					.innerJoin("productCategory.category", "category")
-
 					// Join variants and images (still optional)
 					.leftJoinAndSelect("product.variants", "variant")
 					.leftJoinAndSelect("variant.images", "image")
+
+					// Only join products that actually have categories
+					.innerJoinAndSelect("product.productCategories", "productCategory")
+					.innerJoinAndSelect("productCategory.category", "category")
 
 					// Search Filter
 					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
@@ -614,13 +616,13 @@ export class ProductsService {
 						relationLoadStrategy: "query",
 					})
 
-					// Only join products that actually have categories
-					.innerJoin("product.productCategories", "productCategory")
-					.innerJoin("productCategory.category", "category")
-
 					// Join variants and images (still optional)
 					.leftJoinAndSelect("product.variants", "variant")
 					.leftJoinAndSelect('variant.images', 'image')
+
+					// Only join products that actually have categories
+					.innerJoinAndSelect("product.productCategories", "productCategory")
+					.innerJoinAndSelect("productCategory.category", "category")
 
 					// Search Filter
 					.where(`${tsvTitleColumnsMap[language]} @@ to_tsquery(:configLanguage, :searchQuery)`, {
@@ -777,8 +779,8 @@ export class ProductsService {
 				.leftJoinAndSelect('variant.images', 'image')
 
 				// Many-to-many join
-				.innerJoin("product.productCategories", "productCategory")
-				.innerJoin("productCategory.category", "category")
+				.innerJoinAndSelect("product.productCategories", "productCategory")
+				.innerJoinAndSelect("productCategory.category", "category")
 
 				.where("category.id = :id", {
 					id: product.productCategories[0].category.id,
@@ -858,8 +860,9 @@ export class ProductsService {
 			.leftJoinAndSelect("variant.images", "image")
 
 			// Many-to-many join
-			.innerJoin("product.productCategories", "productCategory")
-			.innerJoin("productCategory.category", "category")
+			.innerJoinAndSelect("product.productCategories", "productCategory")
+			.innerJoinAndSelect("productCategory.category", "category")
+
 			.where("category.id = :id", {
 				id: category.id,
 			})
@@ -964,8 +967,8 @@ export class ProductsService {
 				.leftJoinAndSelect('variant.images', 'image')
 
 				// Many-to-many join
-				.innerJoin("product.productCategories", "productCategory")
-				.innerJoin("productCategory.category", "category")
+				.innerJoinAndSelect("product.productCategories", "productCategory")
+				.innerJoinAndSelect("productCategory.category", "category")
 
 				.where("category.id = :id", {
 					id: product.productCategories[0].category.id,
