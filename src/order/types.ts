@@ -36,7 +36,7 @@ export class OrderPreviewResponse {
     @Field()
     eta: string;
 
-    @Field()
+    @Field({ defaultValue: "", })
     orderTotalWarning?: string;
 }
 
