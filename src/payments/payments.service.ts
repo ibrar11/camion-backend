@@ -59,7 +59,7 @@ export class PaymentsService {
                     
                     if (!exchangeRate) {
                         throw new NotFoundException({
-                            error: `Exchange Rate for ${dto.country} to qar not found`
+                            error: `Exchange Rate for ${dto.currency} to qar not found`
                         });
                     }
                     
