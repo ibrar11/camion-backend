@@ -101,16 +101,38 @@ export class PricingService {
 		}
 
 		// Set the pricing based on the maximum pricing factor and discount percentage
-		let pricingFactor: number = 1, discountPercentage: number = 0;
+		let pricingFactor: number = 1,
+			discountPercentage: number = 0;
+
+		this.logger.log(`---------------------------------`);
+		this.logger.log(`slug: ${product.slug}`);
+		this.logger.log(`pricingFactor: ${pricingFactor}`);
+		this.logger.log(`discountPercentage: ${discountPercentage}`);
+		this.logger.log(`productCategories size: ${product?.productCategories?.length ?? "N/A"}`);
+		this.logger.log(`---------------------------------`);
+
 		if (product !== null && Array.isArray(product.productCategories) && product.productCategories.length !== 0) {
 			for (let i = 0; i < product.productCategories.length; i++) {
 				if (!product.productCategories[i].category) {
+					this.logger.log(`Skipping category: ${i}`);
 					continue;
 				}
+
+				this.logger.log(`---------------------------------`);
+				this.logger.log(`Using category name: ${product.productCategories[i].category.nameEn}`);
+				this.logger.log(`Using category pricingFactor: ${product.productCategories[i].category.nameEn}`);
+				this.logger.log(`Using category discountPercentage: ${product.productCategories[i].category.nameEn}`);
+				this.logger.log(`---------------------------------`);
+
 				pricingFactor = Math.max(pricingFactor, Number(product.productCategories[i].category.pricingFactor));
 				discountPercentage = Math.max(discountPercentage, Number(product.productCategories[i].category.discountPercentage));
 			}
 		}
+
+		this.logger.log(`---------------------------------`);
+		this.logger.log(`final pricingFactor: ${pricingFactor}`);
+		this.logger.log(`final discountPercentage: ${discountPercentage}`);
+		this.logger.log(`---------------------------------`);
 
 		// Calculate exchange rate factor
 		let exchangeRateFactor: number = 1;
