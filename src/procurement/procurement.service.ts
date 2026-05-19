@@ -20,7 +20,9 @@ import { DimensionsUnit } from 'src/inventory/enums/DimensionsUnit.enum';
 import { ImportProductDto } from './dtos/ImportProductDto';
 
 import { CreateProductVariantDto } from '../inventory/dtos/CreateProductVariantDto';
+import { SaveProcurementToStoreDto, SaveProcurementToStoreItemDto } from './dtos/SaveProcurementToStoreDto';
 
+import { Product } from '../inventory/entities/product.entity';
 import { ProductsService } from '../inventory/products.service';
 
 import { ProductVariantService } from '../inventory/product-variant.service';
@@ -47,11 +49,10 @@ import {
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { IsNull, Not, DataSource, Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
-import { Product } from '../inventory/entities/product.entity';
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
@@ -458,7 +459,7 @@ export class ProcurementService {
             let descriptionTrans: string = '';
             if (product.descriptionTrans) {
                 descriptionTrans = extractFormattedText(product.descriptionTrans);
-            } else if(description.length > 0) {
+            } else if (description.length > 0) {
                 this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
                 const translation = await await fetch(
                     `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/contextual`,
@@ -638,7 +639,7 @@ export class ProcurementService {
                         try {
                             // 1. Fetch product details from 1688
                             const productDetails = await this.getProductDetail(id);
-                            let featuredImageUUID : string = '';
+                            let featuredImageUUID: string = '';
 
                             // 2. create product in database and
                             const product = await this.productService.createProduct({
@@ -820,7 +821,7 @@ export class ProcurementService {
                                 }
                             }
 
-                            await this.productService.updateProductFeaturedImage(product.uuid, {imageUUID: featuredImageUUID})
+                            await this.productService.updateProductFeaturedImage(product.uuid, { imageUUID: featuredImageUUID })
 
                             results.success.push({
                                 externalId: id,
@@ -842,6 +843,230 @@ export class ProcurementService {
             if (importedProductUuids.length) {
                 await this.queueService.addImportedProductsTranslationJob(
                     importedProductUuids,
+                    "en",
+                );
+            }
+
+            return results;
+        } catch (error: any) {
+            this.logger.error(`Error importing products: ${error?.message || error}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to import products',
+                details: error.response?.error || error,
+            });
+        }
+    }
+
+    /**
+     * Save product details in db
+     *
+     * @param dto
+     * @returns
+     */
+    async saveProduct(dto: SaveProcurementToStoreDto) {
+        const results = {
+            success: [] as Product[],
+            failed: [] as { id: string; reason: string }[],
+        };
+        const savedProductUuids: string[] = [];
+
+        try {
+            const items = [...new Set(dto.items || [])];
+
+            if (!items.length) {
+                throw new BadRequestException({
+                    message: 'procurement items array cannot be empty',
+                });
+            }
+
+            const BATCH_SIZE = 3;
+
+            for (let i = 0; i < items.length; i += BATCH_SIZE) {
+                const batch = items.slice(i, i + BATCH_SIZE);
+
+                await Promise.all(
+                    batch.map(async (item) => {
+                        let product: Product | null = null
+                        try {
+                            let featuredImageUUID: string = '';
+
+                            // create product in database and
+                            // The product is saved as active now.
+                            product = await this.productService.createProduct({
+                                slug: item.slug,
+                                title: {
+                                    en: item.title.en,
+                                    ar: item.title.ar
+                                },
+                                description: {
+                                    en: item.description.en,
+                                    ar: item.description.ar
+                                },
+                                brief: {
+                                    en: item.brief.en,
+                                    ar: item.brief.ar
+                                },
+                                descriptionHtml: {
+                                    en: item.descriptionHtml.en,
+                                    ar: item.descriptionHtml.ar
+                                },
+                                categories: item.categories,
+                                shopId: item.shopId ?? undefined,
+                                shopName: item.shopName ?? undefined,
+                                procurementId: item.externalId ? String(item.externalId) : undefined,
+                            });
+
+                            savedProductUuids.push(product.uuid);
+
+                            const optionValueMap = new Map<string, string>();
+
+                            // 3. create product option and product option values for product
+                            if (product) {
+                                const currentProduct = product;
+                                if (item.options?.length) {
+                                    const VARIANT_BATCH_SIZE = 5;
+
+                                    for (let i = 0; i < item.options.length; i += VARIANT_BATCH_SIZE) {
+                                        const batch = item.options.slice(i, i + VARIANT_BATCH_SIZE);
+
+                                        await Promise.all(
+                                            batch.map(async (option, index) => {
+                                                try {
+                                                    const optionPayload = {
+                                                        name: {
+                                                            en: option.name?.en?.trim().slice(0, 64),
+                                                            ar: option.name?.ar?.trim().slice(0, 64),
+                                                        },
+                                                        position: i + index + 1
+                                                    };
+
+                                                    // add product options
+                                                    const createdOption = await this.optionService.createProductOption(
+                                                        currentProduct.uuid,
+                                                        optionPayload,
+                                                    );
+
+                                                    for (let valueIndex = 0; valueIndex < option.values.length; valueIndex++) {
+                                                        try {
+                                                            const optionValuePayload = {
+                                                                value: {
+                                                                    en: option.values[valueIndex]?.value?.en?.trim().slice(0, 64),
+                                                                    ar: option.values[valueIndex]?.value?.ar?.trim().slice(0, 64),
+                                                                },
+                                                                position: valueIndex + 1,
+                                                            };
+
+                                                            // add product options values
+                                                            const optionValue = await this.optionValueService.createProductOptionValue(
+                                                                createdOption.uuid,
+                                                                optionValuePayload
+                                                            );
+                                                            optionValueMap.set(optionValue.valueEn, optionValue.uuid);
+                                                        } catch (error: any) {
+                                                            this.logger.error(`Option value creation failed for product ${currentProduct.uuid}: ${error}`);
+                                                        }
+                                                    }
+
+                                                } catch (error: any) {
+                                                    this.logger.error(`Option creation failed for product ${currentProduct.uuid}: ${error}`,);
+                                                }
+                                            }),
+                                        );
+                                    }
+                                }
+
+                                // 4. create product variants and product variant images
+                                if (item.variants?.length) {
+                                    const VARIANT_BATCH_SIZE = 5;
+                                    const warehouse = item.warehouseUUID
+
+                                    for (let i = 0; i < item.variants.length; i += VARIANT_BATCH_SIZE) {
+                                        const batch = item.variants.slice(i, i + VARIANT_BATCH_SIZE);
+
+                                        await Promise.all(
+                                            batch.map(async (variant) => {
+                                                try {
+                                                    const optionValuesUuids = variant.attributes?.map(attr => optionValueMap.get(attr.optionValueEn)).filter((uuid): uuid is string => Boolean(uuid)) || [];
+
+                                                    const dto: CreateProductVariantDto = {
+                                                        warehouse: warehouse,
+                                                        title: {
+                                                            en: variant.title?.en?.trim().slice(0, 128) ?? '',
+                                                            ar: variant.title?.ar?.trim().slice(0, 128) ?? '',
+                                                        },
+                                                        sku: variant.sku?.toString() || crypto.randomUUID(),
+                                                        barcode: variant.barcode?.toString() || '',
+                                                        quantity: variant.quantity || 0,
+                                                        cost: {
+                                                            amount: smartRoundInt(variant.cost.amount) || 0,
+                                                            currencyCode: variant.cost.currencyCode,
+                                                        },
+                                                        weight: {
+                                                            amount: variant.weight.amount || 0,
+                                                            unit: variant.weight.unit,
+                                                        },
+                                                        dimensions: {
+                                                            width: variant.dimensions.width || 0,
+                                                            height: variant.dimensions.height || 0,
+                                                            length: variant.dimensions.length || 0,
+                                                            unit: DimensionsUnit.Centimeter
+                                                        },
+                                                        optionValues: optionValuesUuids,
+                                                    };
+
+                                                    // add product variants
+                                                    const createdVariant = await this.variantService.createProductVariant(
+                                                        currentProduct.uuid,
+                                                        dto,
+                                                        true
+                                                    );
+
+                                                    // Variant has its image
+                                                    if (variant.imageUrl) {
+                                                        const imageFile = await fetchImageAsFile(variant.imageUrl);
+                                                        const image = await this.variantImageService.createProductVariantImage(
+                                                            createdVariant.uuid,
+                                                            imageFile,
+                                                        );
+                                                        const isFeatured = item.images.find((img) => img.isFeatured && img.url === variant.imageUrl);
+                                                        if (isFeatured) {
+                                                            featuredImageUUID = image.uuid;
+                                                        }
+                                                    }
+
+                                                } catch (error: any) {
+                                                    this.logger.error(`Variant creation failed for product ${currentProduct.uuid}: ${error?.message}`, error);
+                                                }
+                                            }),
+                                        );
+                                    }
+                                }
+
+                                await this.productService.updateProductFeaturedImage(product.uuid, { imageUUID: featuredImageUUID })
+                            }
+
+                            results.success.push(product);
+
+                        } catch (error: any) {
+                            this.logger.error(`Failed importing product ${item.externalId}: ${error}`);
+
+                            if(product?.uuid) {
+                                await this.productRepository.delete({
+                                    uuid: product.uuid
+                                })
+                            }
+                            results.failed.push({
+                                id: item.externalId,
+                                reason: error?.message || error,
+                            });
+                        }
+                    }),
+                );
+            }
+
+            if (savedProductUuids.length) {
+                await this.queueService.addImportedProductsTranslationJob(
+                    savedProductUuids,
                     "en",
                 );
             }

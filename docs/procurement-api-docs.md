@@ -245,6 +245,191 @@ warehouseUUID | Yes | String | uuid of waregouse
 }
 ```
 
+Save Product to Store
+----------------------
+
+> [!IMPORTANT]
+> Required roles: SuperAdmin, Admin, Manager
+
+Saves a product directly to the store inventory without going through the import flow. This endpoint accepts product data including options, variants, images, and metadata. Products saved via this endpoint are ready to be listed in the store immediately.
+
+```http
+POST /v1/procurement/save HTTP/1.1
+```
+
+Request Body Fields
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+items |	Yes |	Array |	Array of product items to save
+items[].externalId |	Yes |	String |	External product ID from procurement source
+items[].slug |	Yes |	String |	Unique URL-friendly identifier (max 64 chars)
+items[].title |	Yes |	Object |	Product title with en and ar fields
+items[].brief |	Yes |	Object |	Short product description with en and ar fields
+items[].description |	Yes |	Object |	Full product description with en and ar fields
+items[].descriptionHtml |	Yes |	Object |	HTML formatted description with en and ar fields
+items[].categories |	Yes |	Array<String> |	Array of category UUIDs
+items[].shopId |	No |	String	1688 shop ID from supplier
+items[].shopName |	No |	String |	1688 shop name from supplier
+items[].warehouseUUID |	Yes |	String |	UUID of the warehouse
+items[].options |	Yes |	Array |	Product options (e.g., Color, Size)
+items[].options[].name |	Yes |	Object |	Option name with en and ar fields
+items[].options[].position |	Yes |	Number |	Display order position
+items[].options[].values |	Yes |	Array |	Option values
+items[].options[].values[].value |	Yes |	Object |	Option value name with en and ar fields
+items[].options[].values[].position |	Yes |	Number |	Display order position
+items[].variants |	Yes |	Array |	Product variants (at least one required)
+items[].variants[].title |	Yes |	Object |	Variant title with en and ar fields
+items[].variants[].sku |	Yes |	String |	Unique SKU identifier
+items[].variants[].barcode |	Yes |	String |	Barcode for the variant
+items[].variants[].quantity |	Yes |	Number |	Stock quantity
+items[].variants[].cost |	Yes |	Object |	Cost information
+items[].variants[].cost.amount |	Yes |	Number |	Cost amount
+items[].variants[].cost.currencyCode |	Yes |	String |	Currency code (e.g., "CNY", "USD")
+items[].variants[].weight |	Yes |	Object |	Weight information
+items[].variants[].weight.amount |	Yes |	Number |	Weight amount
+items[].variants[].weight.unit |	Yes |	String |	Weight unit (e.g., "kg", "g")
+items[].variants[].dimensions |	Yes |	Object |	Package dimensions
+items[].variants[].dimensions.width |	Yes |	Number |	Width
+items[].variants[].dimensions.height |	Yes |	Number |	Height
+items[].variants[].dimensions.length |	Yes |	Number |	Length
+items[].variants[].dimensions.unit |	Yes |	String |	Dimension unit (e.g., "mm", "cm")
+items[].variants[].optionValues |	Yes |	Array |	References to option values (UUIDs)
+items[].variants[].imageUrl |	Yes |	String |	Main image URL for variant
+items[].variants[].attributes |	No |	Array |	Additional variant attributes
+items[].variants[].skuMeta | Yes |	Object |	Raw SKU metadata from procurement source
+items[].images |	Yes |	Array |	Product images
+items[].images[].url |	Yes |	String |	Image URL
+items[].images[].isFeatured | Yes |	Boolean | Whether this is the featured image
+
+### Request Body
+
+```json
+{
+  "items": [
+    {
+      "externalId": "801934287846",
+      "slug": "genuine-goods-second-generation-high-density-nano-sponge-wipe-w",
+      "title": {
+        "en": "genuine goods Second Generation High Density Nano Sponge Wipe White Shoes Magic Wipe Kitchen Bathroom Cleaning Sponge Durable",
+        "ar": "إسفنجة تنظيف نانو عالية الكثافة للجيل الثاني"
+      },
+      "brief": {
+        "en": "High density nano sponge cleaning wipe for white shoes, kitchen, and bathroom",
+        "ar": "إسفنجة تنظيف نانو عالية الكثافة للأحذية والمطبخ والحمام"
+      },
+      "description": {
+        "en": "High density nano sponge suitable for kitchen, bathroom, and white shoes cleaning.",
+        "ar": "إسفنجة نانو عالية الكثافة مناسبة لتنظيف المطبخ والحمام والأحذية البيضاء."
+      },
+      "descriptionHtml": {
+        "en": "<p>High density nano sponge suitable for kitchen, bathroom, and white shoes cleaning.</p>",
+        "ar": "<p>إسفنجة نانو عالية الكثافة مناسبة لتنظيف المطبخ والحمام والأحذية البيضاء.</p>"
+      },
+      "shopId": "BBBX7Yb9s_99Ld_xVSIDTwzsQ",
+      "shopName": "邯郸市玖城科技有限公司",
+      "categories": [],
+      "warehouseUUID": "6ba35190-ef22-4b73-af06-5ba1e0580b57",
+      "options": [
+        {
+          "name": {
+            "en": "Color",
+            "ar": "اللون"
+          },
+          "position": 0,
+          "values": [
+            {
+              "value": {
+                "en": "High density 10*6*2",
+                "ar": "كثافة عالية 10×6×2"
+              },
+              "position": 0
+            }
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "title": {
+            "en": "High density 10*6*2",
+            "ar": "كثافة عالية 10×6×2"
+          },
+          "sku": "801934287846-10x6x2",
+          "barcode": "801934287846-001",
+          "quantity": 104494547,
+          "cost": {
+            "amount": 8,
+            "currencyCode": "CNY"
+          },
+          "weight": {
+            "amount": 1,
+            "unit": "kg"
+          },
+          "dimensions": {
+            "width": 1,
+            "height": 1,
+            "length": 1,
+            "unit": "mm"
+          },
+          "optionValues": [],
+          "imageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01kmuYIR1NXgpzhMqPv_!!2216226631580-0-cib.jpg",
+          "attributes": [
+            {
+              "optionNameEn": "Color",
+              "optionValueEn": "High density 10*6*2"
+            }
+          ]
+        }
+      ],
+      "images": [
+        {
+          "url": "https://cbu01.alicdn.com/img/ibank/O1CN01kmuYIR1NXgpzhMqPv_!!2216226631580-0-cib.jpg",
+          "isFeatured": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Response Body
+
+```json
+{
+    "success": [
+        {
+            "uuid": "38750cd1-d6fa-4da3-9d26-a141204de627",
+            "slug": "genuine-goods-second-generation-high-density-nano-sponge-wipe-w",
+            "titleEn": "genuine goods Second Generation High Density Nano Sponge Wipe White Shoes Magic Wipe Kitchen Bathroom Cleaning Sponge Durable",
+            "titleAr": "إسفنجة تنظيف نانو عالية الكثافة للجيل الثاني",
+            "briefEn": "High density nano sponge cleaning wipe for white shoes, kitchen, and bathroom",
+            "briefAr": "إسفنجة تنظيف نانو عالية الكثافة للأحذية والمطبخ والحمام",
+            "descriptionEn": "High density nano sponge suitable for kitchen, bathroom, and white shoes cleaning.",
+            "descriptionAr": "إسفنجة نانو عالية الكثافة مناسبة لتنظيف المطبخ والحمام والأحذية البيضاء.",
+            "descriptionHtmlEn": "<p>High density nano sponge suitable for kitchen, bathroom, and white shoes cleaning.</p>",
+            "descriptionHtmlAr": "<p>إسفنجة نانو عالية الكثافة مناسبة لتنظيف المطبخ والحمام والأحذية البيضاء.</p>",
+            "featuredImageUrl": "",
+            "featuredThumbnailUrl": "",
+            "status": "draft",
+            "shopId": "BBBX7Yb9s_99Ld_xVSIDTwzsQ",
+            "shopName": "邯郸市玖城科技有限公司",
+            "procurementId": "801934287846",
+            "salesCount": 0,
+            "likesCount": 0,
+            "reviewsCount": 0,
+            "ratingSum": 0,
+            "ratingCount": 0,
+            "ratingAvg": "0",
+            "ratingOneStarCount": 0,
+            "ratingTwoStarCount": 0,
+            "ratingThreeStarCount": 0,
+            "ratingFourStarCount": 0,
+            "ratingFiveStarCount": 0
+        }
+    ],
+    "failed": []
+}
+```
+
 Create Order
 ------------------
 
