@@ -492,7 +492,7 @@ export class JopWmsService {
             return;
         }
 
-        const logisticsChannelCode = 'SZ2_ZF'; // TODO: move back to env
+        const logisticsChannelCode = process.env.JOP_WMS_LOGISTICS_CHANNEL ?? '';
 
         const orderUuids = links.map(l => l.order.uuid);
         this.logger.log(`Creating outbounds for inbound ${wmsOrder.orderNo} — ${orderUuids.length} order(s)`);
