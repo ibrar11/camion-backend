@@ -39,6 +39,10 @@ import { GetLogisticsDto } from './dtos/GetLogisticsDto';
 import { CreateReturnOrderDto } from './dtos/CreateReturnOrderDto';
 import { QueryReturnOrderDto } from './dtos/QueryReturnOrderDto';
 import { DispatchOrdersDto } from './dtos/DispatchOrdersDto';
+import { RecoverInboundDto } from './dtos/RecoverInboundDto';
+
+import { ProcurementService } from '../procurement/procurement.service';
+import { OrderAddressDto } from '../procurement/dtos/CreateProcurementOrderDto';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 import { DispatchShopJobData } from '../queue/types';
@@ -61,6 +65,7 @@ export class JopWmsService {
         @InjectRepository(JopWmsOrderLink)
         private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         private readonly client: JopWmsClient,
+        private readonly procurementService: ProcurementService,
         @InjectQueue(QueueName.WMS_DISPATCH)
         private readonly dispatchQueue: Queue,
     ) { }
@@ -572,6 +577,142 @@ export class JopWmsService {
                 this.logger.error(`Outbound creation failed for order ${order.uuid} — ${err?.message}`);
             }
         }
+    }
+
+    // ─── Recovery ─────────────────────────────────────────────────────────────
+
+    async recoverInbound(orderNo: string, dto: RecoverInboundDto): Promise<{ gulltransOrders: any[]; linkedOrderUuids: string[] }> {
+        const inbound = await this.wmsOrderRepository.findOne({
+            where: { orderNo },
+            relations: ['sourceOrders'],
+        });
+        if (!inbound) throw new NotFoundException(`WMS inbound not found: ${orderNo}`);
+
+        if (inbound.sourceOrders?.length) {
+            throw new BadRequestException({
+                message: 'Inbound already has links — recovery not needed',
+                linkedOrderUuids: inbound.sourceOrders.map(l => l.orderUuid),
+            });
+        }
+
+        const orders = await this.orderRepository.find({
+            where: { uuid: In(dto.orderUuids) },
+            relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
+        });
+
+        if (!orders.length) throw new NotFoundException('None of the provided order UUIDs were found');
+
+        const missing = dto.orderUuids.filter(u => !orders.find(o => o.uuid === u));
+        if (missing.length) this.logger.warn(`recoverInbound: UUIDs not found in DB — ${missing.join(', ')}`);
+
+        // Group items by shop (same logic as dispatchApprovedOrders)
+        type ItemRef = { order: Order; item: OrderItem };
+        const shopGroups = new Map<string, { shopName: string; items: ItemRef[] }>();
+
+        for (const order of orders) {
+            for (const item of order.orderItems) {
+                const shopId = item.variant?.product?.shopId;
+                if (!shopId) continue;
+                if (!shopGroups.has(shopId)) {
+                    shopGroups.set(shopId, { shopName: item.variant.product.shopName ?? '', items: [] });
+                }
+                shopGroups.get(shopId)!.items.push({ order, item });
+            }
+        }
+
+        if (!shopGroups.size) throw new BadRequestException('No order items have Gulltrans shop data');
+
+        const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
+        if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
+
+        const warehouseAddress: OrderAddressDto = {
+            receiver_name: activeWarehouse.contactName ?? '',
+            phone: activeWarehouse.phone ?? '',
+            address: [activeWarehouse.addressLine1, activeWarehouse.addressLine2].filter(Boolean).join(', '),
+            city: activeWarehouse.city,
+            province: activeWarehouse.state,
+            postcode: activeWarehouse.postcode ?? '',
+            company: activeWarehouse.name,
+            country_name: activeWarehouse.country,
+            country: { country_code: activeWarehouse.countryCode ?? '', name: activeWarehouse.country },
+        };
+
+        const gulltransOrders: any[] = [];
+
+        for (const [shopId, { shopName, items }] of shopGroups) {
+            const gulltransItems = items.map(({ item }) => ({
+                shop_id: shopId,
+                shop_name: shopName,
+                platform: '1688',
+                platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
+                name: item.variant.titleEn,
+                goods_amount: String(item.variant.cost.amount * item.quantity),
+                freight_fee: '0',
+                skus: [{
+                    platform_sku: item.variant.sku,
+                    price: String(item.variant.cost.amount),
+                    quantity: String(item.quantity),
+                    sku_info: item.variant.skuMeta ?? {},
+                }],
+            }));
+
+            const result = await this.procurementService.bulkCreateOrder({
+                orders: gulltransItems,
+                address: warehouseAddress,
+            });
+
+            const shopResult = result.success.find(s => String(s.shopId) === String(shopId));
+            if (!shopResult) {
+                const failure = result.failed.find(f => String(f.shopId) === String(shopId));
+                throw new BadRequestException(`Gulltrans failed for shop ${shopId}: ${failure?.reason ?? 'no success entry returned'}`);
+            }
+
+            this.logger.log(`recoverInbound ${orderNo}: Gulltrans order ${shopResult.orderSn} created for shop ${shopId}`);
+            gulltransOrders.push({ shopId, orderSn: shopResult.orderSn, raw: shopResult.raw });
+
+            // Write gulltrans_order_sns to each order
+            for (const order of orders) {
+                await this.orderRepository.query(
+                    `UPDATE orders SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1) WHERE uuid = $2`,
+                    [shopResult.orderSn, order.uuid],
+                );
+            }
+        }
+
+        // Create links to the existing inbound
+        await this.linkOrdersToWmsOrder(inbound.id, dto.orderUuids);
+
+        // Patch gulltransResponse on the inbound with the first shop's raw response
+        const firstRaw = gulltransOrders[0]?.raw ?? null;
+        await this.wmsOrderRepository.update(inbound.id, { gulltransResponse: firstRaw });
+
+        const linkedOrderUuids = orders.map(o => o.uuid);
+        this.logger.log(`recoverInbound ${orderNo}: linked ${linkedOrderUuids.length} order(s), ${gulltransOrders.length} Gulltrans order(s) created`);
+
+        return { gulltransOrders, linkedOrderUuids };
+    }
+
+    // ─── Recovery helpers ─────────────────────────────────────────────────────
+
+    async getUnlinkedOrders(before?: string) {
+        const query = this.orderRepository
+            .createQueryBuilder('order')
+            .where('order.status = :status', { status: OrderStatus.CONFIRMED })
+            .andWhere(`(order.gulltrans_order_sns IS NULL OR order.gulltrans_order_sns = '{}')`)
+            .select(['order.uuid', 'order.status', 'order.createdAt'])
+            .orderBy('order.createdAt', 'DESC');
+
+        if (before) {
+            query.andWhere('order.createdAt <= :before', { before });
+        }
+
+        return query.getMany();
+    }
+
+    // ─── Order Links ──────────────────────────────────────────────────────────
+
+    async getOrderLinks() {
+        return this.wmsOrderLinkRepository.find({ order: { id: 'ASC' } });
     }
 
     // ─── Tracked Orders (polling state) ──────────────────────────────────────

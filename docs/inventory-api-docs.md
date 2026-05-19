@@ -1936,3 +1936,125 @@ Delete Product Review
 ```http
 DELETE /v1/products/<product-uuid>/reviews/<review-uuid> HTTP/1.1
 ```
+
+WMS API
+=======
+
+> [!IMPORTANT]
+> You must include your access token as a `Bearer` token in the Authorization header. Your account must be active while making these requests.
+
+Recover Orphaned Inbound Order
+------------------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`
+
+Use this endpoint to recover a WMS inbound record that was created without a corresponding Gulltrans order or order links. This can happen when the dispatch job crashes between saving the inbound and creating the links.
+
+This endpoint will:
+1. Create the missing Gulltrans procurement order(s) for the affected orders
+2. Append the resulting Gulltrans order SNs to each order's `gulltrans_order_sns` array
+3. Create the missing links between the WMS inbound and the provided orders
+4. Patch the `gulltransResponse` on the inbound record
+
+> [!WARNING]
+> This endpoint does **not** call `inboundorder/create` on the WMS again. The inbound must already exist on the WMS side. Only use this when the WMS inbound is confirmed present in both the DB and on the JOP WMS platform.
+
+```http
+PUT /v1/wms/inbound/<orderNo>/recover HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+orderUuids | Yes | List[UUID] | UUIDs of the camion orders that belong to this inbound
+shipperMethod | Yes | Number | Shipper method code (0–4)
+shipperCompany | No | String | Name of the shipping company
+
+### How to find the order UUIDs
+
+Query the prod database for confirmed orders with no Gulltrans SNs created before the inbound's `createdAt` timestamp:
+
+```sql
+SELECT uuid, status, gulltrans_order_sns, created_at
+FROM orders
+WHERE status = 'confirmed'
+  AND (gulltrans_order_sns IS NULL OR gulltrans_order_sns = '{}')
+  AND created_at <= '<inbound-created-at>'
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+Alternatively, search CloudWatch Logs for the inbound's `orderNo` to find the original dispatch job log which lists the order UUIDs.
+
+### Request Body
+```json
+{
+    "orderUuids": [
+        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+    ],
+    "shipperMethod": 0,
+    "shipperCompany": ""
+}
+```
+
+### Response Body
+```json
+{
+    "gulltransOrders": [
+        {
+            "shopId": "12345678",
+            "orderSn": "GT-2026-001",
+            "raw": { }
+        }
+    ],
+    "linkedOrderUuids": [
+        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+    ]
+}
+```
+
+### Error Responses
+
+**404** — Inbound `orderNo` not found in the DB.
+
+**400** — Inbound already has links (recovery not needed). The response includes the existing linked UUIDs:
+```json
+{
+    "message": "Inbound already has links — recovery not needed",
+    "linkedOrderUuids": ["a1b2c3d4-e5f6-7890-abcd-ef1234567890"]
+}
+```
+
+**400** — Gulltrans call failed for one of the shops. No DB writes have been committed at this point — the endpoint is safe to retry:
+```json
+{
+    "message": "Gulltrans failed for shop 12345678: <reason>"
+}
+```
+
+Get Order Links
+---------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`
+
+Returns all records from the `jop_wms_order_links` table as-is.
+
+```http
+GET /v1/wms/order-links HTTP/1.1
+```
+
+### Response Body
+```json
+[
+    {
+        "id": 1,
+        "wmsOrderId": 1,
+        "orderId": 42,
+        "orderUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "createdAt": "2026-05-04T12:56:50.444Z"
+    }
+]
+```

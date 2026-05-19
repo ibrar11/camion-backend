@@ -13,6 +13,7 @@ import {
 import { ImportProductDto } from './dtos/ImportProductDto';
 import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { SaveProcurementToStoreDto } from './dtos/SaveProcurementToStoreDto';
 import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { SaveProcurementToStoreDto } from './dtos/SaveProcurementToStoreDto';
 
