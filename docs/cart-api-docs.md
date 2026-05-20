@@ -120,7 +120,7 @@ currency | Yes | CurrencyCode | The desired currency code
         "amount": 1000,
         "currencyCode": "qar"
     },
-    "subTotal": {
+    "total": {
         "amount": 6500,
         "currencyCode": "qar"
     }
@@ -234,7 +234,7 @@ GET /v1/cart-items HTTP/1.1
             "amount": 1000,
             "currencyCode": "qar"
         },
-        "subTotal": {
+        "total": {
             "amount": 6500,
             "currencyCode": "qar"
         },
@@ -373,7 +373,7 @@ currency | Yes | CurrencyCode | The desired currency code
         "amount": 2000,
         "currencyCode": "qar"
     },
-    "subTotal": {
+    "total": {
         "amount": 13000,
         "currencyCode": "qar"
     },
