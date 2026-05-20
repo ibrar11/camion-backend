@@ -999,7 +999,7 @@ export class ProcurementService {
                                         const batch = item.variants.slice(i, i + VARIANT_BATCH_SIZE);
 
                                         await Promise.all(
-                                            batch.map(async (variant) => {
+                                            batch.map(async (variant, index) => {
                                                 try {
                                                     const optionValuesUuids = variant.attributes?.map(attr => optionValueMap.get(attr.optionValueEn)).filter((uuid): uuid is string => Boolean(uuid)) || [];
 
@@ -1036,6 +1036,18 @@ export class ProcurementService {
                                                         true
                                                     );
 
+                                                    if (index === 0) {
+                                                        const featuredImageUrl = item.images.find((img) => img.isFeatured === true);
+                                                        if (featuredImageUrl?.url) {
+                                                            const imageFile = await fetchImageAsFile(featuredImageUrl?.url);
+                                                            const image = await this.variantImageService.createProductVariantImage(
+                                                                createdVariant.uuid,
+                                                                imageFile,
+                                                            );
+                                                            featuredImageUUID = image.uuid;
+                                                        }
+                                                    }
+
                                                     // Variant has its image
                                                     if (variant.imageUrl) {
                                                         const imageFile = await fetchImageAsFile(variant.imageUrl);
@@ -1043,10 +1055,6 @@ export class ProcurementService {
                                                             createdVariant.uuid,
                                                             imageFile,
                                                         );
-                                                        const isFeatured = item.images.find((img) => img.isFeatured && img.url === variant.imageUrl);
-                                                        if (isFeatured) {
-                                                            featuredImageUUID = image.uuid;
-                                                        }
                                                     }
 
                                                 } catch (error: any) {
@@ -1057,7 +1065,7 @@ export class ProcurementService {
                                     }
                                 }
 
-                                if(featuredImageUUID) {
+                                if (featuredImageUUID) {
                                     await this.productService.updateProductFeaturedImage(product.uuid, { imageUUID: featuredImageUUID });
                                 }
                             }
