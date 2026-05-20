@@ -43,6 +43,8 @@ import { PushNotificationService } from '../common/push-notification.service';
 
 import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
+import { CartItem } from '../cart/entities/cart-items.entity';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -53,7 +55,8 @@ import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
             ClientRefreshToken,
             Order,
             ExchangeRate,
-            Notification
+            Notification,
+            CartItem,
         ]),
         NotificationsModule,
     ],

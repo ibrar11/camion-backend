@@ -304,6 +304,7 @@ export class OrderService {
                     amount: totalAmount,
                     currencyCode: variant.cost.currencyCode,
                 };
+                orderItem.cartItem = cart;
 
                 await queryRunner.manager.save(orderItem);
 
@@ -501,9 +502,6 @@ export class OrderService {
             const payment = await this.paymentService.createPayment(paymentPayload);
             order.paymentTransaction = payment;
             await queryRunner.manager.save(order);
-
-            // Clear the cart within transaction
-            await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
 
             await queryRunner.commitTransaction();
 
