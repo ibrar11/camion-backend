@@ -1042,7 +1042,9 @@ export class ProcurementService {
                                     }
                                 }
 
-                                await this.productService.updateProductFeaturedImage(product.uuid, { imageUUID: featuredImageUUID })
+                                if(featuredImageUUID) {
+                                    await this.productService.updateProductFeaturedImage(product.uuid, { imageUUID: featuredImageUUID });
+                                }
                             }
 
                             results.success.push(product);
