@@ -3294,6 +3294,18 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
             }
         }
         availableStock
+        subTotal {
+            amount
+            curreny
+        }
+        discountPrice {
+            amount
+            curreny
+        }
+        total {
+            amount
+            curreny
+        }
     }
 }
 ```
@@ -3385,7 +3397,19 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                         }
                     ]
                 },
-                "availableStock": 100
+                "availableStock": 100,
+                "subTotal": {
+                    "amount": 15000,
+                    "currencyCode": "qar"
+                },
+                "discountPrice": {
+                    "amount": 2000,
+                    "currencyCode": "qar"
+                },
+                "subTotal": {
+                    "amount": 13000,
+                    "currencyCode": "qar"
+                },
             }
         ]
     }
