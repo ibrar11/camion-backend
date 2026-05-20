@@ -158,7 +158,7 @@ export class CartItemsService {
             currencyCode: price.currencyCode
         }
         cartItem.total = {
-            amount: (price.amount * body.quantity),
+            amount: price.amount * body.quantity,
             currencyCode: price.currencyCode
         }
         return this.cartRepository.save(cartItem);
