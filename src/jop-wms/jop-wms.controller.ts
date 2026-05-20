@@ -89,6 +89,13 @@ export class JopWmsController {
         return this.wmsService.getInboundOrderLabel(query);
     }
 
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Post('inbound/:orderNo/retry-outbound')
+    @HttpCode(HttpStatus.OK)
+    retryOutboundForInbound(@Param('orderNo') orderNo: string) {
+        return this.wmsService.retryOutboundForInbound(orderNo);
+    }
+
     // ─── Outbound ─────────────────────────────────────────────────────────────
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
