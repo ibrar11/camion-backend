@@ -71,7 +71,10 @@ export class PaymentsWebhookService {
                 where: { uuid: TransactionId },
                 relations: {
                     customer: true,
-                    orderItems: true
+                    orderItems: {
+                        product: true,
+                        variant: true,
+                    }
                 },
             })
 
