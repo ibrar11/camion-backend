@@ -49,7 +49,7 @@ import {
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, DataSource, Repository } from 'typeorm';
+import { In, IsNull, Not, DataSource, Repository } from 'typeorm';
 
 import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
@@ -94,6 +94,14 @@ export class ProcurementService {
     private toFiniteNumberOrFallback(value: unknown, fallback: number): number {
         const parsed = typeof value === "number" ? value : Number(value);
         return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    private chunkArray<T>(items: T[], chunkSize: number): T[][] {
+        const chunks: T[][] = [];
+        for (let i = 0; i < items.length; i += chunkSize) {
+            chunks.push(items.slice(i, i + chunkSize));
+        }
+        return chunks;
     }
 
     async enqueueInventoryVariantsResync(body: ResyncInventoryVariantsDto): Promise<{
@@ -172,113 +180,127 @@ export class ProcurementService {
         productsRequested: number;
         productsFound: number;
         productsWithProcurementId: number;
+        productsFailed: number;
         variantsMatched: number;
         variantsUpdated: number;
         variantsMissingInSource: number;
         productsSkippedWithoutProcurementId: string[];
     }> {
-        const products = await this.productRepository.find({
-            where: productUuids.map((uuid) => ({ uuid })),
-            relations: {
-                variants: true,
-            },
-        });
-
         const productsSkippedWithoutProcurementId: string[] = [];
+        let productsFound = 0;
+        let productsFailed = 0;
         let variantsMatched = 0;
         let variantsUpdated = 0;
         let variantsMissingInSource = 0;
         let productsWithProcurementId = 0;
 
-        for (const product of products) {
-            if (!product.procurementId) {
-                productsSkippedWithoutProcurementId.push(product.uuid);
-                continue;
-            }
+        const productUuidChunks = this.chunkArray(productUuids, 200);
+        for (const productUuidChunk of productUuidChunks) {
+            const products = await this.productRepository.find({
+                where: { uuid: In(productUuidChunk) },
+                relations: {
+                    variants: true,
+                },
+            });
+            productsFound += products.length;
 
-            productsWithProcurementId += 1;
-            const sourceProduct = await this.getProductDetail(product.procurementId);
-            const sourceBySku = new Map<string, ProcurementProductVariant>();
-
-            for (const sourceVariant of sourceProduct.variants ?? []) {
-                sourceBySku.set(String(sourceVariant.skuId), sourceVariant);
-            }
-
-            for (const localVariant of product.variants ?? []) {
-                const sourceVariant = sourceBySku.get(localVariant.sku);
-                if (!sourceVariant) {
-                    variantsMissingInSource += 1;
+            for (const product of products) {
+                if (!product.procurementId) {
+                    productsSkippedWithoutProcurementId.push(product.uuid);
                     continue;
                 }
 
-                variantsMatched += 1;
-                let changed = false;
-                const nextWeightAmount = this.toFiniteNumberOrFallback(
-                    sourceVariant.shipping?.weight,
-                    localVariant.weight.amount,
-                );
-                const nextWidth = this.toFiniteNumberOrFallback(
-                    sourceVariant.shipping?.width,
-                    localVariant.dimensions.width,
-                );
-                const nextHeight = this.toFiniteNumberOrFallback(
-                    sourceVariant.shipping?.height,
-                    localVariant.dimensions.height,
-                );
-                const nextLength = this.toFiniteNumberOrFallback(
-                    sourceVariant.shipping?.length,
-                    localVariant.dimensions.length,
-                );
+                try {
+                    productsWithProcurementId += 1;
+                    const sourceProduct = await this.getProductDetail(product.procurementId);
+                    const sourceBySku = new Map<string, ProcurementProductVariant>();
 
-                const nextTitleEn = (sourceVariant.title || "").slice(0, 128);
-                // const nextTitleAr = (sourceVariant.title || "").slice(0, 128);
-                if (localVariant.titleEn !== nextTitleEn) {
-                    localVariant.titleEn = nextTitleEn;
-                    changed = true;
-                }
+                    for (const sourceVariant of sourceProduct.variants ?? []) {
+                        sourceBySku.set(String(sourceVariant.skuId), sourceVariant);
+                    }
 
-                if (localVariant.weight.amount !== nextWeightAmount) {
-                    localVariant.weight.amount = nextWeightAmount;
-                    changed = true;
-                }
-                if (localVariant.weight.unit !== WeightUnit.Kilograms) {
-                    localVariant.weight.unit = WeightUnit.Kilograms;
-                    changed = true;
-                }
+                    for (const localVariant of product.variants ?? []) {
+                        const sourceVariant = sourceBySku.get(localVariant.sku);
+                        if (!sourceVariant) {
+                            variantsMissingInSource += 1;
+                            continue;
+                        }
 
-                if (localVariant.dimensions.width !== nextWidth) {
-                    localVariant.dimensions.width = nextWidth;
-                    changed = true;
-                }
-                if (localVariant.dimensions.height !== nextHeight) {
-                    localVariant.dimensions.height = nextHeight;
-                    changed = true;
-                }
-                if (localVariant.dimensions.length !== nextLength) {
-                    localVariant.dimensions.length = nextLength;
-                    changed = true;
-                }
-                if (localVariant.dimensions.unit !== DimensionsUnit.Centimeter) {
-                    localVariant.dimensions.unit = DimensionsUnit.Centimeter;
-                    changed = true;
-                }
+                        variantsMatched += 1;
+                        let changed = false;
+                        const nextWeightAmount = this.toFiniteNumberOrFallback(
+                            sourceVariant.shipping?.weight,
+                            localVariant.weight.amount,
+                        );
+                        const nextWidth = this.toFiniteNumberOrFallback(
+                            sourceVariant.shipping?.width,
+                            localVariant.dimensions.width,
+                        );
+                        const nextHeight = this.toFiniteNumberOrFallback(
+                            sourceVariant.shipping?.height,
+                            localVariant.dimensions.height,
+                        );
+                        const nextLength = this.toFiniteNumberOrFallback(
+                            sourceVariant.shipping?.length,
+                            localVariant.dimensions.length,
+                        );
 
-                if (!this.isSameObject(localVariant.skuMeta, sourceVariant.skuMeta)) {
-                    localVariant.skuMeta = sourceVariant.skuMeta as Record<string, any>;
-                    changed = true;
-                }
+                        const nextTitleEn = (sourceVariant.title || "").slice(0, 128);
+                        if (localVariant.titleEn !== nextTitleEn) {
+                            localVariant.titleEn = nextTitleEn;
+                            changed = true;
+                        }
 
-                if (changed) {
-                    await this.productVariantRepository.save(localVariant);
-                    variantsUpdated += 1;
+                        if (localVariant.weight.amount !== nextWeightAmount) {
+                            localVariant.weight.amount = nextWeightAmount;
+                            changed = true;
+                        }
+                        if (localVariant.weight.unit !== WeightUnit.Kilograms) {
+                            localVariant.weight.unit = WeightUnit.Kilograms;
+                            changed = true;
+                        }
+
+                        if (localVariant.dimensions.width !== nextWidth) {
+                            localVariant.dimensions.width = nextWidth;
+                            changed = true;
+                        }
+                        if (localVariant.dimensions.height !== nextHeight) {
+                            localVariant.dimensions.height = nextHeight;
+                            changed = true;
+                        }
+                        if (localVariant.dimensions.length !== nextLength) {
+                            localVariant.dimensions.length = nextLength;
+                            changed = true;
+                        }
+                        if (localVariant.dimensions.unit !== DimensionsUnit.Centimeter) {
+                            localVariant.dimensions.unit = DimensionsUnit.Centimeter;
+                            changed = true;
+                        }
+
+                        if (!this.isSameObject(localVariant.skuMeta, sourceVariant.skuMeta)) {
+                            localVariant.skuMeta = sourceVariant.skuMeta as Record<string, any>;
+                            changed = true;
+                        }
+
+                        if (changed) {
+                            await this.productVariantRepository.save(localVariant);
+                            variantsUpdated += 1;
+                        }
+                    }
+                } catch (error) {
+                    productsFailed += 1;
+                    this.logger.error(
+                        `Failed inventory resync for product ${product.uuid} (procurementId=${product.procurementId}): ${(error as Error).message}`,
+                    );
                 }
             }
         }
 
         return {
             productsRequested: productUuids.length,
-            productsFound: products.length,
+            productsFound,
             productsWithProcurementId,
+            productsFailed,
             variantsMatched,
             variantsUpdated,
             variantsMissingInSource,
