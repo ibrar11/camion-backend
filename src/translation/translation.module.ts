@@ -20,17 +20,19 @@ import { TranslationItemService } from './translation-item.service';
 import { TranslationScannerService } from './translation-scanner.service';
 import { TranslationScannerController } from './translation-scanner.controller';
 
-import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
+import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 
-import { Customer } from 'src/customers/entities/customer.entity';
-import { CustomersService } from 'src/customers/customers.service';
+import { Customer } from '../customers/entities/customer.entity';
+import { CustomersService } from '../customers/customers.service';
 
-import { Client } from 'src/clients/entities/client.entity';
-import { ClientsService } from 'src/clients/clients.service';
+import { Client } from '../clients/entities/client.entity';
+import { ClientsService } from '../clients/clients.service';
 
-import { ClientRefreshToken } from 'src/oauth/entities/oauth-refresh-token.entity';
-import { OauthService } from 'src/oauth/oauth.service';
+import { ClientRefreshToken } from '../oauth/entities/oauth-refresh-token.entity';
+import { OauthService } from '../oauth/oauth.service';
+
+import { TranslationJobRegistryService } from './translation-job-registry.service';
 
 @Module({
     imports: [
@@ -58,6 +60,7 @@ import { OauthService } from 'src/oauth/oauth.service';
         CustomersService,
         ClientsService,
         OauthService,
+        TranslationJobRegistryService,
     ],
     controllers: [
         TranslationScannerController,

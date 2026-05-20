@@ -33,6 +33,13 @@ import { ProductTranslationProvider } from '../providers/product-translation.pro
 
 import { Category } from '../../inventory/entities/category.entity';
 
+import { TranslationJobRegistryService } from '../translation-job-registry.service';
+
+import { 
+    Cache, 
+    CACHE_MANAGER 
+} from '@nestjs/cache-manager';
+
 
 @Processor(QueueName.TRANSLATION, {
     concurrency: 1,
@@ -55,16 +62,26 @@ export class TranslationProcessor extends WorkerHost {
         @InjectRepository(Translation) private readonly translationRepository: Repository<Translation>,
         @InjectRepository(TranslationItem) private readonly translationItemRepository: Repository<TranslationItem>,
         @Inject(ProductTranslationProvider) private readonly translationProvider: ProductTranslationProvider,
+        @Inject(TranslationJobRegistryService) private readonly jobRegistry: TranslationJobRegistryService,
+        @Inject(CACHE_MANAGER) private readonly cacheManager: Cache
     ) {
         super();
     }
 
     async process(job: Job<TranslationJobData>): Promise<any> {
-        const { productUuids, sourceLanguageCode } = job.data;
+        const { productUuids, sourceLanguageCode, deduplicationKey } = job.data;
 
         this.logger.log(
             `Processing translation batch job ${job.id} for ${productUuids.length} products`,
         );
+
+        const processedKey = `processed:${deduplicationKey}`;
+        const alreadyProcessed = await this.cacheManager.get(processedKey);
+        
+        if (alreadyProcessed) {
+            this.logger.log(`Job ${deduplicationKey} already processed, skipping`);
+            return { success: true, skipped: true };
+        }
 
         try {
             await job.updateProgress(5);
@@ -110,10 +127,11 @@ export class TranslationProcessor extends WorkerHost {
                 `Completed translation batch job ${job.id}`,
             );
 
-            return {
-                success: true,
-                processedProducts: products.length,
-            };
+            for (const productUuid of productUuids) {
+                await this.jobRegistry.clearJob(productUuid, 'full');
+            }
+
+            return { success: true, processedProducts: products.length };
         } catch (error: any) {
             this.logger.error(
                 `Translation job failed: ${error.message}`,

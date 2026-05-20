@@ -15,6 +15,7 @@ export interface TranslationJobData {
     createdAt: Date;
 
     maxRetries?: number;
+    deduplicationKey: string;
 }
 
 export interface DispatchShopJobData extends BaseJobData {

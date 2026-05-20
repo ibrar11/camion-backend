@@ -36,4 +36,10 @@ export class TranslationScannerController {
     async getTranslationStats(): Promise<ProductTranslationStats> {
         return this.translationScanner.getTranslationStats();
     }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get('remove-duplicates')
+    async getDuplicates(){
+        return this.translationScanner.runOnceCleanup();
+    }
 }

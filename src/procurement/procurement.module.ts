@@ -53,6 +53,8 @@ import { InventoryResyncProcessor } from './workers/inventory-resync.processor';
 
 import { TranslationService } from '../translation/translation.service';
 
+import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -90,6 +92,7 @@ import { TranslationService } from '../translation/translation.service';
 		ImageThumbnailService,
 		TranslationService,
 		InventoryResyncProcessor,
+		TranslationJobRegistryService,
 	],
 	controllers: [ProcurementController],
 	exports: [ProcurementService],
