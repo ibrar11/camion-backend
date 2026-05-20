@@ -497,6 +497,8 @@ export class JopWmsService {
         const orderUuids = links.map(l => l.order.uuid);
         this.logger.log(`Creating outbounds for inbound ${wmsOrder.orderNo} — ${orderUuids.length} order(s)`);
 
+        let firstError: any = null;
+
         for (const orderUuid of orderUuids) {
             const allInboundsForOrder = await this.wmsOrderRepository
                 .createQueryBuilder('wmsOrder')
@@ -574,9 +576,27 @@ export class JopWmsService {
 
                 this.logger.log(`Outbound created for order ${order.uuid} → ${customerVoucherNo}`);
             } catch (err: any) {
-                this.logger.error(`Outbound creation failed for order ${order.uuid} — ${err?.message}`);
+                const errDetail = err?.message || (typeof err?.getResponse === 'function' ? JSON.stringify(err.getResponse()) : String(err));
+                this.logger.error(`Outbound creation failed for order ${order.uuid} — ${errDetail}`);
+                if (!firstError) firstError = err;
             }
         }
+
+        if (firstError) throw firstError;
+    }
+
+    async retryOutboundForInbound(orderNo: string): Promise<{ message: string }> {
+        const inbound = await this.wmsOrderRepository.findOne({
+            where: { orderNo, type: JopWmsOrderType.INBOUND },
+            relations: ['sourceOrders'],
+        });
+
+        if (!inbound) {
+            throw new NotFoundException({ error: `Inbound order ${orderNo} not found` });
+        }
+
+        await this.createOutboundsForInbound(inbound);
+        return { message: `Outbound creation triggered for inbound ${orderNo}` };
     }
 
     // ─── Recovery ─────────────────────────────────────────────────────────────

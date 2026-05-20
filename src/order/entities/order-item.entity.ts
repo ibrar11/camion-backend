@@ -23,7 +23,6 @@ import {
 } from "../../inventory/entities/product-variant.entity";
 
 import { Warehouse } from "../../inventory/entities/warehouse.entity";
-
 @ObjectType()
 @Entity('order_items')
 export class OrderItem {

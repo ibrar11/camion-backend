@@ -115,6 +115,14 @@ currency | Yes | CurrencyCode | The desired currency code
     "subTotal": {
         "amount": 7500,
         "currencyCode": "qar"
+    },
+    "discountPrice": {
+        "amount": 1000,
+        "currencyCode": "qar"
+    },
+    "subTotal": {
+        "amount": 6500,
+        "currencyCode": "qar"
     }
 }
 ```
@@ -220,6 +228,14 @@ GET /v1/cart-items HTTP/1.1
         "quantity": 1,
         "subTotal": {
             "amount": 7500,
+            "currencyCode": "qar"
+        },
+        "discountPrice": {
+            "amount": 1000,
+            "currencyCode": "qar"
+        },
+        "subTotal": {
+            "amount": 6500,
             "currencyCode": "qar"
         },
         "availableStock": 100,
@@ -352,7 +368,15 @@ currency | Yes | CurrencyCode | The desired currency code
     "subTotal": {
         "amount": 15000,
         "currencyCode": "qar"
-    }
+    },
+    "discountPrice": {
+        "amount": 2000,
+        "currencyCode": "qar"
+    },
+    "subTotal": {
+        "amount": 13000,
+        "currencyCode": "qar"
+    },
 }
 ```
 

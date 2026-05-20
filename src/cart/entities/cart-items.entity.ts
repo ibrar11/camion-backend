@@ -19,11 +19,27 @@ import { Exclude } from "class-transformer";
 import { Product } from "../../inventory/entities/product.entity";
 
 import {
-    Money,
     ProductVariant
 } from "../../inventory/entities/product-variant.entity";
 
 import { Customer } from "../../customers/entities/customer.entity";
+
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
+
+@ObjectType()
+export class CartMoney {
+	@Field(() => Int)
+	@Column({ type: "integer", nullable: true })
+	amount: number;
+
+	@Field()
+	@Column({
+		type: "enum",
+		enum: CurrencyCode,
+		default: CurrencyCode.USD,
+	})
+	currencyCode: CurrencyCode;
+}
 
 @ObjectType()
 @Entity({ name: "cart_items" })
@@ -55,9 +71,17 @@ export class CartItem {
     @Column({ type: "int", default: 1 })
     quantity: number;
 
-    @Field(() => Money)
-    @Column(() => Money)
-    subTotal: Money;
+    @Field(() => CartMoney)
+    @Column(() => CartMoney)
+    subTotal: CartMoney;
+
+    @Field(() => CartMoney)
+    @Column(() => CartMoney)
+    discountPrice: CartMoney;
+
+    @Field(() => CartMoney)
+    @Column(() => CartMoney)
+    total: CartMoney;
 
     // <!--
     // These fields are not part of the schema. Please don't add them to the database.

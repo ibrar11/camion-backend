@@ -52,12 +52,19 @@ type Banner {
 
 type CartItem {
   availableStock: Int!
+  discountPrice: CartMoney!
   isAvailable: Boolean!
   product: Product!
   quantity: Int!
-  subTotal: Money!
+  subTotal: CartMoney!
+  total: CartMoney!
   uuid: String!
   variant: ProductVariant!
+}
+
+type CartMoney {
+  amount: Int!
+  currencyCode: String!
 }
 
 type Category {
