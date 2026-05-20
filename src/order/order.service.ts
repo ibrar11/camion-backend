@@ -283,9 +283,9 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
 
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
-                const discountedPriceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
-                const totalAmount = (priceAmount.amount * cart.quantity) - ((priceAmount.amount * cart.quantity) - (discountedPriceAmount.amount * cart.quantity));
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
+                const totalAmount = priceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
 
@@ -300,8 +300,8 @@ export class OrderService {
                     amount: priceAmount.amount,
                 };
                 orderItem.discountedPrice = {
-                    ...discountedPriceAmount,
-                    amount: (priceAmount.amount - discountedPriceAmount.amount),
+                    ...priceAmount,
+                    amount: 0,
                 };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
