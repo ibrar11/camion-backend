@@ -73,7 +73,8 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 import { PricingModule } from '../pricing/pricing.module';
 
 import { Translation } from '../translation/entities/translation.entity';
-import { TranslationService } from 'src/translation/translation.service';
+import { TranslationService } from '../translation/translation.service';
+import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
 
 @Module({
 	imports: [
@@ -130,6 +131,7 @@ import { TranslationService } from 'src/translation/translation.service';
 		FileService,
 		ImageThumbnailService,
 		TranslationService,
+		TranslationJobRegistryService,
 	],
 	controllers: [
 		CategoriesController,

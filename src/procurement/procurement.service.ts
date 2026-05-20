@@ -65,6 +65,8 @@ import { InventoryResyncJobData } from 'src/queue/types';
 
 import { ConfigService } from '@nestjs/config';
 
+import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
+
 
 @Injectable()
 export class ProcurementService {
@@ -82,6 +84,7 @@ export class ProcurementService {
         @InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
+        @Inject(TranslationJobRegistryService) private readonly jobRegistry: TranslationJobRegistryService,
     ) { }
 
     private isSameObject(a: unknown, b: unknown): boolean {
@@ -840,9 +843,21 @@ export class ProcurementService {
                 );
             }
 
+            // Before queuing translation, check if already queued
+            const productsNeedingTranslation: string[] = [];
+
+            for (const product of importedProductUuids) {
+                const isBeingTranslated = await this.jobRegistry.isProductBeingTranslated(product);
+                if (!isBeingTranslated) {
+                    productsNeedingTranslation.push(product);
+                } else {
+                    this.logger.log(`Product ${product} already has a translation job, skipping`);
+                }
+            }
+
             if (importedProductUuids.length) {
                 await this.queueService.addImportedProductsTranslationJob(
-                    importedProductUuids,
+                    productsNeedingTranslation,
                     "en",
                 );
             }
@@ -1050,7 +1065,7 @@ export class ProcurementService {
                         } catch (error: any) {
                             this.logger.error(`Failed importing product ${item.externalId}: ${error}`);
 
-                            if(product?.uuid) {
+                            if (product?.uuid) {
                                 await this.productRepository.delete({
                                     uuid: product.uuid
                                 })
@@ -1064,9 +1079,22 @@ export class ProcurementService {
                 );
             }
 
+            // Before queuing translation, check if already queued
+            const productsNeedingTranslation: string[] = [];
+
+            for (const product of savedProductUuids) {
+                const isBeingTranslated = await this.jobRegistry.isProductBeingTranslated(product);
+                if (!isBeingTranslated) {
+                    productsNeedingTranslation.push(product);
+                } else {
+                    this.logger.log(`Product ${product} already has a translation job, skipping`);
+                }
+            }
+
+
             if (savedProductUuids.length) {
                 await this.queueService.addImportedProductsTranslationJob(
-                    savedProductUuids,
+                    productsNeedingTranslation,
                     "en",
                 );
             }

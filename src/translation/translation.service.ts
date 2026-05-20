@@ -22,10 +22,14 @@ import { ProductOptionValue } from '../inventory/entities/product-option-value.e
 
 import { Category } from '../inventory/entities/category.entity';
 
+import { TranslationJobRegistryService } from './translation-job-registry.service';
+
 import {
     FieldTranslationJobData,
     TranslatedFieldResult
 } from './types';
+
+import { TranslationJobData } from '../queue/types';
 
 @Injectable()
 export class TranslationService {
@@ -42,6 +46,7 @@ export class TranslationService {
         @InjectRepository(ProductOptionValue) private readonly optionValueRepository: Repository<ProductOptionValue>,
         @InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
         @Inject(QueueService) private readonly queueService: QueueService,
+        @Inject(TranslationJobRegistryService) private readonly jobRegistry: TranslationJobRegistryService,
     ) { }
 
     /**
@@ -51,11 +56,24 @@ export class TranslationService {
     async queueProductTranslation(productUuid: string, delayMs: number = 5000): Promise<void> {
         this.logger.log(`Scheduling translation for product ${productUuid} with ${delayMs}ms delay`);
 
+        const isBeingTranslated = await this.jobRegistry.isProductBeingTranslated(productUuid);
+        if (isBeingTranslated) {
+            this.logger.log(`Product ${productUuid} is already being translated, skipping`);
+            return;
+        }
+
         // Clear any existing pending translation for this product
         const existingTimeout = this.pendingTranslations.get(productUuid);
         if (existingTimeout) {
             clearTimeout(existingTimeout);
             this.logger.log(`Cleared previous translation schedule for product ${productUuid}`);
+        }
+
+        // Also check if there's already a job in the queue
+        const existingJob = await this.checkExistingJobInQueue(productUuid);
+        if (existingJob) {
+            this.logger.log(`Product ${productUuid} already has a translation job in queue, skipping`);
+            return;
         }
 
         // Schedule new translation check
@@ -102,6 +120,16 @@ export class TranslationService {
         await this.queueService.addImportedProductsTranslationJob([productUuid], "en");
     }
 
+    private async checkExistingJobInQueue(productUuid: string): Promise<boolean> {
+        // Implementation to check BullMQ queue for existing jobs
+        // This requires injecting the queue and checking
+        const jobs = await this.queueService.getJobs(QueueName.TRANSLATION, ['waiting', 'active', 'delayed']);
+        return jobs.some(job => {
+            const data = job.data as TranslationJobData;
+            return data.productUuids?.includes(productUuid);
+        });
+    }
+
     /**
      * Queue field translation with debouncing
      */
@@ -113,6 +141,13 @@ export class TranslationService {
         sourceLanguage: string = 'en',
         delayMs: number = 1000,
     ): Promise<void> {
+        // Check if this specific field is already being translated
+        const canRegister = await this.jobRegistry.tryRegisterJob(productUuid, 'field', fieldType);
+        if (!canRegister) {
+            this.logger.log(`Field ${fieldType} for product ${productUuid} already has a translation job, skipping`);
+            return;
+        }
+
         const jobKey = `${fieldType}:${entityUuid}`;
 
         // Debounce: clear existing pending job
