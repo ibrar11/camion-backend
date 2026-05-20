@@ -283,9 +283,9 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
 
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
-                const discountedPriceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
-                const totalAmount = (priceAmount.amount * cart.quantity) - ((priceAmount.amount * cart.quantity) - (discountedPriceAmount.amount * cart.quantity));
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
+                const totalAmount = priceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
 
@@ -300,8 +300,8 @@ export class OrderService {
                     amount: priceAmount.amount,
                 };
                 orderItem.discountedPrice = {
-                    ...discountedPriceAmount,
-                    amount: (priceAmount.amount - discountedPriceAmount.amount),
+                    ...priceAmount,
+                    amount: 0,
                 };
                 orderItem.quantity = cart.quantity;
                 orderItem.total = {
@@ -1011,7 +1011,6 @@ export class OrderService {
             // Validate cart items and prepare for shipping calculation
             const validatedItems: CartItem[] = [];
             let subTotal = 0;
-            let discountSubTotal = 0;
 
             for (const item of cartItems) {
                 // Check stock availability
@@ -1023,13 +1022,11 @@ export class OrderService {
                     );
                 }
 
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
                 const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, true);
 
-                const itemTotal = priceAmount.amount * item.quantity;
-                const discountItemTotal = (priceAmount.amount * item.quantity) - (priceDiscount.amount * item.quantity);
+                const itemTotal = priceDiscount.amount * item.quantity;
                 subTotal += itemTotal;
-                discountSubTotal += discountItemTotal;
 
                 validatedItems.push({
                     ...item
@@ -1119,17 +1116,15 @@ export class OrderService {
                 subTotalInQar = subTotal * exchangeRate.factor;
             }
 
-            const totalDiscount = discountSubTotal + discount;
-
             // Calculate total order amount
-            const totalAmount = subTotal + shippingCost - totalDiscount;
+            const totalAmount = subTotal + shippingCost - discount;
 
             // Return complete order preview
             const orderPreview: OrderPreviewResponse = {
                 items: validatedItems,
                 shippingAddress: address,
                 cart_total: subTotal,
-                discount: totalDiscount,
+                discount: discount,
                 shipping: shippingCalculation,
                 shippingTotal: shippingCost,
                 grand_total: totalAmount,
