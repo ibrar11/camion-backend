@@ -63,7 +63,6 @@ export class CartResolver {
             });
         }
         return this.cartService.findCart(customer, "", "", args.pageNumber, args.itemsPerPage);
-
     }
 
     @Query(() => Number)
