@@ -536,7 +536,7 @@ export class JopWmsService {
                 continue;
             }
 
-            const customerVoucherNo = `${order.uuid.replace(/-/g, '')}out`;
+            const customerVoucherNo = `${order.uuid.replace(/-/g, '').substring(0, 29)}out`;
 
             const existingOutbound = await this.wmsOrderRepository.findOne({
                 where: { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },
