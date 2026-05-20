@@ -214,7 +214,6 @@ export class CartItemsService {
 
                 // Update the stock entries of each cart item.
                 cartItem.product.variants = [];
-                cartItem.product.productCategories = [];
                 cartItem.availableStock = stock;
                 cartItem.isAvailable = stock > 0;
                 return cartItem;
