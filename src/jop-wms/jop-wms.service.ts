@@ -592,7 +592,7 @@ export class JopWmsService {
         });
 
         if (!inbound) {
-            throw new NotFoundException(`Inbound order ${orderNo} not found`);
+            throw new NotFoundException({ error: `Inbound order ${orderNo} not found` });
         }
 
         await this.createOutboundsForInbound(inbound);
