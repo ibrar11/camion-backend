@@ -567,7 +567,11 @@ export class OrderService {
                 },
                 relations: {
                     orderItems: {
-                        product: true,
+                        product: {
+                            productCategories: {
+                                category: true,
+                            },
+                        },
                         variant: {
                             images: true,
                         },
