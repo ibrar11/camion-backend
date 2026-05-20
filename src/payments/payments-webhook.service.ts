@@ -71,9 +71,7 @@ export class PaymentsWebhookService {
                 where: { uuid: TransactionId },
                 relations: {
                     customer: true,
-                    orderItems: {
-                        cartItem: true
-                    }
+                    orderItems: true
                 },
             })
 
@@ -142,14 +140,32 @@ export class PaymentsWebhookService {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
 
-                const cartItemUuids = order.orderItems
-                    .filter(item => item.cartItem)
-                    .map(item => item.cartItem.uuid);
+                const orderProductVariants = order.orderItems.map(item => ({
+                    productId: item.product.id,
+                    variantId: item.variant.id,
+                    quantity: item.quantity,
+                }));
 
-                if (cartItemUuids.length > 0) {
-                    await this.cartRepository.delete({ uuid: In(cartItemUuids) });
+                // Find cart items for this customer that match the order items
+                const cartItems = await this.cartRepository.find({
+                    where: {
+                        customer: { id: order.customer.id },
+                    },
+                    relations: ['product', 'variant'],
+                });
 
-                    this.logger.log(`Cleared ${cartItemUuids.length} cart items for order ${order.uuid}`);
+                // Filter cart items that match the ordered items
+                const cartItemsToDelete = cartItems.filter(cartItem => {
+                    return orderProductVariants.some(ordered =>
+                        ordered.productId === cartItem.product.id &&
+                        ordered.variantId === cartItem.variant.id
+                    );
+                });
+
+                if (cartItemsToDelete.length > 0) {
+                    const uuidsToDelete = cartItemsToDelete.map(item => item.uuid);
+                    await this.cartRepository.delete({ uuid: In(uuidsToDelete) });
+                    this.logger.log(`Cleared ${uuidsToDelete.length} cart items for order ${order.uuid}`);
                 }
 
                 if (order.customer) {

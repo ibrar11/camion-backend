@@ -304,7 +304,6 @@ export class OrderService {
                     amount: totalAmount,
                     currencyCode: variant.cost.currencyCode,
                 };
-                orderItem.cartItem = cart;
 
                 await queryRunner.manager.save(orderItem);
 

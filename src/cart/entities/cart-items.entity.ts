@@ -10,7 +10,6 @@ import {
     Entity,
     Index,
     ManyToOne,
-    OneToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from "typeorm";
@@ -25,8 +24,6 @@ import {
 } from "../../inventory/entities/product-variant.entity";
 
 import { Customer } from "../../customers/entities/customer.entity";
-
-import { OrderItem } from "../../order/entities/order-item.entity";
 
 @ObjectType()
 @Entity({ name: "cart_items" })
@@ -61,9 +58,6 @@ export class CartItem {
     @Field(() => Money)
     @Column(() => Money)
     subTotal: Money;
-
-    @OneToOne(() => OrderItem, (orderItem) => orderItem.cartItem )
-    orderItem: OrderItem;
 
     // <!--
     // These fields are not part of the schema. Please don't add them to the database.
