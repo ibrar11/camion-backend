@@ -361,7 +361,7 @@ export class CartItemsService {
 
         // Calculate the price of the product/variant
         // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, true);
 
         //Check if a cart item with the target variant already exists
         const existingItem = await this.cartRepository.findOne({
