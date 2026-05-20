@@ -32,9 +32,10 @@ import { ProductTranslationProvider } from '../translation/providers/product-tra
 
 import { Category } from '../inventory/entities/category.entity';
 
-import { FieldTranslationProcessor } from 'src/translation/workers/fieldTranslation.processor';
-import { TranslationService } from 'src/translation/translation.service';
-import { TranslationItemService } from 'src/translation/translation-item.service';
+import { FieldTranslationProcessor } from '../translation/workers/fieldTranslation.processor';
+import { TranslationService } from '../translation/translation.service';
+import { TranslationItemService } from '../translation/translation-item.service';
+import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
 
 @Global()
 @Module({
@@ -90,6 +91,7 @@ import { TranslationItemService } from 'src/translation/translation-item.service
         ProductTranslationProvider,
         TranslationService,
         TranslationItemService,
+        TranslationJobRegistryService,
     ],
     controllers: [QueueController],
     exports: [
