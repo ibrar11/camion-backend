@@ -360,8 +360,8 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
+        // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
         const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
-        const discountedPrice = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
 
         //Check if a cart item with the target variant already exists
         const existingItem = await this.cartRepository.findOne({
@@ -401,11 +401,11 @@ export class CartItemsService {
                 currencyCode: body.currency,
             };
             existingItem.discountPrice = {
-                amount: (price.amount * mergedQuantity) - (discountedPrice.amount * mergedQuantity),
+                amount: 0,
                 currencyCode: body.currency,
             };
             existingItem.total = {
-                amount: (price.amount * mergedQuantity) - ((price.amount * mergedQuantity) - (discountedPrice.amount * mergedQuantity)),
+                amount: price.amount * mergedQuantity,
                 currencyCode: body.currency,
             };
 
@@ -423,11 +423,11 @@ export class CartItemsService {
             currencyCode: body.currency,
         };
         cartItem.discountPrice = {
-            amount: (price.amount * body.quantity) - (discountedPrice.amount * body.quantity),
+            amount: (price.amount * body.quantity) - (price.amount * body.quantity),
             currencyCode: body.currency,
         };
         cartItem.total = {
-            amount: (price.amount * body.quantity) - ((price.amount * body.quantity) - (discountedPrice.amount * body.quantity)),
+            amount: (price.amount * body.quantity) - ((price.amount * body.quantity) - (price.amount * body.quantity)),
             currencyCode: body.currency,
         };
 
