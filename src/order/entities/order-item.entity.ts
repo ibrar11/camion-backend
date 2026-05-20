@@ -5,7 +5,9 @@ import {
     CreateDateColumn,
     Entity,
     Index,
+    JoinColumn,
     ManyToOne,
+    OneToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn
 } from "typeorm";
@@ -23,6 +25,8 @@ import {
 } from "../../inventory/entities/product-variant.entity";
 
 import { Warehouse } from "../../inventory/entities/warehouse.entity";
+
+import { CartItem } from "../../cart/entities/cart-items.entity";
 
 @ObjectType()
 @Entity('order_items')
@@ -70,6 +74,10 @@ export class OrderItem {
     @Field(() => Money)
     @Column(() => Money)
     total: Money;
+
+    @OneToOne(() => CartItem, (cartItem) => cartItem.orderItem, { nullable: true, onDelete: 'SET NULL' })
+    @JoinColumn()
+    cartItem: CartItem;
 
     @Exclude()
     @UpdateDateColumn({

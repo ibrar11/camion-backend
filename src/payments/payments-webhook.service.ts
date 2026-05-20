@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 
 import { verifySkipcashSignature } from "../common/skipcash";
 
@@ -27,6 +27,8 @@ import { NotificationType } from "../notifications/enums/notification-type.enum"
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
 import { PushNotificationService } from "../common/push-notification.service";
 
+import { CartItem } from "../cart/entities/cart-items.entity";
+
 @Injectable()
 export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
@@ -34,6 +36,7 @@ export class PaymentsWebhookService {
     constructor(
         @InjectRepository(PaymentTransaction) private readonly paymentRepository: Repository<PaymentTransaction>,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+        @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
     ) { }
@@ -66,7 +69,12 @@ export class PaymentsWebhookService {
 
             const order = await this.orderRepository.findOne({
                 where: { uuid: TransactionId },
-                relations: { customer: true },
+                relations: {
+                    customer: true,
+                    orderItems: {
+                        cartItem: true
+                    }
+                },
             })
 
             if (!order) {
@@ -78,7 +86,7 @@ export class PaymentsWebhookService {
 
             const transaction = await this.paymentRepository.findOne({
                 where: {
-                    order: {id: order.id}
+                    order: { id: order.id }
                 },
                 relations: {
                     order: true
@@ -124,7 +132,7 @@ export class PaymentsWebhookService {
                 `Transaction ${transaction.id} updated to ${newStatus}`,
             );
 
-            let notification: Notification | void = undefined; 
+            let notification: Notification | void = undefined;
 
             if (newStatus === PaymentStatus.PAID) {
                 this.logger.log(
@@ -133,6 +141,16 @@ export class PaymentsWebhookService {
 
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
+
+                const cartItemUuids = order.orderItems
+                    .filter(item => item.cartItem)
+                    .map(item => item.cartItem.uuid);
+
+                if (cartItemUuids.length > 0) {
+                    await this.cartRepository.delete({ uuid: In(cartItemUuids) });
+
+                    this.logger.log(`Cleared ${cartItemUuids.length} cart items for order ${order.uuid}`);
+                }
 
                 if (order.customer) {
                     notification = await this.notificationsService.create({
@@ -170,7 +188,7 @@ export class PaymentsWebhookService {
                 }
             }
 
-            if(notification?.uuid) {
+            if (notification?.uuid) {
                 this.logger.log(`Attempting to create psuh notification for payment status: ${JSON.stringify(transaction.order.uuid)}`);
                 await this.pushNotificationService.sendToToken(notification?.uuid)
             }
