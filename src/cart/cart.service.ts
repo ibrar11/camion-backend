@@ -99,11 +99,11 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, false);
-        const discountPrice = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, true);
+        // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, true);
 
         // check if the variant alreadu exists
-        const existing = await this.cartRepository.findOne({
+        const existingCartItem = await this.cartRepository.findOne({
             where: {
                 customer: { uuid: customer.uuid },
                 product: { uuid: body.productUuid, },
@@ -112,8 +112,8 @@ export class CartItemsService {
         })
 
         // Update the existing cart item if it exists
-        if (existing) {
-            const updatedQuantity = existing.quantity + body.quantity;
+        if (existingCartItem) {
+            const updatedQuantity = existingCartItem.quantity + body.quantity;
 
             if (availableStock < updatedQuantity) {
                 throw new BadRequestException({
@@ -122,21 +122,20 @@ export class CartItemsService {
             }
 
             const updatedPrice = price.amount * updatedQuantity;
-            const updatedDiscountPrice = discountPrice.amount  * updatedQuantity;
-            existing.quantity = updatedQuantity;
-            existing.subTotal = {
+            existingCartItem.quantity = updatedQuantity;
+            existingCartItem.subTotal = {
                 amount: updatedPrice,
                 currencyCode: price.currencyCode,
             };
-            existing.discountPrice = {
-                amount: updatedPrice - updatedDiscountPrice,
-                currencyCode: discountPrice.currencyCode
+            existingCartItem.discountPrice = {
+                amount: 0,
+                currencyCode: price.currencyCode
             }
-            existing.total = {
-                amount: updatedPrice - (updatedPrice - updatedDiscountPrice),
+            existingCartItem.total = {
+                amount: updatedPrice,
                 currencyCode: price.currencyCode,
             }
-            return this.cartRepository.save(existing);
+            return this.cartRepository.save(existingCartItem);
         }
 
         // Reset prodcut variants
@@ -155,11 +154,11 @@ export class CartItemsService {
             currencyCode: price.currencyCode,
         };
         cartItem.discountPrice = {
-            amount: (price.amount * body.quantity) - (discountPrice.amount * body.quantity),
-            currencyCode: discountPrice.currencyCode
+            amount: 0,
+            currencyCode: price.currencyCode
         }
         cartItem.total = {
-            amount: (price.amount * body.quantity) - ((price.amount * body.quantity) - (discountPrice.amount * body.quantity)),
+            amount: (price.amount * body.quantity),
             currencyCode: price.currencyCode
         }
         return this.cartRepository.save(cartItem);
