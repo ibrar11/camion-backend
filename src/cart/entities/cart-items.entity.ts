@@ -9,7 +9,6 @@ import {
     CreateDateColumn,
     Entity,
     Index,
-    JoinColumn,
     ManyToOne,
     OneToOne,
     PrimaryGeneratedColumn,
@@ -64,7 +63,6 @@ export class CartItem {
     subTotal: Money;
 
     @OneToOne(() => OrderItem, (orderItem) => orderItem.cartItem )
-    @JoinColumn()
     orderItem: OrderItem;
 
     // <!--
