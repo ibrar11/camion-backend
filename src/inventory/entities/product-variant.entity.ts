@@ -99,10 +99,11 @@ export class ProductVariant {
 	uuid: string;
 
 	@ManyToOne(() => Product, (product) => product.variants, { onDelete: "CASCADE", })
+	@JoinColumn({ name: "product_id", })
 	@Index()
 	product: Product;
 
-	@JoinColumn()
+	@Column()
 	productId: number;
 
 	@OneToOne(() => InventoryItem, (item) => item.variant)
