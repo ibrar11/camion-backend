@@ -29,28 +29,121 @@ import { ProductCategory } from "./entities/product-category.entity";
 import { ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage } from "./entities/product-variant-image.entity";
 import {
-	formatProductVariants,
-	formatProductVariantsWithDrafts,
+	formatProductVariants
 } from "../common/product-variant-filter";
 
 import { TranslationService } from "../translation/translation.service";
 import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
 import { Customer } from "src/customers/entities/customer.entity";
 import { ProductView } from "./entities/product-view.entity";
-import { retry } from "rxjs";
 
 @Injectable()
 export class ProductsService {
 	private readonly logger = new Logger(ProductsService.name);
 
 	constructor(
+		@Inject(TranslationService) private readonly translationService: TranslationService,
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
+		@InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantImage) private readonly productImageVariantImageRepository: Repository<ProductVariantImage>,
 		@InjectRepository(ProductView) private readonly productViewRepository: Repository<ProductView>,
-		@Inject(TranslationService) private readonly translationService: TranslationService,
 	) { }
+
+	/**
+	 * Populates each product with its cheapest variant
+	 *
+	 * @param products
+	 * @returns
+	 */
+	async __populateWithVariantsLowToHigh(products: Array<Product>): Promise<Array<Product>> {
+		if (!Array.isArray(products) || products.length === 0) {
+			return [];
+		}
+
+		// Map the products to product ids.
+		const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
+
+		// Find the cheapest variant of each product
+		const variants = await this.productVariantRepository.createQueryBuilder('variant')
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+			.leftJoinAndSelect("variant.images", "images")
+			.where('variant.product_id IN (:...productIds)', {
+				productIds: productIds,
+			})
+			.distinctOn(['variant.product_id'])
+			.orderBy('variant.product_id', 'ASC')
+			.addOrderBy('variant.cost_amount', 'ASC')
+			.getMany();
+
+		// Map the variants to their products
+		const variantsMap = Object.fromEntries(
+			variants.map(variant => [variant.productId, variant]),
+		);
+
+		// Assing the variants to each product.
+		products = products
+			.filter(product => variantsMap[product.id] !== undefined)
+			.map(product => {
+				product.variants = [
+					variantsMap[product.id],
+				];
+				return product;
+			});
+
+		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+	}
+
+	/**
+	 * Populates each product with its most expensive variant
+	 *
+	 * @param products
+	 * @returns
+	 */
+	async __populateWithVariantsHighToLow(products: Array<Product>): Promise<Array<Product>> {
+		if (!Array.isArray(products) || products.length === 0) {
+			return [];
+		}
+
+		// Map the products to product ids.
+		const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
+
+		// Find the cheapest variant of each product
+		const variants = await this.productVariantRepository.createQueryBuilder('variant')
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+			.leftJoinAndSelect("variant.images", "images")
+			.where('variant.product_id IN (:...productIds)', {
+				productIds: productIds,
+			})
+			.distinctOn(['variant.product_id'])
+			.orderBy('variant.product_id', 'ASC')
+			.addOrderBy('variant.cost_amount', 'DESC')
+			.getMany();
+
+		// Map the variants to their products
+		const variantsMap = Object.fromEntries(
+			variants.map(variant => [variant.productId, variant]),
+		);
+
+		// Assing the variants to each product.
+		products = products
+			.filter(product => variantsMap[product.id] !== undefined)
+			.map(product => {
+				product.variants = [
+					variantsMap[product.id],
+				];
+				return product;
+			});
+
+		return formatProductVariants(products, ProductSort.PriceHighToLow);
+	}
 
 	/**
 	 * Creates a new product
@@ -167,7 +260,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAllUncached(filters: string, sort: ProductSort = ProductSort.Desc, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	findAllUncached(filters: string, sort: ProductSort = ProductSort.Desc, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products uncached`);
 
 		// Get pagination params
@@ -194,12 +287,10 @@ export class ProductsService {
 			return this.searchProductsUncached(filtersObject.query, "en", ProductSort.BestMatch, pageNumber, itemsPerPage);
 		}
 
-		const products = await this.productRepository.find({
+		// Find the products
+		return this.productRepository.find({
 			relationLoadStrategy: "query",
 			relations: {
-				variants: {
-					images: true,
-				},
 				productCategories: {
 					category: true,
 				},
@@ -210,8 +301,6 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
-
-		return formatProductVariantsWithDrafts(products);
 	}
 
 	/**
@@ -237,9 +326,6 @@ export class ProductsService {
 				status: ProductStatus.ACTIVE,
 			},
 			relations: {
-				variants: {
-					images: true,
-				},
 				productCategories: {
 					category: true,
 				},
@@ -251,7 +337,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+		return this.__populateWithVariantsLowToHigh(products);
 	}
 
 	/**
@@ -292,14 +378,10 @@ export class ProductsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Find the products in the desired category
-		const products = await this.productRepository.createQueryBuilder("product")
+		return this.productRepository.createQueryBuilder("product")
 			.setFindOptions({
 				relationLoadStrategy: "query",
 			})
-
-			// Populate variants and their specific option value mappings
-			.leftJoinAndSelect('product.variants', 'variants')
-			.leftJoinAndSelect('variants.images', 'images')
 
 			// Many-to-many join
 			.innerJoinAndSelect("product.productCategories", "productCategory")
@@ -314,8 +396,6 @@ export class ProductsService {
 			.skip(skip)
 			.take(take)
 			.getMany();
-
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
 
 	/**
@@ -352,10 +432,6 @@ export class ProductsService {
 				relationLoadStrategy: "query",
 			})
 
-			// Populate variants and their specific option value mappings
-			.leftJoinAndSelect("product.variants", "variant")
-			.leftJoinAndSelect("variant.images", "image")
-
 			// Many-to-many join
 			.innerJoinAndSelect("product.productCategories", "productCategory")
 			.innerJoinAndSelect("productCategory.category", "category")
@@ -370,7 +446,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+		return this.__populateWithVariantsLowToHigh(products);
 	}
 
 	/**
@@ -388,7 +464,7 @@ export class ProductsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Get the most recently viewed items
-		const views = await this.productViewRepository.find({
+		const productViews = await this.productViewRepository.find({
 			where: {
 				customer: {
 					id: customer.id,
@@ -396,9 +472,6 @@ export class ProductsService {
 			},
 			relations: {
 				product: {
-					variants: {
-						images: true,
-					},
 					productCategories: {
 						category: true,
 					},
@@ -412,9 +485,9 @@ export class ProductsService {
 		});
 
 		// Create a list of products
-		const products: Array<Product> = views.map(view => view.product);
+		const products: Array<Product> = productViews.map(view => view.product);
 
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+		return this.__populateWithVariantsLowToHigh(products);
 	}
 
 	/**
@@ -459,14 +532,10 @@ export class ProductsService {
 
 		switch (sort) {
 			case ProductSort.BestMatch:
-				products = await this.productRepository.createQueryBuilder("product")
+				return this.productRepository.createQueryBuilder("product")
 					.setFindOptions({
 						relationLoadStrategy: "query",
 					})
-
-					// Join variants and images (still optional)
-					.leftJoinAndSelect("product.variants", "variant")
-					.leftJoinAndSelect("variant.images", "image")
 
 					// Only join products that actually have categories
 					.innerJoinAndSelect("product.productCategories", "productCategory")
@@ -484,8 +553,6 @@ export class ProductsService {
 					.take(take)
 					.getMany();
 
-				return formatProductVariants(products, ProductSort.BestMatch);
-
 			case ProductSort.PriceLowToHigh:
 				// Subquery to sort variants of a product by minimum price
 				const leastExpensiveVariantQuery = this.productRepository
@@ -494,14 +561,10 @@ export class ProductsService {
 					.where('v.product_id = product.id')
 					.getQuery();
 
-				products = await this.productRepository.createQueryBuilder('product')
+				return this.productRepository.createQueryBuilder('product')
 					.setFindOptions({
 						relationLoadStrategy: "query",
 					})
-
-					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variant')
-					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -522,8 +585,6 @@ export class ProductsService {
 					.skip(skip)
 					.getMany();
 
-				return formatProductVariants(products, ProductSort.PriceLowToHigh);
-
 			case ProductSort.PriceHighToLow:
 				const mostExpensiveVariantQuery = this.productRepository
 					.manager.createQueryBuilder(ProductVariant, 'v')
@@ -531,14 +592,10 @@ export class ProductsService {
 					.where('v.product_id = product.id')
 					.getQuery();
 
-				products = await this.productRepository.createQueryBuilder('product')
+				return this.productRepository.createQueryBuilder('product')
 					.setFindOptions({
 						relationLoadStrategy: "query",
 					})
-
-					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variant')
-					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -558,8 +615,6 @@ export class ProductsService {
 					.take(take)
 					.skip(skip)
 					.getMany();
-
-				return formatProductVariants(products, ProductSort.PriceHighToLow);
 
 			default: // do nothing
 				break;
@@ -582,7 +637,9 @@ export class ProductsService {
 		this.logger.log(`Searching for products, query: ${query}, language: ${language}`);
 
 		// Clean the search query
-		const searchQuery = query.trim().split(/\s+/).map(w => `${w}:*`).join(' & ');
+		const searchQuery = query.trim().split(/\s+/).map(w => `${w}:*`.toLowerCase()).join(' & ');
+
+		console.log(`searchQuery: ${searchQuery}`);
 
 		// Determine the search column based on the language
 		const tsvTitleColumnsMap = {
@@ -616,10 +673,6 @@ export class ProductsService {
 						relationLoadStrategy: "query",
 					})
 
-					// Join variants and images (still optional)
-					.leftJoinAndSelect("product.variants", "variant")
-					.leftJoinAndSelect('variant.images', 'image')
-
 					// Only join products that actually have categories
 					.innerJoinAndSelect("product.productCategories", "productCategory")
 					.innerJoinAndSelect("productCategory.category", "category")
@@ -639,12 +692,11 @@ export class ProductsService {
 					.take(take)
 					.getMany();
 
-				return formatProductVariants(products, ProductSort.BestMatch);
+				return this.__populateWithVariantsLowToHigh(products);
 
 			case ProductSort.PriceLowToHigh:
 				// Subquery to sort variants of a product by minimum price
-				const leastExpensiveVariantQuery = this.productRepository
-					.manager.createQueryBuilder(ProductVariant, 'v')
+				const leastExpensiveVariantQuery = this.productRepository.manager.createQueryBuilder(ProductVariant, 'v')
 					.select('MIN(v.cost_amount)', 'minCostAmount')
 					.where('v.product_id = product.id')
 					.getQuery();
@@ -654,10 +706,6 @@ export class ProductsService {
 					.setFindOptions({
 						relationLoadStrategy: "query",
 					})
-
-					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variant')
-					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -681,11 +729,10 @@ export class ProductsService {
 					.skip(skip)
 					.getMany();
 
-				return formatProductVariants(products, ProductSort.PriceLowToHigh);
+				return this.__populateWithVariantsLowToHigh(products);
 
 			case ProductSort.PriceHighToLow:
-				const mostExpensiveVariantQuery = this.productRepository
-					.manager.createQueryBuilder(ProductVariant, 'v')
+				const mostExpensiveVariantQuery = this.productRepository.manager.createQueryBuilder(ProductVariant, 'v')
 					.select('MAX(v.cost_amount)', 'maxCostAmount')
 					.where('v.product_id = product.id')
 					.getQuery();
@@ -695,10 +742,6 @@ export class ProductsService {
 					.setFindOptions({
 						relationLoadStrategy: "query",
 					})
-
-					// Populate variants and their specific option value mappings
-					.leftJoinAndSelect('product.variants', 'variant')
-					.leftJoinAndSelect('variant.images', 'image')
 
 					// Populate product categories
 					.leftJoinAndSelect('product.productCategories', 'productCategories')
@@ -722,7 +765,7 @@ export class ProductsService {
 					.skip(skip)
 					.getMany();
 
-				return formatProductVariants(products, ProductSort.PriceHighToLow);
+				return this.__populateWithVariantsHighToLow(products);
 
 			default: // do nothing
 				break;
@@ -774,10 +817,6 @@ export class ProductsService {
 					relationLoadStrategy: "query",
 				})
 
-				// Populate variants and their specific option value mappings
-				.leftJoinAndSelect('product.variants', 'variant')
-				.leftJoinAndSelect('variant.images', 'image')
-
 				// Many-to-many join
 				.innerJoinAndSelect("product.productCategories", "productCategory")
 				.innerJoinAndSelect("productCategory.category", "category")
@@ -804,9 +843,6 @@ export class ProductsService {
 					status: ProductStatus.ACTIVE,
 				},
 				relations: {
-					variants: {
-						images: true,
-					},
 					productCategories: {
 						category: true,
 					},
@@ -819,7 +855,7 @@ export class ProductsService {
 			});
 		}
 
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+		return this.__populateWithVariantsLowToHigh(products);
 	}
 
 	/**
@@ -855,10 +891,6 @@ export class ProductsService {
 				relationLoadStrategy: "query",
 			})
 
-			// Populate variants and their specific option value mappings
-			.leftJoinAndSelect("product.variants", "variant")
-			.leftJoinAndSelect("variant.images", "image")
-
 			// Many-to-many join
 			.innerJoinAndSelect("product.productCategories", "productCategory")
 			.innerJoinAndSelect("productCategory.category", "category")
@@ -878,7 +910,7 @@ export class ProductsService {
 			return this.findAll("", ProductSort.Desc, pageNumber, itemsPerPage);
 		}
 
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+		return this.__populateWithVariantsLowToHigh(products);
 	}
 
 	/**
@@ -902,9 +934,6 @@ export class ProductsService {
 				status: ProductStatus.ACTIVE,
 			},
 			relations: {
-				variants: {
-					images: true,
-				},
 				productCategories: {
 					category: true,
 				},
@@ -916,7 +945,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+		return this.__populateWithVariantsLowToHigh(products);
 	}
 
 	/**
@@ -962,10 +991,6 @@ export class ProductsService {
 					relationLoadStrategy: "query",
 				})
 
-				// Populate variants and their specific option value mappings
-				.leftJoinAndSelect('product.variants', 'variant')
-				.leftJoinAndSelect('variant.images', 'image')
-
 				// Many-to-many join
 				.innerJoinAndSelect("product.productCategories", "productCategory")
 				.innerJoinAndSelect("productCategory.category", "category")
@@ -992,9 +1017,6 @@ export class ProductsService {
 					status: ProductStatus.ACTIVE,
 				},
 				relations: {
-					variants: {
-						images: true,
-					},
 					productCategories: {
 						category: true,
 					},
@@ -1007,7 +1029,7 @@ export class ProductsService {
 			});
 		}
 
-		return formatProductVariants(products, ProductSort.PriceLowToHigh);
+		return this.__populateWithVariantsLowToHigh(products);
 	}
 
 	/**
