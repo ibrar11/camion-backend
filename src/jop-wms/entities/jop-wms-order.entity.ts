@@ -24,8 +24,9 @@ export const JopWmsInboundStatus = {
 } as const;
 
 export const JopWmsOutboundStatus = {
-    SHIPPED: '14',          // Order shipped to customer
-    INVALIDATED: '15',      // Order invalidated
+    PROCESSING_FAILED: '12', // JOP WMS failed to process internally (e.g. waybill assignment)
+    SHIPPED: '14',           // Order shipped to customer
+    INVALIDATED: '15',       // Order invalidated
 } as const;
 
 export const JopWmsReturnStatus = {

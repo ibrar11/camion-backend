@@ -114,7 +114,11 @@ export class JopWmsScheduler {
                 this.logger.warn(`Force-expiring stale inbound ${order.orderNo} (created: ${order.createdAt.toISOString()})`);
                 order.status = JopWmsInboundStatus.DELETED;
                 await this.wmsOrderRepository.save(order);
-                await this.wmsService.createOutboundsForInbound(order);
+                try {
+                    await this.wmsService.createOutboundsForInbound(order);
+                } catch (err: any) {
+                    this.logger.error(`Force-expire outbound creation failed for ${order.orderNo}: ${err?.message}`);
+                }
                 continue;
             }
 
@@ -135,14 +139,19 @@ export class JopWmsScheduler {
                 order.errorCount = 0;
                 order.lastError = null;
 
-                // outboundorder/status does not return waybillNo — fetch it separately on transition to SHIPPED.
-                // fetchMissingWaybillNumbers() handles retries for orders that remain null after this.
-                if (order.type === JopWmsOrderType.OUTBOUND && prevStatus !== JopWmsOutboundStatus.SHIPPED && order.status === JopWmsOutboundStatus.SHIPPED) {
-                    try {
-                        const waybillData: any = await this.client.post('waybillNo/query', { customerVoucherNo: order.orderNo });
-                        order.waybillNo = waybillData?.data?.waybillNo ?? null;
-                    } catch (err: any) {
-                        this.logger.warn(`waybillNo/query failed for ${order.orderNo}: ${err?.message}`);
+                // Capture trackingNumber directly from the status response if present (available from status 13+).
+                // Fall back to waybillNo/query on transition to SHIPPED for orders that didn't have it earlier.
+                if (order.type === JopWmsOrderType.OUTBOUND && !order.waybillNo) {
+                    const inlineTracking: string | null = data?.data?.trackingNumber ?? null;
+                    if (inlineTracking) {
+                        order.waybillNo = inlineTracking;
+                    } else if (prevStatus !== JopWmsOutboundStatus.SHIPPED && order.status === JopWmsOutboundStatus.SHIPPED) {
+                        try {
+                            const waybillData: any = await this.client.post('waybillNo/query', { customerVoucherNo: order.orderNo });
+                            order.waybillNo = waybillData?.data?.waybillNo ?? null;
+                        } catch (err: any) {
+                            this.logger.warn(`waybillNo/query failed for ${order.orderNo}: ${err?.message}`);
+                        }
                     }
                 }
 

@@ -181,6 +181,13 @@ export class JopWmsController {
         return this.wmsService.dispatchApprovedOrders(body);
     }
 
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Post('orders/:uuid/retry-outbound')
+    @HttpCode(HttpStatus.OK)
+    retryOutboundForOrder(@Param('uuid') uuid: string) {
+        return this.wmsService.retryOutboundForOrder(uuid);
+    }
+
     // ─── Recovery ─────────────────────────────────────────────────────────────
 
     @Roles(UserRole.SuperAdmin)
