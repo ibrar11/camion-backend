@@ -73,7 +73,7 @@ import {
     OrderTracking,
 } from "./types";
 
-import { JopWmsOrder, JopWmsOrderType } from '../jop-wms/entities/jop-wms-order.entity';
+import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JopWmsOutboundStatus } from '../jop-wms/entities/jop-wms-order.entity';
 
 import { ConfigService } from "@nestjs/config";
 
@@ -170,6 +170,9 @@ export class OrderService {
                 stage,
                 status,
                 waybillNo: outbound?.waybillNo ?? null,
+                canRetryOutbound:
+                    (stage === 'inbound' && inbound?.status === JopWmsInboundStatus.STORED) ||
+                    (stage === 'outbound' && outbound?.status === JopWmsOutboundStatus.PROCESSING_FAILED),
             };
         }
     }

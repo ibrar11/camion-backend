@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class JopWmsClient {
@@ -34,27 +34,43 @@ export class JopWmsClient {
 
         this.logger.log(`JOP WMS: starting request to ${endpoint}`);
 
-        const response = await fetch(`${this.baseUrl}/${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json;charset=UTF-8',
-                apiKey: this.apiKey,
-                providerApiKey: this.providerApiKey,
-                userToken: this.userToken,
-                signature,
-                timestamp,
-                version: '1.0',
-            },
-            body: bodyJson,
-        });
+        let response: Response;
+        try {
+            response = await fetch(`${this.baseUrl}/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    apiKey: this.apiKey,
+                    providerApiKey: this.providerApiKey,
+                    userToken: this.userToken,
+                    signature,
+                    timestamp,
+                    version: '1.0',
+                },
+                body: bodyJson,
+            });
+        } catch (err: any) {
+            throw new Error(`JOP WMS network error (${endpoint}): ${err?.message}`);
+        }
 
-        const json: any = await response.json();
+        let json: any;
+        try {
+            json = await response.json();
+        } catch {
+            throw new Error(`JOP WMS returned non-JSON response (${endpoint}): HTTP ${response.status}`);
+        }
 
-        // WMS returns code=0 for success regardless of HTTP status
+        // WMS returns code=0 for success. Non-zero with message="success" means the order
+        // was created but internal processing (e.g. waybill assignment) failed on their side —
+        // treat as success so we track and poll the order.
         if (json?.code !== 0) {
-            const msg = json?.msg ?? json?.message ?? 'Unknown WMS error';
-            this.logger.error(`JOP WMS ${endpoint} failed — code ${json?.code}: ${msg}`);
-            throw new InternalServerErrorException(msg);
+            if (json?.message === 'success') {
+                this.logger.warn(`JOP WMS ${endpoint} — non-zero code ${json?.code} but message is "success", treating as created`);
+                return json as T;
+            }
+            const msg = json?.msg || json?.message || 'Unknown WMS error';
+            this.logger.error(`JOP WMS ${endpoint} failed — code ${json?.code}: ${msg} | full: ${JSON.stringify(json)}`);
+            throw new Error(msg);
         }
 
         this.logger.log(`JOP WMS ${endpoint} succeeded`);
