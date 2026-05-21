@@ -23,7 +23,7 @@ import { OrderItem } from '../order/entities/order-item.entity';
 import { OrderStatus } from '../order/enums/OrderStatus';
 
 import { JopWmsClient } from './jop-wms.client';
-import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
+import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JopWmsOutboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from './entities/jop-wms-order-link.entity';
 
 import { SyncProductDto } from './dtos/SyncProductDto';
@@ -549,7 +549,7 @@ export class JopWmsService {
             const addr = order.shippingAddress;
 
             try {
-                await this.createOutboundOrder({
+                const result: any = await this.createOutboundOrder({
                     customerVoucherNo,
                     logisticsChannelCode,
                     consignee: {
@@ -559,7 +559,7 @@ export class JopWmsService {
                         city: addr.city,
                         address: addr.streetAddress,
                         postcode: addr.zipCode,
-                        phone: addr.phoneNumber,
+                        phone: addr.phoneNumber.replace(/^\+/, ''),
                     },
                     productList: order.orderItems.map(item => ({
                         sku: item.variant.sku,
@@ -572,17 +572,146 @@ export class JopWmsService {
                 });
                 if (outbound) {
                     await this.linkOrdersToWmsOrder(outbound.id, [order.uuid]);
+
+                    // If JOP WMS accepted the create but returned a non-zero code (e.g. waybill
+                    // assignment failed internally), trackOrder saved status='pending' but the real
+                    // status on JOP WMS may already be 12. Probe immediately so the DB is accurate
+                    // and the next retry can act on it without waiting for a scheduler poll.
+                    if (result?.code !== 0) {
+                        try {
+                            const statusResult: any = await this.client.post('outboundorder/status', { customerVoucherNo });
+                            const realStatus = String(statusResult?.data?.status ?? '');
+                            if (realStatus && realStatus !== outbound.status) {
+                                await this.wmsOrderRepository.update(outbound.id, { status: realStatus });
+                                this.logger.log(`Outbound ${customerVoucherNo} status synced to ${realStatus} immediately after creation`);
+                            }
+                        } catch {
+                            // Non-critical — scheduler will catch up on next poll
+                        }
+                    }
                 }
 
                 this.logger.log(`Outbound created for order ${order.uuid} → ${customerVoucherNo}`);
             } catch (err: any) {
                 const errDetail = err?.message || (typeof err?.getResponse === 'function' ? JSON.stringify(err.getResponse()) : String(err));
                 this.logger.error(`Outbound creation failed for order ${order.uuid} — ${errDetail}`);
+
+                // JOP WMS sometimes creates the order internally before returning an error
+                // (e.g. status 12 when waybill assignment fails). If that happened, track it
+                // so the scheduler polls it instead of blind-retrying a duplicate create.
+                try {
+                    const statusResult: any = await this.client.post('outboundorder/status', { customerVoucherNo });
+                    const jopStatus = String(statusResult?.data?.status ?? '');
+                    if (jopStatus) {
+                        const saved = await this.wmsOrderRepository.save(
+                            this.wmsOrderRepository.create({ orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND, status: jopStatus }),
+                        );
+                        await this.linkOrdersToWmsOrder(saved.id, [order.uuid]);
+                        this.logger.log(`Tracked orphaned JOP WMS outbound ${customerVoucherNo} at status ${jopStatus}`);
+                    }
+                } catch {
+                    // Outbound doesn't exist on JOP WMS either — original error stands
+                }
+
                 if (!firstError) firstError = err;
             }
         }
 
         if (firstError) throw firstError;
+    }
+
+    async retryOutboundForOrder(orderUuid: string): Promise<{ success: boolean; message?: string; error?: string }> {
+        const allInbounds = await this.wmsOrderRepository
+            .createQueryBuilder('w')
+            .innerJoin('w.sourceOrders', 'link')
+            .innerJoin('link.order', 'order', 'order.uuid = :uuid', { uuid: orderUuid })
+            .where('w.type = :type', { type: JopWmsOrderType.INBOUND })
+            .getMany();
+
+        if (!allInbounds.length) {
+            throw new NotFoundException({ error: 'No inbound orders found for this order' });
+        }
+
+        const pendingInbounds = allInbounds.filter(
+            i => !(JOP_WMS_TERMINAL_STATUSES as readonly string[]).includes(i.status),
+        );
+        if (pendingInbounds.length > 0) {
+            throw new BadRequestException({
+                error: `Cannot create outbound — ${pendingInbounds.length} inbound(s) not yet stored: ${pendingInbounds.map(i => `${i.orderNo}(status:${i.status})`).join(', ')}`,
+            });
+        }
+
+        const storedInbound = allInbounds.find(i => i.status === JopWmsInboundStatus.STORED);
+        if (!storedInbound) {
+            throw new NotFoundException({ error: 'No stored inbound found for this order' });
+        }
+
+        const order = await this.orderRepository.findOne({
+            where: { uuid: orderUuid },
+            relations: ['orderItems', 'orderItems.variant', 'shippingAddress'],
+        });
+        if (!order) throw new NotFoundException({ error: 'Order not found' });
+
+        const customerVoucherNo = `${orderUuid.replace(/-/g, '').substring(0, 29)}out`;
+        const logisticsChannelCode = process.env.JOP_WMS_LOGISTICS_CHANNEL ?? '';
+        const addr = order.shippingAddress;
+
+        // Find or prepare the outbound record — patch in place so history is preserved.
+        // JOP WMS automatically discards the previous order when we re-submit with the same customerVoucherNo.
+        let outboundRecord = await this.wmsOrderRepository.findOne({
+            where: { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },
+        });
+
+        try {
+            const result: any = await this.createOutboundOrder({
+                customerVoucherNo,
+                logisticsChannelCode,
+                consignee: {
+                    name: addr.fullName,
+                    country: addr.country,
+                    province: addr.state,
+                    city: addr.city,
+                    address: addr.streetAddress,
+                    postcode: addr.zipCode,
+                    phone: addr.phoneNumber.replace(/^\+/, ''),
+                },
+                productList: order.orderItems.map(item => ({
+                    sku: item.variant.sku,
+                    qty: item.quantity,
+                })),
+            });
+
+            // Probe real status when JOP WMS accepted but returned a non-zero code
+            let newStatus = 'pending';
+            if (result?.code !== 0) {
+                try {
+                    const statusResult: any = await this.client.post('outboundorder/status', { customerVoucherNo });
+                    newStatus = String(statusResult?.data?.status ?? 'pending');
+                } catch { /* scheduler will catch up */ }
+            }
+
+            if (outboundRecord) {
+                this.logger.log(`retryOutbound: patching existing record ${customerVoucherNo} → status ${newStatus}`);
+                await this.wmsOrderRepository.update(outboundRecord.id, {
+                    status: newStatus,
+                    errorCount: 0,
+                    lastError: null,
+                    waybillNo: null,
+                    lastPolledAt: new Date(),
+                });
+            } else {
+                outboundRecord = await this.wmsOrderRepository.save(
+                    this.wmsOrderRepository.create({ orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND, status: newStatus }),
+                );
+                await this.linkOrdersToWmsOrder(outboundRecord.id, [orderUuid]);
+            }
+
+            return { success: true, message: 'Outbound created successfully' };
+        } catch (err: any) {
+            const detail = err?.message || (typeof err?.getResponse === 'function' ? JSON.stringify(err.getResponse()) : String(err));
+            this.logger.error(`retryOutbound failed for ${customerVoucherNo}: ${detail}`);
+            return { success: false, error: detail };
+        }
     }
 
     async retryOutboundForInbound(orderNo: string): Promise<{ message: string }> {

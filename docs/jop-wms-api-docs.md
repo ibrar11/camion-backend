@@ -265,6 +265,60 @@ Use the server logs (tagged with `jobId`) to track progress and results.
 
 ---
 
+### Retry Outbound for a Stuck Order
+
+Manually triggers outbound creation for an order whose outbound is missing or stuck. Intended to be called from the admin UI when `canRetryOutbound === true` on the order tracking response.
+
+```http
+POST /v1/wms/orders/:uuid/retry-outbound HTTP/1.1
+```
+
+| Parameter | Location | Description |
+|---|---|---|
+| `uuid` | Path | Internal order UUID (not the WMS `orderNo`) |
+
+No request body required.
+
+**When to use:**
+
+| Scenario | `tracking.stage` | `tracking.canRetryOutbound` |
+|---|---|---|
+| Inbound reached status 14 (STORED) but outbound was never created | `"inbound"` | `true` |
+| Outbound exists but is stuck at status 12 (Processing Failed) | `"outbound"` | `true` |
+
+**What it does:**
+1. Verifies all inbounds for the order are at terminal status
+2. Requires at least one inbound at status `14` (STORED)
+3. Re-submits to JOP WMS with the same `customerVoucherNo`; JOP WMS automatically discards the previous order on its side
+4. If an outbound record already exists in the DB — patches it in place (resets status, errorCount, waybillNo) rather than deleting and re-inserting, preserving history
+5. If no local record exists but JOP WMS had one (orphan) — a new record is created and linked
+5. Phone number in the consignee payload has the leading `+` stripped automatically
+
+### Response Body
+
+**Success:**
+```json
+{ "success": true, "message": "Outbound created successfully" }
+```
+
+**Failure (outbound creation error returned from JOP WMS):**
+```json
+{ "success": false, "error": "WMS error description" }
+```
+
+**Error responses (4xx):**
+
+| Status | Condition |
+|---|---|
+| `400` | One or more inbounds for this order are still non-terminal (not yet stored/closed) |
+| `404` | No inbound orders found for this order UUID, or none are at status 14 (STORED) |
+
+### Notes
+- After a successful retry, re-fetch `GET /v1/orders/:uuid/tracking` — `stage` will advance to `"outbound"` and `canRetryOutbound` will become `false`
+- The logistics channel used is always the value of `JOP_WMS_LOGISTICS_CHANNEL` env var at the time of the call — update the env var before retrying if the channel needs to change
+
+---
+
 Products
 --------
 
@@ -903,11 +957,39 @@ For outbound orders created independently of the dispatch flow:
 5. GET  /v1/wms/waybill/:orderNo                 → get tracking number on-demand
 ```
 
-If the shipping forecast fails, cancel and recreate:
+If the shipping forecast fails (status 12), **do not auto-retry** from the scheduler — the scheduler leaves stuck outbounds in place. Use the admin retry endpoint instead (see below). JOP WMS automatically discards the previous order when a new create is submitted with the same `customerVoucherNo`, so no explicit cancel call is needed.
+
+### Retrying a Stuck Outbound
+
+An outbound can get stuck in two ways:
+
+- **Outbound never created** — the inbound reached status 14 (STORED) but outbound creation failed silently. `tracking.stage` is `"inbound"`.
+- **Outbound processing failed** — JOP WMS created the outbound but its internal processing failed (status 12). `tracking.stage` is `"outbound"`.
+
+In both cases `tracking.canRetryOutbound` is `true`, which is the signal for the admin UI to show the retry button.
+
+> **Scheduler vs. retry endpoint**: The scheduler (`createOutboundsForInbound`) skips any order that already has an outbound record in the DB regardless of status — it will never auto-recreate. The retry endpoint (`POST /v1/wms/orders/:uuid/retry-outbound`) bypasses that check entirely, calls JOP WMS directly, and patches the existing DB record in place (preserving history).
+
+**Flow:**
+
 ```
-POST /v1/wms/outbound/:orderNo/cancel
-POST /v1/wms/outbound   (new orderNo)
+1. GET  /v1/orders/:uuid/tracking
+
+   Check that canRetryOutbound === true before proceeding.
+
+2. POST /v1/wms/orders/:uuid/retry-outbound
+
+   Returns:
+     { "success": true,  "message": "Outbound created successfully" }
+     { "success": false, "error": "..." }
+
+3. GET  /v1/orders/:uuid/tracking
+
+   On success: stage is now "outbound" and canRetryOutbound is false.
+   On failure: canRetryOutbound stays true — fix the underlying issue and retry.
 ```
+
+**If the logistics channel needs to change**, update `JOP_WMS_LOGISTICS_CHANNEL` in the environment to a different channel code (obtain available codes from `GET /v1/wms/logistics`), then call the retry endpoint. The new channel is used immediately on the next attempt.
 
 ### Returns
 
