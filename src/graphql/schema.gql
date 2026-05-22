@@ -84,7 +84,14 @@ type Coupon {
   discountPercentage: Float!
   expiresAt: String!
   ordersCount: Float!
+  totalCommission: CouponMoney!
+  totalSales: CouponMoney!
   uuid: String!
+}
+
+type CouponMoney {
+  amount: Int!
+  currencyCode: String!
 }
 
 type CouponOrder {

@@ -378,9 +378,9 @@ export class OrderService {
                 });
 
                 if (!coupon) {
-                    throw new BadRequestException(
-                        "Coupon does not exists. Pleasae try again with valid coupon."
-                    )
+                    throw new BadRequestException({
+                        error: "Coupon does not exists. Pleasae try again with valid coupon.",
+                    });
                 }
 
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
@@ -482,7 +482,13 @@ export class OrderService {
                     affiliate.couponsUsed += 1;
                     await queryRunner.manager.save(affiliate);
 
-                    await queryRunner.manager.increment(Coupon, { id: coupon.id }, 'ordersCount', 1);
+                    // Update the statistics on the coupon
+                    coupon.ordersCount += 1;
+                    coupon.totalSales.amount += subTotal;
+                    coupon.totalSales.currencyCode = currency;
+                    coupon.totalCommission.amount += commissionAmount;
+                    coupon.totalCommission.currencyCode = currency;
+                    await queryRunner.manager.save(coupon);
                 }
             }
 
