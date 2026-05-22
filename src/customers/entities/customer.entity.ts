@@ -1,4 +1,4 @@
-import { Field, ObjectType } from "@nestjs/graphql";
+import { Field, Int, ObjectType } from "@nestjs/graphql";
 
 import {
 	Column,
@@ -119,6 +119,10 @@ export class Customer {
 
 	@Column({ type: 'jsonb',default: () => "'[]'"})
 	firebaseDeviceToken: string[] = [];
+
+	@Field(() => Int)
+	@Column({ type: 'int', default: 0 })
+	unreadNotificationCount: number;
 
 	@Exclude()
 	@UpdateDateColumn({
