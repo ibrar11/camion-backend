@@ -19,6 +19,8 @@ import { OauthService } from '../oauth/oauth.service';
 
 import { ClientRefreshToken } from '../oauth/entities/oauth-refresh-token.entity';
 
+import { KeyValuePairResolver } from './key-value-pairs.resolver';
+
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
@@ -35,6 +37,7 @@ import { ClientRefreshToken } from '../oauth/entities/oauth-refresh-token.entity
 		CustomersService,
 		ClientsService,
 		OauthService,
+		KeyValuePairResolver,
 	],
 	controllers: [
 		KeyValuePairController,

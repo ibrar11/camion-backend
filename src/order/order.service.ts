@@ -60,7 +60,6 @@ import {
 import { getSkipAndTake } from "../common/pagination";
 
 import {
-    calculateAffiliateCommission,
     calculateCouponDiscount
 } from "../common/calculateCouponDiscount";
 
@@ -387,25 +386,18 @@ export class OrderService {
                 discount = smartRoundInt(discount);
             }
 
-            let subTotalInQar = subTotal;
-            if (dto.currency.toLowerCase().trim() !== "qar") {
+            const min_order_amount = Number(
+                (await this.keyValuePairRepository.findOne({
+                    where: {
+                        name: `min_order_amount_${dto.currency}`,
+                        type: KeyValuePairType.Integer
+                    }
+                }))?.integerValue
+            ) || 0;
 
-                const exchangeRate = exchangeRates
-                    .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === dto.currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
-                    .at(0) ?? null;
-
-                if (!exchangeRate) {
-                    throw new NotFoundException({
-                        error: `Exchange Rate for ${dto.currency} to qar not found`
-                    });
-                }
-
-                subTotalInQar = subTotal * exchangeRate.factor;
-            }
-
-            if (subTotalInQar < 250) {
+            if (subTotal < min_order_amount) {
                 throw new BadRequestException({
-                    error: "Order value should not be less than 250 QAR"
+                    error: `Order value should not be less than ${min_order_amount} ${dto.currency}`
                 });
             }
 
@@ -441,11 +433,7 @@ export class OrderService {
 
             // RECORD AFFILIATE COMMISSION
             if (coupon?.affiliate && coupon.code && discount >= 0) {
-                const commissionAmount = calculateAffiliateCommission(
-                    coupon.affiliate,
-                    total,
-                    discount
-                );
+                const commissionAmount = discount;
 
                 if (commissionAmount > 0 && coupon.affiliate.wallet?.id) {
                     const walletId = coupon.affiliate.wallet.id;
@@ -1135,6 +1123,7 @@ export class OrderService {
                     )
                 }
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                discount = smartRoundInt(discount);
             }
 
             let subTotalInQar = subTotal;
@@ -1168,7 +1157,16 @@ export class OrderService {
                 eta: eta,
             };
 
-            if (subTotalInQar < 250) {
+            const min_order_amount = Number(
+                (await this.keyValuePairRepository.findOne({
+                    where: {
+                        name: `min_order_amount_${currency}`,
+                        type: KeyValuePairType.Integer
+                    }
+                }))?.integerValue
+            ) || 0;
+
+            if (subTotal < min_order_amount) {
                 orderPreview.orderTotalWarning = "Order value should not be less than 250 QAR"
             }
 

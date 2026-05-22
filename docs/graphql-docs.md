@@ -3977,3 +3977,42 @@ query GetCurrentCustomerReturnRequest($uuid: String!,$currency: String,  $langua
     }
 }
 ```
+
+Get Minimum Order Key Value Pair
+--------------------------------
+
+### GraphQL Query
+
+```graphql
+uery GetMinimumOrderValue($currency: String) {
+  getMinimumOrderValue(currency: $currency) {
+    uuid
+    name
+    type
+    integerValue
+    decimalValue
+    stringValue
+    booleanValue
+    sensitive
+  }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getMinimumOrderValue": {
+            "uuid": "da8dcbb7-7220-4632-91c0-dd99dd6848ca",
+            "name": "min_order_amount_qar",
+            "type": "integer",
+            "integerValue": 300,
+            "decimalValue": 0,
+            "stringValue": "0",
+            "booleanValue": false,
+            "sensitive": false
+        }
+    }
+}
+```

@@ -42,29 +42,29 @@ export function calculateCouponDiscount(
     }
 }
 
-export function calculateAffiliateCommission(
-    affiliate: Affiliate,
-    orderTotal: number,
-    discountAmount: number,
-): number {
-    // Different commission rates for different affiliate types
-    let commissionRate = 0;
+// export function calculateAffiliateCommission(
+//     affiliate: Affiliate,
+//     orderTotal: number,
+//     discountAmount: number,
+// ): number {
+//     // Different commission rates for different affiliate types
+//     let commissionRate = 0;
 
-    switch (affiliate.type) {
-        case 'affiliate':
-            commissionRate = 5; // 5% for regular affiliates
-            break;
-        case 'influencer':
-            commissionRate = 10; // 10% for influencers
-            break;
-        default:
-            commissionRate = 5;
-    }
+//     switch (affiliate.type) {
+//         case 'affiliate':
+//             commissionRate = 5; // 5% for regular affiliates
+//             break;
+//         case 'influencer':
+//             commissionRate = 10; // 10% for influencers
+//             break;
+//         default:
+//             commissionRate = 5;
+//     }
 
-    // Calculate commission on the actual paid amount (after discount)
-    const paidAmount = orderTotal - discountAmount;
-    const commissionAmount = (paidAmount * commissionRate) / 100;
+//     // Calculate commission on the actual paid amount (after discount)
+//     const paidAmount = orderTotal - discountAmount;
+//     const commissionAmount = (paidAmount * commissionRate) / 100;
 
-    return Math.floor(commissionAmount); // Round down to nearest integer
+//     return Math.floor(commissionAmount); // Round down to nearest integer
 
-}
+// }

@@ -31,6 +31,7 @@ integerValue | Yes | String | The value of integer. This is a fixed integer valu
 decimalValue | No | String | The value of the decimal. This can be a floating point value
 stringValue | No | String | The value of the string.
 booleanValue | No | String | The value of the boolean.
+sensitive | Yes | boolean | The value of the boolean.
 
 ### Request Body
 
@@ -41,7 +42,8 @@ booleanValue | No | String | The value of the boolean.
     "integerValue": 0,
     "decimalValue": 10,
     "stringValue": "",
-    "booleanValue": false
+    "booleanValue": false,
+    "sensitive": false
 }
 ```
 
@@ -55,7 +57,8 @@ booleanValue | No | String | The value of the boolean.
 	"integerValue": 0,
 	"decimalValue": "10",
 	"stringValue": "",
-	"booleanValue": false
+	"booleanValue": false,
+    "sensitive": false
 }
 ```
 
@@ -80,7 +83,8 @@ GET /v1/key-value-pairs HTTP/1.1
         "integerValue": 0,
         "decimalValue": "1.4",
         "stringValue": "",
-        "booleanValue": false
+        "booleanValue": false,
+        "sensitive": false
     },
     {
         "uuid": "aa21e392-e29e-4d3f-a35a-b5049f9c6c43",
@@ -89,7 +93,8 @@ GET /v1/key-value-pairs HTTP/1.1
         "integerValue": 0,
         "decimalValue": "20",
         "stringValue": "",
-        "booleanValue": false
+        "booleanValue": false,
+        "sensitive": false
     },
     {
         "uuid": "8b603586-87c5-4b9c-813e-b40f095c5dac",
@@ -98,7 +103,8 @@ GET /v1/key-value-pairs HTTP/1.1
         "integerValue": 0,
         "decimalValue": "9",
         "stringValue": "",
-        "booleanValue": false
+        "booleanValue": false,
+        "sensitive": false
     }
 ]
 ```
@@ -123,7 +129,8 @@ GET /v1/key-value-pairs/<key-value-pair-uuid> HTTP/1.1
     "integerValue": 0,
     "decimalValue": "9",
     "stringValue": "",
-    "booleanValue": false
+    "booleanValue": false,
+    "sensitive": false
 }
 ```
 
@@ -145,6 +152,7 @@ integerValue | Yes | String | The value of integer. This is a fixed integer valu
 decimalValue | No | String | The value of the decimal. This can be a floating point value
 stringValue | No | String | The value of the string.
 booleanValue | No | String | The value of the boolean.
+sensitive | Yes | boolean | The value of the boolean.
 
 ### Request Body
 
@@ -155,7 +163,8 @@ booleanValue | No | String | The value of the boolean.
     "integerValue": 0,
     "decimalValue": 9,
     "stringValue": "",
-    "booleanValue": false
+    "booleanValue": false,
+    "sensitive": false
 }
 ```
 
@@ -169,7 +178,8 @@ booleanValue | No | String | The value of the boolean.
 	"integerValue": 0,
 	"decimalValue": "9",
 	"stringValue": "",
-	"booleanValue": false
+	"booleanValue": false,
+    "sensitive": false
 }
 ```
 
