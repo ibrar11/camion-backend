@@ -1,4 +1,5 @@
 import {
+	IsOptional,
 	IsString,
 	MaxLength,
 	MinLength,
@@ -25,10 +26,10 @@ export class CreateCustomerAddressDto {
 	@MinLength(1)
 	apartment: string;
 
+	@IsOptional()
 	@IsString()
-	@MinLength(4)
 	@MaxLength(5)
-	zipCode: string;
+	zipCode: string = "";
 
 	@IsString()
 	@MinLength(1)

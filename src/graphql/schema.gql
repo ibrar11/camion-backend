@@ -199,6 +199,7 @@ type OrderPreviewResponse {
 }
 
 type OrderTracking {
+  canRetryOutbound: Boolean!
   stage: String!
   status: String!
   waybillNo: String
