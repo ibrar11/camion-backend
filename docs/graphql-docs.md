@@ -84,6 +84,7 @@ query GetCurrentCustomer {
     fullName
     emailAddress
     phoneNumber
+    unreadNotificationCount
   }
 }
 ```
@@ -97,7 +98,8 @@ query GetCurrentCustomer {
             "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
             "fullName": "Your Name",
             "emailAddress": "your-name@your-domain.com",
-            "phoneNumber": "+974 12345678"
+            "phoneNumber": "+974 12345678",
+            "unreadNotificationCount": 5
         }
     }
 }
