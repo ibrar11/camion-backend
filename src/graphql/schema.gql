@@ -131,6 +131,17 @@ type EmojiElement {
   content: String!
 }
 
+type KeyValuePair {
+  booleanValue: Boolean!
+  decimalValue: Float!
+  integerValue: Int!
+  name: String!
+  sensitive: Boolean!
+  stringValue: String!
+  type: String!
+  uuid: String!
+}
+
 type Language {
   createdAt: DateTime!
   name: String!
@@ -199,6 +210,7 @@ type OrderPreviewResponse {
 }
 
 type OrderTracking {
+  canRetryOutbound: Boolean!
   stage: String!
   status: String!
   waybillNo: String
@@ -371,6 +383,7 @@ type Query {
   getFeaturedCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
+  getMinimumOrderValue(currency: String! = "usd"): KeyValuePair!
   getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getPost(slug: String!): Post!

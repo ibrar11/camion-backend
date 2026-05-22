@@ -387,25 +387,18 @@ export class OrderService {
                 discount = smartRoundInt(discount);
             }
 
-            let subTotalInQar = subTotal;
-            if (dto.currency.toLowerCase().trim() !== "qar") {
+            const min_order_amount = Number(
+                (await this.keyValuePairRepository.findOne({
+                    where: {
+                        name: `min_order_amount_${dto.currency}`,
+                        type: KeyValuePairType.Integer
+                    }
+                }))?.integerValue
+            ) || 0;
 
-                const exchangeRate = exchangeRates
-                    .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === dto.currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
-                    .at(0) ?? null;
-
-                if (!exchangeRate) {
-                    throw new NotFoundException({
-                        error: `Exchange Rate for ${dto.currency} to qar not found`
-                    });
-                }
-
-                subTotalInQar = subTotal * exchangeRate.factor;
-            }
-
-            if (subTotalInQar < 250) {
+            if (subTotal < min_order_amount) {
                 throw new BadRequestException({
-                    error: "Order value should not be less than 250 QAR"
+                    error: `Order value should not be less than ${min_order_amount} ${dto.currency}`
                 });
             }
 

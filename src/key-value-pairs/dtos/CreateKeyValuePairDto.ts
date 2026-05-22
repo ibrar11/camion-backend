@@ -32,4 +32,7 @@ export class CreateKeyValuePairDto {
 
 	@IsBoolean()
 	booleanValue: boolean;
+
+	@IsBoolean()
+	sensitive: boolean;
 }

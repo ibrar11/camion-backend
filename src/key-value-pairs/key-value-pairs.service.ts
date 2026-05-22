@@ -16,6 +16,7 @@ import { CreateKeyValuePairDto } from "./dtos/CreateKeyValuePairDto";
 import { UpdateKeyValuePairDto } from "./dtos/UpdateKeyValuePairDto";
 
 import { KeyValuePair } from "./entities/key-value-pair.entity";
+import { KeyValuePairType } from "./enums/KeyValuePairType.enum";
 
 @Injectable()
 export class KeyValuePairsService {
@@ -56,6 +57,7 @@ export class KeyValuePairsService {
 		keyValuePair.decimalValue = body.decimalValue;
 		keyValuePair.stringValue = body.stringValue;
 		keyValuePair.booleanValue = body.booleanValue;
+		keyValuePair.sensitive = body.sensitive;
 		return this.keyValuePairRepository.save(keyValuePair);
 	}
 
@@ -81,6 +83,32 @@ export class KeyValuePairsService {
 			skip: skip,
 			take: take,
 		});
+	}
+
+	/**
+ * Retrieves a minimum order amount key value pair
+ *
+ * @param currency
+ * @returns
+ */
+	async findMinimumOrderAmount(currency: string): Promise<KeyValuePair> {
+		this.logger.log(`Retrieving minimum order amount key value pairs for ${currency}`);
+
+		const keyValuePair =  await this.keyValuePairRepository.findOne({
+			where: {
+				type: KeyValuePairType.Integer,
+				name: `min_order_amount_${currency}`,
+				sensitive: false
+			}
+		});
+
+		if (keyValuePair === null) {
+			throw new NotFoundException({
+				error: "Failed to find the key value pair. Please check and try again.",
+			});
+		}
+
+		return keyValuePair;
 	}
 
 	/**
@@ -140,6 +168,7 @@ export class KeyValuePairsService {
 		keyValuePair.decimalValue = body.decimalValue;
 		keyValuePair.stringValue = body.stringValue;
 		keyValuePair.booleanValue = body.booleanValue;
+		keyValuePair.sensitive = body.sensitive;
 		return this.keyValuePairRepository.save(keyValuePair);
 	}
 
