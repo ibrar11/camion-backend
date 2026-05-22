@@ -252,11 +252,22 @@ If any provided `orderUuids` are already dispatched, returns **400 Bad Request**
 }
 ```
 
+If any variant in the batch is missing `skuMeta`, returns **400 Bad Request** synchronously before any job is enqueued:
+
+```json
+{
+    "message": "Cannot dispatch: some variants are missing skuMeta. Fix them and retry.",
+    "missingSkuMeta": [
+        { "productId": "abc-123", "sku": "SKU-001", "orderUuid": "uuid-1" }
+    ]
+}
+```
+
 Use the server logs (tagged with `jobId`) to track progress and results.
 
 ### Notes
 - Orders whose products were not imported from 1688 (missing `shopId`) are skipped with a warning log
-- Products must be re-imported after the `skuMeta` feature was introduced — variants with `skuMeta: null` will send an empty `sku_info` which Gulltrans rejects
+- The endpoint performs a synchronous pre-flight `skuMeta` check across all variants in the batch — if any are missing or empty, the entire dispatch is rejected with `400` before any BullMQ jobs are enqueued. Fix the affected variants (re-import from 1688 or run the inventory resync) and retry
 - One customer order spanning items from two shops produces two Gulltrans orders and two WMS inbounds; both inbounds link back to the same customer order via `jop_wms_order_links`. Outbound creation is deferred until all inbounds for that order are shelved
 - Each customer order's `gulltransOrderSns` is a `text[]` array — one entry per shop (e.g. `["DG100", "DG200", "DG300"]` for a 3-shop order). Each shop job appends its SN concurrently without overwriting. The full Gulltrans response per shop is also stored as JSONB in `jop_wms_orders.gulltransResponse` on the corresponding inbound record
 - Variant sync failures are non-blocking — the inbound is still created with a warning log
@@ -316,6 +327,60 @@ No request body required.
 ### Notes
 - After a successful retry, re-fetch `GET /v1/orders/:uuid/tracking` — `stage` will advance to `"outbound"` and `canRetryOutbound` will become `false`
 - The logistics channel used is always the value of `JOP_WMS_LOGISTICS_CHANNEL` env var at the time of the call — update the env var before retrying if the channel needs to change
+
+---
+
+### Dispatch Missing Shop Jobs
+
+Retries failed or delayed BullMQ dispatch jobs for a specific order. Used when an order spans multiple shops and one shop's job failed (e.g. a variant had missing `skuMeta`) while the others succeeded — making a full re-dispatch impossible because the order already has existing inbound links.
+
+The endpoint finds all `failed` or `delayed` jobs in the `wms-dispatch` queue whose `orderUuids` includes the given UUID. For each match:
+- If the Gulltrans order was **not yet created** (`gulltransOrderSn` absent): re-reads `skuMeta` and all item fields fresh from the DB, patches the job payload, then re-queues
+- If the Gulltrans order **already succeeded** but the WMS inbound failed: re-queues as-is — the processor skips Gulltrans automatically via its `gulltransOrderSn` checkpoint and retries only the inbound creation
+
+The original `inboundVoucherNo` is preserved so the processor's idempotency check prevents duplicate inbounds.
+
+```http
+POST /v1/wms/orders/:uuid/dispatch-missing HTTP/1.1
+```
+
+| Parameter | Location | Description |
+|---|---|---|
+| `uuid` | Path | Internal order UUID (not the WMS `orderNo`) |
+
+No request body required.
+
+### Response Body
+
+```json
+{
+    "found": 1,
+    "retried": 1,
+    "shopIds": ["123456789"]
+}
+```
+
+| Field | Description |
+|---|---|
+| `found` | Number of failed/delayed BullMQ jobs matched to this order |
+| `retried` | Number of jobs successfully re-queued |
+| `shopIds` | Gulltrans shop IDs of the re-queued jobs |
+
+If no matching jobs are found (e.g. the job was evicted from Redis after 200 newer failures):
+
+```json
+{
+    "found": 0,
+    "retried": 0,
+    "shopIds": [],
+    "message": "No failed or delayed dispatch jobs found for this order. If the job was removed from the queue, use POST /v1/wms/orders/dispatch with the specific orderUuid."
+}
+```
+
+### Notes
+- Jobs are retained in Redis per `removeOnFail: 200` — the 200 most recent failed dispatch jobs are kept; older ones are evicted. For recent failures this endpoint will always find the job
+- If the job has been evicted, fix the variant data and call `POST /v1/wms/orders/dispatch` with `{ "orderUuids": ["<uuid>"] }` — this is only safe if the order has no existing inbound links at all (i.e. all shop jobs failed)
+- Re-queued jobs run through the same 5-attempt exponential backoff as the original
 
 ---
 

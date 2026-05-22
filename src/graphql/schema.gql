@@ -84,7 +84,14 @@ type Coupon {
   discountPercentage: Float!
   expiresAt: String!
   ordersCount: Float!
+  totalCommission: CouponMoney!
+  totalSales: CouponMoney!
   uuid: String!
+}
+
+type CouponMoney {
+  amount: Int!
+  currencyCode: String!
 }
 
 type CouponOrder {
@@ -137,6 +144,17 @@ type Dimensions {
 
 type EmojiElement {
   content: String!
+}
+
+type KeyValuePair {
+  booleanValue: Boolean!
+  decimalValue: Float!
+  integerValue: Int!
+  name: String!
+  sensitive: Boolean!
+  stringValue: String!
+  type: String!
+  uuid: String!
 }
 
 type Language {
@@ -381,6 +399,7 @@ type Query {
   getFeaturedCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
+  getMinimumOrderValue(currency: String! = "usd"): KeyValuePair!
   getNotifications: [Notification!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getPost(slug: String!): Post!

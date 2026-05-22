@@ -188,6 +188,13 @@ export class JopWmsController {
         return this.wmsService.retryOutboundForOrder(uuid);
     }
 
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Post('orders/:uuid/dispatch-missing')
+    @HttpCode(HttpStatus.OK)
+    dispatchMissingItems(@Param('uuid') uuid: string) {
+        return this.wmsService.dispatchMissingItems(uuid);
+    }
+
     // ─── Recovery ─────────────────────────────────────────────────────────────
 
     @Roles(UserRole.SuperAdmin)

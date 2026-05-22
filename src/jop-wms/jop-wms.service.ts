@@ -373,6 +373,26 @@ export class JopWmsService {
             return { jobId: '' };
         }
 
+        // ── Guard: reject if any variant is missing skuMeta ───────────────────
+        const missingSkuMeta: Array<{ productId: string; sku: string; orderUuid: string }> = [];
+        for (const { shopName: _s, items } of shopGroups.values()) {
+            for (const { order, item } of items) {
+                if (!item.variant?.skuMeta || Object.keys(item.variant.skuMeta).length === 0) {
+                    missingSkuMeta.push({
+                        productId: item.variant?.product?.uuid ?? item.variant?.product?.procurementId ?? 'unknown',
+                        sku: item.variant?.sku ?? 'unknown',
+                        orderUuid: order.uuid,
+                    });
+                }
+            }
+        }
+        if (missingSkuMeta.length) {
+            throw new BadRequestException({
+                message: 'Cannot dispatch: some variants are missing skuMeta. Fix them and retry.',
+                missingSkuMeta,
+            });
+        }
+
         // ── Load warehouse address (needed by Gulltrans) ───────────────────────
         const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
         if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
@@ -726,6 +746,85 @@ export class JopWmsService {
 
         await this.createOutboundsForInbound(inbound);
         return { message: `Outbound creation triggered for inbound ${orderNo}` };
+    }
+
+    async dispatchMissingItems(orderUuid: string): Promise<{
+        found: number;
+        retried: number;
+        shopIds: string[];
+        message?: string;
+    }> {
+        const candidateJobs = await this.dispatchQueue.getJobs(['failed', 'delayed']);
+        const matchingJobs = candidateJobs.filter(
+            j => Array.isArray((j.data as DispatchShopJobData).orderUuids)
+                && (j.data as DispatchShopJobData).orderUuids.includes(orderUuid),
+        );
+
+        if (!matchingJobs.length) {
+            return {
+                found: 0,
+                retried: 0,
+                shopIds: [],
+                message: 'No failed or delayed dispatch jobs found for this order. If the job was removed from the queue, use POST /v1/wms/orders/dispatch with the specific orderUuid.',
+            };
+        }
+
+        const order = await this.orderRepository.findOne({
+            where: { uuid: orderUuid },
+            relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
+        });
+        if (!order) throw new NotFoundException(`Order ${orderUuid} not found`);
+
+        const retriedShopIds: string[] = [];
+
+        for (const job of matchingJobs) {
+            const data = job.data as DispatchShopJobData;
+            const { shopId, shopName } = data;
+
+            // Only rebuild Gulltrans payload if Gulltrans hasn't been called yet for this job.
+            // If gulltransOrderSn is set, Gulltrans already succeeded — the failure was at the
+            // WMS inbound step, so we just retry without touching gulltransItems.
+            if (!data.gulltransOrderSn) {
+                const shopItems = order.orderItems.filter(
+                    item => item.variant?.product?.shopId === shopId,
+                );
+
+                if (!shopItems.length) {
+                    this.logger.warn(`dispatchMissing ${orderUuid}: no items for shop ${shopId} — skipping`);
+                    continue;
+                }
+
+                const freshGulltransItems = shopItems.map(item => ({
+                    shop_id: shopId,
+                    shop_name: shopName,
+                    platform: '1688',
+                    platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
+                    name: item.variant.titleEn,
+                    goods_amount: String(item.variant.cost.amount * item.quantity),
+                    skus: [{
+                        platform_sku: item.variant.sku,
+                        price: String(item.variant.cost.amount),
+                        quantity: String(item.quantity),
+                        sku_info: item.variant.skuMeta ?? {},
+                    }],
+                }));
+
+                await job.updateData({ ...data, gulltransItems: freshGulltransItems });
+                this.logger.log(`dispatchMissing ${orderUuid}: refreshed gulltransItems for shop ${shopId}`);
+            }
+
+            const state = await job.getState();
+            if (state === 'failed') {
+                await job.retry();
+            } else if (state === 'delayed') {
+                await job.promote();
+            }
+
+            retriedShopIds.push(shopId);
+            this.logger.log(`dispatchMissing ${orderUuid}: re-queued shop ${shopId} (was ${state})`);
+        }
+
+        return { found: matchingJobs.length, retried: retriedShopIds.length, shopIds: retriedShopIds };
     }
 
     // ─── Recovery ─────────────────────────────────────────────────────────────

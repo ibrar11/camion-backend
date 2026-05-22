@@ -1,4 +1,4 @@
-import { Field, ObjectType } from "@nestjs/graphql";
+import { Field, Int, ObjectType } from "@nestjs/graphql";
 
 import {
 	Column,
@@ -13,8 +13,25 @@ import {
 
 import { Exclude } from "class-transformer";
 
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
+
 import { Affiliate } from "./affiliate.entity";
-import { Order } from "src/order/entities/order.entity";
+import { Order } from "../../order/entities/order.entity";
+
+@ObjectType()
+export class CouponMoney {
+	@Field(() => Int)
+	@Column({ type: "integer", default: 0, })
+	amount: number;
+
+	@Field()
+	@Column({
+		type: "enum",
+		enum: CurrencyCode,
+		default: CurrencyCode.USD,
+	})
+	currencyCode: CurrencyCode;
+}
 
 @ObjectType()
 @Entity({ name: "affiliate_coupons" })
@@ -42,6 +59,14 @@ export class Coupon {
 	@Field()
 	@Column({ type: "integer", default: 0, nullable: false, })
 	ordersCount: number;
+
+	@Field(() => CouponMoney)
+	@Column(() => CouponMoney)
+	totalSales: CouponMoney;
+
+	@Field(() => CouponMoney)
+	@Column(() => CouponMoney)
+	totalCommission: CouponMoney;
 
 	@OneToMany(() => Order, (order) => order.coupon)
 	orders: Array<Order>;

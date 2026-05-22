@@ -1904,7 +1904,7 @@ query GetCurrencies {
       {
         "uuid": "x1y2z3",
         "name": "United States Dollar",
-        "alphaCode": "USD"
+        "alphaCode": "qar"
       },
       {
         "uuid": "p4q5r6",
@@ -2331,6 +2331,14 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         code
         discountPercentage
         ordersCount
+        totalSales {
+            amount
+            currencyCode
+        }
+        totalCommission {
+            amount
+            currencyCode
+        }
         expiresAt
         createdAt
     }
@@ -2344,12 +2352,20 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
     "data": {
         "getCurrentAffiliateCoupons": [
             {
-                "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
-                "code": "james12",
-                "discountPercentage": 4,
-                "ordersCount": 0,
-                "expiresAt": "2026-12-31T00:00:00.000Z",
-                "createdAt": "2026-04-15T10:07:07.504Z"
+                "uuid": "41cc410c-faad-4732-b301-8a31d09e671f",
+                "code": "amin16",
+                "discountPercentage": 10,
+                "ordersCount": 1,
+                "totalSales": {
+                    "amount": 100,
+                    "currencyCode": "qar"
+                },
+                "totalCommission": {
+                    "amount": 10,
+                    "currencyCode": "qar"
+                },
+                "expiresAt": "Mon Dec 31 2029 05:00:00 GMT+0500 (Pakistan Standard Time)",
+                "createdAt": "Fri May 22 2026 17:28:07 GMT+0500 (Pakistan Standard Time)"
             }
         ]
     }
@@ -2542,19 +2558,19 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 "status": "payment_pending",
                 "subTotal": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "shippingCost": {
                     "amount": 0,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "discount": {
                     "amount": 0,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "total": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "eta": "6-10 working days",
                 "orderItems": [
@@ -2562,16 +2578,16 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                         "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                         "price": {
                             "amount": 688,
-                            "currencyCode": "usd"
+                            "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 688,
-                            "currencyCode": "USD"
+                            "currencyCode": "qar"
                         },
                         "quantity": 1,
                         "total": {
                             "amount": 688,
-                            "currencyCode": "usd"
+                            "currencyCode": "qar"
                         },
                         "product": {
                             "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
@@ -3957,6 +3973,45 @@ query GetCurrentCustomerReturnRequest($uuid: String!,$currency: String,  $langua
                 "currencyCode": "qar"
             },
             "evidence": []
+        }
+    }
+}
+```
+
+Get Minimum Order Key Value Pair
+--------------------------------
+
+### GraphQL Query
+
+```graphql
+uery GetMinimumOrderValue($currency: String) {
+  getMinimumOrderValue(currency: $currency) {
+    uuid
+    name
+    type
+    integerValue
+    decimalValue
+    stringValue
+    booleanValue
+    sensitive
+  }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getMinimumOrderValue": {
+            "uuid": "da8dcbb7-7220-4632-91c0-dd99dd6848ca",
+            "name": "min_order_amount_qar",
+            "type": "integer",
+            "integerValue": 300,
+            "decimalValue": 0,
+            "stringValue": "0",
+            "booleanValue": false,
+            "sensitive": false
         }
     }
 }
