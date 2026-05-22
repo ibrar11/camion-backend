@@ -1123,7 +1123,16 @@ export class OrderService {
                 eta: eta,
             };
 
-            if (subTotalInQar < 250) {
+            const min_order_amount = Number(
+                (await this.keyValuePairRepository.findOne({
+                    where: {
+                        name: `min_order_amount_${currency}`,
+                        type: KeyValuePairType.Integer
+                    }
+                }))?.integerValue
+            ) || 0;
+
+            if (subTotal < min_order_amount) {
                 orderPreview.orderTotalWarning = "Order value should not be less than 250 QAR"
             }
 
