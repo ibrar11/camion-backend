@@ -415,6 +415,7 @@ export class OrderService {
             const order = new Order();
             order.uuid = crypto.randomUUID();
             order.customer = customer;
+            order.coupon = coupon;
             order.status = OrderStatus.PAYMENT_PENDING;
             order.subTotal = {
                 amount: subTotal,
@@ -659,6 +660,33 @@ export class OrderService {
                 details: error,
             });
         }
+    }
+
+    /**
+     * Finds all orders made using a coupon
+     *
+     * @param coupon
+     * @param filters
+     * @param sort
+     * @param pageNumber
+     * @param itemsPerPage
+     */
+    findAllByCoupon(coupon: Coupon, filters: string = "", sort: string = "", pageNumber: number = 1, itemsPerPage: number = 24): Promise<Array<Order>> {
+        this.logger.log(`Retrieving orders by coupon`);
+
+        // Get pagination params
+        const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+        return this.orderRepository.find({
+            cache: true,
+            where: {
+                coupon: {
+                    id: coupon.id,
+                },
+            },
+            skip: skip,
+            take: take,
+        });
     }
 
     /**

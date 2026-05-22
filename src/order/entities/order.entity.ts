@@ -25,7 +25,26 @@ import { CustomerAddress } from "../../customers/entities/customer-address.entit
 import { OrderItem } from "./order-item.entity";
 
 import { Money } from "../../inventory/entities/product-variant.entity";
+import { Coupon } from "../../referral/entities/coupon.entity";
 import { PaymentTransaction } from "../../payments/entities/payment-transaction.entity";
+
+@ObjectType()
+export class CouponOrder {
+    @Field()
+    uuid: string;
+
+    @Field(() => Money)
+    total: Money;
+
+    @Field(() => Money)
+    commission: Money;
+
+    @Field()
+    status: OrderStatus;
+
+    @Field(() => String)
+    createdAt: String;
+}
 
 @ObjectType()
 @Entity({ name: 'orders', })
@@ -47,6 +66,10 @@ export class Order {
     @ManyToOne(() => CustomerAddress, (customerAddress) => customerAddress.orders)
     @Index()
     shippingAddress: CustomerAddress;
+
+    @ManyToOne(() => Coupon, (coupon) => coupon.orders)
+    @Index()
+    coupon: Coupon | null;
 
     @Field()
     @Column({
