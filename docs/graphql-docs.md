@@ -1904,7 +1904,7 @@ query GetCurrencies {
       {
         "uuid": "x1y2z3",
         "name": "United States Dollar",
-        "alphaCode": "USD"
+        "alphaCode": "qar"
       },
       {
         "uuid": "p4q5r6",
@@ -2358,11 +2358,11 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
                 "ordersCount": 1,
                 "totalSales": {
                     "amount": 100,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "totalCommission": {
                     "amount": 10,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "expiresAt": "Mon Dec 31 2029 05:00:00 GMT+0500 (Pakistan Standard Time)",
                 "createdAt": "Fri May 22 2026 17:28:07 GMT+0500 (Pakistan Standard Time)"
@@ -2558,19 +2558,19 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 "status": "payment_pending",
                 "subTotal": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "shippingCost": {
                     "amount": 0,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "discount": {
                     "amount": 0,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "total": {
                     "amount": 688,
-                    "currencyCode": "usd"
+                    "currencyCode": "qar"
                 },
                 "eta": "6-10 working days",
                 "orderItems": [
@@ -2578,16 +2578,16 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                         "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                         "price": {
                             "amount": 688,
-                            "currencyCode": "usd"
+                            "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 688,
-                            "currencyCode": "USD"
+                            "currencyCode": "qar"
                         },
                         "quantity": 1,
                         "total": {
                             "amount": 688,
-                            "currencyCode": "usd"
+                            "currencyCode": "qar"
                         },
                         "product": {
                             "uuid": "660e5d31-24e8-42e2-b8d7-1c45118ef29a",
