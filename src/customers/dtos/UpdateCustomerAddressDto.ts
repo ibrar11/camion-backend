@@ -1,5 +1,6 @@
 import {
 	IsBoolean,
+	IsOptional,
 	IsString,
 	MaxLength,
 	MinLength,
@@ -26,10 +27,10 @@ export class UpdateCustomerAddressDto {
 	@MinLength(1)
 	apartment: string;
 
+	@IsOptional()
 	@IsString()
-	@MinLength(4)
-	@MaxLength(5)
-	zipCode: string;
+	@MaxLength(6)
+	zipCode: string = "";
 
 	@IsString()
 	@MinLength(1)

@@ -6,6 +6,7 @@ import {
 	Entity,
 	Index,
 	ManyToOne,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -13,6 +14,7 @@ import {
 import { Exclude } from "class-transformer";
 
 import { Affiliate } from "./affiliate.entity";
+import { Order } from "src/order/entities/order.entity";
 
 @ObjectType()
 @Entity({ name: "affiliate_coupons" })
@@ -40,6 +42,9 @@ export class Coupon {
 	@Field()
 	@Column({ type: "integer", default: 0, nullable: false, })
 	ordersCount: number;
+
+	@OneToMany(() => Order, (order) => order.coupon)
+	orders: Array<Order>;
 
 	@Field()
 	@Column({ type: "timestamptz", nullable: false, })

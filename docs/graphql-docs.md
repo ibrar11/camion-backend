@@ -68,6 +68,7 @@ The following features are currently supported by the GraphQL API.
 - Get Current Affiliate Wallet Transactions
 - Get Current Affiliate Bank Accounts
 - Get Current Affiliate Coupons
+- Get Coupons Orders
 - Get Current Customer Orders
 - Get Promos
 
@@ -193,7 +194,7 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 {
     "language": "en",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -255,7 +256,7 @@ query GetStories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 {
     "language": "en",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -455,7 +456,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     "currency": "qar",
     "sort": "price:low-to-high",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -563,7 +564,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     "currency": "qar",
     "sort": "price:high-to-low",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -670,7 +671,7 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
     "language":"en",
     "currency": "qar",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -989,7 +990,7 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
     "language":"en",
     "currency": "qar",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -1095,7 +1096,7 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
     "language":"en",
     "currency": "qar",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -1306,7 +1307,7 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
     "language": "en",
     "currency": "qar",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -1763,7 +1764,7 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 {
     "language": "en",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -1816,7 +1817,7 @@ query GetFeaturedCategories($language: String, $pageNumber: Int, $itemsPerPage: 
 {
     "language": "en",
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 
@@ -2349,6 +2350,63 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
                 "ordersCount": 0,
                 "expiresAt": "2026-12-31T00:00:00.000Z",
                 "createdAt": "2026-04-15T10:07:07.504Z"
+            }
+        ]
+    }
+}
+```
+
+Get Coupons Orders
+------------------
+
+### GraphQL Query
+
+```graphql
+query GetCouponOrders($uuid: String, $pageNumber: Int, $itemsPerPage: Int) {
+    getCouponOrders(uuid: $uuid, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+        uuid
+        total {
+            amount
+            currencyCode
+        }
+        commission {
+            amount
+            currencyCode
+        }
+        status
+        createdAt
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "uuid": "41cc410c-faad-4732-b301-8a31d09e671f",
+    "pageNumber": 1,
+    "itemsPerPage": 24
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCouponOrders": [
+            {
+                "uuid": "c87da440-5ce4-4cdf-9111-524420c0a0f0",
+                "total": {
+                    "amount": 100,
+                    "currencyCode": "qar"
+                },
+                "commission": {
+                    "amount": 10,
+                    "currencyCode": "qar"
+                },
+                "status": "payment_pending",
+                "createdAt": "2026-05-18T07:16:11.496Z"
             }
         ]
     }
@@ -3455,7 +3513,7 @@ query Promos($pageNumber: Int, $itemsPerPage: Int) {
 ```json
 {
     "pageNumber": 1,
-    "itemsPerPage": 100
+    "itemsPerPage": 24
 }
 ```
 

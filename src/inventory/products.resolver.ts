@@ -49,7 +49,7 @@ export class GetProductsArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -70,7 +70,7 @@ export class GetProductsByCategoryArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -103,7 +103,7 @@ export class SearchProductsArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -121,7 +121,7 @@ export class GetRecommendedProductsArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -136,7 +136,7 @@ export class GetFeaturedProductsArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -151,7 +151,7 @@ export class GetPopularProductsArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -169,7 +169,7 @@ export class GetRelatedProductsArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
@@ -184,7 +184,7 @@ export class GetRecentlyViewedProductsArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 

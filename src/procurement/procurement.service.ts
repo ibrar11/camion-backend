@@ -181,12 +181,22 @@ export class ProcurementService {
         productsFound: number;
         productsWithProcurementId: number;
         productsFailed: number;
+        failedProducts: Array<{
+            productUuid: string;
+            procurementId: string | null;
+            error: string;
+        }>;
         variantsMatched: number;
         variantsUpdated: number;
         variantsMissingInSource: number;
         productsSkippedWithoutProcurementId: string[];
     }> {
         const productsSkippedWithoutProcurementId: string[] = [];
+        const failedProducts: Array<{
+            productUuid: string;
+            procurementId: string | null;
+            error: string;
+        }> = [];
         let productsFound = 0;
         let productsFailed = 0;
         let variantsMatched = 0;
@@ -289,6 +299,11 @@ export class ProcurementService {
                     }
                 } catch (error) {
                     productsFailed += 1;
+                    failedProducts.push({
+                        productUuid: product.uuid,
+                        procurementId: product.procurementId ?? null,
+                        error: (error as Error)?.message ?? "Unknown error",
+                    });
                     this.logger.error(
                         `Failed inventory resync for product ${product.uuid} (procurementId=${product.procurementId}): ${(error as Error).message}`,
                     );
@@ -301,6 +316,7 @@ export class ProcurementService {
             productsFound,
             productsWithProcurementId,
             productsFailed,
+            failedProducts,
             variantsMatched,
             variantsUpdated,
             variantsMissingInSource,
