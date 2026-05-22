@@ -60,7 +60,6 @@ import {
 import { getSkipAndTake } from "../common/pagination";
 
 import {
-    calculateAffiliateCommission,
     calculateCouponDiscount
 } from "../common/calculateCouponDiscount";
 
@@ -433,11 +432,7 @@ export class OrderService {
 
             // RECORD AFFILIATE COMMISSION
             if (coupon?.affiliate && coupon.code && discount >= 0) {
-                const commissionAmount = calculateAffiliateCommission(
-                    coupon.affiliate,
-                    total,
-                    discount
-                );
+                const commissionAmount = discount;
 
                 if (commissionAmount > 0 && coupon.affiliate.wallet?.id) {
                     const walletId = coupon.affiliate.wallet.id;
@@ -1094,6 +1089,7 @@ export class OrderService {
                     )
                 }
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                discount = smartRoundInt(discount);
             }
 
             let subTotalInQar = subTotal;
