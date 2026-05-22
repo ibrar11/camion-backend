@@ -7,12 +7,15 @@ import { Notification } from "./entities/notification.entity";
 import { NotificationPriority } from "./enums/notification-priority.enum";
 import { CreateNotificationDto } from "./dtos/create-notification.dto";
 import { CustomersService } from "src/customers/customers.service";
+import { Customer } from "src/customers/entities/customer.entity";
 
 @Injectable()
 export class NotificationsService {
 	constructor(
 		@InjectRepository(Notification)
 		private readonly notificationRepository: Repository<Notification>,
+		@InjectRepository(Customer)
+		private readonly customerRepository: Repository<Customer>,
 		private readonly customersService: CustomersService,
 	) {}
 
@@ -41,7 +44,15 @@ export class NotificationsService {
 		notification.payload = body.payload || {};
 		notification.priority = body.priority ?? NotificationPriority.MEDIUM;
 
-		return this.notificationRepository.save(notification);
+		const saved = await this.notificationRepository.save(notification);
+
+		await this.customerRepository.increment(
+			{ uuid: body.customerUUID },
+			'unreadNotificationCount',
+			1,
+		);
+
+		return saved;
 	}
 
 	/**
@@ -51,12 +62,19 @@ export class NotificationsService {
 	 * @returns
 	 */
 	async getByCustomer(customerUUID: string): Promise<Notification[]> {
-		return this.notificationRepository.find({
+		const notifications = await this.notificationRepository.find({
 			where: {
 				customer: { uuid: customerUUID },
 			},
 			order: { createdAt: "DESC" },
 		});
+
+		await this.customerRepository.update(
+			{ uuid: customerUUID },
+			{ unreadNotificationCount: 0 },
+		);
+
+		return notifications;
 	}
 
 	/**

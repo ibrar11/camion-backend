@@ -114,6 +114,7 @@ type Customer {
   emailAddress: String
   fullName: String!
   phoneNumber: String
+  unreadNotificationCount: Int!
   uuid: String!
 }
 
