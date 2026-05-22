@@ -16,6 +16,8 @@ import {
 	UseGuards
 } from "@nestjs/common";
 
+import dayjs from "dayjs";
+
 import { Coupon } from "./entities/coupon.entity";
 import { CouponsService } from "./coupons.service";
 
@@ -106,7 +108,7 @@ export class CouponsResolver {
 				total: order.subTotal,
 				commission: order.discount,
 				status: order.status,
-				createdAt: order.createdAt,
+				createdAt: dayjs(order.createdAt).toISOString(),
 			}));
 		} catch {
 			return [];

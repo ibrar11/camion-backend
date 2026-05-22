@@ -42,8 +42,8 @@ export class CouponOrder {
     @Field()
     status: OrderStatus;
 
-    @Field(() => Date)
-    createdAt: Date;
+    @Field(() => String)
+    createdAt: String;
 }
 
 @ObjectType()

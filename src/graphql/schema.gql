@@ -89,7 +89,7 @@ type Coupon {
 
 type CouponOrder {
   commission: Money!
-  createdAt: DateTime!
+  createdAt: String!
   status: String!
   total: Money!
   uuid: String!
