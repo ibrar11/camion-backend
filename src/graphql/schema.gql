@@ -38,13 +38,13 @@ type BankAccount {
 
 type Banner {
   color: String!
-  imageUrl(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
+  imageUrl(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
   imageUrlAr: String!
   imageUrlEn: String!
   isActive: Boolean!
   linkUrl: String!
   placement: String!
-  title(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
+  title(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
   titleAr: String!
   titleEn: String!
   uuid: String!
@@ -84,6 +84,14 @@ type Coupon {
   discountPercentage: Float!
   expiresAt: String!
   ordersCount: Float!
+  uuid: String!
+}
+
+type CouponOrder {
+  commission: Money!
+  createdAt: DateTime!
+  status: String!
+  total: Money!
   uuid: String!
 }
 
@@ -233,13 +241,13 @@ type PostAuthor {
 }
 
 type Product {
-  brief(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
+  brief(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   briefAr: String!
   briefEn: String!
-  description(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
+  description(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionAr: String!
   descriptionEn: String!
-  descriptionHtml(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
+  descriptionHtml(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionHtmlAr: String!
   descriptionHtmlEn: String!
   featuredImageUrl: String!
@@ -261,11 +269,11 @@ type Product {
   shopName: String
   slug: String!
   status: String!
-  title(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
+  title(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!
   titleEn: String!
   uuid: String!
-  variants(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
+  variants(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
   viewsCount: Float!
 }
 
@@ -274,7 +282,7 @@ type ProductCategory {
 }
 
 type ProductOption {
-  name(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
+  name(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   nameAr: String!
   nameEn: String!
   position: Int!
@@ -286,7 +294,7 @@ type ProductOptionValue {
   option: ProductOption!
   position: Int!
   uuid: String!
-  value(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
+  value(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   valueAr: String!
   valueEn: String!
 }
@@ -315,7 +323,7 @@ type ProductVariant {
   optionValues: [ProductVariantOptionValue!]!
   price(currency: String! = "usd", language: String! = "en", slug: String! = ""): Money!
   sku: String!
-  title(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
+  title(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!
   titleEn: String!
   uuid: String!
@@ -351,40 +359,41 @@ type Promo {
 }
 
 type Query {
-  getBanners(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
+  getBanners(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
+  getCouponOrders(itemsPerPage: Int! = 24, pageNumber: Int! = 1, uuid: String! = ""): [CouponOrder!]!
   getCurrencies: [Currency!]!
   getCurrentAffiliate: Affiliate
-  getCurrentAffiliateBankAccounts(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [BankAccount!]!
-  getCurrentAffiliateCoupons(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Coupon!]!
-  getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Transaction!]!
+  getCurrentAffiliateBankAccounts(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [BankAccount!]!
+  getCurrentAffiliateCoupons(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [Coupon!]!
+  getCurrentAffiliateWalletTransactions(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [Transaction!]!
   getCurrentCustomer: Customer!
   getCurrentCustomerOrder(currency: String! = "usd", language: String! = "en", uuid: String!): Order!
   getCurrentCustomerOrderPreview(couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
-  getCurrentCustomerOrders(itemsPerPage: Int! = 100, pageNumber: Int! = 1, status: String): [Order!]!
+  getCurrentCustomerOrders(itemsPerPage: Int! = 24, pageNumber: Int! = 1, status: String): [Order!]!
   getCurrentCustomerReturnRequest(uuid: String!): ReturnRequest!
   getCurrentCustomerReturnRequests(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!
-  getCustomerAddresses(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [CustomerAddress!]!
-  getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
+  getCustomerAddresses(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [CustomerAddress!]!
+  getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!
-  getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
+  getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
   getFeaturedCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
-  getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getLanguages: [Language!]!
   getNotifications: [Notification!]!
-  getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Product!]!
   getPost(slug: String!): Post!
   getPosts: [Post!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
-  getProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
-  getProductsByCategory(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!, sort: String! = "best-match"): [Product!]!
-  getPromos(itemsPerPage: Int! = 100, pageNumber: Int! = 1): [Promo!]!
-  getRecentlyViewedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Product!]!
-  getRecommendedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
-  getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
-  getStories(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [Story!]!
-  searchProducts(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
+  getProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
+  getProductsByCategory(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String!, sort: String! = "best-match"): [Product!]!
+  getPromos(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [Promo!]!
+  getRecentlyViewedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getRecommendedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
+  getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
+  getStories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Story!]!
+  searchProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
 }
 
 type ReturnEvidence {
@@ -409,7 +418,7 @@ type ReturnRequest {
 }
 
 type Story {
-  caption(itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): String!
+  caption(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
   captionAr: String!
   captionEn: String!
   frames: [StoryFrame!]!

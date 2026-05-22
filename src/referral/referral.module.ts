@@ -33,6 +33,9 @@ import { BankAccountsController } from './bank-accounts.controller';
 import { BankAccountsResolver } from './bank-accounts.resolver';
 
 import { ClientsModule } from '../clients/clients.module';
+import { OrderModule } from 'src/order/order.module';
+
+
 
 @Module({
 	imports: [
@@ -46,6 +49,7 @@ import { ClientsModule } from '../clients/clients.module';
 			Wallet,
 		]),
 		ClientsModule,
+		OrderModule,
 	],
 	providers: [
 		AffiliatesService,

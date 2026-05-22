@@ -22,7 +22,7 @@ export class GetPromosArgs {
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
-	@Field(() => Int, { defaultValue: 100, })
+	@Field(() => Int, { defaultValue: 24, })
 	itemsPerPage: number;
 }
 
