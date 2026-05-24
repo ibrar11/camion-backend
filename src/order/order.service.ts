@@ -431,6 +431,9 @@ export class OrderService {
 
             await queryRunner.manager.save(order);
 
+            // Clear the cart within transaction
+            await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
+
             // RECORD AFFILIATE COMMISSION
             if (coupon?.affiliate && coupon.code && discount >= 0) {
                 const commissionAmount = discount;

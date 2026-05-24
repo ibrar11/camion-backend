@@ -16,12 +16,15 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 import { FIREBASE_ADMIN } from '../firebase/provider/firebase.provider';
 
+import { Customer } from '../customers/entities/customer.entity';
+
 @Injectable()
 export class PushNotificationService {
     private readonly logger = new Logger(PushNotificationService.name);
 
     constructor(
         @InjectRepository(Notification) private readonly notificationRepository: Repository<Notification>,
+        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
         @Inject(NotificationsService) private readonly notificationService: NotificationsService,
         @Inject(FIREBASE_ADMIN) private readonly firebase: typeof admin | null,
     ) {
@@ -86,10 +89,31 @@ export class PushNotificationService {
                         const res = await this.firebase.messaging().send(message);
                         pushNotification.push(res);
 
-                        this.logger.log(`Sent push to ${customer.firebaseDeviceToken.slice(0, 10)}... ✅ (${res})`);
+                        this.logger.log(`Sent push to ${customer.firebaseDeviceToken[i]?.slice(0, 10)}... ✅ (${res})`);
                     } catch (error: any) {
-                        this.logger.error(`Error sending push: ${error}`);
-                        this.logger.error(`Error sending push to ${customer.firebaseDeviceToken.slice(0, 10)}`);
+                        this.logger.error({
+                            message: error?.message,
+                            code: error?.code,
+                            errorInfo: error?.errorInfo,
+                        });
+                        this.logger.error(`Error sending push to ${customer.firebaseDeviceToken[i]?.slice(0, 10)}`);
+
+                        const code = error?.errorInfo?.code || error?.code;
+                        const token = customer.firebaseDeviceToken[i];
+
+                        if (
+                            code === 'messaging/registration-token-not-registered' ||
+                            code === 'messaging/invalid-registration-token'
+                        ) {
+                            this.logger.warn(`Removing invalid token`);
+
+                            customer.firebaseDeviceToken =
+                                customer.firebaseDeviceToken.filter(
+                                    (t) => t !== token
+                                );
+
+                            await this.customerRepository.save(customer);
+                        }
                     }
                 }
             }
