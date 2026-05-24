@@ -318,7 +318,7 @@ export class OrderService {
 
             const exchangeRates = await this.exchangeRateService.findAll("", "");
 
-            // shipping and discount needs to be updated after the implementation of shippping and discounts
+            // shipping and discount needs to be updated after the implementation of shipping and discounts
             let shippingCost = 0;
             let eta = "";
 
@@ -338,8 +338,10 @@ export class OrderService {
                 }))?.booleanValue
             ) || false;
 
+            const freeShippingExchangeRate = 1 / (exchangeRates.find((rate) => rate.srcCurrencyCode === currency && rate.targetCurrencyCode === 'qar')?.factor || 1);
+
             // Decide if we should charge shipping
-            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < (freeShippingValue * freeShippingExchangeRate);
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
@@ -525,7 +527,7 @@ export class OrderService {
 
 
             if (notification?.uuid) {
-                this.logger.log(`Attempting to create psuh notification for order placement: ${JSON.stringify(order.uuid)}`);
+                this.logger.log(`Attempting to create push notification for order placement: ${JSON.stringify(order.uuid)}`);
                 await this.pushNotificationService.sendToToken(notification?.uuid)
             }
 
@@ -833,7 +835,7 @@ export class OrderService {
                 }).catch(err => this.logger.warn(`Failed to send ${notif.type} notification: ${err?.message}`));
 
                 if (notification?.uuid) {
-                    this.logger.log(`Attempting to create psuh notification for order status update: ${JSON.stringify(order.uuid)}`);
+                    this.logger.log(`Attempting to create push notification for order status update: ${JSON.stringify(order.uuid)}`);
                     await this.pushNotificationService.sendToToken(notification?.uuid)
                 }
             }
@@ -1061,6 +1063,13 @@ export class OrderService {
                 });
             }
 
+            const [exchangeRates] = await Promise.all([
+                this.exchangeRateService.findAll("", "")
+            ]);
+            const currency = cartItems[0]?.subTotal.currencyCode;
+
+            const freeShippingExchangeRate = 1 / (exchangeRates.find((rate) => rate.srcCurrencyCode === currency && rate.targetCurrencyCode === 'qar')?.factor || 1);
+
             let shippingCost = 0;
             let eta = "";
             let shippingCalculation: ShippingCalculationResult | null = null;
@@ -1082,12 +1091,8 @@ export class OrderService {
             ) || false;
 
             // Decide if we should charge shipping
-            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < freeShippingValue;
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < (freeShippingValue * freeShippingExchangeRate);
 
-            const [exchangeRates] = await Promise.all([
-                this.exchangeRateService.findAll("", "")
-            ]);
-            const currency = cartItems[0]?.subTotal.currencyCode;
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
@@ -1122,7 +1127,7 @@ export class OrderService {
 
                 if (!coupon) {
                     throw new BadRequestException(
-                        "Coupon does not exists. Pleasae try again with valid coupon."
+                        "Coupon does not exists. Please try again with valid coupon."
                     )
                 }
                 discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
