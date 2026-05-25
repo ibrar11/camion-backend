@@ -24,7 +24,11 @@ import { Product } from "../inventory/entities/product.entity";
 import { ProductVariant } from "../inventory/entities/product-variant.entity";
 import { Customer } from "../customers/entities/customer.entity";
 
-import { PricingService } from "src/pricing/pricing.service";
+import { PricingService } from "../pricing/pricing.service";
+
+import { ExchangeRate } from "../pricing/entities/exchange-rate.entity";
+
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 @Injectable()
 export class CartItemsService {
@@ -35,6 +39,7 @@ export class CartItemsService {
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
         @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+        @InjectRepository(ExchangeRate) private readonly exchangeRateRepository: Repository<ExchangeRate>,
         @Inject(PricingService) private readonly pricingService: PricingService,
     ) { }
 
@@ -79,7 +84,7 @@ export class CartItemsService {
         const variant = product.variants.find((variant) => (variant.uuid === body.variantUuid));
         if (!variant) {
             throw new NotFoundException({
-                error: "Faild to find the requested variant. Please check and try again.",
+                error: "Failed to find the requested variant. Please check and try again.",
             });
         }
 
@@ -102,7 +107,7 @@ export class CartItemsService {
         // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, false);
         const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, true);
 
-        // check if the variant alreadu exists
+        // check if the variant already exists
         const existingCartItem = await this.cartRepository.findOne({
             where: {
                 customer: { uuid: customer.uuid },
@@ -173,7 +178,7 @@ export class CartItemsService {
      * @param itemsPerPage
      * @returns
      */
-    async findCart(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<CartItem>> {
+    async findCart(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, currency: CurrencyCode = CurrencyCode.QAR): Promise<Array<CartItem>> {
         this.logger.log(`Retrieving cart items for customer: ${customer.uuid}`);
 
         // Get pagination params
@@ -214,6 +219,38 @@ export class CartItemsService {
             take: take,
         });
 
+        let exchangeRate = 1;
+
+        const srcCurrencyCode = cartItems[0]?.discountPrice.currencyCode;
+
+        if (srcCurrencyCode !== currency) {
+            const rate = await this.exchangeRateRepository.findOne({
+                where: {
+                    srcCurrencyCode: srcCurrencyCode,
+                    targetCurrencyCode: currency
+                }
+            });
+            
+            if(!rate) {
+                const reverseRate = await this.exchangeRateRepository.findOne({
+                    where: {
+                        srcCurrencyCode: currency,
+                        targetCurrencyCode: srcCurrencyCode
+                    }
+                });
+
+                if (!reverseRate) {
+                    throw new BadRequestException({
+                        error: `Could not found exchange rate for ${srcCurrencyCode} to ${currency}`
+                    })
+                }
+                
+                exchangeRate = 1 / (reverseRate?.factor || 1);
+            }else {
+                exchangeRate = rate.factor;
+            }
+        }
+
         return cartItems
             .map((cartItem) => {
                 // Ignore if the product isn't available for sale
@@ -233,6 +270,21 @@ export class CartItemsService {
                 cartItem.product.variants = [];
                 cartItem.availableStock = stock;
                 cartItem.isAvailable = stock > 0;
+
+                // Convert the cart item prices
+                cartItem.subTotal = {
+                    amount: Math.max(5, Math.ceil(cartItem.subTotal.amount * exchangeRate)),
+                    currencyCode: currency
+                }
+                cartItem.discountPrice = {
+                    amount: Math.max(5, Math.ceil(cartItem.discountPrice.amount * exchangeRate)),
+                    currencyCode: currency
+                }
+                cartItem.total = {
+                    amount: Math.max(5, Math.ceil(cartItem.total.amount * exchangeRate)),
+                    currencyCode: currency
+                }
+
                 return cartItem;
             })
             .filter((cartItem) => {

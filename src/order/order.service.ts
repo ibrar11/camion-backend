@@ -360,7 +360,7 @@ export class OrderService {
                     exchangeRates,
                     subTotal
                 );
-                shippingCost = Math.floor(shippingCalculation.totalShippingCost);
+                shippingCost = Math.ceil(shippingCalculation.totalShippingCost);
                 eta = shippingCalculation.transitTime.estimatedRange
             }
 
@@ -380,7 +380,7 @@ export class OrderService {
 
                 if (!coupon) {
                     throw new BadRequestException({
-                        error: "Coupon does not exists. Pleasae try again with valid coupon.",
+                        error: "Coupon does not exists. Please try again with valid coupon.",
                     });
                 }
 
@@ -972,7 +972,7 @@ export class OrderService {
     * @param customer
     * @returns
     */
-    async orderPreview(customer: Customer, couponCode?: string): Promise<OrderPreviewResponse> {
+    async orderPreview(customer: Customer, currencyCode: CurrencyCode = CurrencyCode.QAR , couponCode?: string): Promise<OrderPreviewResponse> {
         try {
             // Get cart items with relations
             const cartItems = await this.cartRepository.find({
@@ -1053,7 +1053,7 @@ export class OrderService {
                 }
 
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
-                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, true);
+                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, currencyCode, true);
 
                 const itemTotal = priceDiscount.amount * item.quantity;
                 subTotal += itemTotal;
@@ -1103,12 +1103,12 @@ export class OrderService {
                 shippingCalculation = calculateCartShipping(
                     shippingCartItems,
                     address.country,
-                    currency,
+                    currencyCode,
                     exchangeRates,
                     subTotal
                 );
 
-                shippingCost = Math.floor(shippingCalculation.totalShippingCost);
+                shippingCost = Math.ceil(shippingCalculation.totalShippingCost);
                 eta = shippingCalculation.transitTime.estimatedRange;
             }
 
@@ -1134,21 +1134,21 @@ export class OrderService {
                 discount = smartRoundInt(discount);
             }
 
-            let subTotalInQar = subTotal;
-            if (currency.toLowerCase().trim() !== "qar") {
+            // let subTotalInQar = subTotal;
+            // if (currency.toLowerCase().trim() !== "qar") {
 
-                const exchangeRate = exchangeRates
-                    .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
-                    .at(0) ?? null;
+            //     const exchangeRate = exchangeRates
+            //         .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
+            //         .at(0) ?? null;
 
-                if (!exchangeRate) {
-                    throw new NotFoundException({
-                        error: `Exchange Rate for ${currency} to qar not found`
-                    });
-                }
+            //     if (!exchangeRate) {
+            //         throw new NotFoundException({
+            //             error: `Exchange Rate for ${currency} to qar not found`
+            //         });
+            //     }
 
-                subTotalInQar = subTotal * exchangeRate.factor;
-            }
+            //     subTotalInQar = subTotal * exchangeRate.factor;
+            // }
 
             // Calculate total order amount
             const totalAmount = subTotal + shippingCost - discount;
