@@ -566,6 +566,22 @@ export class JopWmsService {
                 continue;
             }
 
+            // Check WMS before creating — outbound may already exist there but not locally
+            try {
+                const statusResult: any = await this.client.post('outboundorder/status', { customerVoucherNo });
+                const jopStatus = String(statusResult?.data?.status ?? '');
+                if (jopStatus) {
+                    const synced = await this.wmsOrderRepository.save(
+                        this.wmsOrderRepository.create({ orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND, status: jopStatus }),
+                    );
+                    await this.linkOrdersToWmsOrder(synced.id, [order.uuid]);
+                    this.logger.log(`Synced existing WMS outbound ${customerVoucherNo} at status ${jopStatus}`);
+                    continue;
+                }
+            } catch {
+                this.logger.log(`Outbound ${customerVoucherNo} does not exist on WMS — proceeding with creation`);
+            }
+
             const addr = order.shippingAddress;
 
             try {
@@ -769,12 +785,6 @@ export class JopWmsService {
             };
         }
 
-        const order = await this.orderRepository.findOne({
-            where: { uuid: orderUuid },
-            relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
-        });
-        if (!order) throw new NotFoundException(`Order ${orderUuid} not found`);
-
         const retriedShopIds: string[] = [];
 
         for (const job of matchingJobs) {
@@ -785,8 +795,15 @@ export class JopWmsService {
             // If gulltransOrderSn is set, Gulltrans already succeeded — the failure was at the
             // WMS inbound step, so we just retry without touching gulltransItems.
             if (!data.gulltransOrderSn) {
-                const shopItems = order.orderItems.filter(
-                    item => item.variant?.product?.shopId === shopId,
+                // Load ALL orders in this job — a single shop job can cover multiple order UUIDs,
+                // so filtering by only the requested orderUuid would drop the others' items.
+                const jobOrders = await this.orderRepository.find({
+                    where: { uuid: In(data.orderUuids) },
+                    relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
+                });
+
+                const shopItems = jobOrders.flatMap(o =>
+                    o.orderItems.filter(item => item.variant?.product?.shopId === shopId),
                 );
 
                 if (!shopItems.length) {
@@ -810,7 +827,7 @@ export class JopWmsService {
                 }));
 
                 await job.updateData({ ...data, gulltransItems: freshGulltransItems });
-                this.logger.log(`dispatchMissing ${orderUuid}: refreshed gulltransItems for shop ${shopId}`);
+                this.logger.log(`dispatchMissing ${orderUuid}: refreshed gulltransItems for shop ${shopId} (${jobOrders.length} order(s))`);
             }
 
             const state = await job.getState();
