@@ -473,6 +473,8 @@ Create Affiliate Coupon
 POST /v1/referral/affiliates/<affiliate-uuid>/coupons
 ```
 
+### Request Body
+
 ```json
 {
     "code": "summer10",
@@ -480,6 +482,8 @@ POST /v1/referral/affiliates/<affiliate-uuid>/coupons
     "expiresAt": "2029-12-31"
 }
 ```
+
+### Response Body
 
 ```json
 {
