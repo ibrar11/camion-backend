@@ -3372,15 +3372,15 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
         availableStock
         subTotal {
             amount
-            curreny
+            currency
         }
         discountPrice {
             amount
-            curreny
+            currency
         }
         total {
             amount
-            curreny
+            currency
         }
     }
 }
