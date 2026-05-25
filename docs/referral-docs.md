@@ -466,8 +466,67 @@ PATCH /v1/referral/affiliates/<Affiliate-uuid>/type HTTP/1.1
 }
 ```
 
-Delete Affiliate Type
----------------------
+Create Affiliate Coupon
+-----------------------
+
+```http
+POST /v1/referral/affiliates/<affiliate-uuid>/coupons
+```
+
+```json
+{
+    "code": "summer10",
+    "discountPercentage": 10,
+    "expiresAt": "2029-12-31"
+}
+```
+
+```json
+{
+    "uuid": "1d31ab12-8bfb-4a72-a143-d33feae5b987",
+    "affiliate": {
+        "uuid": "688c6cb4-6e27-4fca-a417-bc11d401cdc4",
+        "fullName": "Hamza Affiliator",
+        "gender": "male",
+        "nationality": "Qatari",
+        "bio": "this is my description",
+        "type": "influencer",
+        "status": "accepted",
+        "totalCommission": {
+            "amount": 12,
+            "currencyCode": "qar"
+        },
+        "totalPaid": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "remainingBalance": {
+            "amount": 12,
+            "currencyCode": "qar"
+        },
+        "couponsCreated": 7,
+        "couponsUsed": 3,
+        "createdAt": "2026-05-09T08:57:50.144Z"
+    },
+    "code": "summer10",
+    "discountPercentage": "10",
+    "ordersCount": 0,
+    "totalSales": {
+        "amount": 0,
+        "currencyCode": "usd"
+    },
+    "totalCommission": {
+        "amount": 0,
+        "currencyCode": "usd"
+    },
+    "expiresAt": "2029-12-31T00:00:00.000Z",
+    "createdAt": "2026-05-25T12:30:12.023Z"
+}
+```
+
+
+Delete Affiliate
+----------------
 
 ```http
 DELETE /v1/referral/affiliates/<affiliate-uuid> HTTP/1.1
