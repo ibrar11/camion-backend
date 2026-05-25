@@ -72,3 +72,7 @@ export interface DispatchShopJobData extends BaseJobData {
 export interface InventoryResyncJobData extends BaseJobData {
     productUuids: string[];
 }
+
+export interface ProductCategoryResyncJobData extends BaseJobData {
+    productUuids: string[];
+}

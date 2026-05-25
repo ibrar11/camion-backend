@@ -22,6 +22,7 @@ import {
 import {
     BaseJobData,
     InventoryResyncJobData,
+    ProductCategoryResyncJobData,
     TranslationJobData,
 } from './types';
 
@@ -35,6 +36,7 @@ export class QueueService {
         @InjectQueue(QueueName.TRANSLATION) private readonly translationQueue: Queue,
         @InjectQueue(QueueName.FIELD_TRANSLATION) private readonly fieldTranslationQueue: Queue,
         @InjectQueue(QueueName.INVENTORY_RESYNC) private readonly inventoryResyncQueue: Queue,
+        @InjectQueue(QueueName.PRODUCT_CATEGORY_RESYNC) private readonly productCategoryResyncQueue: Queue,
         @Inject(TranslationJobRegistryService) private readonly jobRegistry: TranslationJobRegistryService,
     ) { }
 
@@ -213,6 +215,25 @@ export class QueueService {
         return { jobId: jobData.jobId, status: "queued" };
     }
 
+    async addProductCategoryResyncJob(productUuids: string[]): Promise<{ jobId: string; status: "queued" }> {
+        const jobData: ProductCategoryResyncJobData = {
+            jobId: crypto.randomUUID(),
+            productUuids,
+            createdAt: new Date(),
+            maxRetries: 3,
+        };
+
+        await this.addJob(
+            QueueName.PRODUCT_CATEGORY_RESYNC,
+            `product-category-resync-${jobData.jobId}`,
+            jobData,
+            JobPriority.HIGH,
+            0,
+        );
+
+        return { jobId: jobData.jobId, status: "queued" };
+    }
+
     async getJob(queueName: QueueName, jobId: string): Promise<Job | null> {
         const queue = this.getQueue(queueName);
         return (await queue.getJob(jobId)) ?? null;
@@ -261,6 +282,8 @@ export class QueueService {
                 return this.fieldTranslationQueue;
             case QueueName.INVENTORY_RESYNC:
                 return this.inventoryResyncQueue;
+            case QueueName.PRODUCT_CATEGORY_RESYNC:
+                return this.productCategoryResyncQueue;
 
             default:
                 throw new Error(`Queue ${queueName} not found`);
