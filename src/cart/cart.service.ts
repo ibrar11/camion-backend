@@ -223,6 +223,8 @@ export class CartItemsService {
 
         const srcCurrencyCode = cartItems[0]?.discountPrice.currencyCode;
 
+        this.logger.log(`Cart items stored with the currency: ${srcCurrencyCode.toLowerCase()}`);
+
         if (srcCurrencyCode !== currency) {
             const rate = await this.exchangeRateRepository.findOne({
                 where: {
@@ -230,6 +232,8 @@ export class CartItemsService {
                     targetCurrencyCode: currency
                 }
             });
+
+            this.logger.log(`Found exchange rate for ${srcCurrencyCode.toLowerCase()} to ${currency.toLowerCase()} : ${JSON.stringify(rate)}`);
             
             if(!rate) {
                 const reverseRate = await this.exchangeRateRepository.findOne({
@@ -238,6 +242,8 @@ export class CartItemsService {
                         targetCurrencyCode: srcCurrencyCode
                     }
                 });
+
+                this.logger.log(`Found reverse exchange rate for ${currency.toLowerCase()} to ${srcCurrencyCode.toLowerCase()} : ${JSON.stringify(reverseRate)}`);
 
                 if (!reverseRate) {
                     throw new BadRequestException({
