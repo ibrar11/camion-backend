@@ -32,10 +32,12 @@ import { BankAccountsService } from './bank-accounts.service';
 import { BankAccountsController } from './bank-accounts.controller';
 import { BankAccountsResolver } from './bank-accounts.resolver';
 
+import { GlobalCoupon } from './entities/global-coupon.entity';
+import { GlobalCouponService } from './global-coupon.service';
+import { GlobalCouponController } from './global-coupon.controller';
+
 import { ClientsModule } from '../clients/clients.module';
-import { OrderModule } from 'src/order/order.module';
-
-
+import { OrderModule } from '../order/order.module';
 
 @Module({
 	imports: [
@@ -44,6 +46,7 @@ import { OrderModule } from 'src/order/order.module';
 			BankAccount,
 			Coupon,
 			Customer,
+			GlobalCoupon,
 			Transaction,
 			User,
 			Wallet,
@@ -52,15 +55,16 @@ import { OrderModule } from 'src/order/order.module';
 		OrderModule,
 	],
 	providers: [
-		AffiliatesService,
 		AffiliatesResolver,
-		BankAccountsService,
+		AffiliatesService,
 		BankAccountsResolver,
-		CouponsService,
+		BankAccountsService,
 		CouponsResolver,
+		CouponsService,
 		CustomersService,
-		TransactionsService,
+		GlobalCouponService,
 		TransactionsResolver,
+		TransactionsService,
 		UsersService,
 		WalletService,
 	],
@@ -68,6 +72,7 @@ import { OrderModule } from 'src/order/order.module';
 		AffiliatesController,
 		BankAccountsController,
 		CouponsController,
+		GlobalCouponController,
 		TransactionsController,
 		WalletController,
 	],

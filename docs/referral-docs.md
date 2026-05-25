@@ -1545,3 +1545,166 @@ GET /v1/referral/bank-accounts HTTP/1.1
     }
 ]
 ```
+
+Global Coupons
+==============
+
+Create Global Coupon
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+POST /v1/referral/global-coupons HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "code": "james89",
+    "discountPercentage": 99,
+    "expiresAt": "2029-12-31"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "08467dd2-2c15-4142-8ac4-98c4cbc9867c",
+    "code": "james89",
+    "discountPercentage": "99",
+    "ordersCount": 0,
+    "totalSales": {
+        "amount": 0,
+        "currencyCode": "qar"
+    },
+    "totalCommission": {
+        "amount": 0,
+        "currencyCode": "qar"
+    },
+    "expiresAt": "2029-12-31T00:00:00.000Z",
+    "updatedAt": "2026-06-01T13:10:24.978Z",
+    "createdAt": "2026-06-01T13:10:24.978Z"
+}
+```
+
+Get Global Coupons
+------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+GET /v1/referral/global-coupons HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "08467dd2-2c15-4142-8ac4-98c4cbc9867c",
+        "code": "james89",
+        "discountPercentage": "99",
+        "ordersCount": 0,
+        "totalSales": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "totalCommission": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "expiresAt": "2029-12-31T00:00:00.000Z",
+        "updatedAt": "2026-06-01T13:10:24.978Z",
+        "createdAt": "2026-06-01T13:10:24.978Z"
+    }
+]
+```
+
+Get Global Coupon
+-----------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+GET /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "5fb8b227-dc8b-41b0-b1f0-882b7de2d393",
+    "code": "james99",
+    "discountPercentage": "99",
+    "ordersCount": 0,
+    "totalSales": {
+        "amount": 0,
+        "currencyCode": "usd"
+    },
+    "totalCommission": {
+        "amount": 0,
+        "currencyCode": "usd"
+    },
+    "expiresAt": "2029-12-31T00:00:00.000Z",
+    "updatedAt": "2026-06-01T13:04:55.597Z",
+    "createdAt": "2026-06-01T13:04:55.597Z"
+}
+```
+
+Update Global Coupon
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+PUT /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "code": "james66",
+    "discountPercentage": 66,
+    "expiresAt": "2029-12-31"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "5fb8b227-dc8b-41b0-b1f0-882b7de2d393",
+    "code": "james66",
+    "discountPercentage": 66,
+    "ordersCount": 0,
+    "totalSales": {
+        "amount": 0,
+        "currencyCode": "usd"
+    },
+    "totalCommission": {
+        "amount": 0,
+        "currencyCode": "usd"
+    },
+    "expiresAt": "2029-12-31T00:00:00.000Z",
+    "updatedAt": "2026-06-01T13:50:19.502Z",
+    "createdAt": "2026-06-01T13:04:55.597Z"
+}
+```
+
+Delete Global Coupon
+--------------------
+
+> [!IMPORTANT]
+> Required roles: `SuperAdmin`, `Admin`, `Manager`
+
+```http
+DELETE /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
+```
