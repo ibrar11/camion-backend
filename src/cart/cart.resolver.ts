@@ -21,7 +21,9 @@ import { CartItem } from "./entities/cart-items.entity";
 import { CartItemsService } from "./cart.service";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
-import { ProductVariant } from "src/inventory/entities/product-variant.entity";
+import { ProductVariant } from "../inventory/entities/product-variant.entity";
+
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 @ArgsType()
 export class GetCustomerCartArgs {
@@ -29,7 +31,7 @@ export class GetCustomerCartArgs {
     language: string;
 
     @Field({ defaultValue: "usd", })
-    currency: string;
+    currency: CurrencyCode;
 
     @Field(() => Int, { defaultValue: 1, })
     pageNumber: number;
@@ -62,7 +64,7 @@ export class CartResolver {
                 error: "Failed to find the customer. Please check and try again",
             });
         }
-        return this.cartService.findCart(customer, "", "", args.pageNumber, args.itemsPerPage);
+        return this.cartService.findCart(customer, "", "", args.pageNumber, args.itemsPerPage, args.currency);
     }
 
     @Query(() => Number)

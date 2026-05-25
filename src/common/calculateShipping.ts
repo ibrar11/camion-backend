@@ -6,6 +6,8 @@ import shippingRatesData from 'src/data/shipping-rates.json';
 
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 
+import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
+
 export interface WeightRange {
     min: number;
     max: number;
@@ -135,13 +137,13 @@ export function calculateCartShipping(
     declaredValue?: number
 ): ShippingCalculationResult {
     try {
-        // Todo: exchage rate imeplementation (CNY -> target and USD -> target)
-        const cnyToTarget = rates?.find(rate => rate.srcCurrencyCode === 'cny' && rate.targetCurrencyCode === currency);
-        const usdToTarget = rates?.find(rate => rate.srcCurrencyCode === 'usd' && rate.targetCurrencyCode === currency);
+        // Todo: exchange rate implementation (CNY -> target and USD -> target)
+        const cnyToTarget = rates?.find(rate => rate.srcCurrencyCode.toLowerCase() === CurrencyCode.CNY.toLowerCase() && rate.targetCurrencyCode.toLowerCase() === currency.toLowerCase());        
+        const usdToTarget = rates?.find(rate => rate.srcCurrencyCode.toLowerCase() === CurrencyCode.USD.toLowerCase() && rate.targetCurrencyCode.toLowerCase() === currency.toLowerCase());
 
         const exchangeRates = {
             cnyToTarget: cnyToTarget?.factor ?? 0.54, // default converting CNY → QAR
-            usdToTarget: usdToTarget?.factor ?? 0.15, // default target = QAR
+            usdToTarget: (currency.toLowerCase() === CurrencyCode.USD.toLowerCase()) ? 1 : usdToTarget?.factor ?? 0.15, // default target = QAR
             currency: currency,
         };
 

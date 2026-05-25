@@ -28,6 +28,8 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 import { OrderStatus } from "./enums/OrderStatus";
 import { OrderPreviewResponse } from "./types";
 
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+
 @ArgsType()
 export class GetCustomerOrdersArgs {
     @Field(() => Int, { defaultValue: 1, })
@@ -69,7 +71,7 @@ export class GetCustomerOrderPreviewArgs {
     language: string;
 
     @Field({ defaultValue: "usd", })
-    currency: string;
+    currency: CurrencyCode;
 
     @Field(() => String, { nullable: true })
     @IsOptional()
@@ -108,7 +110,7 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer order. Please check and try again.",
             });
         }
-        return this.orderService.orderPreview(context.req.customer, args.couponCode);
+        return this.orderService.orderPreview(context.req.customer, args.currency, args.couponCode);
     }
 }
 
