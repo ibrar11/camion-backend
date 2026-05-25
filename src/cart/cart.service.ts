@@ -219,83 +219,46 @@ export class CartItemsService {
             take: take,
         });
 
-        let exchangeRate = 1;
+        const result: CartItem[] = [];
 
-        const srcCurrencyCode = cartItems[0]?.discountPrice.currencyCode;
-
-        this.logger.log(`Cart items stored with the currency: ${srcCurrencyCode.toLowerCase()}`);
-
-        if (srcCurrencyCode !== currency) {
-            const rate = await this.exchangeRateRepository.findOne({
-                where: {
-                    srcCurrencyCode: srcCurrencyCode,
-                    targetCurrencyCode: currency
-                }
-            });
-
-            this.logger.log(`Found exchange rate for ${srcCurrencyCode.toLowerCase()} to ${currency.toLowerCase()} : ${JSON.stringify(rate)}`);
-            
-            if(!rate) {
-                const reverseRate = await this.exchangeRateRepository.findOne({
-                    where: {
-                        srcCurrencyCode: currency,
-                        targetCurrencyCode: srcCurrencyCode
-                    }
-                });
-
-                this.logger.log(`Found reverse exchange rate for ${currency.toLowerCase()} to ${srcCurrencyCode.toLowerCase()} : ${JSON.stringify(reverseRate)}`);
-
-                if (!reverseRate) {
-                    throw new BadRequestException({
-                        error: `Could not found exchange rate for ${srcCurrencyCode} to ${currency}`
-                    })
-                }
-                
-                exchangeRate = 1 / (reverseRate?.factor || 1);
-            }else {
-                exchangeRate = rate.factor;
+        for (const cartItem of cartItems) {
+            if (!cartItem.product || cartItem.product.status !== ProductStatus.ACTIVE) {
+                continue;
             }
+
+            if (!cartItem.variant) {
+                continue;
+            }
+
+            const stock = calculateStock(cartItem.variant);
+            cartItem.product.variants = [];
+            cartItem.availableStock = stock;
+            cartItem.isAvailable = stock > 0;
+
+            const price = await this.pricingService.applyPriceOnProductVariant(
+                cartItem.product,
+                cartItem.variant,
+                currency,
+                true,
+            );
+
+            cartItem.subTotal = {
+                amount: price.amount * cartItem.quantity,
+                currencyCode: price.currencyCode,
+            };
+            cartItem.discountPrice = {
+                amount: 0,
+                currencyCode: price.currencyCode,
+            };
+            cartItem.total = {
+                amount: price.amount * cartItem.quantity,
+                currencyCode: price.currencyCode,
+            };
+
+            result.push(cartItem);
         }
 
-        return cartItems
-            .map((cartItem) => {
-                // Ignore if the product isn't available for sale
-                if (!cartItem.product || cartItem.product.status !== ProductStatus.ACTIVE) {
-                    return null;
-                }
-
-                // Ignore if the cart item has no variant
-                if (!cartItem.variant) {
-                    return null;
-                }
-
-                // Calculate the stock of the variant.
-                const stock = calculateStock(cartItem.variant);
-
-                // Update the stock entries of each cart item.
-                cartItem.product.variants = [];
-                cartItem.availableStock = stock;
-                cartItem.isAvailable = stock > 0;
-
-                // Convert the cart item prices
-                cartItem.subTotal = {
-                    amount: Math.max(5, Math.ceil(cartItem.subTotal.amount * exchangeRate)),
-                    currencyCode: currency
-                }
-                cartItem.discountPrice = {
-                    amount: Math.max(5, Math.ceil(cartItem.discountPrice.amount * exchangeRate)),
-                    currencyCode: currency
-                }
-                cartItem.total = {
-                    amount: Math.max(5, Math.ceil(cartItem.total.amount * exchangeRate)),
-                    currencyCode: currency
-                }
-
-                return cartItem;
-            })
-            .filter((cartItem) => {
-                return cartItem !== null && cartItem !== undefined;
-            });
+        return result;
     }
 
     /**
