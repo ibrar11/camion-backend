@@ -46,7 +46,7 @@ export class CouponsController {
 		@Body()
 		body: CreateCouponDto,
 	): Promise<Coupon> {
-		return this.couponService.createCoupon(req.customer.uuid, body);
+		return this.couponService.createCouponForCustomer(req.customer.uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, CustomerRole.Affiliate, CustomerRole.Influencer)
