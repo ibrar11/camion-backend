@@ -64,6 +64,7 @@ export class CartResolver {
                 error: "Failed to find the customer. Please check and try again",
             });
         }
+        console.log(`Attempting to fetch cart for customer ${customer.uuid} with currency ${args.currency}`);
         return this.cartService.findCart(customer, "", "", args.pageNumber, args.itemsPerPage, args.currency);
     }
 
