@@ -84,6 +84,22 @@ export class BannersResolver {
 		return "";
 	}
 
+	@ResolveField("linkUrl", () => String)
+	getLinkUrl(@Parent() banner: Banner, @Args() args: GetBannersArgs): string {
+		if (banner === null) {
+			return "";
+		}
+
+		const language = args.language.toLowerCase() || "en";
+
+		const linkUrlMap = {
+			"en": banner.linkUrlEn,
+			"ar": banner.linkUrlAr,
+		};
+
+		return linkUrlMap[language] ?? banner.linkUrlEn;
+	}
+
 	@Query(() => [Banner])
 	getBanners(@Args() args: GetBannersArgs): Promise<Array<Banner>> {
 		return this.bannersService.findAll("", "", args.pageNumber, args.itemsPerPage);

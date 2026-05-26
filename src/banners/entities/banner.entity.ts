@@ -47,8 +47,15 @@ export class Banner {
 	imageUrlAr: string;
 
 	@Field()
-	@Column()
 	linkUrl: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	linkUrlEn: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	linkUrlAr: string;
 
 	@Field()
 	@Column({ default: "homepage" })

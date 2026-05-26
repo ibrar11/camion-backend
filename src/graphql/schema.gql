@@ -42,7 +42,9 @@ type Banner {
   imageUrlAr: String!
   imageUrlEn: String!
   isActive: Boolean!
-  linkUrl: String!
+  linkUrl(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
+  linkUrlAr: String!
+  linkUrlEn: String!
   placement: String!
   title(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
   titleAr: String!

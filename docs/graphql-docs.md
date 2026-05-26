@@ -181,8 +181,8 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
   getBanners(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
     uuid
     title(language: $language)
-    imageUrl
-    linkUrl
+    imageUrl(language: $language)
+    linkUrl(language: $language)
     placement
     color
     isActive
@@ -210,7 +210,7 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "uuid": "065ebf39-a638-4bc1-aec0-93fb4286a652",
                 "title": "New Product (English)",
                 "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1bd64a8f-dd34-4b49-adb5-659bf2b7a151.jpg",
-                "linkUrl": "New Products",
+                "linkUrl": "https://camion-app.com/en/categories/women-dress",
                 "placement": "homepage",
                 "color": "#000000",
                 "isActive": true
@@ -219,7 +219,7 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "uuid": "2d051593-91d1-41bb-b955-35211715599f",
                 "title": "",
                 "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
-                "linkUrl": "",
+                "linkUrl": "https://camion-app.com/en/categories/women-dress",
                 "placement": "",
                 "color": "#000000",
                 "isActive": true
