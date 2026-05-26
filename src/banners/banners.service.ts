@@ -80,10 +80,9 @@ export class BannersService {
 			});
 		}
 
-
-
 		// Delete the temporary files
 		await this.fileService.deleteFile(filesEn[0]);
+		await this.fileService.deleteFile(filesAr[0]);
 
 		// Create a banner using the uploaded file
 		const banner = new Banner();
@@ -199,7 +198,8 @@ export class BannersService {
 		// Update the banner
 		banner.titleEn = body.title.en.trim();
 		banner.titleAr = body.title.ar.trim();
-		banner.linkUrl = body.linkUrl.trim();
+		banner.linkUrlEn = body.linkUrl.en.trim();
+		banner.linkUrlAr = body.linkUrl.ar.trim();
 		banner.placement = body.placement.trim();
 		banner.color = body.color.trim();
 		banner.isActive = body.isActive;

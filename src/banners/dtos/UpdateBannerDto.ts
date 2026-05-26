@@ -15,13 +15,22 @@ export class TitleField {
 	ar: string;
 }
 
+export class LinkUrlField {
+	@IsString()
+	@MinLength(1)
+	en: string;
+
+	@IsString()
+	@MinLength(1)
+	ar: string;
+}
+
 export class UpdateBannerDto {
 	@ValidateNested()
 	title: TitleField;
 
-	@IsString()
-	@MinLength(1)
-	linkUrl: string;
+	@ValidateNested()
+	linkUrl: LinkUrlField;
 
 	@IsBoolean()
 	isActive: boolean;
