@@ -552,15 +552,17 @@ export class ProcurementService {
 
                 const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
+                const price = parseFloat(
+                    sku.price ||
+                    sku.consignPrice ||
+                    sku.fenxiaoPriceInfo?.offerPrice ||
+                    '0'
+                );
+
                 return {
                     title: title,
                     skuId: sku.skuId,
-                    price: parseFloat(
-                        sku.price ||
-                        sku.consignPrice ||
-                        sku.fenxiaoPriceInfo?.offerPrice ||
-                        '0'
-                    ),
+                    price: smartRoundInt(price),
                     stock: sku.amountOnSale,
                     attributes,
                     image: skuImg,
