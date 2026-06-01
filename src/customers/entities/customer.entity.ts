@@ -117,6 +117,7 @@ export class Customer {
 	@OneToOne(() => Affiliate, (affiliate) => affiliate.customer)
 	affiliate: Affiliate;
 
+	@Exclude()
 	@Column({ type: 'jsonb',default: () => "'[]'"})
 	firebaseDeviceToken: string[] = [];
 
