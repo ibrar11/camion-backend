@@ -18,10 +18,12 @@ import { CreateCouponDto } from "./dtos/CreateCouponDto";
 import { UpdateCouponDto } from "./dtos/UpdateCouponDto";
 
 import { CustomerRole } from "../customers/enums/CustomerRole";
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { Affiliate } from "./entities/affiliate.entity";
 import { Coupon } from "./entities/coupon.entity";
 import { Customer } from "../customers/entities/customer.entity";
+import { GlobalCoupon } from "./entities/global-coupon.entity";
 
 @Injectable()
 export class CouponsService {
@@ -31,6 +33,7 @@ export class CouponsService {
 		@InjectRepository(Affiliate) private readonly affiliateRepository: Repository<Affiliate>,
 		@InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
 		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+		@InjectRepository(GlobalCoupon) private readonly globalCouponRepository: Repository<GlobalCoupon>,
 	) { }
 
 	/**
@@ -81,6 +84,19 @@ export class CouponsService {
 			});
 		}
 
+		// Make sure a global coupon doesn't already exist
+		const globalCouponByCode = await this.globalCouponRepository.findOneBy({
+			code: body.code.toLowerCase().trim(),
+		});
+
+		if (globalCouponByCode !== null) {
+			throw new ConflictException({
+				errors: {
+					code: "A global coupon using the same code already exists. Please use a different code.",
+				},
+			});
+		}
+
 		// Find the affiliate
 		const affiliate = await this.affiliateRepository.findOne({
 			where: {
@@ -112,6 +128,14 @@ export class CouponsService {
 		coupon.code = body.code.toLowerCase().trim();
 		coupon.discountPercentage = body.discountPercentage;
 		coupon.expiresAt = new Date(body.expiresAt);
+		coupon.totalSales = {
+			amount: 0,
+			currencyCode: CurrencyCode.QAR,
+		};
+		coupon.totalCommission = {
+			amount: 0,
+			currencyCode: CurrencyCode.QAR,
+		};
 		return this.couponRepository.save(coupon);
 	}
 
@@ -153,6 +177,19 @@ export class CouponsService {
 			});
 		}
 
+		// Make sure a global coupon doesn't already exist
+		const globalCouponByCode = await this.globalCouponRepository.findOneBy({
+			code: body.code.toLowerCase().trim(),
+		});
+
+		if (globalCouponByCode !== null) {
+			throw new ConflictException({
+				errors: {
+					code: "A global coupon using the same code already exists. Please use a different code.",
+				},
+			});
+		}
+
 		// Update the affiliate
 		affiliate.couponsCreated += 1;
 		await this.affiliateRepository.save(affiliate);
@@ -163,6 +200,14 @@ export class CouponsService {
 		coupon.code = body.code.toLowerCase().trim();
 		coupon.discountPercentage = body.discountPercentage;
 		coupon.expiresAt = new Date(body.expiresAt);
+		coupon.totalSales = {
+			amount: 0,
+			currencyCode: CurrencyCode.QAR,
+		};
+		coupon.totalCommission = {
+			amount: 0,
+			currencyCode: CurrencyCode.QAR,
+		};
 		return this.couponRepository.save(coupon);
 	}
 
@@ -329,6 +374,33 @@ export class CouponsService {
 		if (coupon?.affiliate?.customer?.uuid !== customerUUID) {
 			throw new ForbiddenException({
 				error: "You're not authorized to update this coupon. Please check and try again.",
+			});
+		}
+
+		// Make sure the coupon doesn't already exist
+		const couponByCode = await this.couponRepository.findOneBy({
+			code: body.code.toLowerCase().trim(),
+		});
+
+		// Make sure the coupon doesn't already exist
+		if (couponByCode !== null && couponByCode.uuid !== coupon.uuid) {
+			throw new ConflictException({
+				errors: {
+					code: "A coupon using the same code already exists. Please use a different code.",
+				},
+			});
+		}
+
+		// Make sure a global coupon doesn't already exist
+		const globalCouponByCode = await this.globalCouponRepository.findOneBy({
+			code: body.code.toLowerCase().trim(),
+		});
+
+		if (globalCouponByCode !== null) {
+			throw new ConflictException({
+				errors: {
+					code: "A global coupon using the same code already exists. Please use a different code.",
+				},
 			});
 		}
 

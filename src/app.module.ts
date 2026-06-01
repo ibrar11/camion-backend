@@ -93,6 +93,7 @@ import { Coupon } from "./referral/entities/coupon.entity";
 import { Transaction } from "./referral/entities/transaction.entity";
 import { Wallet } from "./referral/entities/wallet.entity";
 import { ReferralModule } from './referral/referral.module';
+import { GlobalCoupon } from "./referral/entities/global-coupon.entity";
 
 import { Currency } from "./currencies/entities/currency.entity";
 import { CurrenciesModule } from './currencies/currencies.module';
@@ -244,6 +245,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 					Coupon,
 					Transaction,
 					Wallet,
+					GlobalCoupon,
 
 					WishlistItem,
 

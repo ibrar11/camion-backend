@@ -27,6 +27,7 @@ import { OrderItem } from "./order-item.entity";
 import { Money } from "../../inventory/entities/product-variant.entity";
 import { Coupon } from "../../referral/entities/coupon.entity";
 import { PaymentTransaction } from "../../payments/entities/payment-transaction.entity";
+import { GlobalCoupon } from "src/referral/entities/global-coupon.entity";
 
 @ObjectType()
 export class CouponOrder {
@@ -70,6 +71,10 @@ export class Order {
     @ManyToOne(() => Coupon, (coupon) => coupon.orders)
     @Index()
     coupon: Coupon | null;
+
+    @ManyToOne(() => GlobalCoupon, (coupon) => coupon.orders)
+    @Index()
+    globalCoupon: GlobalCoupon | null;
 
     @Field()
     @Column({
