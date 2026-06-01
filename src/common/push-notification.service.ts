@@ -72,48 +72,41 @@ export class PushNotificationService {
             }
 
             const pushNotification: string[] = [];
-            const deviceTokens = customer?.firebaseDeviceToken || [];
+            const deviceTokens = [...(customer.firebaseDeviceToken || [])];
 
-            if (deviceTokens?.length > 0) {
-                for (let i = 0; i < deviceTokens.length; i++) {
-                    try {
-                        const message: admin.messaging.Message = {
-                            token: customer.firebaseDeviceToken[i],
-                            notification: {
-                                title: notification.title,
-                                body: notification.message
-                            },
-                            data: notification.payload || {},
-                        };
+            for (const token of deviceTokens) {
+                try {
+                    const message: admin.messaging.Message = {
+                        token,
+                        notification: {
+                            title: notification.title,
+                            body: notification.message,
+                        },
+                        data: notification.payload || {},
+                    };
 
-                        const res = await this.firebase.messaging().send(message);
-                        pushNotification.push(res);
+                    const res = await this.firebase.messaging().send(message);
+                    pushNotification.push(res);
 
-                        this.logger.log(`Sent push to ${customer.firebaseDeviceToken[i]?.slice(0, 10)}... ✅ (${res})`);
-                    } catch (error: any) {
-                        this.logger.error({
-                            message: error?.message,
-                            code: error?.code,
-                            errorInfo: error?.errorInfo,
-                        });
-                        this.logger.error(`Error sending push to ${customer.firebaseDeviceToken[i]?.slice(0, 10)}`);
+                    this.logger.log(`Sent push to ${token.slice(0, 10)}... ✅ (${res})`);
+                } catch (error: any) {
+                    this.logger.error({
+                        message: error?.message,
+                        code: error?.code,
+                        errorInfo: error?.errorInfo,
+                    });
+                    this.logger.error(`Error sending push to ${token.slice(0, 10)}`);
 
-                        const code = error?.errorInfo?.code || error?.code;
-                        const token = customer.firebaseDeviceToken[i];
+                    const code = error?.errorInfo?.code || error?.code;
 
-                        if (
-                            code === 'messaging/registration-token-not-registered' ||
-                            code === 'messaging/invalid-registration-token'
-                        ) {
-                            this.logger.warn(`Removing invalid token`);
+                    if (
+                        code === 'messaging/registration-token-not-registered' ||
+                        code === 'messaging/invalid-registration-token'
+                    ) {
+                        customer.firebaseDeviceToken =
+                            customer.firebaseDeviceToken.filter(t => t !== token);
 
-                            customer.firebaseDeviceToken =
-                                customer.firebaseDeviceToken.filter(
-                                    (t) => t !== token
-                                );
-
-                            await this.customerRepository.save(customer);
-                        }
+                        await this.customerRepository.save(customer);
                     }
                 }
             }
