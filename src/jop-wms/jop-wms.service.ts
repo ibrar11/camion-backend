@@ -393,6 +393,28 @@ export class JopWmsService {
             });
         }
 
+        // ── Guard: reject if any item quantity is below the supplier's minimum ──
+        const belowMinQty: Array<{ sku: string; orderUuid: string; quantity: number; minOrderQuantity: number }> = [];
+        for (const { items } of shopGroups.values()) {
+            for (const { order, item } of items) {
+                const minQty = Number(item.variant?.skuMeta?.min_order_quantity ?? 1);
+                if (item.quantity < minQty) {
+                    belowMinQty.push({
+                        sku: item.variant?.sku ?? 'unknown',
+                        orderUuid: order.uuid,
+                        quantity: item.quantity,
+                        minOrderQuantity: minQty,
+                    });
+                }
+            }
+        }
+        if (belowMinQty.length) {
+            throw new BadRequestException({
+                message: 'Cannot dispatch: some items are below the supplier minimum order quantity.',
+                belowMinQty,
+            });
+        }
+
         // ── Load warehouse address (needed by Gulltrans) ───────────────────────
         const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
         if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
