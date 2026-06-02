@@ -80,6 +80,7 @@ import { StoryFrame } from "./stories/entities/story-frame.entity";
 import { StoriesModule } from './stories/stories.module';
 
 import { Banner } from "./banners/entities/banner.entity";
+import { BannerCategory } from "./banners/entities/banner-category";
 import { BannersModule } from './banners/banners.module';
 
 import { NewsletterModule } from "./newsletter/newsletter.module";
@@ -233,6 +234,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 					StoryFrame,
 
 					Banner,
+					BannerCategory,
 
 					Order,
 					OrderItem,

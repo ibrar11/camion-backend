@@ -45,6 +45,8 @@ The following features are currently supported by the GraphQL API.
 - Get Current Customer
 - Get Current Customer Addresses
 - Get Banners
+- Get Banners By Placement
+- Get Banners By Category
 - Get Stories
 - Get CMS Pages
 - Get CMS Page
@@ -222,6 +224,112 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "linkUrl": "https://camion-app.com/en/categories/women-dress",
                 "placement": "",
                 "color": "#000000",
+                "isActive": true
+            }
+        ]
+    }
+}
+```
+
+Get Banners By Placement
+------------------------
+
+> [!IMPORTANT]
+> If there are no banners for the desired placement, it will fallback to all banners.
+
+### Request Body
+
+```graphql
+query GetBannersByPlacement($placement: String, $language: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getBannersByPlacement(placement: $placement, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    title(language: $language)
+    imageUrl(language: $language)
+    linkUrl(language: $language)
+    placement
+    color
+    isActive
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "placement": "homepage",
+    "language": "en",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getBannersByPlacement": [
+            {
+                "uuid": "8ba3fe43-d8f0-4888-891c-2f7d09f04e0d",
+                "title": "",
+                "imageUrl": "https://assets.dev.camiontrading.com/banners/en/image.webp",
+                "linkUrl": "en",
+                "placement": "homepage",
+                "color": "#fffaf6",
+                "isActive": true
+            }
+        ]
+    }
+}
+```
+
+Get Banners By Category
+-----------------------
+
+> [!IMPORTANT]
+> If there are no banners for the desired category, it will fallback to all banners.
+
+### Request Body
+
+```graphql
+query GetBannersByCategory($slug: String, $language: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getBannersByCategory(slug: $slug, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    title(language: $language)
+    imageUrl(language: $language)
+    linkUrl(language: $language)
+    placement
+    color
+    isActive
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "slug": "mobile-accessories",
+    "language": "en",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getBannersByCategory": [
+            {
+                "uuid": "8ba3fe43-d8f0-4888-891c-2f7d09f04e0d",
+                "title": "",
+                "imageUrl": "https://assets.dev.camiontrading.com/banners/en/image.webp",
+                "linkUrl": "en",
+                "placement": "homepage",
+                "color": "#fffaf6",
                 "isActive": true
             }
         ]

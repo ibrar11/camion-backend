@@ -131,6 +131,9 @@ PUT /v1/banners/<banner-uuid> HTTP/1.1
         "en": "https://camion-app.com/en/categories/women-dress",
         "ar": "https://camion-app.com/ar/categories/women-dress"
     },
+    "categories": [
+        "7971a23c-2363-4608-a47d-421e81dd370c"
+    ],
     "isActive": true,
     "placement": "homepage",
     "color": "#000000"

@@ -7,11 +7,15 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
 
 import { Exclude } from "class-transformer";
+
+import { BannerCategory } from "./banner-category";
 
 @ObjectType()
 @Entity({ name: "banners" })
@@ -59,6 +63,7 @@ export class Banner {
 
 	@Field()
 	@Column({ default: "homepage" })
+	@Index()
 	placement: string;
 
 	@Field()
@@ -68,6 +73,9 @@ export class Banner {
 	@Field()
 	@Column({ default: true, })
 	isActive: boolean;
+
+	@OneToMany(() => BannerCategory, (bannerCategory) => bannerCategory.banner, { cascade: true, })
+	bannerCategories: Array<BannerCategory>;
 
 	@Exclude()
 	@UpdateDateColumn({
