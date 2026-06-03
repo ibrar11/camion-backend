@@ -33,7 +33,6 @@ import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { ExchangeRateService } from '../pricing/exchange-rate.service';
 
 import { Coupon } from '../referral/entities/coupon.entity';
-import { GlobalCoupon } from '../referral/entities/global-coupon.entity';
 
 import { Wallet } from '../referral/entities/wallet.entity';
 
@@ -72,7 +71,6 @@ import { Product } from '../inventory/entities/product.entity';
             PaymentTransaction,
             ExchangeRate,
             Coupon,
-            GlobalCoupon,
             Wallet,
             Affiliate,
             Transaction,
