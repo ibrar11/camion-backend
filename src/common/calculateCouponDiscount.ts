@@ -3,12 +3,11 @@ import {
 } from "@nestjs/common";
 
 import { Coupon } from "../referral/entities/coupon.entity";
-import { GlobalCoupon } from "../referral/entities/global-coupon.entity";
 
 import { Affiliate } from "../referral/entities/affiliate.entity";
 
 export function calculateCouponDiscount(
-    coupon: Coupon | GlobalCoupon,
+    coupon: Coupon,
     orderSubtotal: number,
     customerId?: string,
 ): number {
@@ -20,20 +19,18 @@ export function calculateCouponDiscount(
             );
         }
 
-        if ('affiliate' in coupon) {
-            // Check if affiliate is active
-            if (coupon.affiliate.status !== 'accepted') {
-                throw new BadRequestException(
-                    "This coupon is currently unavailable."
-                );
-            }
+        // Check if affiliate is active
+        if (coupon.affiliate.status !== 'accepted') {
+            throw new BadRequestException(
+                "This coupon is currently unavailable."
+            );
+        }
 
-            // Prevent customer from using their own coupon
-            if (customerId && coupon.affiliate?.customer?.uuid === customerId) {
-                throw new BadRequestException(
-                    "You cannot use your own affiliate coupon."
-                );
-            }
+        // Prevent customer from using their own coupon
+        if (customerId && coupon.affiliate.customer?.uuid === customerId) {
+            throw new BadRequestException(
+                "You cannot use your own affiliate coupon."
+            );
         }
 
         // Calculate discount amount
