@@ -43,6 +43,7 @@ import { ExchangeRateService } from "../pricing/exchange-rate.service";
 import { calculateStock } from "../common/calculateStock";
 
 import { Coupon } from "../referral/entities/coupon.entity";
+import { GlobalCoupon } from "../referral/entities/global-coupon.entity";
 
 import { Wallet } from "../referral/entities/wallet.entity";
 
@@ -104,6 +105,7 @@ export class OrderService {
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
         @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
         @InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
+        @InjectRepository(GlobalCoupon) private readonly globalCouponRepository: Repository<GlobalCoupon>,
         @InjectRepository(KeyValuePair) private readonly keyValuePairRepository: Repository<KeyValuePair>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
@@ -366,9 +368,10 @@ export class OrderService {
 
             // COUPON VALIDATION & DISCOUNT
             let discount = 0;
-            let coupon: Coupon | null = null;
+            let affiliateCoupon: Coupon | null = null;
+            let globalCoupon: GlobalCoupon | null = null;
             if (dto.couponCode) {
-                coupon = await this.couponRepository.findOne({
+                affiliateCoupon = await this.couponRepository.findOne({
                     where: { code: dto.couponCode?.toLowerCase().trim() },
                     relations: {
                         affiliate: {
@@ -378,14 +381,21 @@ export class OrderService {
                     },
                 });
 
-                if (!coupon) {
-                    throw new BadRequestException({
-                        error: "Coupon does not exists. Please try again with valid coupon.",
+                if (!affiliateCoupon) {
+                    globalCoupon = await this.globalCouponRepository.findOne({
+                        where: { code: dto.couponCode.toLowerCase().trim() },
                     });
+                    if (!globalCoupon) {
+                        throw new BadRequestException(
+                            "Coupon does not exists. Please try again with valid coupon."
+                        )
+                    }
                 }
-
-                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                discount = smartRoundInt(discount);
+                const coupon = affiliateCoupon ? affiliateCoupon : globalCoupon;
+                if (coupon) {
+                    discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                    discount = Math.ceil(discount);
+                }
             }
 
             const min_order_amount = Number(
@@ -409,7 +419,8 @@ export class OrderService {
             const order = new Order();
             order.uuid = crypto.randomUUID();
             order.customer = customer;
-            order.coupon = coupon;
+            order.coupon = affiliateCoupon;
+            order.globalCoupon = globalCoupon;
             order.status = OrderStatus.PAYMENT_PENDING;
             order.subTotal = {
                 amount: subTotal,
@@ -437,11 +448,11 @@ export class OrderService {
             await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
 
             // RECORD AFFILIATE COMMISSION
-            if (coupon?.affiliate && coupon.code && discount >= 0) {
+            if (affiliateCoupon?.affiliate && affiliateCoupon.code && discount >= 0) {
                 const commissionAmount = discount;
 
-                if (commissionAmount > 0 && coupon.affiliate.wallet?.id) {
-                    const walletId = coupon.affiliate.wallet.id;
+                if (commissionAmount > 0 && affiliateCoupon.affiliate.wallet?.id) {
+                    const walletId = affiliateCoupon.affiliate.wallet.id;
                     const wallet = await queryRunner.manager.findOne(Wallet, {
                         where: { id: walletId },
                         relations: { affiliate: true },
@@ -460,7 +471,7 @@ export class OrderService {
                     referralTx.amount = new TransactionMoney();
                     referralTx.amount.amount = commissionAmount;
                     referralTx.amount.currencyCode = currency as CurrencyCode;
-                    referralTx.description = `Commission from order #${order.uuid} using coupon ${coupon.code}`;
+                    referralTx.description = `Commission from order #${order.uuid} using coupon ${affiliateCoupon.code}`;
                     await queryRunner.manager.save(referralTx);
 
                     // Update wallet balance
@@ -476,13 +487,22 @@ export class OrderService {
                     await queryRunner.manager.save(affiliate);
 
                     // Update the statistics on the coupon
-                    coupon.ordersCount += 1;
-                    coupon.totalSales.amount += subTotal;
-                    coupon.totalSales.currencyCode = currency;
-                    coupon.totalCommission.amount += commissionAmount;
-                    coupon.totalCommission.currencyCode = currency;
-                    await queryRunner.manager.save(coupon);
+                    affiliateCoupon.ordersCount += 1;
+                    affiliateCoupon.totalSales.amount += subTotal;
+                    affiliateCoupon.totalSales.currencyCode = currency;
+                    affiliateCoupon.totalCommission.amount += commissionAmount;
+                    affiliateCoupon.totalCommission.currencyCode = currency;
+                    await queryRunner.manager.save(affiliateCoupon);
                 }
+            } else if (globalCoupon && globalCoupon.code && discount >= 0) {
+                const commissionAmount = discount;
+
+                globalCoupon.ordersCount += 1;
+                globalCoupon.totalSales.amount += subTotal;
+                globalCoupon.totalSales.currencyCode = currency;
+                globalCoupon.totalCommission.amount += commissionAmount;
+                globalCoupon.totalCommission.currencyCode = currency;
+                await queryRunner.manager.save(globalCoupon);
             }
 
             const customerName: Array<string> = customer.fullName.split(" ");
@@ -972,7 +992,7 @@ export class OrderService {
     * @param customer
     * @returns
     */
-    async orderPreview(customer: Customer, currencyCode: CurrencyCode = CurrencyCode.QAR , couponCode?: string): Promise<OrderPreviewResponse> {
+    async orderPreview(customer: Customer, currencyCode: CurrencyCode = CurrencyCode.QAR, couponCode?: string): Promise<OrderPreviewResponse> {
         try {
             // Get cart items with relations
             const cartItems = await this.cartRepository.find({
@@ -1115,7 +1135,8 @@ export class OrderService {
             // COUPON VALIDATION & DISCOUNT
             let discount = 0;
             if (couponCode) {
-                const coupon = await this.couponRepository.findOne({
+                let coupon: Coupon | GlobalCoupon | null = null;
+                const affiliateCoupon = await this.couponRepository.findOne({
                     where: { code: couponCode?.toLowerCase().trim() },
                     relations: {
                         affiliate: {
@@ -1125,13 +1146,23 @@ export class OrderService {
                     },
                 });
 
-                if (!coupon) {
-                    throw new BadRequestException(
-                        "Coupon does not exists. Please try again with valid coupon."
-                    )
+                coupon = affiliateCoupon;
+
+                if (!affiliateCoupon) {
+                    const globalCoupon = await this.globalCouponRepository.findOne({
+                        where: { code: couponCode?.toLowerCase().trim() },
+                    });
+                    if (!globalCoupon) {
+                        throw new BadRequestException(
+                            "Coupon does not exists. Please try again with valid coupon."
+                        )
+                    }
+                    coupon = globalCoupon;
                 }
-                discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                discount = smartRoundInt(discount);
+                if (coupon) {
+                    discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
+                    discount = Math.ceil(discount);
+                }
             }
 
             // let subTotalInQar = subTotal;
