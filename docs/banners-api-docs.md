@@ -70,6 +70,19 @@ itemsPerPage | The number of results to retrieve in the response | 100
 ```json
 [
     {
+        "uuid": "7e9f5769-9b74-4b76-913e-a96c6bb18868",
+        "titleEn": "",
+        "titleAr": "",
+        "imageUrlEn": "s3://banners/53eac2de-d96d-42c9-9ddb-5570f4d14f79.jpg",
+        "imageUrlAr": "s3://banners/c3e63fe7-0102-4100-b15a-36837101ab73.jpg",
+        "linkUrlEn": "",
+        "linkUrlAr": "",
+        "placement": "",
+        "color": "",
+        "isActive": true,
+        "bannerCategories": []
+    },
+    {
         "uuid": "56762a1a-80b7-46a9-bcd9-5654ea5c677b",
         "titleEn": "New Product (English)",
         "titleAr": "New Product (Arabic)",
@@ -79,7 +92,23 @@ itemsPerPage | The number of results to retrieve in the response | 100
         "linkUrlAr": "https://camion-app.com/ar/categories/women-dress",
         "placement": "homepage",
         "color": "#000000",
-        "isActive": true
+        "isActive": true,
+        "bannerCategories": [
+            {
+                "id": 4,
+                "category": {
+                    "uuid": "7971a23c-2363-4608-a47d-421e81dd370c",
+                    "slug": "mobile-accessories",
+                    "nameEn": "Mobile Accessories",
+                    "nameAr": "ملحقات الهواتف المحمولة",
+                    "pricingFactor": "1",
+                    "discountPercentage": "0",
+                    "thumbnailUrl": "s3://categories/5b59c9f2-178f-4c40-976b-90c4012c4b0a.jpg",
+                    "isFeatured": false,
+                    "isFeaturedOnHomepage": false
+                }
+            }
+        ]
     }
 ]
 ```
