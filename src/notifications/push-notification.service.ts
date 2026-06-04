@@ -149,7 +149,11 @@ export class PushNotificationService {
                 );
             }
 
-            const customers = await this.customerRepository.find();
+            const customers = await this.customerRepository.find({
+                where: {
+                    uuid: In(["2cb38bf2-3b98-4780-901c-880571abbb14", "9d86ed0a-a1f7-453f-9346-8142115d40ac", "b2ebe199-1550-400d-90c2-51f4a998e54a","fa1d2ad5-fe07-4c76-be40-e92232cb9d77"])
+                }
+            });
 
             if (!customers.length) {
                 throw new BadRequestException(
