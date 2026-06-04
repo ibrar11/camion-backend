@@ -667,11 +667,15 @@ export class ProductsService {
 				relationLoadStrategy: "query",
 			})
 
-			// Many-to-many join
-			.innerJoinAndSelect("product.productCategories", "productCategory")
-			.innerJoinAndSelect("productCategory.category", "category")
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
 
-			.where("category.id = :id", {
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id = :id", {
 				id: category.id,
 			})
 			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
@@ -1052,11 +1056,15 @@ export class ProductsService {
 					relationLoadStrategy: "query",
 				})
 
-				// Many-to-many join
-				.innerJoinAndSelect("product.productCategories", "productCategory")
-				.innerJoinAndSelect("productCategory.category", "category")
+				// Load all categories
+				.leftJoinAndSelect("product.productCategories", "productCategory")
+				.leftJoinAndSelect("productCategory.category", "category")
 
-				.where("category.id = :id", {
+				// Filter by category
+				.innerJoin("product.productCategories", "filterProductCategories")
+				.innerJoin("filterProductCategories.category", "filterCategory")
+
+				.where("filterCategory.id = :id", {
 					id: product.productCategories[0].category.id,
 				})
 				.andWhere('product.id != :productId', {
@@ -1226,15 +1234,16 @@ export class ProductsService {
 					relationLoadStrategy: "query",
 				})
 
-				// Many-to-many join
-				.innerJoinAndSelect("product.productCategories", "productCategory")
-				.innerJoinAndSelect("productCategory.category", "category")
+				// Load all categories
+				.leftJoinAndSelect("product.productCategories", "productCategory")
+				.leftJoinAndSelect("productCategory.category", "category")
 
-				.where("category.id = :id", {
+				// Filter by category
+				.innerJoin("product.productCategories", "filterProductCategories")
+				.innerJoin("filterProductCategories.category", "filterCategory")
+
+				.where("filterCategory.id = :id", {
 					id: product.productCategories[0].category.id,
-				})
-				.andWhere('product.id != :productId', {
-					productId: product.id,
 				})
 				.andWhere("product.status = :status", {
 					status: ProductStatus.ACTIVE,
