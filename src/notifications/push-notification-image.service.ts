@@ -36,7 +36,7 @@ export class PushNotificationImageService {
    * @returns
    */
   async createPushNotificationImage(pushNotificationUUID: string, file: Express.Multer.File): Promise<PushNotificationImage> {
-    this.logger.log(`Attempting to create a product image`);
+    this.logger.log(`Attempting to create a customize push notification image`);
 
     const customizePushNotification = await this.PushNotificationRepository.findOneBy({ uuid: pushNotificationUUID, });
     if (customizePushNotification === null) {
