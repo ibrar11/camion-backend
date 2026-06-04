@@ -48,7 +48,7 @@ export class PushNotificationImageService {
     // Upload the file to s3
     let params: { key: string; url: string; } | null = null;
     try {
-      params = await this.s3Service.uploadFile("customizePushNotifications", file);
+      params = await this.s3Service.uploadFile("notifications", file);
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException({
