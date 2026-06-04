@@ -118,6 +118,12 @@ export class BannersService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.bannerRepository.find({
+			relationLoadStrategy: "query",
+			relations: {
+				bannerCategories: {
+					category: true,
+				},
+			},
 			order: {
 				id: "DESC",
 			},
