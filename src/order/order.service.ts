@@ -551,6 +551,13 @@ export class OrderService {
                 await this.pushNotificationService.sendToToken(notification?.uuid)
             }
 
+            this.emailService.sendAdminNewOrderEmail({
+                orderId: order.uuid,
+                customerName: customer.fullName,
+                customerEmail: customer.emailAddress ?? '',
+                orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
+            }).catch(err => this.logger.error(`[Email] Failed to send admin new-order notification for order ${order.uuid}: ${err?.message}`));
+
             return order;
         } catch (error: any) {
             await queryRunner.rollbackTransaction();

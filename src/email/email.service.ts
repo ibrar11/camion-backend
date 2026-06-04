@@ -38,7 +38,20 @@ interface OrderCancelledTemplateData {
 	reason?: string;
 }
 
+interface AdminNewOrderData {
+	orderId: string;
+	customerName: string;
+	customerEmail: string;
+	orderTotal: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
+
+const ADMIN_NOTIFICATION_EMAILS = [
+	'abh772233@gmail.com',
+	'info@camiontrading.com',
+	'support@camiontrading.com',
+];
 
 @Injectable()
 export class EmailService {
@@ -73,6 +86,9 @@ export class EmailService {
 			) as string,
 			orderCancelled: this.configService.get<string>(
 				"SENDGRID_TEMPLATE_ORDER_CANCELLED",
+			) as string,
+			adminNewOrder: this.configService.get<string>(
+				"SENDGRID_TEMPLATE_ADMIN_NEW_ORDER",
 			) as string,
 		};
 
@@ -128,6 +144,14 @@ export class EmailService {
 		data: OrderCancelledTemplateData,
 	): Promise<void> {
 		await this.send(to, this.templateIds.orderCancelled, data);
+	}
+
+	async sendAdminNewOrderEmail(data: AdminNewOrderData): Promise<void> {
+		await Promise.all(
+			ADMIN_NOTIFICATION_EMAILS.map(to =>
+				this.send(to, this.templateIds.adminNewOrder, data),
+			),
+		);
 	}
 
 	// ─── Private core ──────────────────────────────────────────────────────────
