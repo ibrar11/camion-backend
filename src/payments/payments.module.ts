@@ -39,7 +39,8 @@ import { ExchangeRateService } from '../pricing/exchange-rate.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 import { Notification } from '../notifications/entities/notification.entity';
-import { PushNotificationService } from '../common/push-notification.service';
+import { PushNotification } from '../notifications/entities/push-notification';
+import { PushNotificationService } from '../notifications/push-notification.service';
 
 import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
@@ -56,6 +57,7 @@ import { CartItem } from '../cart/entities/cart-items.entity';
             Order,
             ExchangeRate,
             Notification,
+            PushNotification,
             CartItem,
         ]),
         NotificationsModule,
