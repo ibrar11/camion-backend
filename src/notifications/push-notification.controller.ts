@@ -60,10 +60,10 @@ export class PushNotificationController {
     @UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
     @HttpCode(HttpStatus.CREATED)
     actionCreateProductReviewImage(
-        @Param('uuid') reviewUUID: string,
+        @Param('uuid') pushNotificationUUID: string,
         @UploadedFile() file: Express.Multer.File
     ): Promise<PushNotificationImage> {
-        return this.pushNotificationImageService.createPushNotificationImage(reviewUUID, file);
+        return this.pushNotificationImageService.createPushNotificationImage(pushNotificationUUID, file);
 
     }
 
