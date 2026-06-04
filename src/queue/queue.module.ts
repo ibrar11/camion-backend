@@ -70,6 +70,7 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
             { name: QueueName.TRANSLATION },
             { name: QueueName.FIELD_TRANSLATION },
             { name: QueueName.INVENTORY_RESYNC },
+            { name: QueueName.PRODUCT_CATEGORY_RESYNC },
         ),
         TypeOrmModule.forFeature([
             Product,

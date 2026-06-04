@@ -40,6 +40,46 @@ export class JopWmsScheduler {
         await this.pollByType(JopWmsOrderType.INBOUND, 'inboundorder/status', 'customerVoucherNo');
     }
 
+    @Cron('0 0 9,21 * * *')
+    async pollMissingOutbounds() {
+        await this.recoverMissingOutbounds();
+    }
+
+    private async recoverMissingOutbounds() {
+        // Only fetch stored inbounds that have at least one linked order with no outbound yet.
+        // Once all linked orders have outbounds, the inbound drops out of this query permanently.
+        const inbounds = await this.wmsOrderRepository
+            .createQueryBuilder('inbound')
+            .leftJoinAndSelect('inbound.sourceOrders', 'link')
+            .where('inbound.type = :type', { type: JopWmsOrderType.INBOUND })
+            .andWhere('inbound.status = :status', { status: JopWmsInboundStatus.STORED })
+            .andWhere(`EXISTS (
+                SELECT 1 FROM jop_wms_order_links il
+                WHERE il.wms_order_id = inbound.id
+                AND NOT EXISTS (
+                    SELECT 1 FROM jop_wms_order_links ol
+                    INNER JOIN jop_wms_orders o ON o.id = ol.wms_order_id
+                    WHERE ol.order_uuid = il.order_uuid
+                    AND o.type = :outType
+                )
+            )`)
+            .setParameter('outType', JopWmsOrderType.OUTBOUND)
+            .getMany();
+
+        if (!inbounds.length) return;
+
+        this.logger.log(`Outbound recovery: ${inbounds.length} stored inbound(s) missing outbounds`);
+
+        for (const inbound of inbounds) {
+            this.logger.log(`Outbound recovery: creating outbound(s) for inbound ${inbound.orderNo}`);
+            try {
+                await this.wmsService.createOutboundsForInbound(inbound);
+            } catch (err: any) {
+                this.logger.error(`Outbound recovery failed for inbound ${inbound.orderNo}: ${err?.message}`);
+            }
+        }
+    }
+
     /**
      * Polls pending outbound orders every 3 hours and backfills missing waybill numbers.
      */

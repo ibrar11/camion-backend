@@ -32,6 +32,36 @@ export class GetBannersArgs {
 	itemsPerPage: number;
 }
 
+@ArgsType()
+export class GetBannersByPlacementArgs {
+	@Field({ defaultValue: "", })
+	placement: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 24, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetBannersByCategoryArgs {
+	@Field({ defaultValue: "", })
+	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 24, })
+	itemsPerPage: number;
+}
+
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Banner)
 export class BannersResolver {
@@ -84,8 +114,34 @@ export class BannersResolver {
 		return "";
 	}
 
+	@ResolveField("linkUrl", () => String)
+	getLinkUrl(@Parent() banner: Banner, @Args() args: GetBannersArgs): string {
+		if (banner === null) {
+			return "";
+		}
+
+		const language = args.language.toLowerCase() || "en";
+
+		const linkUrlMap = {
+			"en": banner.linkUrlEn,
+			"ar": banner.linkUrlAr,
+		};
+
+		return linkUrlMap[language] ?? banner.linkUrlEn;
+	}
+
 	@Query(() => [Banner])
 	getBanners(@Args() args: GetBannersArgs): Promise<Array<Banner>> {
 		return this.bannersService.findAll("", "", args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Banner])
+	getBannersByPlacement(@Args() args: GetBannersByPlacementArgs): Promise<Array<Banner>> {
+		return this.bannersService.findAllByPlacement(args.placement, "", args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Banner])
+	getBannersByCategory(@Args() args: GetBannersByCategoryArgs): Promise<Array<Banner>> {
+		return this.bannersService.findAllByCategory(args.slug, "", args.pageNumber, args.itemsPerPage);
 	}
 }

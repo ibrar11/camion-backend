@@ -20,6 +20,9 @@ import { getSkipAndTake } from '../common/pagination';
 import { UpdateBannerDto } from './dtos/UpdateBannerDto';
 
 import { Banner } from './entities/banner.entity';
+import { BannerCategory } from "./entities/banner-category";
+
+import { Category } from "../inventory/entities/category.entity";
 
 @Injectable()
 export class BannersService {
@@ -29,6 +32,8 @@ export class BannersService {
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(Banner) private readonly bannerRepository: Repository<Banner>,
+		@InjectRepository(BannerCategory) private readonly bannerCategoryRepository: Repository<BannerCategory>,
+		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 	) { }
 
 	/**
@@ -80,10 +85,9 @@ export class BannersService {
 			});
 		}
 
-
-
 		// Delete the temporary files
 		await this.fileService.deleteFile(filesEn[0]);
+		await this.fileService.deleteFile(filesAr[0]);
 
 		// Create a banner using the uploaded file
 		const banner = new Banner();
@@ -114,6 +118,12 @@ export class BannersService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.bannerRepository.find({
+			relationLoadStrategy: "query",
+			relations: {
+				bannerCategories: {
+					category: true,
+				},
+			},
 			order: {
 				id: "DESC",
 			},
@@ -144,6 +154,91 @@ export class BannersService {
 			skip: skip,
 			take: take,
 		});
+	}
+
+	/**
+	 * Finds a list of banners by placement
+	 *
+	 * @param placement
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAllByPlacement(placement: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Banner>> {
+		this.logger.log(`Retrieving a list of banners by placement: ${placement}`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		const banners = await this.bannerRepository.find({
+			cache: true,
+			where: {
+				placement: placement,
+			},
+			skip: skip,
+			take: take,
+		});
+
+		// Fallback to all banners when there are no banners for the desired placement
+		if (!Array.isArray(banners) || banners.length === 0) {
+			return this.findAll("", sort, pageNumber, itemsPerPage);
+		}
+
+		return banners;
+	}
+
+	/**
+	 * Returns all banners by category
+	 *
+	 * @param categorySlug
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAllByCategory(categorySlug: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Banner>> {
+		this.logger.log(`Retrieving a list of banners by category: ${categorySlug}`);
+
+		// Find the category, return empty array if there is no category against the slug
+		const category = await this.categoryRepository.findOne({
+			where: {
+				slug: categorySlug,
+			},
+		});
+
+		// Get other banners as fallback
+		if (category === null) {
+			return this.findAll("", "", pageNumber, itemsPerPage);
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the banners in the desired category
+		const banners = await this.bannerRepository.createQueryBuilder("banner")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Many-to-many join
+			.leftJoin("banner.bannerCategories", "bannerCategory")
+			.leftJoin("bannerCategory.category", "category")
+
+			.where("category.id = :id", { id: category.id, })
+			.distinct(true)
+			.orderBy("banner.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		// Fallback to all banners when there are no banners for the category
+		if (!Array.isArray(banners) || banners.length === 0) {
+			return this.findAll("", sort, pageNumber, itemsPerPage);
+		}
+
+		return banners;
 	}
 
 	/**
@@ -199,11 +294,45 @@ export class BannersService {
 		// Update the banner
 		banner.titleEn = body.title.en.trim();
 		banner.titleAr = body.title.ar.trim();
-		banner.linkUrl = body.linkUrl.trim();
+		banner.linkUrlEn = body.linkUrl.en.trim();
+		banner.linkUrlAr = body.linkUrl.ar.trim();
 		banner.placement = body.placement.trim();
 		banner.color = body.color.trim();
 		banner.isActive = body.isActive;
-		return this.bannerRepository.save(banner);
+		await this.bannerRepository.save(banner);
+
+		// Assign categories to the banner
+		if (Array.isArray(body.categories) && body.categories.length !== 0) {
+			await Promise.all(body.categories.map(async categoryUUID => {
+
+				// Make sure the category exists
+				const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
+				if (category === null) {
+					return null;
+				}
+
+				// Make sure the join between banner and category exists
+				const exists = await this.bannerCategoryRepository.findOneBy({
+					banner: {
+						id: banner.id,
+					},
+					category: {
+						id: category.id,
+					},
+				});
+
+				if (exists !== null) {
+					return null;
+				}
+
+				const bannerCategory = new BannerCategory();
+				bannerCategory.banner = banner;
+				bannerCategory.category = category;
+				await this.bannerCategoryRepository.save(bannerCategory);
+			}));
+		}
+
+		return banner;
 	}
 
 	/**

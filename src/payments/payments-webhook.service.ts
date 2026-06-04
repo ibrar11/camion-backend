@@ -25,7 +25,7 @@ import { Notification } from "../notifications/entities/notification.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/enums/notification-type.enum";
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
-import { PushNotificationService } from "../common/push-notification.service";
+import { PushNotificationService } from "../notifications/push-notification.service";
 
 import { CartItem } from "../cart/entities/cart-items.entity";
 
@@ -143,33 +143,33 @@ export class PaymentsWebhookService {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
 
-                const orderProductVariants = order.orderItems.map(item => ({
-                    productId: item.product.id,
-                    variantId: item.variant.id,
-                    quantity: item.quantity,
-                }));
+                // const orderProductVariants = order.orderItems.map(item => ({
+                //     productId: item.product.id,
+                //     variantId: item.variant.id,
+                //     quantity: item.quantity,
+                // }));
 
                 // Find cart items for this customer that match the order items
-                const cartItems = await this.cartRepository.find({
-                    where: {
-                        customer: { id: order.customer.id },
-                    },
-                    relations: ['product', 'variant'],
-                });
+                // const cartItems = await this.cartRepository.find({
+                //     where: {
+                //         customer: { id: order.customer.id },
+                //     },
+                //     relations: ['product', 'variant'],
+                // });
 
                 // Filter cart items that match the ordered items
-                const cartItemsToDelete = cartItems.filter(cartItem => {
-                    return orderProductVariants.some(ordered =>
-                        ordered.productId === cartItem.product.id &&
-                        ordered.variantId === cartItem.variant.id
-                    );
-                });
+                // const cartItemsToDelete = cartItems.filter(cartItem => {
+                //     return orderProductVariants.some(ordered =>
+                //         ordered.productId === cartItem.product.id &&
+                //         ordered.variantId === cartItem.variant.id
+                //     );
+                // });
 
-                if (cartItemsToDelete.length > 0) {
-                    const uuidsToDelete = cartItemsToDelete.map(item => item.uuid);
-                    await this.cartRepository.delete({ uuid: In(uuidsToDelete) });
-                    this.logger.log(`Cleared ${uuidsToDelete.length} cart items for order ${order.uuid}`);
-                }
+                // if (cartItemsToDelete.length > 0) {
+                //     const uuidsToDelete = cartItemsToDelete.map(item => item.uuid);
+                //     await this.cartRepository.delete({ uuid: In(uuidsToDelete) });
+                //     this.logger.log(`Cleared ${uuidsToDelete.length} cart items for order ${order.uuid}`);
+                // }
 
                 if (order.customer) {
                     notification = await this.notificationsService.create({

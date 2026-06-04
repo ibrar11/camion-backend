@@ -7,9 +7,10 @@ import {
 	Logger,
 	NotFoundException
 } from '@nestjs/common';
+import { Job } from "bullmq";
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
@@ -36,6 +37,9 @@ import { TranslationService } from "../translation/translation.service";
 import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
 import { Customer } from "src/customers/entities/customer.entity";
 import { ProductView } from "./entities/product-view.entity";
+import { QueueService } from "src/queue/queue.service";
+import { QueueName } from "src/queue/enums/QueueTypes.enum";
+import { ProductCategoryResyncJobData } from "src/queue/types";
 
 @Injectable()
 export class ProductsService {
@@ -49,7 +53,255 @@ export class ProductsService {
 		@InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantImage) private readonly productImageVariantImageRepository: Repository<ProductVariantImage>,
 		@InjectRepository(ProductView) private readonly productViewRepository: Repository<ProductView>,
+		@Inject(QueueService) private readonly queueService: QueueService,
 	) { }
+
+	private chunkArray<T>(items: T[], chunkSize: number): T[][] {
+		const chunks: T[][] = [];
+		for (let i = 0; i < items.length; i += chunkSize) {
+			chunks.push(items.slice(i, i + chunkSize));
+		}
+		return chunks;
+	}
+
+	private async getCategoryMaps(): Promise<{
+		byUuid: Map<string, Pick<Category, "id" | "uuid" | "parentId">>;
+		byId: Map<number, Pick<Category, "id" | "uuid" | "parentId">>;
+	}> {
+		const categories = await this.categoryRepository.find({
+			select: {
+				id: true,
+				uuid: true,
+				parentId: true,
+			},
+		});
+
+		return {
+			byUuid: new Map(categories.map((category) => [category.uuid, category])),
+			byId: new Map(categories.map((category) => [category.id, category])),
+		};
+	}
+
+	private async expandCategoryUuidsWithAncestors(
+		categoryUuids: string[],
+		categoryMaps?: {
+			byUuid: Map<string, Pick<Category, "id" | "uuid" | "parentId">>;
+			byId: Map<number, Pick<Category, "id" | "uuid" | "parentId">>;
+		},
+	): Promise<string[]> {
+		const uniqueInputUuids = [...new Set(categoryUuids)];
+		if (uniqueInputUuids.length === 0) {
+			return [];
+		}
+
+		const maps = categoryMaps ?? await this.getCategoryMaps();
+		const byUuid = maps.byUuid;
+		const byId = maps.byId;
+		const expandedUuids = new Set<string>();
+
+		for (const categoryUuid of uniqueInputUuids) {
+			let current = byUuid.get(categoryUuid);
+			if (!current) {
+				continue;
+			}
+
+			while (current) {
+				expandedUuids.add(current.uuid);
+				current = current.parentId ? byId.get(current.parentId) : undefined;
+			}
+		}
+
+		return [...expandedUuids];
+	}
+
+	private async syncProductCategories(
+		product: Product,
+		categoryUuids: string[],
+		categoryMaps?: {
+			byUuid: Map<string, Pick<Category, "id" | "uuid" | "parentId">>;
+			byId: Map<number, Pick<Category, "id" | "uuid" | "parentId">>;
+		},
+	): Promise<void> {
+		await this.productCategoryRepository.delete({
+			product: { id: product.id },
+		});
+
+		const expandedCategoryUuids = await this.expandCategoryUuidsWithAncestors(categoryUuids, categoryMaps);
+		if (expandedCategoryUuids.length === 0) {
+			return;
+		}
+
+		const categories = await this.categoryRepository.findBy({
+			uuid: In(expandedCategoryUuids),
+		});
+		const categoriesByUuid = new Map(categories.map((category) => [category.uuid, category]));
+		for (const categoryUUID of expandedCategoryUuids) {
+			const category = categoriesByUuid.get(categoryUUID);
+			if (!category) continue;
+			const productCategory = new ProductCategory();
+			productCategory.product = product;
+			productCategory.category = category;
+			await this.productCategoryRepository.save(productCategory);
+		}
+	}
+
+	async enqueueProductCategoriesResync(body: {
+		scope?: "all" | "selected";
+		productUuids?: string[];
+	}): Promise<{
+		jobId: string;
+		status: "queued";
+		scope: "all" | "selected";
+		productsCount: number;
+	}> {
+		const scope = body.scope ?? "selected";
+		if (scope === "all") {
+			if (body.productUuids?.length) {
+				throw new BadRequestException({
+					message: "productUuids is not allowed when scope is all",
+				});
+			}
+
+			const products = await this.productRepository.find({
+				select: { uuid: true },
+			});
+			const productUuids = products.map((product) => product.uuid);
+			if (!productUuids.length) {
+				throw new BadRequestException({
+					message: "No products found for category resync",
+				});
+			}
+
+			const queued = await this.queueService.addProductCategoryResyncJob(productUuids);
+			return {
+				...queued,
+				scope,
+				productsCount: productUuids.length,
+			};
+		}
+
+		const productUuids = body.productUuids ?? [];
+		if (!productUuids.length) {
+			throw new BadRequestException({
+				message: "productUuids must be a non-empty array when scope is selected",
+			});
+		}
+
+		const queued = await this.queueService.addProductCategoryResyncJob(productUuids);
+		return {
+			...queued,
+			scope,
+			productsCount: productUuids.length,
+		};
+	}
+
+	async getProductCategoriesResyncJob(jobId: string): Promise<{
+		jobId: string;
+		status: "queued" | "active" | "completed" | "failed" | "not_found";
+		progress?: string | number | boolean | object;
+		result?: any;
+		failedReason?: string | null;
+	}> {
+		const job = await this.queueService.getJob(
+			QueueName.PRODUCT_CATEGORY_RESYNC,
+			jobId
+		) as Job<ProductCategoryResyncJobData> | null;
+
+		if (!job) {
+			return { jobId, status: "not_found" };
+		}
+
+		const state = await job.getState();
+		const statusMap: Record<string, "queued" | "active" | "completed" | "failed"> = {
+			waiting: "queued",
+			delayed: "queued",
+			paused: "queued",
+			active: "active",
+			completed: "completed",
+			failed: "failed",
+		};
+
+		return {
+			jobId,
+			status: statusMap[state] ?? "queued",
+			progress: job.progress,
+			result: job.returnvalue,
+			failedReason: job.failedReason ?? null,
+		};
+	}
+
+	async resyncProductCategoriesByProducts(productUuids: string[] = []): Promise<{
+		processed: number;
+		updated: number;
+		skipped: number;
+		failed: number;
+		failedProducts: Array<{ productUuid: string; error: string; }>;
+	}> {
+		this.logger.log(`Resyncing product categories with ancestor chain`);
+
+		const categoryMaps = await this.getCategoryMaps();
+		let updated = 0;
+		let skipped = 0;
+		let failed = 0;
+		const failedProducts: Array<{ productUuid: string; error: string; }> = [];
+		const uniqueProductUuids = [...new Set(productUuids)];
+		const productUuidChunks = this.chunkArray(uniqueProductUuids, 200);
+		let processed = 0;
+
+		for (const productUuidChunk of productUuidChunks) {
+			const products = await this.productRepository.find({
+				select: {
+					id: true,
+					uuid: true,
+				},
+				relations: {
+					productCategories: {
+						category: true,
+					},
+				},
+				where: {
+					uuid: In(productUuidChunk),
+				},
+			});
+			processed += products.length;
+
+			for (const product of products) {
+				try {
+					const existingCategoryUuids = (product.productCategories ?? [])
+						.map((productCategory) => productCategory.category?.uuid)
+						.filter((uuid): uuid is string => Boolean(uuid));
+
+					const expandedCategoryUuids = await this.expandCategoryUuidsWithAncestors(existingCategoryUuids, categoryMaps);
+					const existingSet = new Set(existingCategoryUuids);
+					const expandedSet = new Set(expandedCategoryUuids);
+					const hasSameCategories = existingSet.size === expandedSet.size
+						&& [...existingSet].every((uuid) => expandedSet.has(uuid));
+
+					if (hasSameCategories) {
+						skipped += 1;
+						continue;
+					}
+
+					await this.syncProductCategories(product, existingCategoryUuids, categoryMaps);
+					updated += 1;
+				} catch (error) {
+					failed += 1;
+					failedProducts.push({
+						productUuid: product.uuid,
+						error: error instanceof Error ? error.message : "Unknown error",
+					});
+				}
+			}
+		}
+
+		return {
+			processed,
+			updated,
+			skipped,
+			failed,
+			failedProducts,
+		};
+	}
 
 	/**
 	 * Populates each product with its cheapest variant
@@ -195,24 +447,7 @@ export class ProductsService {
 		// Find the categories and create product categories.
 		// This is to join the categories to its associated product.
 		if (body.categories !== null && Array.isArray(body.categories)) {
-			// Remove old relations if updating
-			await this.productCategoryRepository.delete({
-				product: { id: product.id },
-			});
-
-			const uniqueCategories = [...new Set(body.categories)];
-
-			for (const categoryUUID of uniqueCategories) {
-				const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID });
-
-				if (!category) continue;
-
-				const productCategory = new ProductCategory();
-				productCategory.product = product;
-				productCategory.category = category;
-
-				await this.productCategoryRepository.save(productCategory);
-			}
+			await this.syncProductCategories(product, body.categories);
 		}
 
 		return product;
@@ -409,7 +644,7 @@ export class ProductsService {
 	async findAllByCategory(categorySlug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products by category slug: ${categorySlug}`);
 
-		// Find the category, return empty array if there is not category
+		// Find the category, return empty array if there is no category against the slug
 		const category = await this.categoryRepository.findOne({
 			cache: true,
 			where: {
@@ -432,11 +667,15 @@ export class ProductsService {
 				relationLoadStrategy: "query",
 			})
 
-			// Many-to-many join
-			.innerJoinAndSelect("product.productCategories", "productCategory")
-			.innerJoinAndSelect("productCategory.category", "category")
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
 
-			.where("category.id = :id", {
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id = :id", {
 				id: category.id,
 			})
 			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
@@ -817,11 +1056,15 @@ export class ProductsService {
 					relationLoadStrategy: "query",
 				})
 
-				// Many-to-many join
-				.innerJoinAndSelect("product.productCategories", "productCategory")
-				.innerJoinAndSelect("productCategory.category", "category")
+				// Load all categories
+				.leftJoinAndSelect("product.productCategories", "productCategory")
+				.leftJoinAndSelect("productCategory.category", "category")
 
-				.where("category.id = :id", {
+				// Filter by category
+				.innerJoin("product.productCategories", "filterProductCategories")
+				.innerJoin("filterProductCategories.category", "filterCategory")
+
+				.where("filterCategory.id = :id", {
 					id: product.productCategories[0].category.id,
 				})
 				.andWhere('product.id != :productId', {
@@ -991,15 +1234,16 @@ export class ProductsService {
 					relationLoadStrategy: "query",
 				})
 
-				// Many-to-many join
-				.innerJoinAndSelect("product.productCategories", "productCategory")
-				.innerJoinAndSelect("productCategory.category", "category")
+				// Load all categories
+				.leftJoinAndSelect("product.productCategories", "productCategory")
+				.leftJoinAndSelect("productCategory.category", "category")
 
-				.where("category.id = :id", {
+				// Filter by category
+				.innerJoin("product.productCategories", "filterProductCategories")
+				.innerJoin("filterProductCategories.category", "filterCategory")
+
+				.where("filterCategory.id = :id", {
 					id: product.productCategories[0].category.id,
-				})
-				.andWhere('product.id != :productId', {
-					productId: product.id,
 				})
 				.andWhere("product.status = :status", {
 					status: ProductStatus.ACTIVE,
@@ -1197,29 +1441,10 @@ export class ProductsService {
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
 		await this.productRepository.save(product);
 
-		// Delete existing product categories to make sure new ones don't duplicate
-		await this.productCategoryRepository.delete({
-			product: {
-				id: product.id,
-			},
-		});
-
 		// Find the categories and create product categories.
 		// This is to join the categories to its associated product.
 		if (body.categories !== null && Array.isArray(body.categories)) {
-			body.categories
-				.filter((categoryUUID, index) => body.categories.indexOf(categoryUUID) === index)
-				.forEach(async categoryUUID => {
-					const category = await this.categoryRepository.findOneBy({ uuid: categoryUUID, });
-					if (category === null) {
-						return;
-					}
-
-					const productCategory = new ProductCategory();
-					productCategory.product = product;
-					productCategory.category = category;
-					await this.productCategoryRepository.save(productCategory);
-				});
+			await this.syncProductCategories(product, body.categories);
 		}
 
 		return product;

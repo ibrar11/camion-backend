@@ -32,15 +32,19 @@ Variants synced to WMS → One WMS inbound per shop group
        ↓
 [Scheduler polls inbound every 3 hours]
        ↓
-Inbound status → "shelved" (goods received at warehouse)
+Inbound status → 14 (STORED) — goods fully received and shelved at warehouse
        ↓
-All inbounds for each customer order shelved? → wait if not
+All inbounds for each customer order at terminal status? → wait if not
        ↓
 Scheduler auto-creates one WMS outbound per customer order
+  (checks WMS first — syncs locally if outbound already exists there)
        ↓
 [Scheduler polls outbound every 3 hours]
   On transition to SHIPPED → waybillNo/query called immediately
   fetchMissingWaybillNumbers() retries any SHIPPED orders still missing waybillNo
+
+[Recovery job runs twice daily at 09:00 and 21:00]
+  Finds STORED inbounds with no linked outbound → retries outbound creation
 ```
 
 **Key characteristics:**
@@ -69,7 +73,7 @@ JopWmsService     (business logic — syncs with local DB, tracks orders)
 
 **`JopWmsService`** — business logic layer. For product sync, it reads `ProductVariant` data from the local DB (populated via Gulltrans/1688 procurement) and maps it to the WMS format. For order creation, it automatically registers each order into the `jop_wms_orders` table so it enters the polling loop. The batch dispatch flow (`dispatchApprovedOrders`) runs in the background (fire-and-forget via `setImmediate`): it groups all confirmed orders by 1688 shop, makes one Gulltrans API call per shop, syncs all affected variants to WMS, and creates one WMS inbound per shop group covering all customer orders in it.
 
-**`JopWmsScheduler`** — cron jobs that poll non-terminal orders on a fixed interval. When an inbound order transitions to `shelved`, the scheduler checks whether every inbound linked to each affected customer order is now shelved; only then does it create one WMS outbound per customer order. This ensures orders spanning multiple shops are consolidated into a single shipment. See the Polling section below.
+**`JopWmsScheduler`** — four cron jobs that poll non-terminal orders on a fixed interval. When an inbound order transitions to status `14` (STORED), the scheduler checks whether every inbound linked to each affected customer order is at a terminal status; only then does it create one WMS outbound per customer order. A separate recovery job runs twice daily (09:00 and 21:00) to catch any STORED inbounds that are still missing outbounds. This ensures orders spanning multiple shops are consolidated into a single shipment. See the Polling section below.
 
 ---
 
@@ -140,7 +144,9 @@ JOP WMS has no webhooks, so order status must be polled. Four cron jobs run auto
 
 **Inbound, outbound, and return orders** — all polled every **3 hours**. Note: `outboundorder/status` does **not** return a waybill number — it only returns the order status and shipment dimensions. Waybill numbers are fetched separately via `waybillNo/query` (see below).
 
-**Stale inbound expiry** — runs daily at midnight. Any inbound order that has been non-terminal for more than 30 days is force-marked as `deleted`, unblocking outbound creation for the linked customer orders. A warning is logged so admins can investigate the missing goods.
+**Stale inbound expiry** — included in the inbound poll cycle (every 3 hours). Any inbound order that has been non-terminal for more than 30 days is force-marked as `deleted` (status `16`), unblocking outbound creation for the linked customer orders. A warning is logged so admins can investigate the missing goods.
+
+**Missing outbound recovery** — runs twice daily at **09:00 and 21:00**. Finds all STORED (status `14`) inbound orders that have no linked outbound in the local DB. Before creating a new outbound, it queries WMS first (`outboundorder/status`) — if the outbound already exists on the WMS side but not locally, it syncs the status and links the record without re-submitting. This catches any outbounds that were silently skipped or lost between cron cycles.
 
 ### How polling works
 
@@ -148,16 +154,24 @@ JOP WMS has no webhooks, so order status must be polled. Four cron jobs run auto
 2. On each cron tick, the scheduler queries all non-terminal orders of that type.
 3. It calls the appropriate JOP WMS status endpoint and updates `status` and `lastPolledAt` in the DB.
 4. For outbound orders: `outboundorder/status` returns `status` and shipment dimensions only — **no waybill number**. When the status transitions to `SHIPPED` for the first time, the scheduler immediately calls `waybillNo/query` to fetch and persist the waybill number. A separate `fetchMissingWaybillNumbers()` pass also runs after each outbound poll cycle and retries `waybillNo/query` for any SHIPPED outbound orders that still have `waybillNo = null` (handles cases where the inline fetch failed).
-5. For inbound orders: if the status transitions to `shelved` (goods received at warehouse), the scheduler checks whether **all** inbound orders linked to each customer order (via `jop_wms_order_links`) are now shelved. Only when every inbound for a given customer order is shelved does it create one WMS outbound order, using the customer's shipping address and `JOP_WMS_LOGISTICS_CHANNEL`. If any inbound is still pending, outbound creation is deferred until the next poll that completes the set.
+5. For inbound orders: if the status transitions to `14` (STORED — goods fully received at warehouse), the scheduler checks whether **all** inbound orders linked to each customer order (via `jop_wms_order_links`) are now at a terminal status. Only when every inbound for a given customer order is terminal does it create one WMS outbound order, using the customer's shipping address and `JOP_WMS_LOGISTICS_CHANNEL`. Before submitting to WMS, it queries `outboundorder/status` first — if the outbound already exists on the WMS side, it syncs the record locally without re-creating. If any inbound is still non-terminal, outbound creation is deferred until the next poll that completes the set.
 6. Once an order reaches a terminal status, it is excluded from future polls.
 
-**Terminal statuses** (polling stops automatically): `completed`, `cancelled`, `shelved`, `closed`
+**Terminal statuses** (polling stops automatically):
+
+| Status code | Type | Label |
+|---|---|---|
+| `14` | Inbound | STORED — triggers outbound creation |
+| `15` | Inbound | Warehouse Closed |
+| `16` | Inbound | Deleted |
+| `15` | Outbound | Invalidated |
+| `40` | Return | Shelved |
 
 > [!NOTE]
-> `shelved` is terminal for **inbound** orders (goods are now on warehouse shelves) but triggers outbound creation. It is also terminal for **return** orders (returned goods are re-shelved). Outbound orders are not affected by this trigger.
+> Inbound status `14` (STORED) is terminal — polling stops — but also triggers outbound creation. Status `14` for outbound orders means SHIPPED (waybill available); outbound `15` means Invalidated. Return `40` means returned goods are re-shelved.
 
 **Customer notifications sent automatically by the scheduler:**
-- Inbound → `shelved`: sends `ORDER_PROCESSING` to all customers linked to that inbound
+- Inbound → status `14` (STORED): sends `ORDER_PROCESSING` to all customers linked to that inbound
 - Outbound receives a waybill number (first time): sends `ORDER_SHIPPED` with the tracking number included in the message
 
 ### Error handling
@@ -168,7 +182,7 @@ Each order has an `errorCount` field. If the JOP WMS call fails, `errorCount` is
 
 | Column | Description |
 |---|---|
-| `orderNo` | The `customerVoucherNo` sent to JOP WMS (unique, max 64 chars). Dispatch-created inbounds use a 32-character hex string (UUID with dashes stripped) per shop group; outbound orders use `<customer-order-uuid>-out` |
+| `orderNo` | The `customerVoucherNo` sent to JOP WMS (unique, max 64 chars). Dispatch-created inbounds use a 32-character hex string (UUID with dashes stripped) per shop group; outbound orders use the first 29 characters of the UUID (dashes stripped) suffixed with `out` — e.g. `a6e2cc0a471247614761810out` |
 | `type` | `inbound`, `outbound`, or `return` |
 | `status` | Last known status from WMS |
 | `wmsAssignedId` | The internal order ID assigned by JOP WMS on creation (`inboundOrderId` / `outboundOrderId`). Stored for reference; not required for subsequent API calls |
@@ -209,7 +223,7 @@ Batch-dispatches all `CONFIRMED` customer orders that have not yet been procured
 4. Syncs all affected product variants to WMS (`product/synchronize`) before creating inbounds
 5. Creates **one WMS inbound per shop group**, with a combined product list. The contributing customer order IDs are linked via `jop_wms_order_links`. The inbound `customerVoucherNo` is a 32-character hex string (UUID with dashes stripped)
 
-When the inbound reaches `shelved`, the scheduler checks whether all inbounds for each linked customer order are shelved. Once they all are, it auto-creates one outbound per customer order, consolidating all items into a single shipment.
+When the inbound reaches status `14` (STORED), the scheduler checks whether all inbounds for each linked customer order are at a terminal status. Once they all are, it auto-creates one outbound per customer order, consolidating all items into a single shipment. If outbound creation is missed (e.g. env var was unset at the time), the recovery job running at 09:00 and 21:00 will catch and retry it automatically.
 
 Products must have been imported via `POST /v1/procurement/import` first — the `shopId`, `shopName`, `procurementId`, and `skuMeta` stored during import are used to build the Gulltrans payload automatically. The warehouse address is read from the active `Warehouse` record in the database.
 
@@ -268,7 +282,7 @@ Use the server logs (tagged with `jobId`) to track progress and results.
 ### Notes
 - Orders whose products were not imported from 1688 (missing `shopId`) are skipped with a warning log
 - The endpoint performs a synchronous pre-flight `skuMeta` check across all variants in the batch — if any are missing or empty, the entire dispatch is rejected with `400` before any BullMQ jobs are enqueued. Fix the affected variants (re-import from 1688 or run the inventory resync) and retry
-- One customer order spanning items from two shops produces two Gulltrans orders and two WMS inbounds; both inbounds link back to the same customer order via `jop_wms_order_links`. Outbound creation is deferred until all inbounds for that order are shelved
+- One customer order spanning items from two shops produces two Gulltrans orders and two WMS inbounds; both inbounds link back to the same customer order via `jop_wms_order_links`. Outbound creation is deferred until all inbounds for that order are at a terminal status (status 14, 15, or 16)
 - Each customer order's `gulltransOrderSns` is a `text[]` array — one entry per shop (e.g. `["DG100", "DG200", "DG300"]` for a 3-shop order). Each shop job appends its SN concurrently without overwriting. The full Gulltrans response per shop is also stored as JSONB in `jop_wms_orders.gulltransResponse` on the corresponding inbound record
 - Variant sync failures are non-blocking — the inbound is still created with a warning log
 - Box dimensions are derived automatically from `ProductVariant.dimensions` and `ProductVariant.weight`
@@ -279,6 +293,9 @@ Use the server logs (tagged with `jobId`) to track progress and results.
 ### Retry Outbound for a Stuck Order
 
 Manually triggers outbound creation for an order whose outbound is missing or stuck. Intended to be called from the admin UI when `canRetryOutbound === true` on the order tracking response.
+
+> [!NOTE]
+> The **missing outbound recovery job** (runs at 09:00 and 21:00) automatically handles the "outbound never created" case. Manual retry via this endpoint is mainly needed for outbounds stuck at status `12` (Processing Failed), or when immediate action is required before the next recovery run.
 
 ```http
 POST /v1/wms/orders/:uuid/retry-outbound HTTP/1.1
@@ -809,7 +826,7 @@ Notifies the warehouse that a customer is sending stock back.
 POST /v1/wms/returns HTTP/1.1
 ```
 
-After a successful response, the order is automatically registered in `jop_wms_orders` and polled every 3 hours. Terminal status for returns is `shelved` (goods put back in usable stock) or `cancelled`.
+After a successful response, the order is automatically registered in `jop_wms_orders` and polled every 3 hours. Terminal status for returns is `40` (SHELVED — goods put back in usable stock).
 
 ### Request Body
 ```json
@@ -852,7 +869,7 @@ GET /v1/wms/returns?returnOrderNo=RET-2025-001 HTTP/1.1
     "code": 200,
     "data": {
         "returnOrderNo": "RET-2025-001",
-        "status": "shelved",
+        "status": "40",
         "items": [
             {
                 "sku": "ABC-001",
@@ -983,10 +1000,14 @@ End-to-end flow from customer order approval to warehouse fulfillment:
 3. GET  /v1/wms/inbound/label            → print inbound shipping label (optional)
 
 4.      [scheduler polls inbound every 3h]
-        [daily midnight job expires inbounds pending >30 days]
+        [stale expiry runs within inbound poll — expires inbounds pending >30 days]
 
-5. Inbound status → "shelved"            → scheduler checks all inbounds for each order are terminal
+5. Inbound status → 14 (STORED)         → scheduler checks all inbounds for each order are terminal
+                                         → before creating outbound, queries WMS first (syncs locally if already exists)
                                          → creates one outbound per customer order once all are ready
+
+        [recovery job runs at 09:00 and 21:00]
+        [catches any STORED inbounds still missing outbounds — retries creation]
 
 6.      [scheduler polls outbound every 3h via outboundorder/status]
         [on first SHIPPED transition → waybillNo/query called immediately]

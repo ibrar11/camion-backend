@@ -18,6 +18,7 @@ import { UpdateProductDto } from './dtos/UpdateProductDto';
 import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 import { UpdateProductFeaturedImageDto } from './dtos/UpdateProductFeaturedImageDto';
+import { ResyncProductCategoriesDto } from './dtos/ResyncProductCategoriesDto';
 
 import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from '../customers/enums/CustomerRole';
@@ -42,6 +43,31 @@ export class ProductsController {
 	@HttpCode(HttpStatus.CREATED)
 	actionCreateProduct(@Body() body: CreateProductDto): Promise<Product> {
 		return this.productsService.createProduct(body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Post("resync-categories")
+	@HttpCode(HttpStatus.OK)
+	actionResyncProductCategories(@Body() body: ResyncProductCategoriesDto): Promise<{
+		jobId: string;
+		status: "queued";
+		scope: "all" | "selected";
+		productsCount: number;
+	}> {
+		return this.productsService.enqueueProductCategoriesResync(body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Get("resync-categories/job/:jobId")
+	@HttpCode(HttpStatus.OK)
+	actionGetResyncProductCategoriesJob(@Param("jobId") jobId: string): Promise<{
+		jobId: string;
+		status: "queued" | "active" | "completed" | "failed" | "not_found";
+		progress?: string | number | boolean | object;
+		result?: any;
+		failedReason?: string | null;
+	}> {
+		return this.productsService.getProductCategoriesResyncJob(jobId);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)

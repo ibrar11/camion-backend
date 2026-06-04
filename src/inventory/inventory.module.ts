@@ -75,6 +75,8 @@ import { PricingModule } from '../pricing/pricing.module';
 import { Translation } from '../translation/entities/translation.entity';
 import { TranslationService } from '../translation/translation.service';
 import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
+import { QueueModule } from '../queue/queue.module';
+import { ProductCategoryResyncProcessor } from './workers/product-category-resync.processor';
 
 @Module({
 	imports: [
@@ -101,6 +103,7 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
 		]),
 		ClientsModule,
 		PricingModule,
+		QueueModule,
 	],
 	exports: [
 		CategoriesService,
@@ -132,6 +135,7 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
 		ImageThumbnailService,
 		TranslationService,
 		TranslationJobRegistryService,
+		ProductCategoryResyncProcessor,
 	],
 	controllers: [
 		CategoriesController,

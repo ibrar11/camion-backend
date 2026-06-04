@@ -143,7 +143,7 @@ export class JopWmsService {
             synchronizeType,
             sku: variant.sku,
             barcode: variant.sku,
-            name: variant.titleAr || variant.titleEn,
+            name: variant.titleEn || variant.titleAr,
             enName: variant.titleEn,
             weightUnit: (variant.weight?.unit ?? WeightUnit.Kilograms).toUpperCase(),
             weight: variant.weight?.amount ?? 0,
@@ -393,6 +393,28 @@ export class JopWmsService {
             });
         }
 
+        // ── Guard: reject if any item quantity is below the supplier's minimum ──
+        const belowMinQty: Array<{ sku: string; orderUuid: string; quantity: number; minOrderQuantity: number }> = [];
+        for (const { items } of shopGroups.values()) {
+            for (const { order, item } of items) {
+                const minQty = Number(item.variant?.skuMeta?.min_order_quantity ?? 1);
+                if (item.quantity < minQty) {
+                    belowMinQty.push({
+                        sku: item.variant?.sku ?? 'unknown',
+                        orderUuid: order.uuid,
+                        quantity: item.quantity,
+                        minOrderQuantity: minQty,
+                    });
+                }
+            }
+        }
+        if (belowMinQty.length) {
+            throw new BadRequestException({
+                message: 'Cannot dispatch: some items are below the supplier minimum order quantity.',
+                belowMinQty,
+            });
+        }
+
         // ── Load warehouse address (needed by Gulltrans) ───────────────────────
         const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
         if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
@@ -439,7 +461,7 @@ export class JopWmsService {
                         synchronizeType: 1,
                         sku: item.variant.sku,
                         barcode: item.variant.sku,
-                        name: item.variant.titleAr || item.variant.titleEn,
+                        name: item.variant.titleEn || item.variant.titleAr,
                         enName: item.variant.titleEn,
                         weightUnit: (item.variant.weight?.unit ?? WeightUnit.Kilograms).toUpperCase(),
                         weight: item.variant.weight?.amount ?? 0,
@@ -564,6 +586,22 @@ export class JopWmsService {
             if (existingOutbound) {
                 this.logger.log(`Outbound ${customerVoucherNo} already tracked (status: ${existingOutbound.status}) — skipping`);
                 continue;
+            }
+
+            // Check WMS before creating — outbound may already exist there but not locally
+            try {
+                const statusResult: any = await this.client.post('outboundorder/status', { customerVoucherNo });
+                const jopStatus = String(statusResult?.data?.status ?? '');
+                if (jopStatus) {
+                    const synced = await this.wmsOrderRepository.save(
+                        this.wmsOrderRepository.create({ orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND, status: jopStatus }),
+                    );
+                    await this.linkOrdersToWmsOrder(synced.id, [order.uuid]);
+                    this.logger.log(`Synced existing WMS outbound ${customerVoucherNo} at status ${jopStatus}`);
+                    continue;
+                }
+            } catch {
+                this.logger.log(`Outbound ${customerVoucherNo} does not exist on WMS — proceeding with creation`);
             }
 
             const addr = order.shippingAddress;
@@ -769,12 +807,6 @@ export class JopWmsService {
             };
         }
 
-        const order = await this.orderRepository.findOne({
-            where: { uuid: orderUuid },
-            relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
-        });
-        if (!order) throw new NotFoundException(`Order ${orderUuid} not found`);
-
         const retriedShopIds: string[] = [];
 
         for (const job of matchingJobs) {
@@ -785,8 +817,15 @@ export class JopWmsService {
             // If gulltransOrderSn is set, Gulltrans already succeeded — the failure was at the
             // WMS inbound step, so we just retry without touching gulltransItems.
             if (!data.gulltransOrderSn) {
-                const shopItems = order.orderItems.filter(
-                    item => item.variant?.product?.shopId === shopId,
+                // Load ALL orders in this job — a single shop job can cover multiple order UUIDs,
+                // so filtering by only the requested orderUuid would drop the others' items.
+                const jobOrders = await this.orderRepository.find({
+                    where: { uuid: In(data.orderUuids) },
+                    relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
+                });
+
+                const shopItems = jobOrders.flatMap(o =>
+                    o.orderItems.filter(item => item.variant?.product?.shopId === shopId),
                 );
 
                 if (!shopItems.length) {
@@ -810,7 +849,7 @@ export class JopWmsService {
                 }));
 
                 await job.updateData({ ...data, gulltransItems: freshGulltransItems });
-                this.logger.log(`dispatchMissing ${orderUuid}: refreshed gulltransItems for shop ${shopId}`);
+                this.logger.log(`dispatchMissing ${orderUuid}: refreshed gulltransItems for shop ${shopId} (${jobOrders.length} order(s))`);
             }
 
             const state = await job.getState();

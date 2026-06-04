@@ -80,6 +80,7 @@ import { StoryFrame } from "./stories/entities/story-frame.entity";
 import { StoriesModule } from './stories/stories.module';
 
 import { Banner } from "./banners/entities/banner.entity";
+import { BannerCategory } from "./banners/entities/banner-category";
 import { BannersModule } from './banners/banners.module';
 
 import { NewsletterModule } from "./newsletter/newsletter.module";
@@ -93,6 +94,7 @@ import { Coupon } from "./referral/entities/coupon.entity";
 import { Transaction } from "./referral/entities/transaction.entity";
 import { Wallet } from "./referral/entities/wallet.entity";
 import { ReferralModule } from './referral/referral.module';
+import { GlobalCoupon } from "./referral/entities/global-coupon.entity";
 
 import { Currency } from "./currencies/entities/currency.entity";
 import { CurrenciesModule } from './currencies/currencies.module';
@@ -109,6 +111,8 @@ import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
 import { ReturnsModule } from './returns/returns.module';
 
 import { Notification } from "./notifications/entities/notification.entity";
+import { PushNotification } from "./notifications/entities/push-notification";
+import { PushNotificationImage } from "./notifications/entities/push-notification-image";
 import { NotificationsModule } from './notifications/notifications.module';
 
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
@@ -232,6 +236,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 					StoryFrame,
 
 					Banner,
+					BannerCategory,
 
 					Order,
 					OrderItem,
@@ -239,11 +244,14 @@ import { FirebaseModule } from './firebase/firebase.module';
 					PaymentTransaction,
 
 					Notification,
+					PushNotification,
+					PushNotificationImage,
 					Affiliate,
 					BankAccount,
 					Coupon,
 					Transaction,
 					Wallet,
+					GlobalCoupon,
 
 					WishlistItem,
 

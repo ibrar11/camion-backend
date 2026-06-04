@@ -17,6 +17,7 @@ import {
 import { Exclude } from "class-transformer";
 
 import { ProductCategory } from "./product-category.entity";
+import { BannerCategory } from "src/banners/entities/banner-category";
 
 @ObjectType()
 @Entity({ name: "categories", })
@@ -79,6 +80,9 @@ export class Category {
 
 	@OneToMany(() => ProductCategory, (productCategory) => productCategory.category)
 	productCategories: Array<ProductCategory>;
+
+	@OneToMany(() => BannerCategory, (bannerCategory) => bannerCategory.category)
+	bannerCategories: Array<BannerCategory>;
 
 	@Exclude()
 	@UpdateDateColumn({

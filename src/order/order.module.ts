@@ -33,6 +33,7 @@ import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { ExchangeRateService } from '../pricing/exchange-rate.service';
 
 import { Coupon } from '../referral/entities/coupon.entity';
+import { GlobalCoupon } from '../referral/entities/global-coupon.entity';
 
 import { Wallet } from '../referral/entities/wallet.entity';
 
@@ -50,7 +51,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { EmailModule } from '../email/email.module';
 
 import { Notification } from '../notifications/entities/notification.entity';
-import { PushNotificationService } from '../common/push-notification.service';
+import { PushNotification } from '../notifications/entities/push-notification';
+import { PushNotificationService } from '../notifications/push-notification.service';
 
 import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
@@ -71,12 +73,14 @@ import { Product } from '../inventory/entities/product.entity';
             PaymentTransaction,
             ExchangeRate,
             Coupon,
+            GlobalCoupon,
             Wallet,
             Affiliate,
             Transaction,
             KeyValuePair,
             JopWmsOrderLink,
             Notification,
+            PushNotification,
             Product,
         ]),
         ClientsModule,

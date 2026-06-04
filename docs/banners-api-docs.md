@@ -34,12 +34,14 @@ curl --location --request POST 'http://localhost:8000/v1/banners' \
 ### Response Body
 ```json
 {
-    "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
+    "uuid": "56762a1a-80b7-46a9-bcd9-5654ea5c677b",
     "titleEn": "",
     "titleAr": "",
-    "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
-    "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
+    "imageUrlEn": "s3://banners/52f34474-bbd8-4f23-9c20-85c3908efd9b.jpg",
+    "imageUrlAr": "s3://banners/f2776f05-793c-49a5-9738-b69c5c2e8597.jpg",
     "linkUrl": "",
+    "linkUrlEn": "",
+    "linkUrlAr": "",
     "placement": "",
     "color": "",
     "isActive": true
@@ -68,15 +70,45 @@ itemsPerPage | The number of results to retrieve in the response | 100
 ```json
 [
     {
-        "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
+        "uuid": "7e9f5769-9b74-4b76-913e-a96c6bb18868",
         "titleEn": "",
         "titleAr": "",
-        "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
-        "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
-        "linkUrl": "",
+        "imageUrlEn": "s3://banners/53eac2de-d96d-42c9-9ddb-5570f4d14f79.jpg",
+        "imageUrlAr": "s3://banners/c3e63fe7-0102-4100-b15a-36837101ab73.jpg",
+        "linkUrlEn": "",
+        "linkUrlAr": "",
         "placement": "",
         "color": "",
-        "isActive": true
+        "isActive": true,
+        "bannerCategories": []
+    },
+    {
+        "uuid": "56762a1a-80b7-46a9-bcd9-5654ea5c677b",
+        "titleEn": "New Product (English)",
+        "titleAr": "New Product (Arabic)",
+        "imageUrlEn": "s3://banners/52f34474-bbd8-4f23-9c20-85c3908efd9b.jpg",
+        "imageUrlAr": "s3://banners/f2776f05-793c-49a5-9738-b69c5c2e8597.jpg",
+        "linkUrlEn": "https://camion-app.com/en/categories/women-dress",
+        "linkUrlAr": "https://camion-app.com/ar/categories/women-dress",
+        "placement": "homepage",
+        "color": "#000000",
+        "isActive": true,
+        "bannerCategories": [
+            {
+                "id": 4,
+                "category": {
+                    "uuid": "7971a23c-2363-4608-a47d-421e81dd370c",
+                    "slug": "mobile-accessories",
+                    "nameEn": "Mobile Accessories",
+                    "nameAr": "ملحقات الهواتف المحمولة",
+                    "pricingFactor": "1",
+                    "discountPercentage": "0",
+                    "thumbnailUrl": "s3://categories/5b59c9f2-178f-4c40-976b-90c4012c4b0a.jpg",
+                    "isFeatured": false,
+                    "isFeaturedOnHomepage": false
+                }
+            }
+        ]
     }
 ]
 ```
@@ -94,12 +126,13 @@ GET /v1/banners/<banner-uuid> HTTP/1.1
 ### Response Body
 ```json
 {
-    "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
+    "uuid": "56762a1a-80b7-46a9-bcd9-5654ea5c677b",
     "titleEn": "New Product (English)",
     "titleAr": "New Product (Arabic)",
-    "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
-    "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
-    "linkUrl": "New Products",
+    "imageUrlEn": "s3://banners/52f34474-bbd8-4f23-9c20-85c3908efd9b.jpg",
+    "imageUrlAr": "s3://banners/f2776f05-793c-49a5-9738-b69c5c2e8597.jpg",
+    "linkUrlEn": "https://camion-app.com/en/categories/women-dress",
+    "linkUrlAr": "https://camion-app.com/ar/categories/women-dress",
     "placement": "homepage",
     "color": "#000000",
     "isActive": true
@@ -123,7 +156,13 @@ PUT /v1/banners/<banner-uuid> HTTP/1.1
         "en": "New Product (English)",
         "ar": "New Product (Arabic)"
     },
-    "linkUrl": "New Products",
+    "linkUrl": {
+        "en": "https://camion-app.com/en/categories/women-dress",
+        "ar": "https://camion-app.com/ar/categories/women-dress"
+    },
+    "categories": [
+        "7971a23c-2363-4608-a47d-421e81dd370c"
+    ],
     "isActive": true,
     "placement": "homepage",
     "color": "#000000"
@@ -133,12 +172,13 @@ PUT /v1/banners/<banner-uuid> HTTP/1.1
 ### Response Body
 ```json
 {
-    "uuid": "e7374706-2e8a-4bb2-b9a4-de9a5b033967",
+    "uuid": "56762a1a-80b7-46a9-bcd9-5654ea5c677b",
     "titleEn": "New Product (English)",
     "titleAr": "New Product (Arabic)",
-    "imageUrlEn": "s3://banners/205bf657-2b24-438d-874c-608e53e6646b.jpg",
-    "imageUrlAr": "s3://banners/6b4a0e23-3ddd-4a6d-895a-ca751f13faeb.jpg",
-    "linkUrl": "New Products",
+    "imageUrlEn": "s3://banners/52f34474-bbd8-4f23-9c20-85c3908efd9b.jpg",
+    "imageUrlAr": "s3://banners/f2776f05-793c-49a5-9738-b69c5c2e8597.jpg",
+    "linkUrlEn": "https://camion-app.com/en/categories/women-dress",
+    "linkUrlAr": "https://camion-app.com/ar/categories/women-dress",
     "placement": "homepage",
     "color": "#000000",
     "isActive": true

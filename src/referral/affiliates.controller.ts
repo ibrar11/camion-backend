@@ -19,6 +19,7 @@ import { RequestAffiliateDto } from "./dtos/RequestAffiliateDto";
 import { UpdateAffiliateDto } from "./dtos/UpdateAffiliateDto";
 import { UpdateAffiliateStatusDto } from "./dtos/UpdateAffiliateStatusDto";
 import { UpdateAffiliateTypeDto } from "./dtos/UpdateAffiliateTypeDto";
+import { CreateCouponDto } from "./dtos/CreateCouponDto";
 
 import { UserRole } from "../users/enums/UserRole";
 import { CustomerRole } from "../customers/enums/CustomerRole";
@@ -26,16 +27,23 @@ import { CustomerRole } from "../customers/enums/CustomerRole";
 import { Affiliate } from "./entities/affiliate.entity";
 import { AffiliatesService } from "./affiliates.service";
 
+import { Customer } from "../customers/entities/customer.entity";
+
+import { Coupon } from "./entities/coupon.entity";
+import { CouponsService } from "./coupons.service";
+
 import { AuthGuard } from "../auth/auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 
 import { Roles } from "../auth/roles.decorator";
-import { Customer } from "../customers/entities/customer.entity";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/referral/affiliates')
 export class AffiliatesController {
-	constructor(@Inject(AffiliatesService) private readonly afiliatesService: AffiliatesService) { }
+	constructor(
+		@Inject(AffiliatesService) private readonly afiliatesService: AffiliatesService,
+		@Inject(CouponsService) private readonly couponsService: CouponsService,
+	) { }
 
 	@Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)
 	@Post("affiliate")
@@ -103,6 +111,13 @@ export class AffiliatesController {
 	@HttpCode(HttpStatus.OK)
 	actionUpdateAffiliateType(@Param('uuid') uuid: string, @Body() body: UpdateAffiliateTypeDto): Promise<Affiliate> {
 		return this.afiliatesService.updateAffiliateType(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Post(':uuid/coupons')
+	@HttpCode(HttpStatus.OK)
+	actionCreateAffiliateCoupon(@Param('uuid') uuid: string, @Body() body: CreateCouponDto): Promise<Coupon> {
+		return this.couponsService.createCouponForAffiliate(uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin)

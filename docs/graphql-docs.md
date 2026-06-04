@@ -45,6 +45,8 @@ The following features are currently supported by the GraphQL API.
 - Get Current Customer
 - Get Current Customer Addresses
 - Get Banners
+- Get Banners By Placement
+- Get Banners By Category
 - Get Stories
 - Get CMS Pages
 - Get CMS Page
@@ -84,6 +86,7 @@ query GetCurrentCustomer {
     fullName
     emailAddress
     phoneNumber
+    unreadNotificationCount
   }
 }
 ```
@@ -97,7 +100,8 @@ query GetCurrentCustomer {
             "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
             "fullName": "Your Name",
             "emailAddress": "your-name@your-domain.com",
-            "phoneNumber": "+974 12345678"
+            "phoneNumber": "+974 12345678",
+            "unreadNotificationCount": 5
         }
     }
 }
@@ -179,8 +183,8 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
   getBanners(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
     uuid
     title(language: $language)
-    imageUrl
-    linkUrl
+    imageUrl(language: $language)
+    linkUrl(language: $language)
     placement
     color
     isActive
@@ -208,7 +212,7 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "uuid": "065ebf39-a638-4bc1-aec0-93fb4286a652",
                 "title": "New Product (English)",
                 "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1bd64a8f-dd34-4b49-adb5-659bf2b7a151.jpg",
-                "linkUrl": "New Products",
+                "linkUrl": "https://camion-app.com/en/categories/women-dress",
                 "placement": "homepage",
                 "color": "#000000",
                 "isActive": true
@@ -217,9 +221,115 @@ query GetBanners($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "uuid": "2d051593-91d1-41bb-b955-35211715599f",
                 "title": "",
                 "imageUrl": "https://camion.s3.us-east-1.amazonaws.com/1e7930fb-e6aa-482a-a2bb-9403b4ee1d35.jpg",
-                "linkUrl": "",
+                "linkUrl": "https://camion-app.com/en/categories/women-dress",
                 "placement": "",
                 "color": "#000000",
+                "isActive": true
+            }
+        ]
+    }
+}
+```
+
+Get Banners By Placement
+------------------------
+
+> [!IMPORTANT]
+> If there are no banners for the desired placement, it will fallback to all banners.
+
+### Request Body
+
+```graphql
+query GetBannersByPlacement($placement: String, $language: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getBannersByPlacement(placement: $placement, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    title(language: $language)
+    imageUrl(language: $language)
+    linkUrl(language: $language)
+    placement
+    color
+    isActive
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "placement": "homepage",
+    "language": "en",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getBannersByPlacement": [
+            {
+                "uuid": "8ba3fe43-d8f0-4888-891c-2f7d09f04e0d",
+                "title": "",
+                "imageUrl": "https://assets.dev.camiontrading.com/banners/en/image.webp",
+                "linkUrl": "en",
+                "placement": "homepage",
+                "color": "#fffaf6",
+                "isActive": true
+            }
+        ]
+    }
+}
+```
+
+Get Banners By Category
+-----------------------
+
+> [!IMPORTANT]
+> If there are no banners for the desired category, it will fallback to all banners.
+
+### Request Body
+
+```graphql
+query GetBannersByCategory($slug: String, $language: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getBannersByCategory(slug: $slug, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    title(language: $language)
+    imageUrl(language: $language)
+    linkUrl(language: $language)
+    placement
+    color
+    isActive
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "slug": "mobile-accessories",
+    "language": "en",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getBannersByCategory": [
+            {
+                "uuid": "8ba3fe43-d8f0-4888-891c-2f7d09f04e0d",
+                "title": "",
+                "imageUrl": "https://assets.dev.camiontrading.com/banners/en/image.webp",
+                "linkUrl": "en",
+                "placement": "homepage",
+                "color": "#fffaf6",
                 "isActive": true
             }
         ]
@@ -3370,15 +3480,15 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
         availableStock
         subTotal {
             amount
-            curreny
+            currency
         }
         discountPrice {
             amount
-            curreny
+            currency
         }
         total {
             amount
-            curreny
+            currency
         }
     }
 }

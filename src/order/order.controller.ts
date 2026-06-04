@@ -72,8 +72,9 @@ export class OrderController {
     orderPreview(
         @GetCustomer() customer: Customer,
         @Query("couponCode") couponCode: string,
+        @Query("currency") currencyCode: CurrencyCode,
     ): Promise<OrderPreviewResponse> {
-        return this.orderService.orderPreview(customer, couponCode)
+        return this.orderService.orderPreview(customer, currencyCode, couponCode)
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)

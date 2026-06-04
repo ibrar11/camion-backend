@@ -7,11 +7,15 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
 
 import { Exclude } from "class-transformer";
+
+import { BannerCategory } from "./banner-category";
 
 @ObjectType()
 @Entity({ name: "banners" })
@@ -47,11 +51,19 @@ export class Banner {
 	imageUrlAr: string;
 
 	@Field()
-	@Column()
 	linkUrl: string;
 
 	@Field()
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	linkUrlEn: string;
+
+	@Field()
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	linkUrlAr: string;
+
+	@Field()
 	@Column({ default: "homepage" })
+	@Index()
 	placement: string;
 
 	@Field()
@@ -61,6 +73,9 @@ export class Banner {
 	@Field()
 	@Column({ default: true, })
 	isActive: boolean;
+
+	@OneToMany(() => BannerCategory, (bannerCategory) => bannerCategory.banner, { cascade: true, })
+	bannerCategories: Array<BannerCategory>;
 
 	@Exclude()
 	@UpdateDateColumn({

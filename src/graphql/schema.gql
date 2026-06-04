@@ -42,7 +42,9 @@ type Banner {
   imageUrlAr: String!
   imageUrlEn: String!
   isActive: Boolean!
-  linkUrl: String!
+  linkUrl(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
+  linkUrlAr: String!
+  linkUrlEn: String!
   placement: String!
   title(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
   titleAr: String!
@@ -114,6 +116,7 @@ type Customer {
   emailAddress: String
   fullName: String!
   phoneNumber: String
+  unreadNotificationCount: Int!
   uuid: String!
 }
 
@@ -378,6 +381,8 @@ type Promo {
 
 type Query {
   getBanners(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
+  getBannersByCategory(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String! = ""): [Banner!]!
+  getBannersByPlacement(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, placement: String! = ""): [Banner!]!
   getCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCouponOrders(itemsPerPage: Int! = 24, pageNumber: Int! = 1, uuid: String! = ""): [CouponOrder!]!
   getCurrencies: [Currency!]!
