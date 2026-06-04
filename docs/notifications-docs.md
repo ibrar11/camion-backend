@@ -249,3 +249,188 @@ PATCH /v1/notifications/<notificationUUID>/read HTTP/1.1
 > ⚠️ Returns a `404 Not Found` error if the notification UUID does not exist.
 
 ---
+
+Create Customize Push Notification
+----------------------------------
+
+Creates a customize push notification for announcement. Intended for system or admin use.
+
+```http
+POST /v1/push-notifications HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+title | Yes | String (max 100) | Short title shown in the notification header
+brief | Yes | String (max 160) | One-line summary shown in the notification list
+message | Yes | String | Full notification body text
+priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
+
+### Request Body
+
+```json
+{
+    "title": "Your order has been shipped",
+    "brief": "Order #1042 is on its way",
+    "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+    "priority": "HIGH"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c",
+    "title": "Your order has been shipped",
+    "brief": "Order #1042 is on its way",
+    "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+
+    "priority": "HIGH",
+    "isRead": false,
+    "createdAt": "2026-04-15T10:30:00.000Z",
+    "updatedAt": "2026-04-15T10:30:00.000Z"
+}
+```
+
+---
+
+Send Customize Push Notification
+----------------------------------
+
+Send customize push notifications for announcement. Intended for system or admin use.
+
+```http
+POST /v1/push-notifications/push HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+pushNotificationUUID | Yes | Array<String> | array of push notification uuids
+
+### Request Body
+
+```json
+{
+    "pushNotificationUUID": [
+        "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c"
+    ]
+}
+```
+---
+
+Get Customize Push Notifications
+--------------------------------
+
+Returns all customize push notification. Intended for system or admin use.
+
+```http
+GET /v1/push-notifications HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c",
+        "title": "Your order has been shipped",
+        "brief": "Order #1042 is on its way",
+        "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+        "priority": "HIGH",
+        "createdAt": "2026-04-15T10:30:00.000Z",
+        "updatedAt": "2026-04-15T10:30:00.000Z"
+    },
+    {
+        "uuid": "b7d2f3e5-1c98-4e23-cd45-2g3f4e5b6c7d",
+        "title": "Price drop on an item you liked",
+        "brief": "iPhone 25 is now cheaper",
+        "message": "The iPhone 25 you viewed recently has dropped in price. Grab it before it sells out!",
+        "priority": "MEDIUM",
+        "createdAt": "2026-04-14T08:00:00.000Z",
+        "updatedAt": "2026-04-14T09:15:00.000Z"
+    }
+]
+```
+
+---
+
+Get Customize Push Notification
+--------------------------------
+
+Returns customize push notification. Intended for system or admin use.
+
+```http
+GET /v1/push-notifications/uuid HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c",
+    "title": "Your order has been shipped",
+    "brief": "Order #1042 is on its way",
+    "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+    "priority": "HIGH",
+    "createdAt": "2026-04-15T10:30:00.000Z",
+    "updatedAt": "2026-04-15T10:30:00.000Z"
+}
+```
+
+---
+
+Update Customize Push Notification
+----------------------------------
+
+Updates a customize push notification for announcement. Intended for system or admin use.
+
+```http
+PUT /v1/push-notifications/uuid HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+title | Yes | String (max 100) | Short title shown in the notification header
+brief | Yes | String (max 160) | One-line summary shown in the notification list
+message | Yes | String | Full notification body text
+priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
+
+### Request Body
+
+```json
+{
+    "title": "Your order has been shipped",
+    "brief": "Order #1042 is on its way",
+    "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+    "priority": "HIGH"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c",
+    "title": "Your order has been shipped",
+    "brief": "Order #1042 is on its way",
+    "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+
+    "priority": "HIGH",
+    "isRead": false,
+    "createdAt": "2026-04-15T10:30:00.000Z",
+    "updatedAt": "2026-04-15T10:30:00.000Z"
+}
+```
+
+---
+
+Delete Customize Push Notification
+----------------------------------
+
+Deletes a customize push notification for announcement. Intended for system or admin use.
+
+```http
+Delete /v1/push-notifications/uuid HTTP/1.1
+```
+---

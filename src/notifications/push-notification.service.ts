@@ -157,59 +157,76 @@ export class PushNotificationService {
                 );
             }
 
+            // Build a map of token → customer for efficient invalid-token cleanup
+            const tokenToCustomer = new Map<string, Customer>();
+            for (const customer of customers) {
+                for (const token of customer.firebaseDeviceToken ?? []) {
+                    tokenToCustomer.set(token, customer);
+                }
+            }
+
+            const allTokens = [...tokenToCustomer.keys()];
+
+            if (!allTokens.length) {
+                this.logger.warn('No device tokens found across all customers. Skipping.');
+                return;
+            }
+
             for (const notification of notifications) {
-                this.logger.log(`Pushing notification: ${JSON.stringify(notification)}`);
+                this.logger.log(`Pushing announcement notification: ${notification.uuid}`);
 
-                // for (const customer of customers) {
+                const imageUrl =
+                    notification.imageUrl ||
+                    notification.images?.[0]?.imageUrl ||
+                    undefined;
 
-                //     this.logger.log(`Pushing notification for customer: ${customer}`);
+                const BATCH_SIZE = 500;
+                for (let i = 0; i < allTokens.length; i += BATCH_SIZE) {
+                    const batch = allTokens.slice(i, i + BATCH_SIZE);
 
-                //     if (!customer) {
-                //         throw new BadRequestException(
-                //             "Customer not found"
-                //         );
-                //     }
+                    const multicastMessage: admin.messaging.MulticastMessage = {
+                        tokens: batch,
+                        notification: {
+                            title: notification.title,
+                            body: notification.message,
+                            ...(imageUrl && { imageUrl }),
+                        },
+                    };
 
-                //     const pushNotification: string[] = [];
-                //     const deviceTokens = [...(customer.firebaseDeviceToken || [])];
+                    const response = await this.firebase.messaging().sendEachForMulticast(multicastMessage);
 
-                //     for (const token of deviceTokens) {
-                //         this.logger.log(`Pushing notification for customer: ${customer} with token: ${token.slice(0, 10)}`);
-                //         try {
-                //             const message: admin.messaging.Message = {
-                //                 token,
-                //                 notification: {
-                //                     title: notification.title,
-                //                     body: notification.message,
-                //                 },
-                //             };
+                    this.logger.log(
+                        `Batch ${Math.floor(i / BATCH_SIZE) + 1}: ` +
+                        `${response.successCount} sent, ${response.failureCount} failed`
+                    );
 
-                //             const res = await this.firebase.messaging().send(message);
-                //             pushNotification.push(res);
+                    // Clean up invalid tokens
+                    const staleCustomers = new Map<number, Customer>();
+                    response.responses.forEach((res, idx) => {
+                        if (!res.success) {
+                            const code = (res.error as any)?.errorInfo?.code || (res.error as any)?.code;
+                            if (
+                                code === 'messaging/registration-token-not-registered' ||
+                                code === 'messaging/invalid-registration-token'
+                            ) {
+                                const token = batch[idx];
+                                const customer = tokenToCustomer.get(token);
+                                if (customer) {
+                                    customer.firebaseDeviceToken =
+                                        customer.firebaseDeviceToken.filter(t => t !== token);
+                                    staleCustomers.set(customer.id, customer);
+                                }
+                            } else {
+                                this.logger.error(`Token send failed: ${res.error?.message}`);
+                            }
+                        }
+                    });
 
-                //             this.logger.log(`Sent push to ${token.slice(0, 10)}... ✅ (${res})`);
-                //         } catch (error: any) {
-                //             this.logger.error({
-                //                 message: error?.message,
-                //                 code: error?.code,
-                //                 errorInfo: error?.errorInfo,
-                //             });
-                //             this.logger.error(`Error sending push to ${token.slice(0, 10)}`);
-
-                //             const code = error?.errorInfo?.code || error?.code;
-
-                //             if (
-                //                 code === 'messaging/registration-token-not-registered' ||
-                //                 code === 'messaging/invalid-registration-token'
-                //             ) {
-                //                 customer.firebaseDeviceToken =
-                //                     customer.firebaseDeviceToken.filter(t => t !== token);
-
-                //                 await this.customerRepository.save(customer);
-                //             }
-                //         }
-                //     }
-                // }
+                    if (staleCustomers.size) {
+                        await this.customerRepository.save([...staleCustomers.values()]);
+                        this.logger.log(`Cleaned up stale tokens for ${staleCustomers.size} customer(s)`);
+                    }
+                }
             }
 
         } catch (err: any) {
