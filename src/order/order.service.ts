@@ -86,7 +86,7 @@ import { EmailService } from "../email/email.service";
 
 import { KeyValuePairType } from "../key-value-pairs/enums/KeyValuePairType.enum";
 
-import { PushNotificationService } from "../common/push-notification.service";
+import { PushNotificationService } from "../notifications/push-notification.service";
 
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
 

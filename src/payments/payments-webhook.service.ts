@@ -25,7 +25,7 @@ import { Notification } from "../notifications/entities/notification.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/enums/notification-type.enum";
 import { NotificationPriority } from "../notifications/enums/notification-priority.enum";
-import { PushNotificationService } from "../common/push-notification.service";
+import { PushNotificationService } from "../notifications/push-notification.service";
 
 import { CartItem } from "../cart/entities/cart-items.entity";
 

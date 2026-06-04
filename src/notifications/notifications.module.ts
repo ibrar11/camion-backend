@@ -14,9 +14,26 @@ import { CustomersService } from "../customers/customers.service";
 
 import { ClientsModule } from "../clients/clients.module";
 
+import { PushNotification } from "./entities/push-notification";
+import { PushNotificationImage } from "./entities/push-notification-image";
+import { PushNotificationService } from "./push-notification.service";
+import { PushNotificationController } from "./push-notification.controller";
+
+import { FirebaseAdminProvider } from "../firebase/provider/firebase.provider";
+import { PushNotificationImageService } from "./push-notification-image.service";
+
+import { S3Service } from "../common/s3.service";
+import { FileService } from "../common/file.service";
+
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([Notification, User, Customer]),
+		TypeOrmModule.forFeature([
+			Notification,
+			PushNotification,
+			PushNotificationImage,
+			User, 
+			Customer
+		]),
 		ClientsModule,
 	],
 	providers: [
@@ -24,8 +41,16 @@ import { ClientsModule } from "../clients/clients.module";
 		NotificationsResolver,
 		UsersService,
 		CustomersService,
+		PushNotificationService,
+		PushNotificationImageService,
+		FirebaseAdminProvider,
+		S3Service,
+		FileService,
 	],
-	controllers: [NotificationsController],
+	controllers: [
+		NotificationsController,
+		PushNotificationController,
+	],
 	exports: [NotificationsService],
 })
 export class NotificationsModule { }

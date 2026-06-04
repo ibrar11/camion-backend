@@ -110,6 +110,8 @@ import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
 import { ReturnsModule } from './returns/returns.module';
 
 import { Notification } from "./notifications/entities/notification.entity";
+import { PushNotification } from "./notifications/entities/push-notification";
+import { PushNotificationImage } from "./notifications/entities/push-notification-image";
 import { NotificationsModule } from './notifications/notifications.module';
 
 import { WishlistItem } from "./wishlist/entities/wishlist.entity";
@@ -240,6 +242,8 @@ import { FirebaseModule } from './firebase/firebase.module';
 					PaymentTransaction,
 
 					Notification,
+					PushNotification,
+					PushNotificationImage,
 					Affiliate,
 					BankAccount,
 					Coupon,
