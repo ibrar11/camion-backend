@@ -644,7 +644,7 @@ export class ProductsService {
 	async findAllByCategory(categorySlug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products by category slug: ${categorySlug}`);
 
-		// Find the category, return empty array if there is not category
+		// Find the category, return empty array if there is no category against the slug
 		const category = await this.categoryRepository.findOne({
 			cache: true,
 			where: {

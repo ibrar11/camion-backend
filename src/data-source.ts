@@ -8,6 +8,7 @@ import { LoginRequest } from "./auth/entities/login-request.entity";
 
 // banners
 import { Banner } from "./banners/entities/banner.entity";
+import { BannerCategory } from "./banners/entities/banner-category";
 
 // cart
 import { CartItem } from "./cart/entities/cart-items.entity";
@@ -108,6 +109,7 @@ export const CamionDataSource = new DataSource({
 		Affiliate,
 		BankAccount,
 		Banner,
+		BannerCategory,
 		CartItem,
 		Category,
 		Client,

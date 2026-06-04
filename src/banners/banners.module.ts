@@ -6,6 +6,7 @@ import { S3Service } from 'src/common/s3.service';
 import { FileService } from 'src/common/file.service';
 
 import { Banner } from './entities/banner.entity';
+import { BannerCategory } from './entities/banner-category';
 import { BannersService } from './banners.service';
 import { BannersController } from './banners.controller';
 import { BannersResolver } from './banners.resolver';
@@ -16,14 +17,18 @@ import { CustomersService } from '../customers/customers.service';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 
+import { Category } from 'src/inventory/entities/category.entity';
+
 import { ClientsModule } from '../clients/clients.module';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
 			Banner,
+			BannerCategory,
 			User,
 			Customer,
+			Category,
 		]),
 		ClientsModule,
 	],

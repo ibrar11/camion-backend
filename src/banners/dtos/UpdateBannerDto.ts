@@ -1,6 +1,8 @@
 import {
+	IsArray,
 	IsBoolean,
 	IsString,
+	IsUUID,
 	MinLength,
 	ValidateNested,
 } from "class-validator";
@@ -42,4 +44,8 @@ export class UpdateBannerDto {
 	@IsString()
 	@MinLength(1)
 	color: string;
+
+	@IsArray()
+	@IsUUID('4', { each: true, })
+	categories: Array<string>;
 }
