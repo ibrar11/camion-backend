@@ -190,7 +190,20 @@ export class ReturnsService {
                 customer: { uuid: customerUuid },
                 ...(status ? { status } : {}),
             },
-            relations: { order: true, orderItem: true, evidence: true },
+            relations: { 
+                order: true, 
+                orderItem: {
+                    product: {
+                        productCategories: {
+                            category: true
+                        }
+                    },
+                    variant: {
+                        images: true
+                    }
+                }, 
+                evidence: true 
+            },
             order: { id: "DESC" },
             skip,
             take,
@@ -201,7 +214,21 @@ export class ReturnsService {
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
         return this.returnRequestRepository.find({
             where: status ? { status } : {},
-            relations: { order: true, orderItem: true, evidence: true, customer: true },
+            relations: { 
+                order: true, 
+                orderItem: {
+                    product: {
+                        productCategories: {
+                            category: true
+                        }
+                    },
+                    variant: {
+                        images: true
+                    }
+                },
+                evidence: true, 
+                customer: true 
+            },
             order: { id: "DESC" },
             skip,
             take,
@@ -211,7 +238,20 @@ export class ReturnsService {
     async findOne(uuid: string): Promise<ReturnRequest> {
         const returnRequest = await this.returnRequestRepository.findOne({
             where: { uuid },
-            relations: { order: true, orderItem: true, evidence: true },
+            relations: { 
+                order: true, 
+                orderItem: {
+                    product: {
+                        productCategories: {
+                            category: true
+                        }
+                    },
+                    variant: {
+                        images: true
+                    }
+                },
+                evidence: true 
+            },
         });
 
         if (!returnRequest) {
