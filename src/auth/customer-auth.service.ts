@@ -966,7 +966,7 @@ export class CustomerAuthService {
 	}
 
 	async loginWithAppleMobile(dto: AppleMobileAuthDto): Promise<CustomerAuthResponse> {
-		this.logger.log(`Attempting to login customer by apple mobile: ${JSON.stringify(dto)}`);
+		this.logger.log(`Apple login attempt: hasIdentityToken=${!!dto.identityToken}, hasAuthCode=${!!dto.authorizationCode}`);
 
 		const { identityToken, authorizationCode, fullName, firebaseDeviceToken } = dto;
 
@@ -976,6 +976,7 @@ export class CustomerAuthService {
 
 		const audience = this.configService.get<string>('APPLE_AUDIENCE');
 		const issuer = this.configService.get<string>('APPLE_ISSUER') || 'https://appleid.apple.com';
+		this.logger.log(`Apple login config: audience=${audience}, issuer=${issuer}`);
 
 		if (!audience) {
 			throw new UnauthorizedException({ error: 'Apple authentication not configured.' });
@@ -995,7 +996,8 @@ export class CustomerAuthService {
 		try {
 			const appleJwks = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
 			({ payload } = await jwtVerify(tokenToVerify, appleJwks, { issuer, audience }));
-		} catch {
+		} catch (err) {
+			this.logger.error(`Apple JWT verification failed: ${err instanceof Error ? err.message : String(err)}`);
 			throw new UnauthorizedException({ error: 'Invalid or expired Apple identity token.' });
 		}
 
@@ -1006,6 +1008,7 @@ export class CustomerAuthService {
 
 		const email = (payload['email'] as string) || '';
 		const name = (payload['name'] as string) || fullName || '';
+		this.logger.log(`Apple token verified: appleId=${appleId}, hasEmail=${!!email}`);
 
 		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId, firebaseDeviceToken });
 	}
@@ -1044,7 +1047,8 @@ export class CustomerAuthService {
 			}),
 		});
 
-		const data = await response.json() as { id_token?: string };
+		const data = await response.json() as { id_token?: string; error?: string };
+		this.logger.log(`Apple code exchange response: hasIdToken=${!!data.id_token}, error=${data.error ?? 'none'}`);
 		if (!data.id_token) {
 			throw new UnauthorizedException({ error: 'Apple token exchange failed.' });
 		}
