@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
@@ -121,11 +121,62 @@ export class CustomersService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Customer[]> {
+	async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Customer[]> {
 		this.logger.log(`Retrieving customers for graphql`);
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Parse the customer filters
+		let f = {
+			fullName: "",
+			emailAddress: "",
+			phoneNumber: "",
+		};
+
+		try {
+			f = JSON.parse(filters);
+		} catch {
+			f = {
+				fullName: "",
+				emailAddress: "",
+				phoneNumber: "",
+			};
+		}
+
+		// Find the customer by email address filter
+		if (f.emailAddress !== undefined && f.emailAddress !== null && f.emailAddress.length !== 0) {
+			const customer = await this.customerRepository.findOneBy({
+				emailAddress: f.emailAddress,
+			});
+
+			if (customer !== null) {
+				return [customer];
+			};
+		}
+
+		// Find the customer by phone number
+		if (f.phoneNumber !== undefined && f.phoneNumber !== null && f.phoneNumber.length !== 0) {
+			const customer = await this.customerRepository.findOneBy({
+				phoneNumber: f.phoneNumber,
+			});
+
+			if (customer !== null) {
+				return [customer];
+			}
+		}
+
+		// Find the customers by their full name
+		if (f.fullName !== undefined && f.fullName !== null && f.fullName.length !== 0) {
+			return this.customerRepository.createQueryBuilder("customer")
+				.where(`LOWER(customer.fullName) LIKE LOWER(:fullName)`, {
+					fullName: `%${f.fullName}%`,
+				})
+				.orderBy("customer.id", "DESC")
+				.skip(skip)
+				.take(take)
+				.getMany();
+		}
 
 		return this.customerRepository.find({
 			order: {
