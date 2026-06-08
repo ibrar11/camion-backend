@@ -1060,6 +1060,7 @@ export class CustomerAuthService {
 		const { email, fullName, appleId, firebaseDeviceToken } = profile;
 
 		let customer = await this.customerRepository.findOneBy({ appleId });
+		this.logger.log(`Apple findOrCreate: appleId=${appleId}, foundByAppleId=${!!customer}, isActive=${customer?.isActive ?? 'n/a'}, deletedAt=${customer?.deletedAt ?? 'none'}`);
 
 		if (!customer) {
 			if (email) {
