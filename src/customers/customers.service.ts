@@ -382,4 +382,20 @@ export class CustomersService {
 
 		await this.customerRepository.save(customer);
 	}
+
+	async reactivateByEmail(emailAddress: string): Promise<Customer> {
+		const customer = await this.customerRepository.findOne({
+			where: { emailAddress: emailAddress.toLowerCase().trim() },
+		});
+
+		if (!customer) {
+			throw new NotFoundException({ error: 'Customer not found with the provided email address.' });
+		}
+
+		customer.isActive = true;
+		customer.markedForDeletionAt = null;
+		customer.deletedAt = null;
+
+		return this.customerRepository.save(customer);
+	}
 }
