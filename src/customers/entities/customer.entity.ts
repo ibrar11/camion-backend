@@ -126,7 +126,7 @@ export class Customer {
 	unreadNotificationCount: number;
 
 	@Column({ type: 'int', default: 0 })
-	orderCount: number;
+	ordersCount: number;
 
 	@Exclude()
 	@UpdateDateColumn({
