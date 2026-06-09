@@ -724,22 +724,21 @@ export class ProcurementService {
             } else if (description.length > 0) {
                 this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
                 const translation = await await fetch(
-                    `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/contextual`,
+                    `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/batch`,
                     {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            text: description,
+                            texts: [description],
                             sourceLanguage: 'ch',
                             targetLanguage: 'en',
-                            updateWeaviate: true
                         }),
                     },
                 );
-                const data = await translation.json();
-                descriptionTrans = data?.translated || "";
+                const data: string[] = await translation.json();
+                descriptionTrans = data?.[0] || "";
             }
 
             const skus = product.productSkuInfos ?? [];
