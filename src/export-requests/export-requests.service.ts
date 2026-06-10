@@ -20,12 +20,16 @@ import { PatchExportRequestDownloadUrlDto } from "./dtos/PatchExportRequestDownl
 import { ExportRequestStatus } from './enums/ExportRequestStatus.enum';
 
 import { ExportRequest } from './entities/export-request.entity';
+import { Category } from "src/inventory/entities/category.entity";
 
 @Injectable()
 export class ExportRequestsService {
 	private readonly logger = new Logger(ExportRequestsService.name);
 
-	constructor(@InjectRepository(ExportRequest) private readonly exportRequestRepository: Repository<ExportRequest>) { }
+	constructor(
+		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
+		@InjectRepository(ExportRequest) private readonly exportRequestRepository: Repository<ExportRequest>,
+	) { }
 
 	/**
 	 * Creates an export request
@@ -50,12 +54,22 @@ export class ExportRequestsService {
 			});
 		}
 
+		// Find the category for the product export
+		let exportCategory: Category | null = null;
+		if (body.categoryUUID !== null) {
+			const category = await this.categoryRepository.findOneBy({ uuid: body.categoryUUID, });
+			if (category !== null) {
+				exportCategory = category;
+			}
+		}
+
 		// Create the export request
 		const exportRequest = new ExportRequest();
 		exportRequest.uuid = crypto.randomUUID();
 		exportRequest.name = body.name;
 		exportRequest.format = body.format;
 		exportRequest.pagesCount = body.pagesCount;
+		exportRequest.category = exportCategory;
 		exportRequest.status = ExportRequestStatus.Pending;
 		return this.exportRequestRepository.save(exportRequest);
 	}
@@ -76,6 +90,9 @@ export class ExportRequestsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.exportRequestRepository.find({
+			relations: {
+				category: true,
+			},
 			order: {
 				id: "DESC",
 			},
@@ -93,7 +110,14 @@ export class ExportRequestsService {
 	async findOne(uuid: string): Promise<ExportRequest> {
 		this.logger.log(`Retrieving export request: ${uuid}`);
 
-		const exportRequest = await this.exportRequestRepository.findOneBy({ uuid: uuid, });
+		const exportRequest = await this.exportRequestRepository.findOne({
+			where: {
+				uuid: uuid,
+			},
+			relations: {
+				category: true,
+			},
+		});
 		if (exportRequest === null) {
 			throw new NotFoundException({
 				error: "Failed to find the export request. Please check and try again.",
@@ -111,8 +135,12 @@ export class ExportRequestsService {
 		this.logger.log(`Retrieving the last pending export request`);
 
 		return this.exportRequestRepository.findOne({
+			relationLoadStrategy: "query",
 			where: {
 				status: ExportRequestStatus.Pending,
+			},
+			relations: {
+				category: true,
 			},
 			order: {
 				id: "DESC"

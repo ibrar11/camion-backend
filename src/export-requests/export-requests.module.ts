@@ -14,6 +14,8 @@ import { ExportTaskService } from './scheduled-tasks/ExportTaskService';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 
+import { Category } from '../inventory/entities/category.entity';
+
 import { InventoryModule } from '../inventory/inventory.module';
 import { CustomersModule } from '../customers/customers.module';
 import { ClientsModule } from '../clients/clients.module';
@@ -24,6 +26,7 @@ import { PricingModule } from '../pricing/pricing.module';
 		TypeOrmModule.forFeature([
 			ExportRequest,
 			User,
+			Category,
 		]),
 		ClientsModule,
 		InventoryModule,

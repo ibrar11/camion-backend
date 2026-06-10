@@ -2,6 +2,8 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	Index,
+	ManyToOne,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from "typeorm";
@@ -10,6 +12,8 @@ import { Exclude } from "class-transformer";
 
 import { ExportRequestStatus } from "../enums/ExportRequestStatus.enum";
 import { ExportRequestFormat } from "../enums/ExportRequestFormat.enum";
+
+import { Category } from "../../inventory/entities/category.entity";
 
 @Entity({ name: "export_requests", })
 export class ExportRequest {
@@ -36,6 +40,10 @@ export class ExportRequest {
 		nullable: false,
 	})
 	pagesCount: number;
+
+	@ManyToOne(() => Category, (category) => category.exportRequests, { onDelete: "CASCADE", })
+	@Index()
+	category: Category | null;
 
 	@Column({
 		type: "varchar",
