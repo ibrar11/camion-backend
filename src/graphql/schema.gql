@@ -397,7 +397,7 @@ type Query {
   getCurrentCustomerReturnRequest(uuid: String!): ReturnRequest!
   getCurrentCustomerReturnRequests(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!
   getCustomerAddresses(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [CustomerAddress!]!
-  getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
+  getCustomerCart(currency: String! = "usd", itemsPerPage: Int! = 100, language: String! = "en", pageNumber: Int! = 1): [CartItem!]!
   getCustomerCartCount: Float!
   getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
