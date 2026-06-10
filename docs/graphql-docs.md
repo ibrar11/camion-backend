@@ -2463,7 +2463,7 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         "getCurrentAffiliateCoupons": [
             {
                 "uuid": "41cc410c-faad-4732-b301-8a31d09e671f",
-                "code": "amin16",
+                "code": "james16",
                 "discountPercentage": 10,
                 "ordersCount": 1,
                 "totalSales": {

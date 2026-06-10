@@ -1549,6 +1549,11 @@ GET /v1/referral/bank-accounts HTTP/1.1
 Global Coupons
 ==============
 
+| Discount Type | Description |
+|---|---|
+| percentage | The coupon applies a percentage of the coupon. |
+| fixed | The coupon applies a fixed discount at the order. |
+
 Create Global Coupon
 --------------------
 
@@ -1559,12 +1564,24 @@ Create Global Coupon
 POST /v1/referral/global-coupons HTTP/1.1
 ```
 
+| Format | Description |
+|---|---|
+| code | The unique coupon code |
+| discountType | Discount type on the coupon |
+| discountPercentage | Discount percentage. Applicable when `discountType` is 'percentage' |
+| discountValue | Discount value. Applicable when `discountType` is 'fixed' |
+| usageLimit | The number of times a coupon is applicable. |
+| expiresAt | The expiry date of the coupon |
+
 ### Request Body
 
 ```json
 {
-    "code": "james89",
+    "code": "JAMES89",
+    "discountType": "fixed",
     "discountPercentage": 99,
+    "discountValue": 100,
+    "usageLimit": 1,
     "expiresAt": "2029-12-31"
 }
 ```
@@ -1573,9 +1590,12 @@ POST /v1/referral/global-coupons HTTP/1.1
 
 ```json
 {
-    "uuid": "08467dd2-2c15-4142-8ac4-98c4cbc9867c",
-    "code": "james89",
+    "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+    "code": "JAMES89",
+    "discountType": "fixed",
     "discountPercentage": "99",
+    "discountValue": 100,
+    "usageLimit": 1,
     "ordersCount": 0,
     "totalSales": {
         "amount": 0,
@@ -1586,8 +1606,8 @@ POST /v1/referral/global-coupons HTTP/1.1
         "currencyCode": "qar"
     },
     "expiresAt": "2029-12-31T00:00:00.000Z",
-    "updatedAt": "2026-06-01T13:10:24.978Z",
-    "createdAt": "2026-06-01T13:10:24.978Z"
+    "updatedAt": "2026-06-10T11:43:36.277Z",
+    "createdAt": "2026-06-10T11:43:36.277Z"
 }
 ```
 
@@ -1606,9 +1626,12 @@ GET /v1/referral/global-coupons HTTP/1.1
 ```json
 [
     {
-        "uuid": "08467dd2-2c15-4142-8ac4-98c4cbc9867c",
-        "code": "james89",
+        "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+        "code": "JAMES89",
+        "discountType": "fixed",
         "discountPercentage": "99",
+        "discountValue": 100,
+        "usageLimit": 1,
         "ordersCount": 0,
         "totalSales": {
             "amount": 0,
@@ -1619,8 +1642,8 @@ GET /v1/referral/global-coupons HTTP/1.1
             "currencyCode": "qar"
         },
         "expiresAt": "2029-12-31T00:00:00.000Z",
-        "updatedAt": "2026-06-01T13:10:24.978Z",
-        "createdAt": "2026-06-01T13:10:24.978Z"
+        "updatedAt": "2026-06-10T11:45:33.229Z",
+        "createdAt": "2026-06-10T11:43:36.277Z"
     }
 ]
 ```
@@ -1639,21 +1662,24 @@ GET /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
 
 ```json
 {
-    "uuid": "5fb8b227-dc8b-41b0-b1f0-882b7de2d393",
-    "code": "james99",
+    "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+    "code": "JAMES89",
+    "discountType": "fixed",
     "discountPercentage": "99",
+    "discountValue": 100,
+    "usageLimit": 1,
     "ordersCount": 0,
     "totalSales": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "expiresAt": "2029-12-31T00:00:00.000Z",
-    "updatedAt": "2026-06-01T13:04:55.597Z",
-    "createdAt": "2026-06-01T13:04:55.597Z"
+    "updatedAt": "2026-06-10T11:45:33.229Z",
+    "createdAt": "2026-06-10T11:43:36.277Z"
 }
 ```
 
@@ -1671,8 +1697,11 @@ PUT /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
 
 ```json
 {
-    "code": "james66",
-    "discountPercentage": 66,
+    "code": "JAMES89",
+    "discountType": "fixed",
+    "discountPercentage": 99,
+    "discountValue": 100,
+    "usageLimit": 1,
     "expiresAt": "2029-12-31"
 }
 ```
@@ -1681,21 +1710,24 @@ PUT /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
 
 ```json
 {
-    "uuid": "5fb8b227-dc8b-41b0-b1f0-882b7de2d393",
-    "code": "james66",
-    "discountPercentage": 66,
+    "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+    "code": "JAMES89",
+    "discountType": "fixed",
+    "discountPercentage": 99,
+    "discountValue": 100,
+    "usageLimit": 1,
     "ordersCount": 0,
     "totalSales": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "expiresAt": "2029-12-31T00:00:00.000Z",
-    "updatedAt": "2026-06-01T13:50:19.502Z",
-    "createdAt": "2026-06-01T13:04:55.597Z"
+    "updatedAt": "2026-06-10T11:45:33.229Z",
+    "createdAt": "2026-06-10T11:43:36.277Z"
 }
 ```
 
