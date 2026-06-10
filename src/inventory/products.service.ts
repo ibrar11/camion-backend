@@ -587,6 +587,98 @@ export class ProductsService {
 	}
 
 	/**
+	 * Returns all products for export
+	 *
+	 * @param pagesCount
+	 * @returns
+	 */
+	async findAllForExport(pagesCount: number): Promise<Array<Product>> {
+		this.logger.log(`Finding all products for export in pages`);
+
+		/**
+		 * The resulting products in the list
+		 */
+		let res: Array<Product> = [];
+
+		/**
+		 * Pagination params
+		 */
+		let pageNumber = 1,
+			itemsPerPage = 24;
+
+		while (pageNumber <= pagesCount) {
+			this.logger.log(`Retrieving products on page: ${pageNumber}`);
+
+			// Get the pagination
+			const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+			// Fetch the products
+			let products = await this.productRepository.find({
+				relationLoadStrategy: "query",
+				where: {
+					status: ProductStatus.ACTIVE,
+				},
+				relations: {
+					productCategories: {
+						category: true,
+					},
+				},
+				order: {
+					id: "DESC",
+				},
+				skip: skip,
+				take: take,
+			});
+
+			// Map the products to product ids
+			const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
+
+			// Find the cheapest variant of each product
+			const variants = await this.productVariantRepository.createQueryBuilder('variant')
+				.setFindOptions({
+					relationLoadStrategy: "query",
+				})
+				.where('variant.product_id IN (:...productIds)', {
+					productIds: productIds,
+				})
+				.distinctOn(['variant.product_id'])
+				.orderBy('variant.product_id', 'ASC')
+				.addOrderBy('variant.cost_amount', 'ASC')
+				.getMany();
+
+			// Map the variants to their products
+			const variantsMap = Object.fromEntries(
+				variants.map(variant => [variant.productId, variant]),
+			);
+
+			// Assing the variants to each product.
+			products = products
+				.filter(product => variantsMap[product.id] !== undefined)
+				.map(product => {
+					product.variants = [
+						variantsMap[product.id],
+					];
+					return product;
+				});
+
+			// Add the products to the result
+			res = res.concat(products);
+
+			// Break the loop at the end
+			if (products.length < itemsPerPage) {
+				break;
+			}
+
+			this.logger.log(`Retrieved ${products.length} on pageNumber: ${pageNumber}`);
+
+			// Increment the page number
+			pageNumber += 1;
+		}
+
+		return res;
+	}
+
+	/**
 	 * Finds a list of products in a specific category
 	 *
 	 * @param categorySlug
