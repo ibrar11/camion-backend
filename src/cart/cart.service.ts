@@ -214,9 +214,7 @@ export class CartItemsService {
                     }
                 },
             },
-            order: { id: 'DESC' },
-            skip: skip,
-            take: take,
+            order: { id: 'DESC' }
         });
 
         const result: CartItem[] = [];
