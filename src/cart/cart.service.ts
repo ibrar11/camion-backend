@@ -52,7 +52,7 @@ export class CartItemsService {
     async create(customer: Customer, body: CreateCartItemDto): Promise<CartItem> {
         this.logger.log(`Attempting to add to cart for product: ${body.productUuid}`);
 
-        if (customer?.cartItemsCount <= 100) {
+        if (customer?.cartItemsCount > 100) {
             throw new BadRequestException({
                 error: 'Cart is full. To add the item first remove an item from cart.',
             });
