@@ -318,19 +318,22 @@ export class ProductsService {
 		const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
 
 		// Find the cheapest variant of each product
-		const variants = await this.productVariantRepository.createQueryBuilder('variant')
-			.cache(true)
-			.setFindOptions({
-				relationLoadStrategy: "query",
-			})
-			.leftJoinAndSelect("variant.images", "images")
-			.where('variant.product_id IN (:...productIds)', {
-				productIds: productIds,
-			})
-			.distinctOn(['variant.product_id'])
-			.orderBy('variant.product_id', 'ASC')
-			.addOrderBy('variant.cost_amount', 'ASC')
-			.getMany();
+		let variants: Array<ProductVariant> = [];
+		if (Array.isArray(productIds) && productIds.length !== 0) {
+			variants = await this.productVariantRepository.createQueryBuilder('variant')
+				.cache(true)
+				.setFindOptions({
+					relationLoadStrategy: "query",
+				})
+				.leftJoinAndSelect("variant.images", "images")
+				.where('variant.product_id IN (:...productIds)', {
+					productIds: productIds,
+				})
+				.distinctOn(['variant.product_id'])
+				.orderBy('variant.product_id', 'ASC')
+				.addOrderBy('variant.cost_amount', 'ASC')
+				.getMany();
+		}
 
 		// Map the variants to their products
 		const variantsMap = Object.fromEntries(
@@ -365,19 +368,22 @@ export class ProductsService {
 		const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
 
 		// Find the cheapest variant of each product
-		const variants = await this.productVariantRepository.createQueryBuilder('variant')
-			.cache(true)
-			.setFindOptions({
-				relationLoadStrategy: "query",
-			})
-			.leftJoinAndSelect("variant.images", "images")
-			.where('variant.product_id IN (:...productIds)', {
-				productIds: productIds,
-			})
-			.distinctOn(['variant.product_id'])
-			.orderBy('variant.product_id', 'ASC')
-			.addOrderBy('variant.cost_amount', 'DESC')
-			.getMany();
+		let variants: Array<ProductVariant> = [];
+		if (Array.isArray(productIds) && productIds.length !== 0) {
+			variants = await this.productVariantRepository.createQueryBuilder('variant')
+				.cache(true)
+				.setFindOptions({
+					relationLoadStrategy: "query",
+				})
+				.leftJoinAndSelect("variant.images", "images")
+				.where('variant.product_id IN (:...productIds)', {
+					productIds: productIds,
+				})
+				.distinctOn(['variant.product_id'])
+				.orderBy('variant.product_id', 'ASC')
+				.addOrderBy('variant.cost_amount', 'DESC')
+				.getMany();
+		}
 
 		// Map the variants to their products
 		const variantsMap = Object.fromEntries(
