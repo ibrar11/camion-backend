@@ -37,7 +37,7 @@ export class TranslationItem {
     @ManyToOne(() => Translation, (translation) => translation.translationItems, { onDelete: "CASCADE", })
     translation: Translation;
 
-    @ManyToOne(() => Language, (language) => language.translationItems)
+    @ManyToOne(() => Language, (language) => language.translationItems, { onDelete: "CASCADE" })
     language: Language;
 
     @Column({type: "text"})
