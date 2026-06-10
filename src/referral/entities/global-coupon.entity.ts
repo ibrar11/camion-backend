@@ -55,6 +55,9 @@ export class GlobalCoupon {
 	usageLimit: number;
 
 	@Column({ type: "integer", default: 0, nullable: false, })
+	timesUsed: number;
+
+	@Column({ type: "integer", default: 0, nullable: false, })
 	ordersCount: number;
 
 	@Column(() => GlobalCouponMoney)
