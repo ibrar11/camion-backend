@@ -36,7 +36,7 @@ export class GetCustomerCartArgs {
     @Field(() => Int, { defaultValue: 1, })
     pageNumber: number;
 
-    @Field(() => Int, { defaultValue: 24, })
+    @Field(() => Int, { defaultValue: 100, })
     itemsPerPage: number;
 }
 

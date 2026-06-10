@@ -533,6 +533,7 @@ export class OrderService {
             await queryRunner.commitTransaction();
 
             customer.ordersCount++;
+            customer.cartItemsCount = 0;
             await this.customerRepository.save(customer);
 
             const notification = await this.notificationsService.create({
