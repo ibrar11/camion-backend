@@ -493,6 +493,9 @@ export class CartItemsService {
         await this.cartRepository.remove(cartItem);
 
         cartItem.customer.cartItemsCount--;
+        if(cartItem.customer.cartItemsCount < 0) {
+            cartItem.customer.cartItemsCount = 0;
+        }
         await this.customerRepository.save(cartItem.customer);
     }
 
