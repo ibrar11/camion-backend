@@ -22,6 +22,11 @@ When a social login comes in, the API resolves the customer account in this orde
 
 This means a customer who registered by phone/email can later sign in with a social provider that shares the same email, and the accounts are merged automatically.
 
+### Account reactivation
+If the resolved account has a **pending deletion** (grace period active), logging in via any social provider automatically cancels the deletion and fully restores the account.
+
+If the account has been **permanently deactivated** (grace period expired), the login is rejected with `401 Unauthorized`. The account can only be restored via the admin reactivation endpoint — see [customer-deletion-docs.md](./customer-deletion-docs.md).
+
 ---
 
 ## Google

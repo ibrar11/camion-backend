@@ -318,19 +318,22 @@ export class ProductsService {
 		const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
 
 		// Find the cheapest variant of each product
-		const variants = await this.productVariantRepository.createQueryBuilder('variant')
-			.cache(true)
-			.setFindOptions({
-				relationLoadStrategy: "query",
-			})
-			.leftJoinAndSelect("variant.images", "images")
-			.where('variant.product_id IN (:...productIds)', {
-				productIds: productIds,
-			})
-			.distinctOn(['variant.product_id'])
-			.orderBy('variant.product_id', 'ASC')
-			.addOrderBy('variant.cost_amount', 'ASC')
-			.getMany();
+		let variants: Array<ProductVariant> = [];
+		if (Array.isArray(productIds) && productIds.length !== 0) {
+			variants = await this.productVariantRepository.createQueryBuilder('variant')
+				.cache(true)
+				.setFindOptions({
+					relationLoadStrategy: "query",
+				})
+				.leftJoinAndSelect("variant.images", "images")
+				.where('variant.product_id IN (:...productIds)', {
+					productIds: productIds,
+				})
+				.distinctOn(['variant.product_id'])
+				.orderBy('variant.product_id', 'ASC')
+				.addOrderBy('variant.cost_amount', 'ASC')
+				.getMany();
+		}
 
 		// Map the variants to their products
 		const variantsMap = Object.fromEntries(
@@ -365,19 +368,22 @@ export class ProductsService {
 		const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
 
 		// Find the cheapest variant of each product
-		const variants = await this.productVariantRepository.createQueryBuilder('variant')
-			.cache(true)
-			.setFindOptions({
-				relationLoadStrategy: "query",
-			})
-			.leftJoinAndSelect("variant.images", "images")
-			.where('variant.product_id IN (:...productIds)', {
-				productIds: productIds,
-			})
-			.distinctOn(['variant.product_id'])
-			.orderBy('variant.product_id', 'ASC')
-			.addOrderBy('variant.cost_amount', 'DESC')
-			.getMany();
+		let variants: Array<ProductVariant> = [];
+		if (Array.isArray(productIds) && productIds.length !== 0) {
+			variants = await this.productVariantRepository.createQueryBuilder('variant')
+				.cache(true)
+				.setFindOptions({
+					relationLoadStrategy: "query",
+				})
+				.leftJoinAndSelect("variant.images", "images")
+				.where('variant.product_id IN (:...productIds)', {
+					productIds: productIds,
+				})
+				.distinctOn(['variant.product_id'])
+				.orderBy('variant.product_id', 'ASC')
+				.addOrderBy('variant.cost_amount', 'DESC')
+				.getMany();
+		}
 
 		// Map the variants to their products
 		const variantsMap = Object.fromEntries(
@@ -584,6 +590,196 @@ export class ProductsService {
 		return this.productRepository.count({
 			cache: true,
 		});
+	}
+
+	/**
+	 * Returns all products for export
+	 *
+	 * @param pagesCount
+	 * @returns
+	 */
+	async findAllForExport(pagesCount: number): Promise<Array<Product>> {
+		this.logger.log(`Finding all products for export in pages`);
+
+		/**
+		 * The resulting products in the list
+		 */
+		let res: Array<Product> = [];
+
+		/**
+		 * Pagination params
+		 */
+		let pageNumber = 1,
+			itemsPerPage = 24;
+
+		while (pageNumber <= pagesCount) {
+			this.logger.log(`Retrieving products on page: ${pageNumber}`);
+
+			// Get the pagination
+			const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+			// Fetch the products
+			let products = await this.productRepository.find({
+				relationLoadStrategy: "query",
+				where: {
+					status: ProductStatus.ACTIVE,
+				},
+				relations: {
+					productCategories: {
+						category: true,
+					},
+				},
+				order: {
+					id: "DESC",
+				},
+				skip: skip,
+				take: take,
+			});
+
+			// Map the products to product ids
+			const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
+
+			// Find the cheapest variant of each product
+			let variants: Array<ProductVariant> = [];
+			if (Array.isArray(productIds) && productIds.length !== 0) {
+				variants = await this.productVariantRepository.createQueryBuilder('variant')
+					.setFindOptions({
+						relationLoadStrategy: "query",
+					})
+					.where('variant.product_id IN (:...productIds)', {
+						productIds: productIds,
+					})
+					.distinctOn(['variant.product_id'])
+					.orderBy('variant.product_id', 'ASC')
+					.addOrderBy('variant.cost_amount', 'ASC')
+					.getMany();
+			}
+
+			// Map the variants to their products
+			const variantsMap = Object.fromEntries(
+				variants.map(variant => [variant.productId, variant]),
+			);
+
+			// Assing the variants to each product.
+			products = products
+				.filter(product => variantsMap[product.id] !== undefined)
+				.map(product => {
+					product.variants = [
+						variantsMap[product.id],
+					];
+					return product;
+				});
+
+			// Add the products to the result
+			res = res.concat(products);
+
+			// Break the loop at the end
+			if (products.length < itemsPerPage) {
+				break;
+			}
+
+			this.logger.log(`Retrieved ${products.length} on pageNumber: ${pageNumber}`);
+
+			// Increment the page number
+			pageNumber += 1;
+		}
+
+		return res;
+	}
+
+	async findAllByCategoryForExport(category: Category, pagesCount: number): Promise<Array<Product>> {
+		this.logger.log(`Finding all product for export in pages using category: ${category.uuid}`);
+
+		/**
+		 * The resulting products in the list
+		 */
+		let res: Array<Product> = [];
+
+		/**
+		 * Pagination params
+		 */
+		let pageNumber = 1,
+			itemsPerPage = 24;
+
+		while (pageNumber <= pagesCount) {
+			this.logger.log(`Retrieving products on page: ${pageNumber}`);
+
+			// Get the pagination
+			const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+			// Fetch the products
+			let products = await this.productRepository.createQueryBuilder("product")
+				.setFindOptions({
+					relationLoadStrategy: "query",
+				})
+
+				// Load all categories
+				.leftJoinAndSelect("product.productCategories", "productCategory")
+				.leftJoinAndSelect("productCategory.category", "category")
+
+				// Filter by category
+				.innerJoin("product.productCategories", "filterProductCategories")
+				.innerJoin("filterProductCategories.category", "filterCategory")
+
+				.where("filterCategory.id = :id", {
+					id: category.id,
+				})
+				.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+				.distinct(true)
+				.orderBy("product.id", "DESC")
+				.skip(skip)
+				.take(take)
+				.getMany();
+
+			// Map the products to product ids
+			const productIds = products.map(product => product.id).sort((productIdA, productIdB) => productIdB - productIdA);
+
+			// Find the cheapest variant of each product
+			let variants: Array<ProductVariant> = [];
+			if (Array.isArray(productIds) && productIds.length !== 0) {
+				variants = await this.productVariantRepository.createQueryBuilder('variant')
+					.setFindOptions({
+						relationLoadStrategy: "query",
+					})
+					.where('variant.product_id IN (:...productIds)', {
+						productIds: productIds,
+					})
+					.distinctOn(['variant.product_id'])
+					.orderBy('variant.product_id', 'ASC')
+					.addOrderBy('variant.cost_amount', 'ASC')
+					.getMany();
+			}
+
+			// Map the variants to their products
+			const variantsMap = Object.fromEntries(
+				variants.map(variant => [variant.productId, variant]),
+			);
+
+			// Assing the variants to each product.
+			products = products
+				.filter(product => variantsMap[product.id] !== undefined)
+				.map(product => {
+					product.variants = [
+						variantsMap[product.id],
+					];
+					return product;
+				});
+
+			// Add the products to the result
+			res = res.concat(products);
+
+			// Break the loop at the end
+			if (products.length < itemsPerPage) {
+				break;
+			}
+
+			this.logger.log(`Retrieved ${products.length} on pageNumber: ${pageNumber}`);
+
+			// Increment the page number
+			pageNumber += 1;
+		}
+
+		return res;
 	}
 
 	/**

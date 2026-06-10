@@ -52,6 +52,12 @@ export class CartItemsService {
     async create(customer: Customer, body: CreateCartItemDto): Promise<CartItem> {
         this.logger.log(`Attempting to add to cart for product: ${body.productUuid}`);
 
+        if (customer?.cartItemsCount >= 100) {
+            throw new BadRequestException({
+                error: 'Cart is full. To add the item first remove an item from cart.',
+            });
+        }
+
         // find the product needs to be added
         const product = await this.productRepository.findOne({
             where: { uuid: body.productUuid, },
@@ -166,7 +172,12 @@ export class CartItemsService {
             amount: price.amount * body.quantity,
             currencyCode: price.currencyCode
         }
-        return this.cartRepository.save(cartItem);
+        const savedCartItem = await this.cartRepository.save(cartItem);
+
+        customer.cartItemsCount++;
+        await this.customerRepository.save(customer);
+
+        return savedCartItem;
     }
 
     /**
@@ -214,9 +225,7 @@ export class CartItemsService {
                     }
                 },
             },
-            order: { id: 'DESC' },
-            skip: skip,
-            take: take,
+            order: { id: 'DESC' }
         });
 
         const result: CartItem[] = [];
@@ -468,6 +477,9 @@ export class CartItemsService {
             where: {
                 uuid: cartItemUUID,
             },
+            relations: {
+                customer: true,
+            }
         });
 
         if (!cartItem) {
@@ -477,6 +489,12 @@ export class CartItemsService {
         }
 
         await this.cartRepository.remove(cartItem);
+
+        cartItem.customer.cartItemsCount--;
+        if(cartItem.customer.cartItemsCount < 0) {
+            cartItem.customer.cartItemsCount = 0;
+        }
+        await this.customerRepository.save(cartItem.customer);
     }
 
     /**
@@ -490,5 +508,8 @@ export class CartItemsService {
         await this.cartRepository.delete({
             customer: { id: customer.id, }
         });
+
+        customer.cartItemsCount = 0;
+        await this.customerRepository.save(customer);
     }
 }

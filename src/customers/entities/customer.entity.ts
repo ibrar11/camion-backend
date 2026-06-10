@@ -125,6 +125,12 @@ export class Customer {
 	@Column({ type: 'int', default: 0 })
 	unreadNotificationCount: number;
 
+	@Column({ type: 'int', default: 0 })
+	ordersCount: number;
+
+	@Column({ type: 'int', default: 0 })
+	cartItemsCount: number;
+
 	@Exclude()
 	@UpdateDateColumn({
 		name: "updated_at",

@@ -19,6 +19,7 @@ import { CreateCustomerDto } from './dtos/CreateCustomerDto';
 import { UpdateCustomerDto } from './dtos/UpdateCustomerDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
 import { UpdatePasswordDto } from './dtos/UpdatePasswordDto';
+import { ReactivateCustomerDto } from './dtos/ReactivateCustomerDto';
 
 import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from './enums/CustomerRole';
@@ -105,6 +106,13 @@ export class CustomersController {
 		return {
 			message: 'Account deletion cancelled',
 		};
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Post('reactivate')
+	@HttpCode(HttpStatus.OK)
+	actionReactivateAccount(@Body() body: ReactivateCustomerDto): Promise<Customer> {
+		return this.customersService.reactivateByEmail(body.emailAddress);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)

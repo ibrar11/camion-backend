@@ -199,6 +199,58 @@ export class CustomersService {
 	}
 
 	/**
+	 * Returns all customers for export
+	 *
+	 * @param pagesCount
+	 * @returns
+	 */
+	async findAllForExport(pagesCount: number): Promise<Array<Customer>> {
+		this.logger.log(`Finding all customers for export in pages`);
+
+		/**
+		 * The resulting customers in the list
+		 */
+		let res: Array<Customer> = [];
+
+		/**
+		 * Pagination params
+		 */
+		let pageNumber = 1,
+			itemsPerPage = 24;
+
+		while (pageNumber <= pagesCount) {
+			this.logger.log(`Retrieving customers on page: ${pageNumber}`);
+
+			// Get the pagination
+			const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+			// Fetch the customers
+			const customers = await this.customerRepository.find({
+				order: {
+					id: "DESC",
+				},
+				skip: skip,
+				take: take,
+			});
+
+			// Add the customers to the result
+			res = res.concat(customers);
+
+			// Break the loop at the end
+			if (customers.length < itemsPerPage) {
+				break;
+			}
+
+			this.logger.log(`Retrieved ${customers.length} on pageNumber: ${pageNumber}`);
+
+			// Increment the page number
+			pageNumber += 1;
+		}
+
+		return res;
+	}
+
+	/**
 	 * Finds a customer
 	 *
 	 * @param uuid
@@ -381,5 +433,21 @@ export class CustomersService {
 		customer.markedForDeletionAt = null;
 
 		await this.customerRepository.save(customer);
+	}
+
+	async reactivateByEmail(emailAddress: string): Promise<Customer> {
+		const customer = await this.customerRepository.findOne({
+			where: { emailAddress: emailAddress.toLowerCase().trim() },
+		});
+
+		if (!customer) {
+			throw new NotFoundException({ error: 'Customer not found with the provided email address.' });
+		}
+
+		customer.isActive = true;
+		customer.markedForDeletionAt = null;
+		customer.deletedAt = null;
+
+		return this.customerRepository.save(customer);
 	}
 }

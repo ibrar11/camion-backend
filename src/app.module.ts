@@ -134,6 +134,9 @@ import { Translation } from "./translation/entities/translation.entity";
 import { TranslationItem } from "./translation/entities/translation-item.entity";
 import { TranslationModule } from './translation/translation.module';
 
+import { ExportRequest } from "./export-requests/entities/export-request.entity";
+import { ExportRequestsModule } from './export-requests/export-requests.module';
+
 import { JopWmsModule } from './jop-wms/jop-wms.module';
 import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from './jop-wms/entities/jop-wms-order-link.entity';
@@ -142,6 +145,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
 	imports: [
+		ScheduleModule.forRoot(),
 		ConfigModule.forRoot({
 			isGlobal: true,
 		}),
@@ -269,6 +273,8 @@ import { FirebaseModule } from './firebase/firebase.module';
 
 					JopWmsOrder,
 					JopWmsOrderLink,
+
+					ExportRequest,
 				],
 			}),
 		}),
@@ -313,7 +319,6 @@ import { FirebaseModule } from './firebase/firebase.module';
 		LanguagesModule,
 		NotificationsModule,
 		EmailModule,
-		ScheduleModule.forRoot(),
 		OrderModule,
 		PaymentsModule,
 		ReferralModule,
@@ -327,6 +332,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 		JopWmsModule,
 		DataModule,
 		FirebaseModule,
+		ExportRequestsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

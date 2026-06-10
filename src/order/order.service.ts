@@ -113,6 +113,7 @@ export class OrderService {
         @Inject(PricingService) private readonly pricingService: PricingService,
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         @InjectRepository(JopWmsOrderLink) private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
+        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
     ) { }
@@ -531,6 +532,10 @@ export class OrderService {
 
             await queryRunner.commitTransaction();
 
+            customer.ordersCount++;
+            customer.cartItemsCount = 0;
+            await this.customerRepository.save(customer);
+
             const notification = await this.notificationsService.create({
                 customerUUID: customer.uuid,
                 type: NotificationType.ORDER_PLACED,
@@ -602,7 +607,8 @@ export class OrderService {
                             images: true,
                         },
                     },
-                    shippingAddress: true
+                    shippingAddress: true,
+                    customer: true,
                 },
                 order: {
                     id: "DESC",

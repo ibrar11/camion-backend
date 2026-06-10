@@ -62,10 +62,22 @@ POST /v1/auth/customer/login/email-address HTTP/1.1
 }
 ```
 
+### Errors
+
+| Status | Description |
+|---|---|
+| 400 Bad Request | No account found with the provided email address |
+| 401 Unauthorized | Account has been permanently deleted — contact support |
+| 401 Unauthorized | Account is deactivated |
+
+> Accounts with a **pending deletion** (within the grace period) are not blocked — the OTP proceeds normally and the deletion is cancelled on successful verification.
+
+---
+
 Verify login as a customer (Using your Email Address)
 -----------------------------------------------------
 
-Once you start your login session by providing your email address. You'll receive an OTP via email address. You'll need to provide that OTP to verify your email address and contiue your session.
+Once you start your login session by providing your email address. You'll receive an OTP via email address. You'll need to provide that OTP to verify your email address and continue your session.
 
 > The default OTP in `dev` and `local` environments is `123456`
 
@@ -81,6 +93,24 @@ POST /v1/auth/customer/verify/email-address HTTP/1.1
     "secret": "123456"
 }
 ```
+
+### Response Body
+```json
+{
+    "token": "<your-access-token>",
+    "customer": {
+        "uuid": "880516d5-bb21-4dc1-80d0-d4bc7af8166e",
+        "fullName": "Your Name",
+        "emailAddress": "your-name@your-domain.com",
+        "phoneNumber": "+974 12345678",
+        "role": "customer"
+    }
+}
+```
+
+> If the account had a pending deletion, it is **automatically cancelled** on successful verification and the account is fully restored.
+
+---
 
 Login as a customer (Using your Phone Number)
 ---------------------------------------------
@@ -108,10 +138,22 @@ POST /v1/auth/customer/login/phone-number HTTP/1.1
 }
 ```
 
-Verify login as a customer (Using your Email Address)
+### Errors
+
+| Status | Description |
+|---|---|
+| 400 Bad Request | No account found with the provided phone number |
+| 401 Unauthorized | Account has been permanently deleted — contact support |
+| 401 Unauthorized | Account is deactivated |
+
+> Accounts with a **pending deletion** (within the grace period) are not blocked — the OTP proceeds normally and the deletion is cancelled on successful verification.
+
+---
+
+Verify login as a customer (Using your Phone Number)
 -----------------------------------------------------
 
-Once you start your login session by providing your phone number. You'll receive an OTP via sms on your phone number. You'll need to provide that OTP to verify your phone number and contiue your session.
+Once you start your login session by providing your phone number. You'll receive an OTP via SMS. You'll need to provide that OTP to verify your phone number and continue your session.
 
 > The default OTP in `dev` and `local` environments is `123456`
 
@@ -141,6 +183,8 @@ POST /v1/auth/customer/verify/phone-number HTTP/1.1
     }
 }
 ```
+
+> If the account had a pending deletion, it is **automatically cancelled** on successful verification and the account is fully restored.
 
 Logout as a customer
 --------------------

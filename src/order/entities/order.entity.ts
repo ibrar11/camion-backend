@@ -58,7 +58,6 @@ export class Order {
     @Column({ type: "uuid", nullable: false, unique: true, })
     uuid: string;
 
-    @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.orders)
     @Index()
     customer: Customer;
