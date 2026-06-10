@@ -263,7 +263,15 @@ export class ExportTaskService {
 		};
 
 		// Find all the products for export
-		const products: Array<Product> = await this.productsService.findAllForExport(exportRequest.pagesCount);
+		let products: Array<Product> = [];
+
+		// Find the products by category
+		if (exportRequest.category !== null) {
+			products = await this.productsService.findAllByCategoryForExport(exportRequest.category, exportRequest.pagesCount);
+		} else {
+			products = await this.productsService.findAllForExport(exportRequest.pagesCount);
+		}
+
 		if (Array.isArray(products) && products.length === 0) {
 			return;
 		}

@@ -34,8 +34,9 @@ POST /v1/export-requests HTTP/1.1
 ```json
 {
     "name": "Export Customers",
-    "format": "customers-json",
-    "pagesCount": 20
+    "format": "products-json",
+    "pagesCount": 20,
+    "category": "b0ad2ed7-cd7c-439f-9b22-482ef8a0da8a"
 }
 ```
 
@@ -43,14 +44,25 @@ POST /v1/export-requests HTTP/1.1
 
 ```json
 {
-    "uuid": "1d508681-c8d5-4b80-8bae-ea5b4f8c77cf",
+    "uuid": "0b212e00-99a3-430b-b7a8-4e584d2c6dbb",
     "name": "Export Customers",
-    "format": "customers-json",
+    "format": "products-json",
     "pagesCount": 20,
+    "category": {
+        "uuid": "b14e3337-9c1e-4014-83a1-c2c0984cd44a",
+        "slug": "women-t-shirts",
+        "nameEn": "T-shirts",
+        "nameAr": "تيشيرتات",
+        "pricingFactor": "7",
+        "discountPercentage": "35",
+        "thumbnailUrl": "s3://categories/509692fb-571b-4893-8b15-254d084fc1b7.jpg",
+        "isFeatured": false,
+        "isFeaturedOnHomepage": false
+    },
     "downloadUrl": "",
     "status": "pending",
-    "updatedAt": "2026-06-10T08:37:26.061Z",
-    "createdAt": "2026-06-10T08:37:26.061Z"
+    "updatedAt": "2026-06-10T13:53:14.333Z",
+    "createdAt": "2026-06-10T13:53:14.333Z"
 }
 ```
 
@@ -65,25 +77,47 @@ GET /v1/export-requests HTTP/1.1
 
 ```json
 [
-	{
-        "uuid": "1d508681-c8d5-4b80-8bae-ea5b4f8c77cf",
-        "name": "Export Customers",
-        "format": "customers-json",
+    {
+        "uuid": "0b212e00-99a3-430b-b7a8-4e584d2c6dbb",
+        "name": "Export Products",
+        "format": "products-json",
         "pagesCount": 20,
+        "category": {
+            "uuid": "b14e3337-9c1e-4014-83a1-c2c0984cd44a",
+            "slug": "women-t-shirts",
+            "nameEn": "T-shirts",
+            "nameAr": "تيشيرتات",
+            "pricingFactor": "7",
+            "discountPercentage": "35",
+            "thumbnailUrl": "s3://categories/509692fb-571b-4893-8b15-254d084fc1b7.jpg",
+            "isFeatured": false,
+            "isFeaturedOnHomepage": false
+        },
         "downloadUrl": "s3://exports/70846f73-b6cf-4414-b0e3-969d6303a77b.json",
         "status": "completed",
-        "updatedAt": "2026-06-10T08:38:00.593Z",
-        "createdAt": "2026-06-10T08:37:26.061Z"
+        "updatedAt": "2026-06-10T13:53:14.333Z",
+        "createdAt": "2026-06-10T13:53:14.333Z"
     },
     {
-        "uuid": "0ebabc7e-530a-4217-a313-21a7c1cbd284",
+        "uuid": "00e45502-a8cd-4d09-8526-ca447d85b74a",
         "name": "Export Products",
-        "format": "products-csv",
+        "format": "products-json",
         "pagesCount": 20,
+        "category": {
+            "uuid": "b14e3337-9c1e-4014-83a1-c2c0984cd44a",
+            "slug": "women-t-shirts",
+            "nameEn": "T-shirts",
+            "nameAr": "تيشيرتات",
+            "pricingFactor": "7",
+            "discountPercentage": "35",
+            "thumbnailUrl": "s3://categories/509692fb-571b-4893-8b15-254d084fc1b7.jpg",
+            "isFeatured": false,
+            "isFeaturedOnHomepage": false
+        },
         "downloadUrl": "",
-        "status": "pending",
-        "updatedAt": "2026-06-10T08:37:20.991Z",
-        "createdAt": "2026-06-10T08:37:20.991Z"
+        "status": "stopped",
+        "updatedAt": "2026-06-10T13:51:00.538Z",
+        "createdAt": "2026-06-10T13:50:04.274Z"
     }
 ]
 ```
@@ -99,14 +133,25 @@ GET /v1/export-requests/<export-request-uuid> HTTP/1.1
 
 ```json
 {
-    "uuid": "0ebabc7e-530a-4217-a313-21a7c1cbd284",
+    "uuid": "0b212e00-99a3-430b-b7a8-4e584d2c6dbb",
     "name": "Export Products",
-    "format": "products-csv",
+    "format": "products-json",
     "pagesCount": 20,
-    "downloadUrl": "s3://exports/b5e68d51-6682-4cb5-9030-426247f3e914.csv",
-    "status": "completed",
-    "updatedAt": "2026-06-10T08:39:00.706Z",
-    "createdAt": "2026-06-10T08:37:20.991Z"
+    "category": {
+        "uuid": "b14e3337-9c1e-4014-83a1-c2c0984cd44a",
+        "slug": "women-t-shirts",
+        "nameEn": "T-shirts",
+        "nameAr": "تيشيرتات",
+        "pricingFactor": "7",
+        "discountPercentage": "35",
+        "thumbnailUrl": "s3://categories/509692fb-571b-4893-8b15-254d084fc1b7.jpg",
+        "isFeatured": false,
+        "isFeaturedOnHomepage": false
+    },
+    "downloadUrl": "",
+    "status": "stopped",
+    "updatedAt": "2026-06-10T13:54:01.695Z",
+    "createdAt": "2026-06-10T13:53:14.333Z"
 }
 ```
 

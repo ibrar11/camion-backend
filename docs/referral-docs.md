@@ -1571,6 +1571,7 @@ POST /v1/referral/global-coupons HTTP/1.1
 | discountPercentage | Discount percentage. Applicable when `discountType` is 'percentage' |
 | discountValue | Discount value. Applicable when `discountType` is 'fixed' |
 | usageLimit | The number of times a coupon is applicable. |
+| timesUsed | The number of times a coupon has been used. |
 | expiresAt | The expiry date of the coupon |
 
 ### Request Body
