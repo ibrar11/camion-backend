@@ -34,10 +34,22 @@ export function calculateCouponDiscount(
                     "You cannot use your own affiliate coupon."
                 );
             }
+
+            // Calculate discount amount
+            const discountAmount = Math.ceil((orderSubtotal * coupon.discountPercentage) / 100);
+
+            return discountAmount;
+        }
+
+        if ('discountType' in coupon && coupon.discountType === "fixed") {
+            if (coupon.discountValue > orderSubtotal) {
+                return orderSubtotal;
+            }
+            return coupon.discountValue;
         }
 
         // Calculate discount amount
-        const discountAmount = (orderSubtotal * coupon.discountPercentage) / 100;
+        const discountAmount = Math.ceil((orderSubtotal * coupon.discountPercentage) / 100);
 
         return discountAmount;
     } catch (error: any) {

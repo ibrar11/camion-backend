@@ -392,11 +392,16 @@ export class OrderService {
                             "Coupon does not exists. Please try again with valid coupon."
                         )
                     }
+                    if (globalCoupon.usageLimit === 0) {
+                        throw new BadRequestException(
+                            "Coupon usage limit exceeded. Please try again with valid coupon."
+                        )
+                    }
                 }
                 const coupon = affiliateCoupon ? affiliateCoupon : globalCoupon;
                 if (coupon) {
                     discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                    discount = Math.ceil(discount);
+                    // discount = Math.ceil(discount);
                 }
             }
 
@@ -504,6 +509,9 @@ export class OrderService {
                 globalCoupon.totalSales.currencyCode = currency;
                 globalCoupon.totalCommission.amount += commissionAmount;
                 globalCoupon.totalCommission.currencyCode = currency;
+                if(globalCoupon.usageLimit > 0) {
+                    globalCoupon.usageLimit--;
+                }
                 await queryRunner.manager.save(globalCoupon);
             }
 
@@ -1010,7 +1018,7 @@ export class OrderService {
         try {
             // Get cart items with relations
             const cartItems = await this.cartRepository.find({
-                where: { 
+                where: {
                     customer: { id: customer.id },
                     product: {
                         status: ProductStatus.ACTIVE,
@@ -1176,11 +1184,16 @@ export class OrderService {
                             "Coupon does not exists. Please try again with valid coupon."
                         )
                     }
+                    if (globalCoupon.usageLimit === 0) {
+                        throw new BadRequestException(
+                            "Coupon usage limit exceeded. Please try again with valid coupon."
+                        )
+                    }
                     coupon = globalCoupon;
                 }
                 if (coupon) {
                     discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                    discount = Math.ceil(discount);
+                    // discount = Math.ceil(discount);
                 }
             }
 
