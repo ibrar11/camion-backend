@@ -388,9 +388,9 @@ export class OrderService {
                         where: { code: dto.couponCode.toLowerCase().trim() },
                     });
                     if (!globalCoupon) {
-                        throw new BadRequestException(
-                            "Coupon does not exists. Please try again with valid coupon."
-                        )
+                        throw new BadRequestException({
+                            error: "Coupon does not exists. Please try again with valid coupon."
+                        })
                     }
                     if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
                         throw new BadRequestException({
@@ -1178,9 +1178,9 @@ export class OrderService {
                         where: { code: couponCode?.toLowerCase().trim() },
                     });
                     if (!globalCoupon) {
-                        throw new BadRequestException(
-                            "Coupon does not exists. Please try again with valid coupon."
-                        )
+                        throw new BadRequestException({
+                            error: "Coupon does not exists. Please try again with valid coupon."
+                        })
                     }
                     if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
                         throw new BadRequestException({
