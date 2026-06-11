@@ -177,22 +177,68 @@ export class ProcurementService {
     }
 
     async enqueueSkuMetaImport(): Promise<{
-        jobId: string;
-        status: "queued";
-        productsCount: number;
+        totalProducts: number;
+        totalJobs: number;
+        singleJobProducts: number;
+        batchedJobProducts: number;
+        jobs: Array<{
+            jobId: string;
+            status: "queued";
+            productUuids: string[];
+            productsCount: number;
+        }>;
     }> {
-        const productUuids = await this.findProductUuidsWithMissingSkuMeta();
+        const products = await this.findProductsWithMissingSkuMetaCounts();
 
-        if (!productUuids.length) {
+        if (!products.length) {
             throw new BadRequestException({
                 message: "No products with missing skuMeta were found",
             });
         }
 
-        const queued = await this.queueService.addSkuMetaImportJob(productUuids);
+        const largeProducts: string[] = [];
+        const normalProducts: string[] = [];
+
+        for (const product of products) {
+            if (product.totalVariants > 50) {
+                largeProducts.push(product.uuid);
+                continue;
+            }
+
+            normalProducts.push(product.uuid);
+        }
+
+        const jobs: Array<{
+            jobId: string;
+            status: "queued";
+            productUuids: string[];
+            productsCount: number;
+        }> = [];
+
+        for (const productUuid of largeProducts) {
+            const queued = await this.queueService.addSkuMetaImportJob([productUuid]);
+            jobs.push({
+                ...queued,
+                productUuids: [productUuid],
+                productsCount: 1,
+            });
+        }
+
+        for (const batch of this.chunkArray(normalProducts, 10)) {
+            const queued = await this.queueService.addSkuMetaImportJob(batch);
+            jobs.push({
+                ...queued,
+                productUuids: batch,
+                productsCount: batch.length,
+            });
+        }
+
         return {
-            ...queued,
-            productsCount: productUuids.length,
+            totalProducts: products.length,
+            totalJobs: jobs.length,
+            singleJobProducts: largeProducts.length,
+            batchedJobProducts: normalProducts.length,
+            jobs,
         };
     }
 
@@ -231,15 +277,34 @@ export class ProcurementService {
         };
     }
 
-    private async findProductUuidsWithMissingSkuMeta(): Promise<string[]> {
+    private async findProductsWithMissingSkuMetaCounts(): Promise<Array<{
+        uuid: string;
+        totalVariants: number;
+        missingSkuVariants: number;
+    }>> {
         const products = await this.productRepository
             .createQueryBuilder("product")
-            .innerJoin("product.variants", "variant")
-            .where("variant.skuMeta IS NULL")
-            .select("DISTINCT product.uuid", "uuid")
-            .getRawMany<{ uuid: string }>();
+            .leftJoin("product.variants", "variant")
+            .select("product.uuid", "uuid")
+            .addSelect("COUNT(variant.id)", "totalVariants")
+            .addSelect(
+                "SUM(CASE WHEN variant.skuMeta IS NULL THEN 1 ELSE 0 END)",
+                "missingSkuVariants",
+            )
+            .groupBy("product.id")
+            .addGroupBy("product.uuid")
+            .having("SUM(CASE WHEN variant.skuMeta IS NULL THEN 1 ELSE 0 END) > 0")
+            .getRawMany<{
+                uuid: string;
+                totalVariants: string;
+                missingSkuVariants: string;
+            }>();
 
-        return products.map((product) => product.uuid);
+        return products.map((product) => ({
+            uuid: product.uuid,
+            totalVariants: Number(product.totalVariants ?? 0),
+            missingSkuVariants: Number(product.missingSkuVariants ?? 0),
+        }));
     }
 
     async resyncInventoryVariantsByProducts(productUuids: string[]): Promise<{

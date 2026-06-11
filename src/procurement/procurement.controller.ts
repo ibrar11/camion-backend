@@ -115,7 +115,18 @@ export class ProcurementController {
     @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
     @Post('import-sku-meta')
     @HttpCode(HttpStatus.OK)
-    importSkuMeta() {
+    importSkuMeta(): Promise<{
+        totalProducts: number;
+        totalJobs: number;
+        singleJobProducts: number;
+        batchedJobProducts: number;
+        jobs: Array<{
+            jobId: string;
+            status: "queued";
+            productUuids: string[];
+            productsCount: number;
+        }>;
+    }> {
         return this.procurementService.enqueueSkuMetaImport();
     }
 
