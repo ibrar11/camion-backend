@@ -443,7 +443,7 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: [item.variant.product.titleEn, item.variant.titleEn].filter(Boolean).join(' - ').slice(0, 128),
+                name: (() => { const s = item.variant.titleEn?.trim() ? ` - ${item.variant.titleEn.trim()}` : ''; return (item.variant.product.titleEn ?? '').slice(0, 128 - s.length) + s; })(),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
                 freight_fee: '0',
                 skus: [{
@@ -839,7 +839,7 @@ export class JopWmsService {
                     shop_name: shopName,
                     platform: '1688',
                     platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                    name: [item.variant.product.titleEn, item.variant.titleEn].filter(Boolean).join(' - ').slice(0, 128),
+                    name: (() => { const s = item.variant.titleEn?.trim() ? ` - ${item.variant.titleEn.trim()}` : ''; return (item.variant.product.titleEn ?? '').slice(0, 128 - s.length) + s; })(),
                     goods_amount: String(item.variant.cost.amount * item.quantity),
                     skus: [{
                         platform_sku: item.variant.sku,
@@ -1019,7 +1019,7 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: [item.variant.product.titleEn, item.variant.titleEn].filter(Boolean).join(' - ').slice(0, 128),
+                name: (() => { const s = item.variant.titleEn?.trim() ? ` - ${item.variant.titleEn.trim()}` : ''; return (item.variant.product.titleEn ?? '').slice(0, 128 - s.length) + s; })(),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
                 freight_fee: '0',
                 skus: [{
