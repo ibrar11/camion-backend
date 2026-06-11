@@ -209,7 +209,8 @@ export class OrderService {
             const cartItems = await this.cartRepository.find({
                 where: {
                     uuid: In(dto.cartItemUuids),
-                    customer: { id: customer.id }
+                    customer: { id: customer.id },
+                    product: { status: ProductStatus.ACTIVE, }
                 },
                 relations: {
                     product: {
@@ -228,27 +229,27 @@ export class OrderService {
                 });
             }
 
-            await Promise.all(
-                cartItems.map(async (item) => {
-                    const checkProduct = await this.productRepository.findOne({
-                        where: {
-                            id: item.product.id,
-                        },
-                    });
+            // await Promise.all(
+            //     cartItems.map(async (item) => {
+            //         const checkProduct = await this.productRepository.findOne({
+            //             where: {
+            //                 id: item.product.id,
+            //             },
+            //         });
 
-                    if (!checkProduct) {
-                        throw new BadRequestException({
-                            error: `Product not found`,
-                        });
-                    }
+            //         if (!checkProduct) {
+            //             throw new BadRequestException({
+            //                 error: `Product not found`,
+            //             });
+            //         }
 
-                    if (checkProduct.status !== ProductStatus.ACTIVE) {
-                        throw new BadRequestException({
-                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
-                        });
-                    }
-                })
-            );
+            //         if (checkProduct.status !== ProductStatus.ACTIVE) {
+            //             throw new BadRequestException({
+            //                 error: `Cannot create order for the non-active product ${checkProduct.slug}`,
+            //             });
+            //         }
+            //     })
+            // );
 
             let subTotal = 0;
             const orderItems: OrderItem[] = [];
@@ -1009,7 +1010,12 @@ export class OrderService {
         try {
             // Get cart items with relations
             const cartItems = await this.cartRepository.find({
-                where: { customer: { id: customer.id } },
+                where: { 
+                    customer: { id: customer.id },
+                    product: {
+                        status: ProductStatus.ACTIVE,
+                    }
+                },
                 relations: {
                     product: {
                         productCategories: {
@@ -1036,27 +1042,27 @@ export class OrderService {
                 );
             }
 
-            await Promise.all(
-                cartItems.map(async (item) => {
-                    const checkProduct = await this.productRepository.findOne({
-                        where: {
-                            id: item.product.id,
-                        },
-                    });
+            // await Promise.all(
+            //     cartItems.map(async (item) => {
+            //         const checkProduct = await this.productRepository.findOne({
+            //             where: {
+            //                 id: item.product.id,
+            //             },
+            //         });
 
-                    if (!checkProduct) {
-                        throw new BadRequestException({
-                            error: `Product not found`,
-                        });
-                    }
+            //         if (!checkProduct) {
+            //             throw new BadRequestException(
+            //                 `Product not found`,
+            //             );
+            //         }
 
-                    if (checkProduct.status !== ProductStatus.ACTIVE) {
-                        throw new BadRequestException({
-                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
-                        });
-                    }
-                })
-            );
+            //         if (checkProduct.status !== ProductStatus.ACTIVE) {
+            //             throw new BadRequestException(
+            //                 `Cannot create order for the non-active product ${checkProduct.slug}`,
+            //             );
+            //         }
+            //     })
+            // );
 
             const address = await this.addressRepository.findOne({
                 where: {

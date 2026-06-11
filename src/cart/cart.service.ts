@@ -284,6 +284,7 @@ export class CartItemsService {
             relationLoadStrategy: "query",
             where: {
                 customer: { uuid: customer.uuid },
+                product: { status: ProductStatus.ACTIVE }
             },
         });
     }
