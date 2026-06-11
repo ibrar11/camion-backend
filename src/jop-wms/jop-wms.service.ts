@@ -443,7 +443,7 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: (() => { const s = item.variant.titleEn?.trim() ? ` - ${item.variant.titleEn.trim()}` : ''; return (item.variant.product.titleEn ?? '').slice(0, 128 - s.length) + s; })(),
+                name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
                 freight_fee: '0',
                 skus: [{
@@ -839,7 +839,7 @@ export class JopWmsService {
                     shop_name: shopName,
                     platform: '1688',
                     platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                    name: (() => { const s = item.variant.titleEn?.trim() ? ` - ${item.variant.titleEn.trim()}` : ''; return (item.variant.product.titleEn ?? '').slice(0, 128 - s.length) + s; })(),
+                    name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                     goods_amount: String(item.variant.cost.amount * item.quantity),
                     skus: [{
                         platform_sku: item.variant.sku,
@@ -897,9 +897,11 @@ export class JopWmsService {
                     shopId: data.shopId,
                     shopName: data.shopName,
                     state,
+                    attemptsMade: job.attemptsMade,
+                    maxAttempts: 5,
                     orderUuids: data.orderUuids,
                     gulltransOrderSns: data.gulltransOrderSns ?? null,
-                    failedReason: state === 'failed' ? (job.failedReason ?? null) : null,
+                    failedReason: job.failedReason ?? null,
                     inbound: inboundOrder
                         ? {
                             voucherNo: inboundOrder.orderNo,
@@ -915,7 +917,7 @@ export class JopWmsService {
         let overallStatus: string;
         if (states.every(s => s === 'completed')) overallStatus = 'completed';
         else if (states.every(s => s === 'failed')) overallStatus = 'failed';
-        else if (states.some(s => s === 'failed')) overallStatus = 'partial';
+        else if (states.some(s => s === 'failed' || s === 'delayed')) overallStatus = 'partial';
         else overallStatus = 'processing';
 
         return { dispatchJobId, overallStatus, shops };
@@ -1019,7 +1021,7 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: (() => { const s = item.variant.titleEn?.trim() ? ` - ${item.variant.titleEn.trim()}` : ''; return (item.variant.product.titleEn ?? '').slice(0, 128 - s.length) + s; })(),
+                name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
                 freight_fee: '0',
                 skus: [{
