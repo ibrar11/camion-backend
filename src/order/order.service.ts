@@ -392,10 +392,10 @@ export class OrderService {
                             "Coupon does not exists. Please try again with valid coupon."
                         )
                     }
-                    if (globalCoupon.usageLimit === 0) {
-                        throw new BadRequestException(
-                            "Coupon usage limit exceeded. Please try again with valid coupon."
-                        )
+                    if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
+                        throw new BadRequestException({
+                            error: "Coupon usage limit exceeded. Please try again with valid coupon."
+                        })
                     }
                 }
                 const coupon = affiliateCoupon ? affiliateCoupon : globalCoupon;
@@ -509,9 +509,7 @@ export class OrderService {
                 globalCoupon.totalSales.currencyCode = currency;
                 globalCoupon.totalCommission.amount += commissionAmount;
                 globalCoupon.totalCommission.currencyCode = currency;
-                if(globalCoupon.usageLimit > 0) {
-                    globalCoupon.usageLimit--;
-                }
+                globalCoupon.timesUsed++;
                 await queryRunner.manager.save(globalCoupon);
             }
 
@@ -1184,10 +1182,10 @@ export class OrderService {
                             "Coupon does not exists. Please try again with valid coupon."
                         )
                     }
-                    if (globalCoupon.usageLimit === 0) {
-                        throw new BadRequestException(
-                            "Coupon usage limit exceeded. Please try again with valid coupon."
-                        )
+                    if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
+                        throw new BadRequestException({
+                            error: "Coupon usage limit exceeded. Please try again with valid coupon."
+                        })
                     }
                     coupon = globalCoupon;
                 }
