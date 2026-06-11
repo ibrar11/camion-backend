@@ -50,6 +50,7 @@ import { ImageThumbnailService } from '../common/image-thumbnail.service';
 
 import { QueueModule } from '../queue/queue.module';
 import { InventoryResyncProcessor } from './workers/inventory-resync.processor';
+import { SkuMetaImportProcessor } from './workers/sku-meta-import.processor';
 
 import { TranslationService } from '../translation/translation.service';
 
@@ -92,6 +93,7 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
 		ImageThumbnailService,
 		TranslationService,
 		InventoryResyncProcessor,
+		SkuMetaImportProcessor,
 		TranslationJobRegistryService,
 	],
 	controllers: [ProcurementController],

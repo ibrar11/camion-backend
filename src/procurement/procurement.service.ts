@@ -61,7 +61,7 @@ import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { QueueService } from 'src/queue/queue.service';
 import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 import { QueueName } from 'src/queue/enums/QueueTypes.enum';
-import { InventoryResyncJobData } from 'src/queue/types';
+import { InventoryResyncJobData, SkuMetaImportJobData } from 'src/queue/types';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -174,6 +174,72 @@ export class ProcurementService {
             result: job.returnvalue,
             failedReason: job.failedReason ?? null,
         };
+    }
+
+    async enqueueSkuMetaImport(): Promise<{
+        jobId: string;
+        status: "queued";
+        productsCount: number;
+    }> {
+        const productUuids = await this.findProductUuidsWithMissingSkuMeta();
+
+        if (!productUuids.length) {
+            throw new BadRequestException({
+                message: "No products with missing skuMeta were found",
+            });
+        }
+
+        const queued = await this.queueService.addSkuMetaImportJob(productUuids);
+        return {
+            ...queued,
+            productsCount: productUuids.length,
+        };
+    }
+
+    async getSkuMetaImportJob(jobId: string): Promise<{
+        jobId: string;
+        status: "queued" | "active" | "completed" | "failed" | "not_found";
+        progress?: string | number | boolean | object;
+        result?: any;
+        failedReason?: string | null;
+    }> {
+        const job = await this.queueService.getJob(
+            QueueName.SKU_META_IMPORT,
+            jobId
+        ) as Job<SkuMetaImportJobData> | null;
+
+        if (!job) {
+            return { jobId, status: "not_found" };
+        }
+
+        const state = await job.getState();
+        const statusMap: Record<string, "queued" | "active" | "completed" | "failed"> = {
+            waiting: "queued",
+            delayed: "queued",
+            paused: "queued",
+            active: "active",
+            completed: "completed",
+            failed: "failed",
+        };
+
+        return {
+            jobId,
+            status: statusMap[state] ?? "queued",
+            progress: job.progress,
+            result: job.returnvalue,
+            failedReason: job.failedReason ?? null,
+        };
+    }
+
+    private async findProductUuidsWithMissingSkuMeta(): Promise<string[]> {
+        const products = await this.productRepository
+            .createQueryBuilder("product")
+            .innerJoin("product.variants", "variant")
+            .where("variant.skuMeta IS NULL")
+            .select("DISTINCT product.uuid", "uuid")
+            .getRawMany<{ uuid: string }>();
+
+        return products.map((product) => product.uuid);
     }
 
     async resyncInventoryVariantsByProducts(productUuids: string[]): Promise<{
@@ -313,6 +379,96 @@ export class ProcurementService {
 
         return {
             productsRequested: productUuids.length,
+            productsFound,
+            productsWithProcurementId,
+            productsFailed,
+            failedProducts,
+            variantsMatched,
+            variantsUpdated,
+            variantsMissingInSource,
+            productsSkippedWithoutProcurementId,
+        };
+    }
+
+    async importSkuMetaByProducts(productUuids: string[] = []): Promise<{
+        productsRequested: number;
+        productsFound: number;
+        productsWithProcurementId: number;
+        productsFailed: number;
+        failedProducts: Array<{ productUuid: string; procurementId: string | null; error: string }>;
+        variantsMatched: number;
+        variantsUpdated: number;
+        variantsMissingInSource: number;
+        productsSkippedWithoutProcurementId: string[];
+    }> {
+        this.logger.log(`Importing skuMeta from procurement API`);
+
+        const uniqueProductUuids = [...new Set(productUuids)];
+        const productUuidChunks = this.chunkArray(uniqueProductUuids, 200);
+
+        let productsFound = 0;
+        let productsWithProcurementId = 0;
+        let productsFailed = 0;
+        let variantsMatched = 0;
+        let variantsUpdated = 0;
+        let variantsMissingInSource = 0;
+        const productsSkippedWithoutProcurementId: string[] = [];
+        const failedProducts: Array<{ productUuid: string; procurementId: string | null; error: string }> = [];
+
+        for (const productUuidChunk of productUuidChunks) {
+            const products = await this.productRepository.find({
+                where: { uuid: In(productUuidChunk) },
+                relations: {
+                    variants: true,
+                },
+            });
+            productsFound += products.length;
+
+            for (const product of products) {
+                if (!product.procurementId) {
+                    productsSkippedWithoutProcurementId.push(product.uuid);
+                    continue;
+                }
+
+                try {
+                    productsWithProcurementId += 1;
+                    const sourceProduct = await this.getProductDetail(product.procurementId);
+                    const sourceBySku = new Map<string, ProcurementProductVariant>();
+
+                    for (const sourceVariant of sourceProduct.variants ?? []) {
+                        sourceBySku.set(String(sourceVariant.skuId), sourceVariant);
+                    }
+
+                    for (const localVariant of product.variants ?? []) {
+                        const sourceVariant = sourceBySku.get(localVariant.sku);
+                        if (!sourceVariant) {
+                            variantsMissingInSource += 1;
+                            continue;
+                        }
+
+                        variantsMatched += 1;
+                        if (!this.isSameObject(localVariant.skuMeta, sourceVariant.skuMeta)) {
+                            localVariant.skuMeta = sourceVariant.skuMeta as Record<string, any>;
+                            await this.productVariantRepository.save(localVariant);
+                            variantsUpdated += 1;
+                        }
+                    }
+                } catch (error) {
+                    productsFailed += 1;
+                    failedProducts.push({
+                        productUuid: product.uuid,
+                        procurementId: product.procurementId ?? null,
+                        error: (error as Error)?.message ?? "Unknown error",
+                    });
+                    this.logger.error(
+                        `Failed skuMeta import for product ${product.uuid} (procurementId=${product.procurementId}): ${(error as Error).message}`,
+                    );
+                }
+            }
+        }
+
+        return {
+            productsRequested: uniqueProductUuids.length,
             productsFound,
             productsWithProcurementId,
             productsFailed,
