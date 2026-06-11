@@ -445,6 +445,7 @@ export class JopWmsService {
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
                 name: [item.variant.product.titleEn, item.variant.titleEn].filter(Boolean).join(' - ').slice(0, 128),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
+                freight_fee: '0',
                 skus: [{
                     platform_sku: item.variant.sku,
                     price: String(item.variant.cost.amount),
