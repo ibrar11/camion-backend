@@ -493,6 +493,36 @@ export class ProductsService {
 	}
 
 	/**
+	 * Finds products that have at least one variant without skuMeta.
+	 *
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findProductsWithVariantsMissingSkuMeta(
+		pageNumber: number = 1,
+		itemsPerPage: number = 100,
+	): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products with variants missing skuMeta`);
+
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.productRepository.createQueryBuilder("product")
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+			.leftJoinAndSelect("product.variants", "variant")
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+			.where("variant.skuMeta IS NULL")
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+	}
+
+	/**
 	 * Finds a list of products
 	 *
 	 * @param filters
