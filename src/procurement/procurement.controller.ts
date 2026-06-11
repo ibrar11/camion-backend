@@ -111,4 +111,20 @@ export class ProcurementController {
     ) {
         return this.procurementService.getInventoryVariantsResyncJob(jobId);
     }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Post('import-sku-meta')
+    @HttpCode(HttpStatus.OK)
+    importSkuMeta() {
+        return this.procurementService.enqueueSkuMetaImport();
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Get('import-sku-meta/job/:jobId')
+    @HttpCode(HttpStatus.OK)
+    getImportSkuMetaJob(
+        @Param('jobId') jobId: string
+    ) {
+        return this.procurementService.getSkuMetaImportJob(jobId);
+    }
 }
