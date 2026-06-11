@@ -866,6 +866,92 @@ export class JopWmsService {
         return { found: matchingJobs.length, retried: retriedShopIds.length, shopIds: retriedShopIds };
     }
 
+    // ─── Dispatch Status ──────────────────────────────────────────────────────
+
+    async getDispatchJobStatus(dispatchJobId: string) {
+        const allJobs = await this.dispatchQueue.getJobs([
+            'waiting', 'active', 'completed', 'failed', 'delayed', 'prioritized',
+        ]);
+
+        const shopJobs = allJobs.filter(
+            j => (j.data as DispatchShopJobData).dispatchJobId === dispatchJobId,
+        );
+
+        if (!shopJobs.length) {
+            throw new NotFoundException(`No dispatch jobs found for dispatchJobId: ${dispatchJobId}`);
+        }
+
+        const shops = await Promise.all(
+            shopJobs.map(async job => {
+                const data = job.data as DispatchShopJobData;
+                const state = await job.getState();
+
+                const inboundOrder = await this.wmsOrderRepository.findOne({
+                    where: { orderNo: data.inboundVoucherNo },
+                    select: ['orderNo', 'wmsAssignedId', 'status'],
+                });
+
+                return {
+                    jobId: job.id,
+                    shopId: data.shopId,
+                    shopName: data.shopName,
+                    state,
+                    orderUuids: data.orderUuids,
+                    gulltransOrderSns: data.gulltransOrderSns ?? null,
+                    failedReason: state === 'failed' ? (job.failedReason ?? null) : null,
+                    inbound: inboundOrder
+                        ? {
+                            voucherNo: inboundOrder.orderNo,
+                            wmsAssignedId: inboundOrder.wmsAssignedId,
+                            status: inboundOrder.status,
+                        }
+                        : { voucherNo: data.inboundVoucherNo, wmsAssignedId: null, status: null },
+                };
+            }),
+        );
+
+        const states = shops.map(s => s.state);
+        let overallStatus: string;
+        if (states.every(s => s === 'completed')) overallStatus = 'completed';
+        else if (states.every(s => s === 'failed')) overallStatus = 'failed';
+        else if (states.some(s => s === 'failed')) overallStatus = 'partial';
+        else overallStatus = 'processing';
+
+        return { dispatchJobId, overallStatus, shops };
+    }
+
+    async getDispatchSubJob(jobId: string) {
+        const job = await this.dispatchQueue.getJob(jobId);
+        if (!job) {
+            throw new NotFoundException(`Dispatch sub-job not found: ${jobId}`);
+        }
+
+        const data = job.data as DispatchShopJobData;
+        const state = await job.getState();
+
+        const inboundOrder = await this.wmsOrderRepository.findOne({
+            where: { orderNo: data.inboundVoucherNo },
+            select: ['orderNo', 'wmsAssignedId', 'status', 'lastPolledAt', 'lastError', 'errorCount'],
+        });
+
+        return {
+            jobId: job.id,
+            dispatchJobId: data.dispatchJobId,
+            shopId: data.shopId,
+            shopName: data.shopName,
+            state,
+            attemptsMade: job.attemptsMade,
+            failedReason: state === 'failed' ? (job.failedReason ?? null) : null,
+            orderUuids: data.orderUuids,
+            gulltransOrderSns: data.gulltransOrderSns ?? null,
+            inboundVoucherNo: data.inboundVoucherNo,
+            inbound: inboundOrder ?? null,
+            createdAt: new Date(job.timestamp),
+            processedAt: job.processedOn ? new Date(job.processedOn) : null,
+            finishedAt: job.finishedOn ? new Date(job.finishedOn) : null,
+        };
+    }
+
     // ─── Recovery ─────────────────────────────────────────────────────────────
 
     async recoverInbound(orderNo: string, dto: RecoverInboundDto): Promise<{ gulltransOrders: any[]; linkedOrderUuids: string[] }> {
