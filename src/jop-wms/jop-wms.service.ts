@@ -443,7 +443,7 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: item.variant.titleEn,
+                name: [item.variant.product.titleEn, item.variant.titleEn].filter(Boolean).join(' - ').slice(0, 128),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
                 skus: [{
                     platform_sku: item.variant.sku,
@@ -838,7 +838,7 @@ export class JopWmsService {
                     shop_name: shopName,
                     platform: '1688',
                     platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                    name: item.variant.titleEn,
+                    name: [item.variant.product.titleEn, item.variant.titleEn].filter(Boolean).join(' - ').slice(0, 128),
                     goods_amount: String(item.variant.cost.amount * item.quantity),
                     skus: [{
                         platform_sku: item.variant.sku,
@@ -932,7 +932,7 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: item.variant.titleEn,
+                name: [item.variant.product.titleEn, item.variant.titleEn].filter(Boolean).join(' - ').slice(0, 128),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
                 freight_fee: '0',
                 skus: [{
@@ -948,21 +948,25 @@ export class JopWmsService {
                 address: warehouseAddress,
             });
 
-            const shopResult = result.success.find(s => String(s.shopId) === String(shopId));
-            if (!shopResult) {
+            const shopResults = result.success.filter(s => String(s.shopId) === String(shopId));
+            if (!shopResults.length) {
                 const failure = result.failed.find(f => String(f.shopId) === String(shopId));
                 throw new BadRequestException(`Gulltrans failed for shop ${shopId}: ${failure?.reason ?? 'no success entry returned'}`);
             }
 
-            this.logger.log(`recoverInbound ${orderNo}: Gulltrans order ${shopResult.orderSn} created for shop ${shopId}`);
-            gulltransOrders.push({ shopId, orderSn: shopResult.orderSn, raw: shopResult.raw });
+            for (const r of shopResults) {
+                this.logger.log(`recoverInbound ${orderNo}: Gulltrans order ${r.orderSn} created for shop ${shopId}`);
+                gulltransOrders.push({ shopId, orderSn: r.orderSn, raw: r.raw });
+            }
 
-            // Write gulltrans_order_sns to each order
+            // Write all gulltrans_order_sns to each order
             for (const order of orders) {
-                await this.orderRepository.query(
-                    `UPDATE orders SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1) WHERE uuid = $2`,
-                    [shopResult.orderSn, order.uuid],
-                );
+                for (const r of shopResults) {
+                    await this.orderRepository.query(
+                        `UPDATE orders SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1) WHERE uuid = $2`,
+                        [r.orderSn, order.uuid],
+                    );
+                }
             }
         }
 
