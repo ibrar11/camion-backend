@@ -58,13 +58,12 @@ export class DispatchProcessor extends WorkerHost {
         //    Do NOT fall back to orders.gulltransOrderSn from the DB. That column is written by
         //    every shop job for the same customer orders, so a competing shop job completing first
         //    would make this job falsely believe its own Gulltrans order was already created.
-        const existingSn = job.data.gulltransOrderSn ?? null;
+        // Backward-compat: old queued jobs carry singular gulltransOrderSn; new ones use the array.
+        const existingSns: string[] | null =
+            job.data.gulltransOrderSns ?? (job.data.gulltransOrderSn ? [job.data.gulltransOrderSn] : null);
 
-        let gulltransOrderSn: string;
-
-        if (existingSn) {
-            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans already created (${existingSn}) — skipping`);
-            gulltransOrderSn = existingSn;
+        if (existingSns) {
+            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans already created (${existingSns.join(', ')}) — skipping`);
         } else {
             // ── Step 3: Sync variants to WMS (idempotent, non-blocking) ──────
             for (const variantData of variantSyncData) {
@@ -77,36 +76,38 @@ export class DispatchProcessor extends WorkerHost {
                 }
             }
 
-            // ── Step 4: Create Gulltrans procurement order ────────────────────
+            // ── Step 4: Create Gulltrans procurement order(s) — one per product ─
             const result = await this.procurementService.bulkCreateOrder({
                 orders: gulltransItems,
                 address: warehouseAddress as OrderAddressDto,
             });
 
-            const shopResult = result.success.find(s => String(s.shopId) === String(shopId));
-            if (!shopResult) {
+            const shopResults = result.success.filter(s => String(s.shopId) === String(shopId));
+            if (!shopResults.length) {
                 const failure = result.failed.find(f => String(f.shopId) === String(shopId));
                 throw new Error(`Gulltrans failed for shop ${shopId}: ${failure?.reason ?? 'no success entry returned'}`);
             }
 
-            gulltransOrderSn = shopResult.orderSn;
-            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans order ${gulltransOrderSn} created`);
+            const gulltransOrderSns = shopResults.map(r => r.orderSn);
+            this.logger.log(`Dispatch ${dispatchJobId} shop ${shopId}: Gulltrans order(s) created: ${gulltransOrderSns.join(', ')}`);
 
             // Checkpoint into job data so retries skip Gulltrans even if the DB write below fails
-            await job.updateData({ ...job.data, gulltransOrderSn, gulltransResponse: shopResult.raw });
+            await job.updateData({ ...job.data, gulltransOrderSns, gulltransResponse: shopResults[0].raw });
 
-            // ── Step 5: Append gulltransOrderSn to each order's array (all-or-nothing) ─
+            // ── Step 5: Append all gulltrans SNs to each order's array (all-or-nothing) ─
             const runner = this.dataSource.createQueryRunner();
             await runner.connect();
             await runner.startTransaction();
             try {
                 for (const orderUuid of orderUuids) {
-                    await runner.query(
-                        `UPDATE orders
-                         SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1)
-                         WHERE uuid = $2`,
-                        [gulltransOrderSn, orderUuid],
-                    );
+                    for (const sn of gulltransOrderSns) {
+                        await runner.query(
+                            `UPDATE orders
+                             SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1)
+                             WHERE uuid = $2`,
+                            [sn, orderUuid],
+                        );
+                    }
                 }
                 await runner.commitTransaction();
             } catch (err: any) {

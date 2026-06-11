@@ -1381,14 +1381,18 @@ export class ProcurementService {
     }
 
     /**
-     * Groups flat order items by shop_id (falls back to shop_name), merging skus
+     * Groups flat order items by (shop_id, platform_url), merging skus
      * and summing goods_amount and freight_fee within each group.
+     * Grouping by platform_url keeps different products as separate Gulltrans
+     * orders — Gulltrans platform_url and name are order-level fields, not
+     * per-SKU, so mixing products in one order makes all SKUs show the same URL.
      */
     private groupOrdersByShop(orders: BulkCreateProcurementOrderDto['orders']) {
         const groupMap = new Map<string, typeof orders>();
 
         for (const order of orders) {
-            const key = order.shop_id || order.shop_name || `__ungrouped__${orders.indexOf(order)}`;
+            const shopKey = order.shop_id || order.shop_name || `__ungrouped__${orders.indexOf(order)}`;
+            const key = `${shopKey}::${order.platform_url}`;
             if (!groupMap.has(key)) groupMap.set(key, []);
             groupMap.get(key)!.push(order);
         }
@@ -1406,13 +1410,10 @@ export class ProcurementService {
                 .reduce((sum, o) => sum + parseFloat(o.freight_fee || '0'), 0)
                 .toString();
 
-            const name = group.map((o) => o.name).join(' | ').slice(0, 256);
-
             const remark = group.map((o) => o.remark).filter(Boolean).join(' | ') || undefined;
 
             return {
                 ...first,
-                name,
                 goods_amount: totalGoodsAmount,
                 freight_fee: totalFreightFee,
                 remark,
@@ -1431,7 +1432,7 @@ export class ProcurementService {
     async bulkCreateOrder(dto: BulkCreateProcurementOrderDto): Promise<BulkCreateOrderResponse> {
         const results: BulkCreateOrderResponse = { success: [], failed: [] };
 
-        const grouped = this.groupOrdersByShop(dto.orders);
+        const grouped = dto.orders;
         const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
 
         const BATCH_SIZE = 3;
