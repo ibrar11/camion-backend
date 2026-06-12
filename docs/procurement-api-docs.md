@@ -533,9 +533,9 @@ Bulk Create Orders
 > [!IMPORTANT]
 > Required roles: `SuperAdmin`, `Admin`
 
-Creates multiple Gulltrans daigou orders in a single request. Products are automatically grouped by `shop_id` (falls back to `shop_name`) — all products from the same shop are merged into one Gulltrans order with their SKUs combined and `goods_amount` summed. The `address` is shared across all orders.
+Creates multiple Gulltrans daigou orders in a single request. Each item in `orders` becomes its own Gulltrans order — no merging is done. The `address` is shared across all orders.
 
-Orders are processed in parallel batches of 3. Failures are collected per shop and returned alongside successes — a single shop failure does not abort the rest.
+Orders are processed in parallel batches of 3. Failures are collected per item and returned alongside successes — a single failure does not abort the rest.
 
 ```http
 POST /v1/procurement/order/bulk HTTP/1.1
@@ -642,14 +642,14 @@ POST /v1/procurement/order/bulk HTTP/1.1
 ```
 
 > [!NOTE]
-> The example above sends 3 products: Product A and Product B share `shop_id: "ShopA123"`, so they are merged into **one** Gulltrans order call. Product C from `ShopB456` becomes a separate order. Result: **2 Gulltrans API calls**, not 3.
+> The example above sends 3 products, resulting in **3 separate Gulltrans order calls** — one per item. No merging is done regardless of `shop_id`.
 
 ### Request Body Fields
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 orders | Yes | Array | At least one order item required
-orders[].shop_id | No | String | 1688 shop ID — used as grouping key
-orders[].shop_name | No | String | 1688 shop name — used as fallback grouping key if shop_id is absent
+orders[].shop_id | No | String | 1688 shop ID
+orders[].shop_name | No | String | 1688 shop name
 orders[].platform | No | String | Platform identifier. Defaults to `1688`
 orders[].platform_url | Yes | String | Product URL on 1688
 orders[].name | Yes | String | Product name

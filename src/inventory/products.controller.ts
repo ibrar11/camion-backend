@@ -82,6 +82,22 @@ export class ProductsController {
 		return this.productsService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
 	}
 
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Get("variants/missing-skumeta")
+	@HttpCode(HttpStatus.OK)
+	actionGetProductsWithVariantsMissingSkuMeta(): Promise<{
+		totalMissingSkuVariants: number;
+		totalProducts: number;
+		data: Array<{
+			uuid: string;
+			name: string;
+			totalVariants: number;
+			missingSkuVariants: number;
+		}>;
+	}> {
+		return this.productsService.findProductsWithVariantsMissingSkuMeta();
+	}
+
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)

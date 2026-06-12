@@ -71,6 +71,7 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
             { name: QueueName.FIELD_TRANSLATION },
             { name: QueueName.INVENTORY_RESYNC },
             { name: QueueName.PRODUCT_CATEGORY_RESYNC },
+            { name: QueueName.SKU_META_IMPORT },
         ),
         TypeOrmModule.forFeature([
             Product,

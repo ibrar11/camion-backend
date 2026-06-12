@@ -182,6 +182,20 @@ export class JopWmsController {
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get('orders/dispatch/:dispatchJobId/status')
+    @HttpCode(HttpStatus.OK)
+    getDispatchJobStatus(@Param('dispatchJobId') dispatchJobId: string) {
+        return this.wmsService.getDispatchJobStatus(dispatchJobId);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get('orders/dispatch/jobs/:jobId')
+    @HttpCode(HttpStatus.OK)
+    getDispatchSubJob(@Param('jobId') jobId: string) {
+        return this.wmsService.getDispatchSubJob(jobId);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Post('orders/:uuid/retry-outbound')
     @HttpCode(HttpStatus.OK)
     retryOutboundForOrder(@Param('uuid') uuid: string) {
