@@ -15,6 +15,7 @@ import {
 
 import { ExchangeRate } from './entities/exchange-rate.entity';
 import { Product } from '../inventory/entities/product.entity';
+import { Campaign } from '../campaigns/entities/campaign.entity';
 
 @Injectable()
 export class PricingService {
@@ -64,11 +65,12 @@ export class PricingService {
 	 *
 	 * @param product
 	 * @param variant
+	 * @param campaign
 	 * @param currency
 	 * @param applyDiscount
 	 * @returns
 	 */
-	async applyPriceOnProductVariant(product: Product, variant: ProductVariant, currency: CurrencyCode, applyDiscount: boolean): Promise<Money> {
+	async applyPriceOnProductVariant(product: Product, variant: ProductVariant, campaign: Campaign | null, currency: CurrencyCode, applyDiscount: boolean): Promise<Money> {
 		this.logger.log(`Calculating the price of product: ${product.uuid}, variant: ${variant.uuid}, currencyCode: ${currency}`);
 
 		// Reinitialize the exchange rates after every 5 minutes
@@ -100,16 +102,31 @@ export class PricingService {
 			};
 		}
 
+		// The discount factor applied on each product variant
+		let discountPercentage: number = 1;
+
+		// Apply the discount factor from the campaign
+		if (product !== null && campaign !== null && campaign !== undefined) {
+			discountPercentage = Math.max(discountPercentage, campaign.discountPercentage);
+		}
+
+		// As a fallback, calculate the discount factor from the categories applied in the product
+		if (discountPercentage === 0 && product !== null && Array.isArray(product.productCategories) && product.productCategories.length !== 0) {
+			discountPercentage = Math.max(discountPercentage, ...(
+				product.productCategories
+					.filter(entry => entry.category !== null && entry.category !== undefined)
+					.map(entry => entry.category.discountPercentage))
+			);
+		}
+
 		// Set the pricing based on the maximum pricing factor and discount percentage
-		let pricingFactor: number = 1, discountPercentage: number = 0;
+		let pricingFactor: number = 1;
 		if (product !== null && Array.isArray(product.productCategories) && product.productCategories.length !== 0) {
-			for (let i = 0; i < product.productCategories.length; i++) {
-				if (!product.productCategories[i].category) {
-					continue;
-				}
-				pricingFactor = Math.max(pricingFactor, Number(product.productCategories[i].category.pricingFactor));
-				discountPercentage = Math.max(discountPercentage, Number(product.productCategories[i].category.discountPercentage));
-			}
+			pricingFactor = Math.max(pricingFactor, ...(
+				product.productCategories
+					.filter(entry => entry.category !== null && entry.category !== undefined)
+					.map(entry => entry.category.pricingFactor)
+			));
 		}
 
 		// Calculate exchange rate factor

@@ -4126,3 +4126,307 @@ uery GetMinimumOrderValue($currency: String) {
     }
 }
 ```
+
+Get Campaigns
+-------------
+
+### GraphQL Query
+
+```graphql
+query GetCampaigns($language: String) {
+  getCampaigns(language: $language) {
+    uuid
+    name(language: $language)
+    slug
+    discountPercentage
+    startsAt
+    finishesAt
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### GraphQL Response
+
+
+```json
+{
+    "data": {
+        "getCampaigns": [
+            {
+                "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                "name": "Summer 70%",
+                "slug": "summer-70",
+                "discountPercentage": 50,
+                "startsAt": "2026-01-01T00:00:00.000Z",
+                "finishesAt": "2026-12-31T00:00:00.000Z"
+            }
+        ]
+    }
+}
+```
+
+Get Featured Campaign
+---------------------
+
+### GraphQL Query
+
+```graphql
+query GetFeaturedCampaign($language: String) {
+  getFeaturedCampaign(language: $language) {
+    uuid
+    name(language: $language)
+    slug
+    discountPercentage
+    startsAt
+    finishesAt
+    campaignCategories {
+        category {
+            uuid
+            slug
+            name(language: $language)
+            thumbnailUrl
+        }
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en"
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getFeaturedCampaign": {
+            "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+            "name": "Summer 50%",
+            "slug": "summer-50",
+            "discountPercentage": 50,
+            "startsAt": "2026-01-01T00:00:00.000Z",
+            "finishesAt": "2026-12-31T00:00:00.000Z",
+            "campaignCategories": [
+                {
+                    "category": {
+                        "uuid": "4b5e04b0-631e-4a01-841e-0fb7bad45928",
+                        "slug": "women-clothing",
+                        "name": "Clothing",
+                        "thumbnailUrl": "https://assets.dev.camiontrading.com/categories/1042cd68-f047-492d-a127-ce4e6b667a52.jpg"
+                    }
+                }
+            ]
+        }
+    }
+}
+```
+
+Get Products In Featured Campaign
+---------------------------------
+
+```graphql
+query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getProductsInFeaturedCampaign(language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    title(language: $language)
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    status
+    variants {
+      uuid
+      title(language: $language)
+      sku
+      price(currency: $currency) {
+        amount
+        currencyCode
+      }
+      discountedPrice(currency: $currency) {
+        amount
+        currencyCode
+      }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getProductsInFeaturedCampaign": [
+            {
+                "uuid": "a3eb9111-fbca-4773-8032-098be5253491",
+                "slug": "new-style-2026-spring-short-bell-sleeve-long-slee-925264134587",
+                "title": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                "salesCount": 0,
+                "likesCount": 0,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "status": "active",
+                "variants": [
+                    {
+                        "uuid": "5ec0c0ec-4dc0-4491-bc3c-89e9ad55708a",
+                        "title": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                        "sku": "5961352229473",
+                        "price": {
+                            "amount": 52,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 34,
+                            "currencyCode": "qar"
+                        },
+                        "images": [
+                            {
+                                "uuid": "18db4880-5e08-4530-bc86-da268c7f56d6",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/cd9ca367-df9f-4a3c-b545-0d5cf13b741a.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/7cc24886-875b-42f4-8fdd-31ca362a79c7.webp",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+Get Products In Desired Campaign
+--------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getProductsInDesiredCampaign(slug: $slug, language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    title(language: $language)
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    status
+    variants {
+      uuid
+      title(language: $language)
+      sku
+      price(currency: $currency) {
+        amount
+        currencyCode
+      }
+      discountedPrice(currency: $currency) {
+        amount
+        currencyCode
+      }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
+    }
+  }
+}
+```
+
+### GraphQL Query
+
+```json
+{
+    "slug": "summer-70",
+    "language": "en",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### GraphQL Response
+
+```json
+{
+    "data": {
+        "getProductsInDesiredCampaign": [
+            {
+                "uuid": "a3eb9111-fbca-4773-8032-098be5253491",
+                "slug": "new-style-2026-spring-short-bell-sleeve-long-slee-925264134587",
+                "title": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                "salesCount": 0,
+                "likesCount": 0,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "status": "active",
+                "variants": [
+                    {
+                        "uuid": "5ec0c0ec-4dc0-4491-bc3c-89e9ad55708a",
+                        "title": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                        "sku": "5961352229473",
+                        "price": {
+                            "amount": 52,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 34,
+                            "currencyCode": "qar"
+                        },
+                        "images": [
+                            {
+                                "uuid": "18db4880-5e08-4530-bc86-da268c7f56d6",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/cd9ca367-df9f-4a3c-b545-0d5cf13b741a.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/7cc24886-875b-42f4-8fdd-31ca362a79c7.webp",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
+```

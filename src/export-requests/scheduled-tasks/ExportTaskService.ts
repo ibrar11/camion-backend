@@ -329,8 +329,8 @@ export class ExportTaskService {
 					titleAr: product.titleAr,
 					url: `https://camion-app.com/en/shop/${product.slug}?variant=${product.variants[0].uuid}`, // TODO:
 					cost: product.variants[0].cost,
-					price: await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], CurrencyCode.QAR, false),
-					discountedPrice: await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], CurrencyCode.QAR, true),
+					price: await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], null, CurrencyCode.QAR, false),
+					discountedPrice: await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], null, CurrencyCode.QAR, true),
 					category: category ?? emptyCategory,
 					subCategory: subCategory ?? emptyCategory,
 					tertiaryCategory: tertiaryCategory ?? emptyCategory,

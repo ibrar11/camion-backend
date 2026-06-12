@@ -17,6 +17,8 @@ import {
 
 import { Exclude } from "class-transformer";
 
+import { Campaign } from "../../campaigns/entities/campaign.entity";
+
 import { ProductStatus } from "../enums/ProductStatus.enum";
 
 import { ProductOption } from "./product-option.entity";
@@ -243,4 +245,8 @@ export class Product {
 		type: "timestamptz",
 	})
 	createdAt: Date;
+
+	/// DO NOT ADD THE PROPERTIES BELOW TO THE SCHEMA ///
+	@Field(() => Campaign)
+	campaign: Campaign | null;
 }

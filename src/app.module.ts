@@ -142,6 +142,10 @@ import { JopWmsOrder } from './jop-wms/entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from './jop-wms/entities/jop-wms-order-link.entity';
 import { DataModule } from './data/data.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
+
+import { Campaign } from "./campaigns/entities/campaign.entity";
+import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";
 
 @Module({
 	imports: [
@@ -275,6 +279,9 @@ import { FirebaseModule } from './firebase/firebase.module';
 					JopWmsOrderLink,
 
 					ExportRequest,
+
+					Campaign,
+					CampaignCategory,
 				],
 			}),
 		}),
@@ -333,6 +340,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 		DataModule,
 		FirebaseModule,
 		ExportRequestsModule,
+		CampaignsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

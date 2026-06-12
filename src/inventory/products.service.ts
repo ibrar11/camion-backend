@@ -40,6 +40,7 @@ import { ProductView } from "./entities/product-view.entity";
 import { QueueService } from "src/queue/queue.service";
 import { QueueName } from "src/queue/enums/QueueTypes.enum";
 import { ProductCategoryResyncJobData } from "src/queue/types";
+import { Campaign } from "src/campaigns/entities/campaign.entity";
 
 @Injectable()
 export class ProductsService {
@@ -307,9 +308,10 @@ export class ProductsService {
 	 * Populates each product with its cheapest variant
 	 *
 	 * @param products
+	 * @param campaign
 	 * @returns
 	 */
-	async __populateWithVariantsLowToHigh(products: Array<Product>): Promise<Array<Product>> {
+	async __populateWithVariantsLowToHigh(products: Array<Product>, campaign: Campaign | null): Promise<Array<Product>> {
 		if (!Array.isArray(products) || products.length === 0) {
 			return [];
 		}
@@ -349,6 +351,14 @@ export class ProductsService {
 				];
 				return product;
 			});
+
+		// Attach the campaign to the products so the pricing service can calculate the pricing based on the campaign
+		if (campaign !== null) {
+			products = products.map(product => {
+				product.campaign = campaign;
+				return product;
+			});
+		}
 
 		return formatProductVariants(products, ProductSort.PriceLowToHigh);
 	}
@@ -631,7 +641,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithVariantsLowToHigh(products);
+		return this.__populateWithVariantsLowToHigh(products, null);
 	}
 
 	/**
@@ -934,7 +944,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithVariantsLowToHigh(products);
+		return this.__populateWithVariantsLowToHigh(products, null);
 	}
 
 	/**
@@ -975,7 +985,60 @@ export class ProductsService {
 		// Create a list of products
 		const products: Array<Product> = productViews.map(view => view.product);
 
-		return this.__populateWithVariantsLowToHigh(products);
+		return this.__populateWithVariantsLowToHigh(products, null);
+	}
+
+	/**
+	 * Returns the products in the campaign
+	 *
+	 * @param campaign
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async getProductsInCampaign(campaign: Campaign, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Retrieving a list of products by campaign: ${campaign.nameEn}`);
+
+		// Make sure we have a campaign
+		if (campaign === null || campaign === undefined || !Array.isArray(campaign.campaignCategories) || campaign.campaignCategories.length === 0) {
+			return [];
+		}
+
+		// Map the categories
+		const categoryIds: Array<Category['id']> = campaign.campaignCategories.map(entry => entry.category.id);
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithVariantsLowToHigh(products, campaign);
 	}
 
 	/**
@@ -1180,7 +1243,7 @@ export class ProductsService {
 					.take(take)
 					.getMany();
 
-				return this.__populateWithVariantsLowToHigh(products);
+				return this.__populateWithVariantsLowToHigh(products, null);
 
 			case ProductSort.PriceLowToHigh:
 				// Subquery to sort variants of a product by minimum price
@@ -1217,9 +1280,10 @@ export class ProductsService {
 					.skip(skip)
 					.getMany();
 
-				return this.__populateWithVariantsLowToHigh(products);
+				return this.__populateWithVariantsLowToHigh(products, null);
 
 			case ProductSort.PriceHighToLow:
+				// Subquery to sort variants of a product by maximum price
 				const mostExpensiveVariantQuery = this.productRepository.manager.createQueryBuilder(ProductVariant, 'v')
 					.select('MAX(v.cost_amount)', 'maxCostAmount')
 					.where('v.product_id = product.id')
@@ -1347,7 +1411,7 @@ export class ProductsService {
 			});
 		}
 
-		return this.__populateWithVariantsLowToHigh(products);
+		return this.__populateWithVariantsLowToHigh(products, null);
 	}
 
 	/**
@@ -1402,7 +1466,7 @@ export class ProductsService {
 			return this.findAll("", ProductSort.Desc, pageNumber, itemsPerPage);
 		}
 
-		return this.__populateWithVariantsLowToHigh(products);
+		return this.__populateWithVariantsLowToHigh(products, null);
 	}
 
 	/**
@@ -1437,7 +1501,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithVariantsLowToHigh(products);
+		return this.__populateWithVariantsLowToHigh(products, null);
 	}
 
 	/**
@@ -1522,7 +1586,7 @@ export class ProductsService {
 			});
 		}
 
-		return this.__populateWithVariantsLowToHigh(products);
+		return this.__populateWithVariantsLowToHigh(products, null);
 	}
 
 	/**

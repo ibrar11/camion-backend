@@ -34,6 +34,8 @@ import { ProductReviewImage } from "./entities/product-review-image.entity";
 import { Category } from "./entities/category.entity";
 import { ConfigService } from "@nestjs/config";
 import { Customer } from "src/customers/entities/customer.entity";
+import { CampaignsService } from "src/campaigns/campaigns.service";
+import { Campaign } from "src/campaigns/entities/campaign.entity";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -188,6 +190,45 @@ export class GetRecentlyViewedProductsArgs {
 	itemsPerPage: number;
 }
 
+@ArgsType()
+export class GetProductsInFeaturedCampaignArgs {
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 24, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetProductsInDesiredCampaignArgs {
+	@Field({ defaultValue: "", })
+	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 24, })
+	itemsPerPage: number;
+}
+
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Product)
 export class ProductsResolver {
@@ -195,6 +236,7 @@ export class ProductsResolver {
 
 	constructor(
 		@Inject(ProductsService) private readonly productsService: ProductsService,
+		@Inject(CampaignsService) private readonly campaignsService: CampaignsService,
 		private readonly configService: ConfigService
 	) {
 		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
@@ -369,6 +411,35 @@ export class ProductsResolver {
 	getRecentlyViewedProducts(@Context('req') req: Request & { jti: string, customer: Customer, }, @Args() args: GetRecentlyViewedProductsArgs): Promise<Array<Product>> {
 		return this.productsService.getRecentlyViewedProducts(req.customer, args.pageNumber, args.itemsPerPage);
 	}
+
+	@Query(() => [Product])
+	async getProductsInFeaturedCampaign(@Args() args: GetProductsInFeaturedCampaignArgs): Promise<Array<Product>> {
+		try {
+			// Find the featured campaign
+			const campaign = await this.campaignsService.findOneFeatured();
+			if (campaign === null || campaign.campaignCategories.length === 0) {
+				return Promise.resolve([]);
+			}
+
+			return this.productsService.getProductsInCampaign(campaign, args.pageNumber, args.itemsPerPage);
+		} catch {
+			return Promise.resolve([]);
+		}
+	}
+
+	@Query(() => [Product])
+	async getProductsInDesiredCampaign(@Args() args: GetProductsInDesiredCampaignArgs): Promise<Array<Product>> {
+		try {
+			// Find the campaign by slug
+			const campaign = await this.campaignsService.findOneBySlug(args.slug);
+			if (campaign === null || campaign.campaignCategories.length === 0) {
+				return Promise.resolve([]);
+			}
+			return this.productsService.getProductsInCampaign(campaign, args.pageNumber, args.itemsPerPage);
+		} catch {
+			return Promise.resolve([]);
+		}
+	}
 }
 
 @Resolver(() => Category)
@@ -424,12 +495,12 @@ export class ProductVariantResolver {
 
 	@ResolveField("price", () => Money)
 	getPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
-		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, false);
+		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, variant.product.campaign, args.currency as CurrencyCode, false);
 	}
 
 	@ResolveField("discountedPrice", () => Money)
 	getDiscountedPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
-		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, true);
+		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, variant.product.campaign, args.currency as CurrencyCode, true);
 	}
 
 	@ResolveField("title", () => String)

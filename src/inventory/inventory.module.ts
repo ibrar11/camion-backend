@@ -77,6 +77,7 @@ import { TranslationService } from '../translation/translation.service';
 import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
 import { QueueModule } from '../queue/queue.module';
 import { ProductCategoryResyncProcessor } from './workers/product-category-resync.processor';
+import { CampaignsModule } from 'src/campaigns/campaigns.module';
 
 @Module({
 	imports: [
@@ -103,6 +104,7 @@ import { ProductCategoryResyncProcessor } from './workers/product-category-resyn
 		]),
 		ClientsModule,
 		PricingModule,
+		CampaignsModule,
 		QueueModule,
 	],
 	exports: [
