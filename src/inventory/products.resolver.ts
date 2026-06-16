@@ -132,6 +132,9 @@ export class GetFeaturedProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
 	@Field({ defaultValue: "usd", })
 	currency: string;
 
@@ -370,7 +373,7 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	getProductsByCategory(@Args() args: GetProductsByCategoryArgs): Promise<Array<Product>> {
-		return this.productsService.findAllByCategory(args.slug, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAllByCategory(args.slug, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => Product, { nullable: true, })
@@ -394,7 +397,7 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	getFeaturedProducts(@Args() args: GetFeaturedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getFeaturedProducts(args.pageNumber, args.itemsPerPage);
+		return this.productsService.getFeaturedProducts(args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
