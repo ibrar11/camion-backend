@@ -103,10 +103,10 @@ export class PricingService {
 		}
 
 		// The discount factor applied on each product variant
-		let discountPercentage: number = 1;
+		let discountPercentage: number = 0;
 
 		// Apply the discount factor from the campaign
-		if (product !== null && campaign !== null && campaign !== undefined) {
+		if (product !== null && campaign !== null && campaign !== undefined && campaign.isActive) {
 			discountPercentage = Math.max(discountPercentage, campaign.discountPercentage);
 		}
 
