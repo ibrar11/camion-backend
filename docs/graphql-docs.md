@@ -838,19 +838,26 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
 Get Featured Products
 ---------------------
 
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
 ### Request Body
 
 ```graphql
-query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: Int, $itemsPerPage: Int) {
-  getFeaturedProducts(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+query GetFeaturedProducts($language: String, $sort: String, $currency: String!, $pageNumber: Int, $itemsPerPage: Int) {
+  getFeaturedProducts(language: $language, sort: $sort, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
     uuid
     slug
     title(language: $language)
     brief(language: $language)
     description(language: $language)
-    descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -885,9 +892,10 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
 ```json
 {
     "language":"en",
+    "sort": "price:high-to-low",
     "currency": "qar",
     "pageNumber": 1,
-    "itemsPerPage": 2
+    "itemsPerPage": 24
 }
 ```
 
@@ -1369,12 +1377,22 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
 Get Products By Category
 ------------------------
 
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
 ### Request Body
 
 ```graphql
 query GetProductsByCategory($slug: String!, $language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
   getProductsByCategory(slug: $slug, language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
-   uuid
+    uuid
     slug
     title(language: $language)
     brief(language: $language)
@@ -1413,7 +1431,8 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
 
 ```json
 {
-    "slug": "iphones",
+    "slug": "women-shirts",
+    "sort": "price:low-to-high",
     "language": "en",
     "currency": "qar",
     "pageNumber": 1,

@@ -148,10 +148,12 @@ export class Product {
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
 	salesCount: number;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
 	likesCount: number;
 
 	@Field()
@@ -167,6 +169,7 @@ export class Product {
 	ratingSum: number;
 
 	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
 	ratingCount: number;
 
 	@Field()

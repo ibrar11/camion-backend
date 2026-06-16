@@ -421,7 +421,7 @@ type Query {
   getCustomerWishlistCount: Float!
   getFeaturedCampaign(language: String! = "en"): Campaign!
   getFeaturedCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
-  getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
   getLanguages: [Language!]!
   getMinimumOrderValue(currency: String! = "usd"): KeyValuePair!
   getNotifications: [Notification!]!
