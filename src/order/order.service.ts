@@ -289,8 +289,8 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
 
-                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, true);
                 const totalAmount = priceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
@@ -1097,8 +1097,8 @@ export class OrderService {
                     );
                 }
 
-                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
-                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, currencyCode, true);
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
+                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, currencyCode, true);
 
                 const itemTotal = priceDiscount.amount * item.quantity;
                 subTotal += itemTotal;

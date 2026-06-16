@@ -110,8 +110,8 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, true);
+        // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, null, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, null, body.currency, true);
 
         // check if the variant already exists
         const existingCartItem = await this.cartRepository.findOne({
@@ -247,6 +247,7 @@ export class CartItemsService {
             const price = await this.pricingService.applyPriceOnProductVariant(
                 cartItem.product,
                 cartItem.variant,
+                null,
                 currency,
                 true,
             );
@@ -391,8 +392,8 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, true);
+        // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, true);
 
         //Check if a cart item with the target variant already exists
         const existingItem = await this.cartRepository.findOne({
@@ -492,7 +493,7 @@ export class CartItemsService {
         await this.cartRepository.remove(cartItem);
 
         cartItem.customer.cartItemsCount--;
-        if(cartItem.customer.cartItemsCount < 0) {
+        if (cartItem.customer.cartItemsCount < 0) {
             cartItem.customer.cartItemsCount = 0;
         }
         await this.customerRepository.save(cartItem.customer);
