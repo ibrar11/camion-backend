@@ -118,6 +118,7 @@ GET /v1/orders HTTP/1.1
 Name | Description | Default
 -----|-------------|--------
 status | Filter by order status | _(all)_
+filters | A JSON string containing your search term, or any advanced search parameters. | `{}`
 pageNumber | Page number | `1`
 itemsPerPage | Results per page | `100`
 
