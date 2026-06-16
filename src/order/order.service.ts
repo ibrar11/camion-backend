@@ -596,10 +596,20 @@ export class OrderService {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+            let filtersObject: {
+                customerUUID?: string,
+            } = {};
+            try {
+                filtersObject = JSON.parse(filters);
+            } catch {
+                this.logger.warn("Unable to parse filters. Please check the documentation and try again.");
+            }            
             const filter: OrderFilters = {}
 
-            if (status) {
+            if (status || filtersObject) {
                 filter.status = status;
+                filter.customer = { uuid: filtersObject?.customerUUID };
             }
 
             const orders = await this.orderRepository.find({
