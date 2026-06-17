@@ -213,6 +213,21 @@ export class PushNotificationService {
                             body: notification.message,
                             ...(imageUrl && { imageUrl }),
                         },
+                        android: {
+                            notification: {
+                                imageUrl,
+                            },
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    "mutable-content": 1,
+                                },
+                            },
+                            fcmOptions: {
+                                imageUrl,
+                            },
+                        },
                     };
 
                     const response = await this.firebase.messaging().sendEachForMulticast(multicastMessage);
