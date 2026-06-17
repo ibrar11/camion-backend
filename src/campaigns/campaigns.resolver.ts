@@ -71,8 +71,12 @@ export class CampaignsResolver {
 		return this.campaignsService.findAll("", "", args.pageNumber, args.itemsPerPage);
 	}
 
-	@Query(() => Campaign)
-	getFeaturedCampaign(@Args() args: GetFeaturedCampaignArgs): Promise<Campaign> {
-		return this.campaignsService.findOneFeatured();
+	@Query(() => Campaign, { nullable: true, })
+	async getFeaturedCampaign(@Args() args: GetFeaturedCampaignArgs): Promise<Campaign | null> {
+		try {
+			return await this.campaignsService.findOneFeatured();
+		} catch {
+			return Promise.resolve(null);
+		}
 	}
 }

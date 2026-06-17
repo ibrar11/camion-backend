@@ -254,11 +254,14 @@ export class CampaignsService {
 			},
 		});
 
+		// Make sure a campaign exists
 		if (campaign === null) {
 			throw new NotFoundException({
 				error: "Failed to find the campaign. Please check and try again.",
 			});
 		}
+
+		// Make sure the campaign isn't expired
 
 		return campaign;
 	}
