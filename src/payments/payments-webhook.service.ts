@@ -208,7 +208,7 @@ export class PaymentsWebhookService {
             }
 
             if (notification?.uuid) {
-                this.logger.log(`Attempting to create psuh notification for payment status: ${JSON.stringify(transaction.order.uuid)}`);
+                this.logger.log(`Attempting to create push notification for payment status: ${JSON.stringify(transaction.order.uuid)}`);
                 await this.pushNotificationService.sendToToken(notification?.uuid)
             }
 
