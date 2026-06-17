@@ -55,6 +55,15 @@ export class CampaignsService {
 			}
 		}
 
+		// Make sure the finishesAt is not in the past
+		if (new Date().getTime() >= new Date(body.finishesAt).getTime()) {
+			throw new BadRequestException({
+				errors: {
+					finishesAt: "Please make sure that the campaign finishes in the future.",
+				},
+			});
+		}
+
 		// Create a campaign
 		const campaign = new Campaign();
 		campaign.uuid = crypto.randomUUID();
@@ -278,6 +287,15 @@ export class CampaignsService {
 		if (campaign === null) {
 			throw new NotFoundException({
 				error: "Failed to find the campaign. Please check and try again.",
+			});
+		}
+
+		// Make sure the finishesAt is not in the past
+		if (new Date().getTime() >= new Date(body.finishesAt).getTime()) {
+			throw new BadRequestException({
+				errors: {
+					finishesAt: "Please make sure that the campaign finishes in the future.",
+				},
 			});
 		}
 
