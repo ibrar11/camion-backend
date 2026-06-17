@@ -2,6 +2,8 @@ import {
     Body,
     Controller,
     Headers,
+    HttpCode,
+    HttpStatus,
     Post,
 } from "@nestjs/common";
 
@@ -16,6 +18,7 @@ export class PaymentsWebhookController {
     constructor(private readonly webhookService: PaymentsWebhookService) { }
 
     @Post("skipcash")
+    @HttpCode(HttpStatus.OK)
     async handleSkipcash(
         @Body() payload: SkipcashWebhookDto,
         @Headers("authorization") signature: string,
