@@ -495,48 +495,151 @@ export class ProcurementService {
                 });
             }
 
-            const description = extractFormattedText(product.description);
+            const chineseTexts: string[] = [];
+            const translationMap = new Map<string, string>(); // Map original Chinese -> index in array
 
+            // Helper to add text to batch if it's Chinese (contains Chinese characters)
+            const addIfChinese = (text: string): number | null => {
+                if (!text || text.trim().length === 0) return null;
+
+                // Check if contains Chinese characters (Unicode range: \u4e00-\u9fa5)
+                const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+                if (hasChinese) {
+                    // Avoid duplicates
+                    if (!translationMap.has(text)) {
+                        translationMap.set(text, text);
+                        chineseTexts.push(text);
+                        return chineseTexts.length - 1;
+                    }
+                    return Array.from(translationMap.keys()).indexOf(text);
+                }
+                return null;
+            };
+
+            // Extract subject (title)
+            const subjectCh = product.subject || '';
+            const subjectTrans = product.subjectTrans || '';
+            addIfChinese(subjectTrans || subjectCh);
+
+            // Extract product attributes (options)
+            const attributes = product.productAttribute ?? [];
+            for (const attr of attributes) {
+                addIfChinese(attr.attributeNameTrans || attr.attributeName);
+                addIfChinese(attr.valueTrans || attr.value);
+            }
+
+            // Extract SKU attributes (variant options)
+            const skus = product.productSkuInfos ?? [];
+            for (const sku of skus) {
+                const skuAttributes = sku.skuAttributes ?? [];
+                for (const attr of skuAttributes) {
+                    addIfChinese(attr.attributeNameTrans || attr.attributeName);
+                    addIfChinese(attr.valueTrans || attr.value);
+                }
+            }
+
+            this.logger.log(`Found ${chineseTexts.length} Chinese text segments to translate`);
+
+            let translations: string[] = [];
+
+            if (chineseTexts.length > 0) {
+                try {
+                    const translationResponse = await fetch(
+                        `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/batch`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                texts: chineseTexts,
+                                sourceLanguage: 'ch',  // Chinese
+                                targetLanguage: 'en',
+                            }),
+                        },
+                    );
+
+                    if (translationResponse.ok) {
+                        translations = await translationResponse.json();
+                        this.logger.log(`Successfully translated ${translations.length} Chinese segments`);
+                    } else {
+                        this.logger.warn(`Translation API returned ${translationResponse.status}, using original text`);
+                        translations = chineseTexts; // Fallback to original
+                    }
+                } catch (error: any) {
+                    this.logger.error(`Batch translation failed: ${error.message}`);
+                    translations = chineseTexts; // Fallback to original
+                }
+            }
+
+            const getTranslatedText = (originalText: string): string => {
+                if (!originalText) return originalText;
+
+                // Check if already English (no Chinese characters)
+                const hasChinese = /[\u4e00-\u9fa5]/.test(originalText);
+                if (!hasChinese) return originalText;
+
+                const index = chineseTexts.indexOf(originalText);
+                if (index !== -1 && translations[index]) {
+                    return translations[index];
+                }
+                return originalText;
+            };
+
+
+            const description = extractFormattedText(product.description);
             let descriptionTrans: string = '';
-            if (product.descriptionTrans) {
+
+            if (product.descriptionTrans && !(/[\u4e00-\u9fa5]/.test(product.descriptionTrans))) {
                 descriptionTrans = extractFormattedText(product.descriptionTrans);
             } else if (description.length > 0) {
-                this.logger.log(`Attempting to translate product descritpion: ${product?.offerId}`);
-                const translation = await await fetch(
-                    `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/batch`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            texts: [description],
-                            sourceLanguage: 'ch',
-                            targetLanguage: 'en',
-                        }),
-                    },
-                );
-                const data: string[] = await translation.json();
-                descriptionTrans = data?.[0] || "";
-            }
-
-            const skus = product.productSkuInfos ?? [];
-
-            const getName = (attr: SkuAttribute | ProductAttribute) => {
-                return attr.attributeNameTrans || attr.attributeName;
-            }
-
-            const getValue = (attr: SkuAttribute | ProductAttribute) => {
-                return attr.valueTrans || attr.value;
+                // If description needs translation and wasn't in batch (because it might be English already)
+                const hasChineseDesc = /[\u4e00-\u9fa5]/.test(description);
+                if (hasChineseDesc) {
+                    // Single translation for description
+                    try {
+                        const translationResponse = await fetch(
+                            `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    text: description,
+                                    sourceLanguage: 'ch',
+                                    targetLanguage: 'en',
+                                }),
+                            },
+                        );
+                        const data: { translated: string } = await translationResponse.json();
+                        descriptionTrans = data?.translated || "";
+                    } catch (error: any) {
+                        this.logger.error(`Description translation failed: ${error.message}`);
+                        descriptionTrans = description;
+                    }
+                } else {
+                    descriptionTrans = description;
+                }
             }
 
             const optionsMap = new Map<string, Set<string>>();
 
-            //Extract the options and variants
+            // Helper to get option name and value with translation
+            const getOptionName = (attr: SkuAttribute | ProductAttribute): string => {
+                const name = (attr.attributeName === attr.attributeNameTrans) ? getTranslatedText(attr.attributeName) : attr.attributeNameTrans;
+                return name || attr.attributeName;
+            };
+
+            const getOptionValue = (attr: SkuAttribute | ProductAttribute): string => {
+                const value = (attr.value === attr.valueTrans) ? getTranslatedText(attr.value) : attr.valueTrans;
+                return value || attr.value;
+            };
+
             const variants = skus.map((sku: ProductSku) => {
                 const attributes = sku.skuAttributes?.map((attr: SkuAttribute) => {
-                    const name = getName(attr);
-                    const value = getValue(attr);
+                    const name = getOptionName(attr);
+                    const value = getOptionValue(attr);
 
                     if (!optionsMap.has(name)) {
                         optionsMap.set(name, new Set());
@@ -546,8 +649,13 @@ export class ProcurementService {
                     return { name, value };
                 }) ?? [];
 
-                const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
-                const shippingInfo = product.productShippingInfo.skuShippingDetails.find((detail: any) => detail.skuId === sku.skuId.toString());
+                // Create variant title from translated attribute values
+                const title = (sku.skuAttributes?.map(attr => getOptionValue(attr)).join(' ') ?? '')
+                    .trim();
+
+                const shippingInfo = product.productShippingInfo?.skuShippingDetails?.find(
+                    (detail: any) => detail.skuId === sku.skuId.toString()
+                );
 
                 const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
@@ -566,11 +674,11 @@ export class ProcurementService {
                     attributes,
                     image: skuImg,
                     shipping: {
-                        weight: smartRoundInt(shippingInfo.weight),
-                        length: smartRoundInt(shippingInfo.length),
-                        width: smartRoundInt(shippingInfo.width),
-                        height: smartRoundInt(shippingInfo.height),
-                        origin: product.productShippingInfo.sendGoodsAddressText,
+                        weight: smartRoundInt(shippingInfo?.weight || 0),
+                        length: smartRoundInt(shippingInfo?.length || 0),
+                        width: smartRoundInt(shippingInfo?.width || 0),
+                        height: smartRoundInt(shippingInfo?.height || 0),
+                        origin: product.productShippingInfo?.sendGoodsAddressText || '',
                     },
                     skuMeta: {
                         shop_id: product.sellerOpenId,
@@ -581,8 +689,8 @@ export class ProcurementService {
                         batch_number: '1',
                         imgs: product.productImage?.images ?? [],
                         specs: sku.skuAttributes?.map((attr: SkuAttribute) => ({
-                            label: attr.attributeName,
-                            value: attr.value,
+                            label: getOptionName(attr),
+                            value: getOptionValue(attr),
                         })) ?? [],
                     },
                 };
@@ -593,20 +701,57 @@ export class ProcurementService {
                 values: Array.from(values),
             }));
 
-            const attributes = (product.productAttribute ?? []).map((attr: ProductAttribute) => ({
-                name: getName(attr),
-                value: getValue(attr),
+            const formattedAttributes = (product.productAttribute ?? []).map((attr: ProductAttribute) => ({
+                name: getOptionName(attr),
+                value: getOptionValue(attr),
             }));
 
-            const slug = generateSlug(product.subjectTrans || product.subject);
-            const title = product.subjectTrans || product.subject;
-            // Format the Product
+            // Get translated title
+
+            let title = (subjectTrans || subjectCh).slice(0, 128);
+            const titleHasChinese = /[\u4e00-\u9fa5]/.test(title);
+            if (titleHasChinese) {
+                // Try to get translated title from batch
+                const translatedTitle = getTranslatedText(subjectCh);
+                if (translatedTitle !== subjectCh) {
+                    title = translatedTitle.slice(0, 128);
+                } else {
+                    // Fallback: single translation for title
+                    try {
+                        const translationResponse = await fetch(
+                            `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    text: subjectCh,
+                                    sourceLanguage: 'ch',
+                                    targetLanguage: 'en',
+                                }),
+                            },
+                        );
+                        const data: { translated: string } = await translationResponse.json();
+                        if (data?.translated) {
+                            title = data.translated.slice(0, 128);
+                        }
+                    } catch (error: any) {
+                        this.logger.error(`Title translation failed: ${error.message}`);
+                    }
+                }
+            }
+
+            const slug = generateSlug(title);
+
+            // Build and return formatted product
+
             const formattedProduct: ProductDetail = {
                 externalId: product.offerId,
                 shopId: product.sellerOpenId,
                 shopName: product.companyName,
                 slug: slug,
-                title: title.slice(0, 128),
+                title: title,
                 description: description,
                 descriptionTrans: descriptionTrans,
                 descriptionHtml: product.description,
@@ -620,7 +765,7 @@ export class ProcurementService {
                 minOrderQuantity: product.minOrderQuantity,
                 variants,
                 options,
-                attributes,
+                attributes: formattedAttributes,
                 supplier: {
                     name: product.companyName,
                     id: product.sellerOpenId,
@@ -638,6 +783,8 @@ export class ProcurementService {
                     )?.value || false,
                 },
             };
+
+            this.logger.log(`Product ${productId} processed successfully with ${variants.length} variants, ${options.length} options`);
 
             return formattedProduct;
         } catch (error: any) {
@@ -678,13 +825,14 @@ export class ProcurementService {
 
                 await Promise.all(
                     batch.map(async (id) => {
+                        let product: Product | null = null;
                         try {
                             // 1. Fetch product details from 1688
                             const productDetails = await this.getProductDetail(id);
                             let featuredImageUUID: string = '';
 
                             // 2. create product in database and
-                            const product = await this.productService.createProduct({
+                            product = await this.productService.createProduct({
                                 slug: productDetails.slug,
                                 title: {
                                     en: productDetails.title,
@@ -708,170 +856,183 @@ export class ProcurementService {
                                 procurementId: productDetails.externalId ? String(productDetails.externalId) : undefined,
                             });
 
-                            importedProductUuids.push(product.uuid);
-
                             // The product is imported as active now.
                             // const product = await this.productService.updateProductStatus(productCreated.uuid, { status: ProductStatus.ACTIVE, });
 
                             const optionValueMap = new Map<string, string>();
 
-                            // 3. create product option and product option values for product
-                            if (productDetails.options?.length) {
-                                const VARIANT_BATCH_SIZE = 5;
+                            if (product) {
+                                const currentProduct = product;
+                                // 3. create product option and product option values for product
+                                if (productDetails.options?.length) {
+                                    const VARIANT_BATCH_SIZE = 5;
 
-                                for (let i = 0; i < productDetails.options.length; i += VARIANT_BATCH_SIZE) {
-                                    const batch = productDetails.options.slice(i, i + VARIANT_BATCH_SIZE);
+                                    for (let i = 0; i < productDetails.options.length; i += VARIANT_BATCH_SIZE) {
+                                        const batch = productDetails.options.slice(i, i + VARIANT_BATCH_SIZE);
 
-                                    await Promise.all(
-                                        batch.map(async (option, index) => {
-                                            try {
-                                                const optionPayload = {
-                                                    name: {
-                                                        en: option.name?.trim().slice(0, 64),
-                                                        ar: option.name?.trim().slice(0, 64),
-                                                    },
-                                                    position: i + index + 1
-                                                };
+                                        await Promise.all(
+                                            batch.map(async (option, index) => {
+                                                try {
+                                                    const optionPayload = {
+                                                        name: {
+                                                            en: option.name?.trim().slice(0, 64),
+                                                            ar: option.name?.trim().slice(0, 64),
+                                                        },
+                                                        position: i + index + 1
+                                                    };
 
-                                                // add product options
-                                                const createdOption = await this.optionService.createProductOption(
-                                                    product.uuid,
-                                                    optionPayload,
-                                                );
-
-                                                for (let valueIndex = 0; valueIndex < option.values.length; valueIndex++) {
-                                                    try {
-                                                        const optionValuePayload = {
-                                                            value: {
-                                                                en: option.values[valueIndex]?.trim().slice(0, 64),
-                                                                ar: option.values[valueIndex]?.trim().slice(0, 64),
-                                                            },
-                                                            position: valueIndex + 1,
-                                                        };
-
-                                                        // add product options values
-                                                        const optionValue = await this.optionValueService.createProductOptionValue(
-                                                            createdOption.uuid,
-                                                            optionValuePayload
-                                                        );
-                                                        optionValueMap.set(optionValue.valueEn, optionValue.uuid);
-                                                    } catch (error: any) {
-                                                        this.logger.error(`Option value creation failed for product ${product.uuid}: ${error}`);
-                                                    }
-                                                }
-
-                                            } catch (error: any) {
-                                                this.logger.error(`Option creation failed for product ${product.uuid}: ${error}`,);
-                                            }
-                                        }),
-                                    );
-                                }
-                            }
-
-                            // 4. create product variants and product variant images
-                            if (productDetails.variants?.length) {
-                                const VARIANT_BATCH_SIZE = 5;
-                                const warehouse = dto.warehouseUUID;
-                                const hasVariantImages = productDetails.variants.some(v => !!v.image);
-
-                                let firstVariantId: string | null = null;
-                                let fallbackImagesAssigned = false;
-
-                                for (let i = 0; i < productDetails.variants.length; i += VARIANT_BATCH_SIZE) {
-                                    const batch = productDetails.variants.slice(i, i + VARIANT_BATCH_SIZE);
-
-                                    await Promise.all(
-                                        batch.map(async (variant) => {
-                                            try {
-                                                const optionValuesUuids = variant.attributes
-                                                    .map(attr => optionValueMap.get(attr.value))
-                                                    .filter((uuid): uuid is string => Boolean(uuid));
-
-                                                const dto: CreateProductVariantDto = {
-                                                    warehouse: warehouse,
-                                                    title: {
-                                                        en: variant.title?.trim().slice(0, 128) ?? '',
-                                                        ar: variant.title?.trim().slice(0, 128) ?? '',
-                                                    },
-                                                    sku: variant.skuId?.toString() || crypto.randomUUID(),
-                                                    barcode: variant.skuId?.toString() || '',
-                                                    quantity: variant.stock || 0,
-                                                    cost: {
-                                                        amount: smartRoundInt(variant.price) || 0,
-                                                        currencyCode: productDetails.currencyCode,
-                                                    },
-                                                    weight: {
-                                                        amount: variant.shipping?.weight || 0,
-                                                        unit: WeightUnit.Kilograms,
-                                                    },
-                                                    dimensions: {
-                                                        width: variant.shipping?.width || 0,
-                                                        height: variant.shipping?.height || 0,
-                                                        length: variant.shipping?.length || 0,
-                                                        unit: DimensionsUnit.Centimeter
-                                                    },
-                                                    optionValues: optionValuesUuids,
-                                                    skuMeta: variant.skuMeta,
-                                                };
-
-                                                // add product variants
-                                                const createdVariant = await this.variantService.createProductVariant(
-                                                    product.uuid,
-                                                    dto,
-                                                    true
-                                                );
-
-                                                if (!firstVariantId) {
-                                                    firstVariantId = createdVariant.uuid;
-                                                }
-
-                                                // Variant already has its own image
-                                                if (variant.image) {
-                                                    const imageFile = await fetchImageAsFile(variant.image);
-                                                    const createdImage = await this.variantImageService.createProductVariantImage(
-                                                        createdVariant.uuid,
-                                                        imageFile,
+                                                    // add product options
+                                                    const createdOption = await this.optionService.createProductOption(
+                                                        currentProduct.uuid,
+                                                        optionPayload,
                                                     );
-                                                    if (!featuredImageUUID) {
-                                                        featuredImageUUID = createdImage.uuid;
-                                                    }
-                                                    return;
-                                                }
 
-                                                //  No variant images exist → use featured images ONLY ONCE
-                                                if (!hasVariantImages && !fallbackImagesAssigned && firstVariantId === createdVariant.uuid) {
-                                                    if (Array.isArray(productDetails.images)) {
-                                                        for (const img of productDetails.images) {
-                                                            const imageFile = await fetchImageAsFile(img);
-                                                            const createdImage = await this.variantImageService.createProductVariantImage(
-                                                                createdVariant.uuid,
-                                                                imageFile,
+                                                    for (let valueIndex = 0; valueIndex < option.values.length; valueIndex++) {
+                                                        try {
+                                                            const optionValuePayload = {
+                                                                value: {
+                                                                    en: option.values[valueIndex]?.trim().slice(0, 64),
+                                                                    ar: option.values[valueIndex]?.trim().slice(0, 64),
+                                                                },
+                                                                position: valueIndex + 1,
+                                                            };
+
+                                                            // add product options values
+                                                            const optionValue = await this.optionValueService.createProductOptionValue(
+                                                                createdOption.uuid,
+                                                                optionValuePayload
                                                             );
-                                                            if (!featuredImageUUID) {
-                                                                featuredImageUUID = createdImage.uuid;
-                                                            }
+                                                            optionValueMap.set(optionValue.valueEn, optionValue.uuid);
+                                                        } catch (error: any) {
+                                                            this.logger.error(`Option value creation failed for product ${currentProduct.uuid}: ${error}`);
                                                         }
                                                     }
-                                                    fallbackImagesAssigned = true;
+
+                                                } catch (error: any) {
+                                                    this.logger.error(`Option creation failed for product ${currentProduct.uuid}: ${error}`,);
+                                                    throw error;
                                                 }
-
-                                            } catch (error: any) {
-                                                this.logger.error(`Variant creation failed for product ${product.uuid}: ${error?.message}`, error);
-                                            }
-                                        }),
-                                    );
+                                            }),
+                                        );
+                                    }
                                 }
+
+                                // 4. create product variants and product variant images
+                                if (productDetails.variants?.length) {
+                                    const VARIANT_BATCH_SIZE = 5;
+                                    const warehouse = dto.warehouseUUID;
+                                    const hasVariantImages = productDetails.variants.some(v => !!v.image);
+
+                                    let firstVariantId: string | null = null;
+                                    let fallbackImagesAssigned = false;
+
+                                    for (let i = 0; i < productDetails.variants.length; i += VARIANT_BATCH_SIZE) {
+                                        const batch = productDetails.variants.slice(i, i + VARIANT_BATCH_SIZE);
+
+                                        await Promise.all(
+                                            batch.map(async (variant) => {
+                                                try {
+                                                    const optionValuesUuids = variant.attributes
+                                                        .map(attr => optionValueMap.get(attr.value))
+                                                        .filter((uuid): uuid is string => Boolean(uuid));
+
+                                                    const dto: CreateProductVariantDto = {
+                                                        warehouse: warehouse,
+                                                        title: {
+                                                            en: variant.title?.trim().slice(0, 128) ?? '',
+                                                            ar: variant.title?.trim().slice(0, 128) ?? '',
+                                                        },
+                                                        sku: variant.skuId?.toString() || crypto.randomUUID(),
+                                                        barcode: variant.skuId?.toString() || '',
+                                                        quantity: variant.stock || 0,
+                                                        cost: {
+                                                            amount: smartRoundInt(variant.price) || 0,
+                                                            currencyCode: productDetails.currencyCode,
+                                                        },
+                                                        weight: {
+                                                            amount: variant.shipping?.weight || 0,
+                                                            unit: WeightUnit.Kilograms,
+                                                        },
+                                                        dimensions: {
+                                                            width: variant.shipping?.width || 0,
+                                                            height: variant.shipping?.height || 0,
+                                                            length: variant.shipping?.length || 0,
+                                                            unit: DimensionsUnit.Centimeter
+                                                        },
+                                                        optionValues: optionValuesUuids,
+                                                        skuMeta: variant.skuMeta,
+                                                    };
+
+                                                    // add product variants
+                                                    const createdVariant = await this.variantService.createProductVariant(
+                                                        currentProduct.uuid,
+                                                        dto,
+                                                        true
+                                                    );
+
+                                                    if (!firstVariantId) {
+                                                        firstVariantId = createdVariant.uuid;
+                                                    }
+
+                                                    // Variant already has its own image
+                                                    if (variant.image) {
+                                                        const imageFile = await fetchImageAsFile(variant.image);
+                                                        const createdImage = await this.variantImageService.createProductVariantImage(
+                                                            createdVariant.uuid,
+                                                            imageFile,
+                                                        );
+                                                        if (!featuredImageUUID) {
+                                                            featuredImageUUID = createdImage.uuid;
+                                                        }
+                                                        return;
+                                                    }
+
+                                                    //  No variant images exist → use featured images ONLY ONCE
+                                                    if (!hasVariantImages && !fallbackImagesAssigned && firstVariantId === createdVariant.uuid) {
+                                                        if (Array.isArray(productDetails.images)) {
+                                                            for (const img of productDetails.images) {
+                                                                const imageFile = await fetchImageAsFile(img);
+                                                                const createdImage = await this.variantImageService.createProductVariantImage(
+                                                                    createdVariant.uuid,
+                                                                    imageFile,
+                                                                );
+                                                                if (!featuredImageUUID) {
+                                                                    featuredImageUUID = createdImage.uuid;
+                                                                }
+                                                            }
+                                                        }
+                                                        fallbackImagesAssigned = true;
+                                                    }
+
+                                                } catch (error: any) {
+                                                    this.logger.error(`Variant creation failed for product ${currentProduct.uuid}: ${error?.message}`, error);
+                                                    throw error;
+                                                }
+                                            }),
+                                        );
+                                    }
+                                }
+
+                                if (featuredImageUUID) {
+                                    await this.productService.updateProductFeaturedImage(product.uuid, { imageUUID: featuredImageUUID })
+                                }
+
                             }
-
-                            await this.productService.updateProductFeaturedImage(product.uuid, { imageUUID: featuredImageUUID })
-
                             results.success.push({
                                 externalId: id,
                                 product: product
                             });
 
+                            importedProductUuids.push(product.uuid);
+
                         } catch (error: any) {
                             this.logger.error(`Failed importing product ${id}: ${error}`);
+
+                            if (product?.uuid) {
+                                await this.productRepository.delete({
+                                    uuid: product.uuid
+                                })
+                            }
 
                             results.failed.push({
                                 id,
@@ -970,8 +1131,6 @@ export class ProcurementService {
                                 procurementId: item.externalId ? String(item.externalId) : undefined,
                             });
 
-                            savedProductUuids.push(product.uuid);
-
                             const optionValueMap = new Map<string, string>();
 
                             // 3. create product option and product option values for product
@@ -1023,6 +1182,7 @@ export class ProcurementService {
 
                                                 } catch (error: any) {
                                                     this.logger.error(`Option creation failed for product ${currentProduct.uuid}: ${error}`,);
+                                                    throw error;
                                                 }
                                             }),
                                         );
@@ -1098,6 +1258,7 @@ export class ProcurementService {
 
                                                 } catch (error: any) {
                                                     this.logger.error(`Variant creation failed for product ${currentProduct.uuid}: ${error?.message}`, error);
+                                                    throw error;
                                                 }
                                             }),
                                         );
@@ -1110,6 +1271,8 @@ export class ProcurementService {
                             }
 
                             results.success.push(product);
+                            
+                            savedProductUuids.push(product.uuid);
 
                         } catch (error: any) {
                             this.logger.error(`Failed importing product ${item.externalId}: ${error}`);
