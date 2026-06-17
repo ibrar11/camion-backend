@@ -423,7 +423,6 @@ export class ProductsResolver {
 			if (campaign === null || campaign.campaignCategories.length === 0) {
 				return Promise.resolve([]);
 			}
-
 			return this.productsService.getProductsInCampaign(campaign, args.pageNumber, args.itemsPerPage);
 		} catch {
 			return Promise.resolve([]);
