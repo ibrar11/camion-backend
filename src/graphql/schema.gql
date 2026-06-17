@@ -419,7 +419,7 @@ type Query {
   getCustomerCartCount: Float!
   getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
-  getFeaturedCampaign(language: String! = "en"): Campaign!
+  getFeaturedCampaign(language: String! = "en"): Campaign
   getFeaturedCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
   getLanguages: [Language!]!

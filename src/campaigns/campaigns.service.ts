@@ -243,6 +243,8 @@ export class CampaignsService {
 
 		// Find the featured category
 		const campaign = await this.campaignRepository.findOne({
+			// cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				isActive: true,
 				isFeatured: true,
@@ -262,6 +264,13 @@ export class CampaignsService {
 		}
 
 		// Make sure the campaign isn't expired
+		if (new Date().getTime() >= campaign.finishesAt.getTime()) {
+			throw new BadRequestException({
+				errors: {
+					finishesAt: "Please make sure that the campaign finishes in the future.",
+				},
+			});
+		}
 
 		return campaign;
 	}
