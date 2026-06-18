@@ -51,6 +51,8 @@ import { CartItem } from "../cart/entities/cart-items.entity";
 
 import { calculateStock } from "../common/calculateStock";
 
+import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
+
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
@@ -353,6 +355,9 @@ export class CustomerAuthService {
 						customer: {
 							id: customer.id,
 						},
+						product: {
+							status: ProductStatus.ACTIVE
+						},
 					},
 				});
 
@@ -525,6 +530,9 @@ export class CustomerAuthService {
 					where: {
 						customer: {
 							id: customer.id,
+						},
+						product: {
+							status: ProductStatus.ACTIVE
 						},
 					},
 				});
