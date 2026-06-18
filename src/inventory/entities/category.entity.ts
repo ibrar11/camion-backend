@@ -80,6 +80,10 @@ export class Category {
 	@OneToMany(() => Category, (category) => category.parent)
 	children: Array<Category>;
 
+	@Field()
+	@Column({ name: "products_count", type: "int", default: 0, })
+	productsCount: number;
+
 	@OneToMany(() => ProductCategory, (productCategory) => productCategory.category)
 	productCategories: Array<ProductCategory>;
 

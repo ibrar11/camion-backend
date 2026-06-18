@@ -347,6 +347,18 @@ export class CustomerAuthService {
 					}
 				}
 
+				// Update cart count
+				const cartItemsCount = await this.cartItemRepository.count({
+					where: {
+						customer: {
+							id: customer.id,
+						},
+					},
+				});
+
+				customer.cartItemsCount = cartItemsCount;
+				await this.customerRepository.save(customer);
+
 				// Deactivate guest to prevent re-merge
 				guestCustomer.isActive = false;
 				await this.customerRepository.save(guestCustomer);
@@ -507,6 +519,18 @@ export class CustomerAuthService {
 						await this.cartItemRepository.remove(guestItemsToRemove);
 					}
 				}
+
+				// Update cart count
+				const cartItemsCount = await this.cartItemRepository.count({
+					where: {
+						customer: {
+							id: customer.id,
+						},
+					},
+				});
+
+				customer.cartItemsCount = cartItemsCount;
+				await this.customerRepository.save(customer);
 
 				// Deactivate guest to prevent re-merge
 				guestCustomer.isActive = false;

@@ -115,6 +115,18 @@ export class ProductsService {
 		return [...expandedUuids];
 	}
 
+	private async recalculateCategoryProductsCount(categoryIds: number[]): Promise<void> {
+		if (categoryIds.length === 0) return;
+		await this.categoryRepository
+			.createQueryBuilder()
+			.update(Category)
+			.set({
+				productsCount: () => `(SELECT COUNT(*) FROM product_categories WHERE product_categories.category_id = categories.id)`,
+			})
+			.whereInIds(categoryIds)
+			.execute();
+	}
+
 	private async syncProductCategories(
 		product: Product,
 		categoryUuids: string[],
@@ -123,27 +135,39 @@ export class ProductsService {
 			byId: Map<number, Pick<Category, "id" | "uuid" | "parentId">>;
 		},
 	): Promise<void> {
+		const oldProductCategories = await this.productCategoryRepository.find({
+			where: { product: { id: product.id } },
+			relations: { category: true },
+		});
+		const oldCategoryIds = oldProductCategories
+			.map((pc) => pc.category?.id)
+			.filter((id): id is number => id !== undefined);
+
 		await this.productCategoryRepository.delete({
 			product: { id: product.id },
 		});
 
 		const expandedCategoryUuids = await this.expandCategoryUuidsWithAncestors(categoryUuids, categoryMaps);
-		if (expandedCategoryUuids.length === 0) {
-			return;
+
+		const newCategoryIds: number[] = [];
+		if (expandedCategoryUuids.length > 0) {
+			const categories = await this.categoryRepository.findBy({
+				uuid: In(expandedCategoryUuids),
+			});
+			const categoriesByUuid = new Map(categories.map((category) => [category.uuid, category]));
+			for (const categoryUUID of expandedCategoryUuids) {
+				const category = categoriesByUuid.get(categoryUUID);
+				if (!category) continue;
+				const productCategory = new ProductCategory();
+				productCategory.product = product;
+				productCategory.category = category;
+				await this.productCategoryRepository.save(productCategory);
+				newCategoryIds.push(category.id);
+			}
 		}
 
-		const categories = await this.categoryRepository.findBy({
-			uuid: In(expandedCategoryUuids),
-		});
-		const categoriesByUuid = new Map(categories.map((category) => [category.uuid, category]));
-		for (const categoryUUID of expandedCategoryUuids) {
-			const category = categoriesByUuid.get(categoryUUID);
-			if (!category) continue;
-			const productCategory = new ProductCategory();
-			productCategory.product = product;
-			productCategory.category = category;
-			await this.productCategoryRepository.save(productCategory);
-		}
+		const allAffectedCategoryIds = [...new Set([...oldCategoryIds, ...newCategoryIds])];
+		await this.recalculateCategoryProductsCount(allAffectedCategoryIds);
 	}
 
 	async enqueueProductCategoriesResync(body: {
@@ -2213,8 +2237,17 @@ export class ProductsService {
 	 * @param uuid
 	 */
 	async delete(uuid: string): Promise<void> {
-		await this.productRepository.delete({
-			uuid: uuid,
+		const product = await this.productRepository.findOne({
+			where: { uuid },
+			relations: { productCategories: { category: true } },
 		});
+
+		const categoryIds = (product?.productCategories ?? [])
+			.map((pc) => pc.category?.id)
+			.filter((id): id is number => id !== undefined);
+
+		await this.productRepository.delete({ uuid });
+
+		await this.recalculateCategoryProductsCount(categoryIds);
 	}
 }
