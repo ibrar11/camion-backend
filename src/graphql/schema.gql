@@ -53,6 +53,9 @@ type Banner {
 }
 
 type Campaign {
+  brief(language: String! = "en"): String!
+  briefAr: String!
+  briefEn: String!
   campaignCategories: [CampaignCategory!]!
   discountPercentage: Int!
   finishesAt: String!
@@ -282,7 +285,7 @@ type Product {
   brief(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   briefAr: String!
   briefEn: String!
-  campaign: Campaign!
+  campaign: Campaign
   description(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   descriptionAr: String!
   descriptionEn: String!
@@ -426,7 +429,7 @@ type Query {
   getLanguages: [Language!]!
   getMinimumOrderValue(currency: String! = "usd"): KeyValuePair!
   getNotifications: [Notification!]!
-  getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Product!]!
+  getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "most-viewed"): [Product!]!
   getPost(slug: String!): Post!
   getPosts: [Post!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product

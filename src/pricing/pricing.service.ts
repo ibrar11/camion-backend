@@ -80,7 +80,7 @@ export class PricingService {
 		}
 
 		// Make sure we have an exchange rate
-		if (!Array.isArray(this.exchangeRates)) {
+		if (!Array.isArray(this.exchangeRates) || this.exchangeRates.length === 0) {
 			this.logger.error(`Failed to find the exchange rates. Please create exchange rates for target currency code: ${currency}`);
 			return {
 				amount: -1,
@@ -88,16 +88,12 @@ export class PricingService {
 			};
 		}
 
-		// Find the exchange rate for the request currency code
-		let exchangeRate = this.exchangeRates
-			.filter(exchangeRate => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim())
-			.at(0) ?? null;
-
-		// If there is no exchange rate, we will no longer continue
+		// Find the exchange rate for the request currency code, if there is no exchange rate, we will no longer continue
+		const exchangeRate = this.exchangeRates.find(exchangeRate => exchangeRate.targetCurrencyCode.toLowerCase().trim() === currency.toLowerCase().trim()) ?? null;
 		if (exchangeRate === null) {
 			this.logger.error(`Failed to find the exchange rate for currency code: ${currency}`);
 			return {
-				amount: -1,
+				amount: -2,
 				currencyCode: currency,
 			};
 		}

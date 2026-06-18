@@ -53,7 +53,19 @@ export class CampaignsResolver {
 			"ar": campaign.nameAr,
 		};
 
-		return nameMap[language] ?? campaign.nameEn;
+		return nameMap[language] ?? "";
+	}
+
+	@ResolveField("brief", () => String)
+	getBrief(@Parent() campaign: Campaign, @Args() args: GetFeaturedCampaignArgs): string {
+		const language = args.language.toLowerCase() || "en";
+
+		const briefMap = {
+			"en": campaign.briefEn,
+			"ar": campaign.briefAr,
+		};
+
+		return briefMap[language] ?? "";
 	}
 
 	@ResolveField("startsAt", () => String)

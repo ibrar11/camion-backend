@@ -22,9 +22,24 @@ export class NameField {
 	ar: string;
 }
 
+export class BriefField {
+	@IsString()
+	@MinLength(1)
+	@MaxLength(256)
+	ar: string;
+
+	@IsString()
+	@MinLength(1)
+	@MaxLength(256)
+	en: string;
+}
+
 export class CreateCampaignDto {
 	@ValidateNested()
 	readonly name: NameField;
+
+	@ValidateNested()
+	readonly brief: BriefField;
 
 	@IsString()
 	@MinLength(1)

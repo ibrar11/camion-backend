@@ -37,6 +37,17 @@ export class Campaign {
 	@Column({ type: "varchar", length: 64, })
 	nameAr: string;
 
+	@Field(() => String, { name: "brief" })
+	brief: string;
+
+	@Field(() => String)
+	@Column({ type: "varchar", default: "", length: 256, })
+	briefEn: string;
+
+	@Field(() => String)
+	@Column({ type: "varchar", default: "", length: 256, })
+	briefAr: string;
+
 	@Field()
 	@Column({ type: "varchar", length: 64, nullable: false, unique: true, })
 	slug: string;

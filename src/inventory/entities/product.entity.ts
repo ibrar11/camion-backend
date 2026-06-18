@@ -66,6 +66,7 @@ export class Product {
 	CREATE INDEX "idx_products_search_en" ON "products" USING gin("search_vector_en");
 	*/
 
+	@Exclude()
 	@Column({
 		type: 'tsvector',
 		asExpression: `to_tsvector('english', coalesce(title_en, ''))`,
@@ -75,6 +76,7 @@ export class Product {
 	@Index('idx_products_search_en', { unique: false })
 	tsvTitleEn: string;
 
+	@Exclude()
 	@Column({
 		type: 'tsvector',
 		asExpression: `to_tsvector('arabic', coalesce(title_ar, ''))`,
@@ -250,6 +252,9 @@ export class Product {
 	createdAt: Date;
 
 	/// DO NOT ADD THE PROPERTIES BELOW TO THE SCHEMA ///
-	@Field(() => Campaign)
+
+	/// Campaign ///
+	// Campaign is dynamically attached to the product entity
+	@Field(() => Campaign, { nullable: true, })
 	campaign: Campaign | null;
 }
