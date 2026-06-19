@@ -65,3 +65,20 @@ export class OrderTracking {
     @Field()
     canRetryOutbound: boolean;
 }
+
+export class OrderTrackingSteps {
+    orderPlaced: boolean;
+    paymentPending: boolean;
+    paymentConfirmed: boolean;
+    paymentRejected: boolean;
+    orderConfirmed: boolean;
+    /** false = not cancelled, true = cancelled (no reason), string = cancellation reason */
+    orderCancelled: boolean | string;
+    processing: boolean;
+    packing: boolean;
+    dispatching: boolean;
+    shipped: boolean;
+    trackingId: string | null;
+    orderDelivered: boolean;
+    orderReview: { rating: number; text: string } | null;
+}

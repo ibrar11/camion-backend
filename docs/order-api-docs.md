@@ -450,14 +450,18 @@ Update Order
 PATCH /v1/orders/<order-uuid>/status HTTP/1.1
 ```
 
+Admin only (`SuperAdmin` or `Admin` role).
+
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
-status | Yes | String | new status for order
+status | Yes | String | New status for the order
+cancellationReason | No | String | Human-readable reason stored on the order when `status` is `cancelled`
 
 ### Request Body
 ```json
 {
     "status": "cancelled",
+    "cancellationReason": "Out of stock"
 }
 ```
 
@@ -544,106 +548,110 @@ DELETE /v1/orders/<order-uuid> HTTP/1.1
 Order Tracking
 --------------
 
-Tracking is computed on the backend and embedded as a `tracking` object on every order response — no separate call needed. The `/tracking` endpoint is a convenience alias that returns the same order shape.
+Returns a step-by-step map of the order's lifecycle so the frontend can render a visual timeline — each step is either completed (`true`) or pending (`false`/`null`).
 
 Customers can only retrieve tracking for their own orders; admins can query any order.
-
-> **GraphQL**: The `tracking` field is available on both `getCurrentCustomerOrder` and `getCurrentCustomerOrders`. No separate query needed — just add `tracking { stage status waybillNo }` to the existing selection set.
 
 ```http
 GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 ```
 
-The response is the full order object (same shape as `GET /v1/orders/<order-uuid>`) with `tracking` populated.
-
-### `tracking` Object
+### Response Fields
 
 | Field | Type | Description |
 |---|---|---|
-| `stage` | String | Furthest fulfillment stage reached — see values below |
-| `status` | String | Customer-friendly status label computed from internal WMS state |
-| `waybillNo` | String \| null | Carrier tracking number — populated once the order is shipped |
+| `orderPlaced` | `boolean` | Always `true` |
+| `paymentPending` | `boolean` | Payment initiated but not yet confirmed |
+| `paymentConfirmed` | `boolean` | Payment received successfully |
+| `paymentRejected` | `boolean` | Payment failed, cancelled, or rejected |
+| `orderConfirmed` | `boolean` | Admin has confirmed the order |
+| `orderCancelled` | `false \| true \| string` | `false` = not cancelled; `true` = cancelled without reason; string = cancellation reason |
+| `processing` | `boolean` | Procurement order created with 1688 supplier |
+| `packing` | `boolean` | Goods fully stored at JOP warehouse (inbound status 14) |
+| `dispatching` | `boolean` | Outbound shipment order created at JOP warehouse |
+| `shipped` | `boolean` | Outbound order physically shipped (JOP status 14) — `trackingId` is always populated when this is `true` |
+| `trackingId` | `string \| null` | Carrier waybill/tracking number once shipped |
+| `orderDelivered` | `boolean` | Order marked as delivered |
+| `orderReview` | `{ rating: number; text: string } \| null` | Customer review once submitted |
 
-### `stage` Values
-
-| Value | Meaning |
-|---|---|
-| `order` | Order placed, not yet dispatched to warehouse |
-| `inbound` | Goods being procured and shipped to the warehouse |
-| `outbound` | Goods shipped to the customer |
-
-### `status` Labels by Stage
-
-**`order` stage**
-
-| Status |
-|--------|
-| Order Confirmed |
-
-**`inbound` stage** (goods being sourced / arriving at warehouse)
-
-| Status |
-|--------|
-| Procurement in Progress |
-| Goods Being Sourced |
-| Goods Arrived at Warehouse |
-| Goods Being Processed |
-| Ready to Ship |
-| Processing Complete |
-| Order Issue — Contact Support |
-
-**`outbound` stage** (goods on the way to the customer)
-
-| Status |
-|--------|
-| Preparing Your Shipment |
-| Shipment in Progress |
-| Shipment Delayed |
-| Shipment Ready |
-| Shipped |
-| Shipment Cancelled |
-
-### Example — order not yet dispatched
+### Example — confirmed order, goods dispatched
 
 ```json
 {
-    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-    "status": "confirmed",
-    "tracking": {
-        "stage": "order",
-        "status": "Order Confirmed",
-        "waybillNo": null
-    },
-    ...
+    "orderPlaced": true,
+    "paymentPending": false,
+    "paymentConfirmed": true,
+    "paymentRejected": false,
+    "orderConfirmed": true,
+    "orderCancelled": false,
+    "processing": true,
+    "packing": true,
+    "dispatching": true,
+    "trackingId": "DHL1234567890",
+    "orderDelivered": false,
+    "orderReview": null
 }
 ```
 
-### Example — goods en route to warehouse
+### Example — payment rejected
 
 ```json
 {
-    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-    "status": "confirmed",
-    "tracking": {
-        "stage": "inbound",
-        "status": "Goods Being Sourced",
-        "waybillNo": null
-    },
-    ...
+    "orderPlaced": true,
+    "paymentPending": false,
+    "paymentConfirmed": false,
+    "paymentRejected": true,
+    "orderConfirmed": false,
+    "orderCancelled": false,
+    "processing": false,
+    "packing": false,
+    "dispatching": false,
+    "trackingId": null,
+    "orderDelivered": false,
+    "orderReview": null
 }
 ```
 
-### Example — shipped to customer
+### Example — cancelled with reason
 
 ```json
 {
-    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-    "status": "confirmed",
-    "tracking": {
-        "stage": "outbound",
-        "status": "Shipped",
-        "waybillNo": "DHL1234567890"
-    },
-    ...
+    "orderPlaced": true,
+    "paymentPending": false,
+    "paymentConfirmed": false,
+    "paymentRejected": false,
+    "orderConfirmed": false,
+    "orderCancelled": "Payment not completed within 30 minutes",
+    "processing": false,
+    "packing": false,
+    "dispatching": false,
+    "trackingId": null,
+    "orderDelivered": false,
+    "orderReview": null
 }
 ```
+
+---
+
+Payment Timeout — Auto-Cancel
+------------------------------
+
+When an order is placed, a 30-minute delayed job is queued. If the order status is still `pending` or `payment_pending` when the job fires, the order is automatically cancelled with the reason `"Payment not completed within 30 minutes"` and the customer receives a cancellation push notification.
+
+If payment arrives before the 30 minutes expire, the timeout job exits silently with no action.
+
+**Webhook reopen behaviour:** If a successful payment webhook arrives for an already-cancelled order (e.g. payment completed just after the timeout), the order is automatically reopened — status is set back to `payment_successful`, `cancellationReason` is cleared, and the customer receives a "Payment Successful" push notification and order-confirmed email.
+
+---
+
+Order Review
+-------------
+
+Customers can submit a review once an order is delivered. The review is stored on the order itself (not on the product).
+
+| Field | Type | Description |
+|---|---|---|
+| `orderReview.rating` | `number` | Star rating (numeric) |
+| `orderReview.text` | `string` | Review text |
+
+The `orderReview` field is returned in the tracking response once submitted.

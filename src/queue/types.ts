@@ -81,3 +81,8 @@ export interface ProductCategoryResyncJobData extends BaseJobData {
 export interface SkuMetaImportJobData extends BaseJobData {
     productUuids: string[];
 }
+
+
+export interface PaymentTimeoutJobData {
+    orderUuid: string;
+}
