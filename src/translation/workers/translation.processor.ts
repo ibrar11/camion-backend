@@ -275,7 +275,7 @@ export class TranslationProcessor extends WorkerHost {
                         });
                         if (productToUpdate) {
                             productToUpdate.titleAr = translatedProductTitle?.trim().slice(0, 128);
-                            productToUpdate.briefAr = translatedProductBrief;
+                            productToUpdate.briefAr = translatedProductBrief?.trim().slice(0, 256);
                             productToUpdate.descriptionAr = translatedProductDescription;
 
                             const updatedProduct = await this.productRepository.save(productToUpdate);
