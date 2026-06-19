@@ -627,8 +627,8 @@ export class OrderService {
 
             return order;
         } catch (error: any) {
-            await queryRunner.rollbackTransaction();
             this.logger.error(`Error placing order: ${error?.response?.error || error}`);
+            await queryRunner.rollbackTransaction();
             if (error instanceof HttpException) {
                 throw error;
             } else {
