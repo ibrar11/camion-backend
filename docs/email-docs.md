@@ -115,6 +115,20 @@ Creating and Configuring Templates in SendGrid
 | `SENDGRID_TEMPLATE_ORDER_DELIVERED` | `{{customerName}}`, `{{orderId}}` |
 | `SENDGRID_TEMPLATE_ORDER_CANCELLED` | `{{customerName}}`, `{{orderId}}`, `{{reason}}` |
 
+When Emails Are Sent
+--------------------
+
+| Email method | Trigger |
+|---|---|
+| `sendOrderConfirmedEmail` | Payment webhook receives `PAID` status (including when a previously-cancelled order is reopened by a late payment) |
+| `sendOrderCancelledEmail` | Payment webhook receives `FAILED`, `CANCELLED`, or `REJECTED` status (only if the order is not already cancelled); also sent by the order service when an admin sets order status to `cancelled` |
+| `sendOrderShippedEmail` | Called manually / via admin action when tracking number is available |
+| `sendOrderProcessingEmail` | Called when order status is set to a processing stage |
+| `sendOrderDeliveredEmail` | Called when order status is set to `delivered` |
+| `sendAdminNewOrderEmail` | New order placed — sent to all admin notification addresses |
+
+> **Payment failure email**: Uses `sendOrderCancelledEmail` with `reason` set to `"Your payment could not be processed. Please place a new order to try again."` — no separate payment-failed template is required.
+
 Getting a SendGrid API Key
 --------------------------
 

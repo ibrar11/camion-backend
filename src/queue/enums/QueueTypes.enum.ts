@@ -5,6 +5,7 @@ export enum QueueName {
     INVENTORY_RESYNC = "inventory_resync",
     PRODUCT_CATEGORY_RESYNC = "product_category_resync",
     SKU_META_IMPORT = "sku_meta_import",
+    ORDER_PAYMENT_TIMEOUT = 'order-payment-timeout',
 }
 
 export enum JobPriority {

@@ -37,6 +37,7 @@ import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { ExchangeRateService } from '../pricing/exchange-rate.service';
 
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailModule } from '../email/email.module';
 
 import { Notification } from '../notifications/entities/notification.entity';
 import { PushNotification } from '../notifications/entities/push-notification';
@@ -61,6 +62,7 @@ import { CartItem } from '../cart/entities/cart-items.entity';
             CartItem,
         ]),
         NotificationsModule,
+        EmailModule,
     ],
     providers: [
         PaymentsService,
