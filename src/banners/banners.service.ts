@@ -262,7 +262,14 @@ export class BannersService {
 		this.logger.log(`Retrieving banner: ${uuid}`);
 
 		// Find the banner
-		const banner = await this.bannerRepository.findOneBy({ uuid: uuid, });
+		const banner = await this.bannerRepository.findOne({
+			where: { uuid: uuid, },
+			relations: {
+				bannerCategories: {
+					category: true,
+				},
+			},
+		});
 		if (banner === null) {
 			throw new NotFoundException({
 				error: "Failed to find the banner. Please check and try again",
