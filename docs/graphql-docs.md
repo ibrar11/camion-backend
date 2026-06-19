@@ -1883,6 +1883,7 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
         thumbnailUrl
       }
     }
+    productsCount
   }
 }
 ```
@@ -1916,7 +1917,8 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/c87816c4-2abb-4224-9ff3-3793d615001d.jpg",
                         "children": []
                     }
-                ]
+                ],
+                "productsCount": 108
             }
         ]
     }
@@ -1936,6 +1938,7 @@ query GetFeaturedCategories($language: String, $pageNumber: Int, $itemsPerPage: 
     name(language: $language)
     isFeatured
     thumbnailUrl
+    productsCount
   }
 }
 ```
@@ -1961,7 +1964,8 @@ query GetFeaturedCategories($language: String, $pageNumber: Int, $itemsPerPage: 
                 "slug": "iphones-six",
                 "name": "iphones",
                 "isFeatured": true,
-                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/c87816c4-2abb-4224-9ff3-3793d615001d.jpg"
+                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/c87816c4-2abb-4224-9ff3-3793d615001d.jpg",
+                "productsCount": 108
             }
         ]
     }
