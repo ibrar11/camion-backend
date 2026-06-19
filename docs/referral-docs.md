@@ -536,6 +536,98 @@ Delete Affiliate
 DELETE /v1/referral/affiliates/<affiliate-uuid> HTTP/1.1
 ```
 
+Wallets (User)
+==============
+
+> [!IMPORTANT]
+> You must include your access token as a `Bearer` token in the Authorization header. Your must have a user account to retrieve create and retrieve transactions.
+
+Get Wallets
+-----------
+
+```http
+GET /v1/referral/wallets HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "e5e3889d-d800-4ab3-8f6b-065c9cb5612d",
+        "amount": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "amountPending": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "amountAvailable": {
+            "amount": 0,
+            "currencyCode": "qar"
+        }
+    }
+]
+```
+
+Get Wallets By Affiliate
+------------------------
+
+```http
+GET /v1/referral/wallets?filters={"affiliateUUID":"<affiliate-uuid>"} HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "af2d76c2-8912-4143-8b04-b3131669600a",
+        "amount": {
+            "amount": 121,
+            "currencyCode": "qar"
+        },
+        "amountPending": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "amountAvailable": {
+            "amount": 121,
+            "currencyCode": "qar"
+        }
+    }
+]
+```
+
+Get Wallet
+----------
+
+```http
+GET /v1/referral/wallets/<wallet-uuid> HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "af2d76c2-8912-4143-8b04-b3131669600a",
+    "amount": {
+        "amount": 121,
+        "currencyCode": "qar"
+    },
+    "amountPending": {
+        "amount": 0,
+        "currencyCode": "qar"
+    },
+    "amountAvailable": {
+        "amount": 121,
+        "currencyCode": "qar"
+    }
+}
+```
+
+
 Transactions (User)
 ===================
 
@@ -861,13 +953,88 @@ GET /v1/referral/coupons HTTP/1.1
 ```json
 [
     {
-        "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
-        "code": "james10",
-        "discountPercentage": "10.4",
-        "expiresAt": "2026-12-31T00:00:00.000Z"
+        "uuid": "a7f3c97b-0f3a-4da3-89b9-3820b526742a",
+        "affiliate": {
+            "uuid": "64077cd1-0c4e-47bb-a125-76fff8445971",
+            "customer": {
+                "uuid": "c439ae78-1132-464c-9940-bf240e1a8f53",
+                "fullName": "jimmy",
+                "emailAddress": "jimmy@gmail.com",
+                "phoneNumber": null,
+                "role": "influencer",
+                "unreadNotificationCount": 0,
+                "ordersCount": 0,
+                "cartItemsCount": 0
+            },
+            "fullName": "jimmy",
+            "gender": "male",
+            "nationality": "american",
+            "bio": "this is my bio",
+            "type": "influencer",
+            "status": "accepted",
+            "totalCommission": {
+                "amount": 0,
+                "currencyCode": "qar"
+            },
+            "totalPaid": {
+                "amount": 0,
+                "currencyCode": "qar"
+            },
+            "remainingBalance": {
+                "amount": 0,
+                "currencyCode": "qar"
+            },
+            "couponsCreated": 1,
+            "couponsUsed": 0,
+            "createdAt": "2026-06-01T23:12:14.030Z"
+        },
+        "code": "ffa",
+        "discountPercentage": "10",
+        "ordersCount": 0,
+        "totalSales": {
+            "amount": 0,
+            "currencyCode": "usd"
+        },
+        "totalCommission": {
+            "amount": 0,
+            "currencyCode": "usd"
+        },
+        "expiresAt": "2026-06-02T00:00:00.000Z",
+        "createdAt": "2026-06-01T23:17:02.551Z"
     }
 ]
 ```
+
+Get Coupons By Affiliate
+------------------------
+
+```http
+GET /v1/referral/coupons?filters={"affiliateUUID":"<affiliate-uuid>"}
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "e002ca52-88fa-4788-a621-4a511b1e795c",
+        "code": "teat",
+        "discountPercentage": "9",
+        "ordersCount": 4,
+        "totalSales": {
+            "amount": 260,
+            "currencyCode": "qar"
+        },
+        "totalCommission": {
+            "amount": 23,
+            "currencyCode": "qar"
+        },
+        "expiresAt": "2026-05-31T00:00:00.000Z",
+        "createdAt": "2026-05-20T05:55:40.802Z"
+    }
+]
+```
+
 
 Get Coupon
 ----------

@@ -277,6 +277,41 @@ export class CouponsService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
+		// Parse the wallet params
+		let f = {
+			affiliateUUID: "",
+		};
+
+		try {
+			f = JSON.parse(filters);
+		} catch {
+			f = {
+				affiliateUUID: "",
+			};
+		}
+
+		// Fetch coupons by affiliate id
+		if (f.affiliateUUID !== undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(f.affiliateUUID)) {
+			const affiliate = await this.affiliateRepository.findOneBy({ uuid: f.affiliateUUID, });
+			if (affiliate === null) {
+				return [];
+			}
+
+			// Find the coupons for the affiliate
+			return this.couponRepository.find({
+				where: {
+					affiliate: {
+						id: affiliate.id,
+					},
+				},
+				order: {
+					id: "DESC",
+				},
+				skip: skip,
+				take: take,
+			});
+		}
+
 		return this.couponRepository.find({
 			relations: {
 				affiliate: {
