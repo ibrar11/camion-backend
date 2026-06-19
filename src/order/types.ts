@@ -72,8 +72,8 @@ export class OrderTrackingSteps {
     paymentConfirmed: boolean;
     paymentRejected: boolean;
     orderConfirmed: boolean;
-    /** false = not cancelled, true = cancelled (no reason), string = cancellation reason */
-    orderCancelled: boolean | string;
+    orderCancelled: boolean;
+    cancellationReason: string | null;
     processing: boolean;
     packing: boolean;
     dispatching: boolean;

@@ -565,7 +565,8 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 | `paymentConfirmed` | `boolean` | Payment received successfully |
 | `paymentRejected` | `boolean` | Payment failed, cancelled, or rejected |
 | `orderConfirmed` | `boolean` | Admin has confirmed the order |
-| `orderCancelled` | `false \| true \| string` | `false` = not cancelled; `true` = cancelled without reason; string = cancellation reason |
+| `orderCancelled` | `boolean` | `true` if the order has been cancelled |
+| `cancellationReason` | `string \| null` | Why the order was cancelled, or `null` if no reason was recorded |
 | `processing` | `boolean` | Procurement order created with 1688 supplier |
 | `packing` | `boolean` | Goods fully stored at JOP warehouse (inbound status 14) |
 | `dispatching` | `boolean` | Outbound shipment order created at JOP warehouse |
@@ -621,10 +622,12 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
     "paymentConfirmed": false,
     "paymentRejected": false,
     "orderConfirmed": false,
-    "orderCancelled": "Payment not completed within 30 minutes",
+    "orderCancelled": true,
+    "cancellationReason": "Payment not completed within 30 minutes",
     "processing": false,
     "packing": false,
     "dispatching": false,
+    "shipped": false,
     "trackingId": null,
     "orderDelivered": false,
     "orderReview": null
