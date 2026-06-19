@@ -622,8 +622,8 @@ export class OrderService {
             await this.paymentTimeoutQueue.add(
                 'payment-timeout',
                 { orderUuid: order.uuid },
-                { delay: 30 * 60 * 1000, jobId: `payment-timeout:${order.uuid}` },
-            );
+                { delay: 30 * 60 * 1000, jobId: `payment-timeout-${order.uuid}` },
+            ).catch(err => this.logger.error(`[Queue] Failed to enqueue payment timeout for order ${order.uuid}: ${err?.message}`));
 
             return order;
         } catch (error: any) {
