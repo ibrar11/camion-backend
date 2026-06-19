@@ -91,6 +91,7 @@ type Category {
   name(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): String!
   nameAr: String!
   nameEn: String!
+  productsCount: Float!
   slug: String!
   thumbnailUrl: String!
   uuid: String!

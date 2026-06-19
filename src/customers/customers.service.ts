@@ -450,4 +450,42 @@ export class CustomersService {
 
 		return this.customerRepository.save(customer);
 	}
+
+		/**
+		 * Backfills cartCount for all customers having zero count.
+		 * Run once after deploying the cartCount column.
+		 */
+		async backfillCartCount(): Promise<{ updated: number }> {
+			this.logger.log(`Backfilling cartCount for all customers having zero count`);
+	
+			const result = await this.customerRepository
+				.createQueryBuilder()
+				.update(Customer)
+				.set({
+					cartItemsCount: () => `
+						(
+							SELECT COUNT(*)
+							FROM cart_items ci
+							INNER JOIN products p
+								ON p.id = ci.product_id
+							WHERE ci.customer_id = customers.id
+								AND p.status = 'active'
+						)
+					`,
+				})
+				.where(`
+					cart_items_count = 0
+					AND EXISTS (
+						SELECT 1
+						FROM cart_items ci
+						INNER JOIN products p
+							ON p.id = ci.product_id
+						WHERE ci.customer_id = customers.id
+							AND p.status = 'active'
+					)
+				`)
+				.execute();
+	
+			return { updated: result.affected ?? 0 };
+		}
 }
