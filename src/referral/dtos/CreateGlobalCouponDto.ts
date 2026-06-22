@@ -24,7 +24,7 @@ export class CreateGlobalCouponDto {
 
 	@IsNumber()
 	@Min(1)
-	@Max(99)
+	@Max(100)
 	readonly discountPercentage: number;
 
 	@IsNumber()
