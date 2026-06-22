@@ -1,3 +1,5 @@
+import { moneyToMinor } from "./currency";
+
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
 import { ProductSort } from "../inventory/enums/ProductSort.enum";
 
@@ -29,10 +31,10 @@ export const sortProducts = (products: Array<Product>, sort: ProductSort): Array
 			return products.sort((productA, productB) => productB.viewsCount - productA.viewsCount);
 
 		case ProductSort.PriceLowToHigh:
-			return products.sort((productA, productB) => productA.variants[0].cost.amount - productB.variants[0].cost.amount);
+			return products.sort((productA, productB) => moneyToMinor(productA.variants[0].discountedPrice) - moneyToMinor(productB.variants[0].discountedPrice));
 
 		case ProductSort.PriceHighToLow:
-			return products.sort((productA, productB) => productB.variants[0].cost.amount - productA.variants[0].cost.amount);
+			return products.sort((productA, productB) => moneyToMinor(productB.variants[0].discountedPrice) - moneyToMinor(productA.variants[0].discountedPrice));
 
 		case ProductSort.BestSellers:
 			return products.sort((productA, productB) => productB.salesCount - productA.salesCount);

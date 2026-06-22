@@ -18,6 +18,9 @@ export class GlobalCouponMoney {
 	@Column({ type: "integer", default: 0, })
 	amount: number;
 
+	@Column({ type: "integer", nullable: false, default: 0, })
+	minorAmount: number;
+
 	@Column({
 		type: "enum",
 		enum: CurrencyCode,

@@ -140,18 +140,22 @@ export class CartItemsService {
                 });
             }
 
+            // FIXME: Fix this
             const updatedPrice = price.amount * updatedQuantity;
             existingCartItem.quantity = updatedQuantity;
             existingCartItem.subTotal = {
                 amount: updatedPrice,
+                minorAmount: 0,
                 currencyCode: price.currencyCode,
             };
             existingCartItem.discountPrice = {
                 amount: 0,
+                minorAmount: 0,
                 currencyCode: price.currencyCode
             }
             existingCartItem.total = {
                 amount: updatedPrice,
+                minorAmount: 0,
                 currencyCode: price.currencyCode,
             }
             return this.cartRepository.save(existingCartItem);
@@ -168,16 +172,25 @@ export class CartItemsService {
         cartItem.product = product;
         cartItem.variant = variant;
         cartItem.quantity = body.quantity;
+
+        // FIXME: Fix this
         cartItem.subTotal = {
             amount: price.amount * body.quantity,
+            minorAmount: 0,
             currencyCode: price.currencyCode,
         };
+
+        // FIXME: Fix this
         cartItem.discountPrice = {
             amount: 0,
+            minorAmount: 0,
             currencyCode: price.currencyCode
         }
+
+        // FIXME: Fix this
         cartItem.total = {
             amount: price.amount * body.quantity,
+            minorAmount: 0,
             currencyCode: price.currencyCode
         }
         const savedCartItem = await this.cartRepository.save(cartItem);
@@ -270,16 +283,24 @@ export class CartItemsService {
                 true,
             );
 
+            // FIXME: Fix this
             cartItem.subTotal = {
                 amount: price.amount * cartItem.quantity,
+                minorAmount: 0,
                 currencyCode: price.currencyCode,
             };
+
+            // FIXME: Fix this
             cartItem.discountPrice = {
                 amount: 0,
+                minorAmount: 0,
                 currencyCode: price.currencyCode,
             };
+
+            // FIXME: Fix this
             cartItem.total = {
                 amount: price.amount * cartItem.quantity,
+                minorAmount: 0,
                 currencyCode: price.currencyCode,
             };
 
@@ -448,14 +469,17 @@ export class CartItemsService {
             existingItem.quantity = mergedQuantity;
             existingItem.subTotal = {
                 amount: price.amount * mergedQuantity,
+                minorAmount: 0,
                 currencyCode: body.currency,
             };
             existingItem.discountPrice = {
                 amount: 0,
+                minorAmount: 0,
                 currencyCode: body.currency,
             };
             existingItem.total = {
                 amount: price.amount * mergedQuantity,
+                minorAmount: 0,
                 currencyCode: body.currency,
             };
 
@@ -470,14 +494,17 @@ export class CartItemsService {
         cartItem.quantity = body.quantity;
         cartItem.subTotal = {
             amount: price.amount * body.quantity,
+            minorAmount: 0,
             currencyCode: body.currency,
         };
         cartItem.discountPrice = {
             amount: (price.amount * body.quantity) - (price.amount * body.quantity),
+            minorAmount: 0,
             currencyCode: body.currency,
         };
         cartItem.total = {
             amount: (price.amount * body.quantity) - ((price.amount * body.quantity) - (price.amount * body.quantity)),
+            minorAmount: 0,
             currencyCode: body.currency,
         };
 

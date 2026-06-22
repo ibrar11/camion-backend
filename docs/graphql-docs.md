@@ -438,12 +438,14 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -507,10 +509,12 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 6750,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -563,12 +567,14 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -632,10 +638,12 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 6750,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -689,12 +697,14 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -758,10 +768,12 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 6750,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -814,12 +826,14 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -882,10 +896,12 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 3750,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -946,12 +962,14 @@ query GetFeaturedProducts($language: String, $sort: String, $currency: String!, 
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -1014,10 +1032,12 @@ query GetFeaturedProducts($language: String, $sort: String, $currency: String!, 
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 6750,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1077,12 +1097,14 @@ query GetPopularProducts($language: String, $currency: String!, $sort: String, $
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -1144,10 +1166,12 @@ query GetPopularProducts($language: String, $currency: String!, $sort: String, $
                         "sku": "5784415029004",
                         "price": {
                             "amount": 166,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 83,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1200,12 +1224,14 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -1268,10 +1294,12 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 3750,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1324,12 +1352,14 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -1390,10 +1420,12 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                         "sku": "5961352229474",
                         "price": {
                             "amount": 52,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 26,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1453,12 +1485,14 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -1521,10 +1555,12 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 6750,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1586,12 +1622,14 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -1655,10 +1693,12 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
                         "sku": "iphone-20-red-1tb",
                         "price": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 7500,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1720,12 +1760,14 @@ query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: 
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -1787,10 +1829,12 @@ query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: 
                         "sku": "6093393018587",
                         "price": {
                             "amount": 105,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 53,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1869,12 +1913,14 @@ query GetProduct($slug: String, $language: String, $currency: String) {
       title(language: $language)
       sku
       barcode
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       weight {
@@ -2036,11 +2082,13 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     "sku": "iphone-20-red-1tb",
                     "barcode": "10000",
                     "price": {
-                        "amount": -1,
+                        "amount": 100,
+                        "minorAmount": 50,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
-                        "amount": -1,
+                        "amount": 50,
+                        "minorAmount": 50,
                         "currencyCode": "qar"
                     },
                     "weight": {
@@ -5102,12 +5150,14 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -5166,10 +5216,12 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
                         "sku": "6093393018584",
                         "price": {
                             "amount": 105,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 53,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -5229,12 +5281,14 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
       uuid
       title(language: $language)
       sku
-      price(currency: $currency) {
+      price {
         amount
+        minorAmount
         currencyCode
       }
-      discountedPrice(currency: $currency) {
+      discountedPrice {
         amount
+        minorAmount
         currencyCode
       }
       images {
@@ -5294,10 +5348,12 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
                         "sku": "6093393018584",
                         "price": {
                             "amount": 105,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 53,
+                            "minorAmount": 50,
                             "currencyCode": "qar"
                         },
                         "images": [

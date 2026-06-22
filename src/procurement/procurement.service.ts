@@ -1,10 +1,10 @@
 import {
-	Injectable,
-	Logger,
-	BadRequestException,
-	InternalServerErrorException,
-	NotFoundException,
-	Inject,
+    Injectable,
+    Logger,
+    BadRequestException,
+    InternalServerErrorException,
+    NotFoundException,
+    Inject,
 } from '@nestjs/common';
 import { Job } from 'bullmq';
 import * as crypto from 'node:crypto';
@@ -81,9 +81,9 @@ export class ProcurementService {
         @Inject(ProductOptionValueService) private readonly optionValueService: ProductOptionValueService,
         @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
         @Inject(QueueService) private readonly queueService: QueueService,
-		@InjectRepository(Order) private readonly orderRepository: Repository<Order>,
-		@InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
-		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
+        @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+        @InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
+        @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
         @Inject(TranslationJobRegistryService) private readonly jobRegistry: TranslationJobRegistryService,
     ) { }
@@ -461,6 +461,7 @@ export class ProcurementService {
             quantity: sourceVariant.stock || 0,
             cost: {
                 amount: smartRoundInt(sourceVariant.price) || 0,
+                minorAmount: 0,
                 currencyCode: sourceProduct.currencyCode,
             },
             weight: {
@@ -1064,15 +1065,15 @@ export class ProcurementService {
                                 }),
                             },
                         );
-                        
+
                         const data = await translationResponse.json();
                         if (!translationResponse.ok) {
-                            
+
                             throw new BadRequestException({
                                 error: data.message,
                             });
                         }
-                        
+
                         descriptionTrans = data[0] || "";
                     } catch (error: any) {
                         this.logger.error(`Description translation failed: ${error}`);
@@ -1410,6 +1411,7 @@ export class ProcurementService {
                                                         quantity: variant.stock || 0,
                                                         cost: {
                                                             amount: smartRoundInt(variant.price) || 0,
+                                                            minorAmount: 0,
                                                             currencyCode: productDetails.currencyCode,
                                                         },
                                                         weight: {
@@ -1676,6 +1678,7 @@ export class ProcurementService {
                                                         quantity: variant.quantity || 0,
                                                         cost: {
                                                             amount: smartRoundInt(variant.cost.amount) || 0,
+                                                            minorAmount: 0,
                                                             currencyCode: variant.cost.currencyCode,
                                                         },
                                                         weight: {
@@ -1734,7 +1737,7 @@ export class ProcurementService {
                             }
 
                             results.success.push(product);
-                            
+
                             savedProductUuids.push(product.uuid);
 
                         } catch (error: any) {

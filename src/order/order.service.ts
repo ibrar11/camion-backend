@@ -341,17 +341,24 @@ export class OrderService {
                 orderItem.product = cart.product;
                 orderItem.variant = variant;
                 orderItem.warehouse = level.warehouse;
+
+                // FIXME: Fix this
                 orderItem.price = {
                     ...priceAmount,
                     amount: priceAmount.amount,
                 };
+
+                // FIXME: Fix this
                 orderItem.discountedPrice = {
                     ...priceAmount,
                     amount: 0,
                 };
                 orderItem.quantity = cart.quantity;
+
+                // FIXME: Fix this
                 orderItem.total = {
                     amount: totalAmount,
+                    minorAmount: 0,
                     currencyCode: variant.cost.currencyCode,
                 };
 
@@ -475,20 +482,32 @@ export class OrderService {
             order.coupon = affiliateCoupon;
             order.globalCoupon = globalCoupon;
             order.status = OrderStatus.PAYMENT_PENDING;
+
+            // FIXME: Fix this
             order.subTotal = {
                 amount: subTotal,
+                minorAmount: 0,
                 currencyCode: currency,
             };
+
+            // FIXME: Fix this
             order.shippingCost = {
                 amount: shippingCost,
+                minorAmount: 0,
                 currencyCode: currency,
             };
+
+            // FIXME: Fix this
             order.discount = {
                 amount: discount,
+                minorAmount: 0,
                 currencyCode: currency,
             };
+
+            // FIXME: Fix this
             order.total = {
                 amount: total,
+                minorAmount: 0,
                 currencyCode: currency,
             };
             order.eta = eta;
@@ -729,7 +748,7 @@ export class OrderService {
                 filtersObject = JSON.parse(filters);
             } catch {
                 this.logger.warn("Unable to parse filters. Please check the documentation and try again.");
-            }            
+            }
             const filter: OrderFilters = {}
 
             if (status || filtersObject) {

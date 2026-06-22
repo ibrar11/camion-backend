@@ -24,6 +24,7 @@ type Affiliate {
 type AffiliateMoney {
   amount: Float!
   currencyCode: String!
+  minorAmount: Float!
 }
 
 type BankAccount {
@@ -86,6 +87,7 @@ type CartItem {
 type CartMoney {
   amount: Int!
   currencyCode: String!
+  minorAmount: Int!
 }
 
 type Category {
@@ -114,6 +116,7 @@ type Coupon {
 type CouponMoney {
   amount: Int!
   currencyCode: String!
+  minorAmount: Int!
 }
 
 type CouponOrder {
@@ -195,6 +198,7 @@ type LinkElement {
 type Money {
   amount: Int!
   currencyCode: String!
+  minorAmount: Int!
 }
 
 type Notification {
@@ -385,10 +389,10 @@ type ProductVariant {
   barcode: String!
   cost: Money!
   dimensions: Dimensions!
-  discountedPrice(currency: String! = "usd", language: String! = "en", slug: String! = ""): Money!
+  discountedPrice(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): Money!
   images: [ProductVariantImage!]!
   optionValues: [ProductVariantOptionValue!]!
-  price(currency: String! = "usd", language: String! = "en", slug: String! = ""): Money!
+  price(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): Money!
   sku: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!
@@ -471,7 +475,7 @@ type Query {
   getRecommendedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
   getRelatedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String!): [Product!]!
   getStories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Story!]!
-  searchProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
+  searchProducts(currency: String! = "qar", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, query: String!, sort: String! = "best-match"): [Product!]!
 }
 
 type ReturnEvidence {
@@ -543,6 +547,7 @@ type Transaction {
 type TransactionMoney {
   amount: Float!
   currencyCode: String!
+  minorAmount: Float!
 }
 
 type Wallet {
@@ -555,6 +560,7 @@ type Wallet {
 type WalletMoney {
   amount: Float!
   currencyCode: String!
+  minorAmount: Float!
 }
 
 type Weight {
