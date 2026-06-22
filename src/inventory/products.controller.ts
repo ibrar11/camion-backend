@@ -24,6 +24,7 @@ import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from '../customers/enums/CustomerRole';
 import { ClientRole } from '../clients/enums/client-role.enum';
 import { ProductSort } from './enums/ProductSort.enum';
+import { ProductStatus } from './enums/ProductStatus.enum';
 
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
@@ -85,17 +86,20 @@ export class ProductsController {
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Get("variants/missing-skumeta")
 	@HttpCode(HttpStatus.OK)
-	actionGetProductsWithVariantsMissingSkuMeta(): Promise<{
+	actionGetProductsWithVariantsMissingSkuMeta(
+		@Query("status") status?: ProductStatus,
+	): Promise<{
 		totalMissingSkuVariants: number;
 		totalProducts: number;
 		data: Array<{
 			uuid: string;
 			name: string;
+			procurementId: string | null;
 			totalVariants: number;
 			missingSkuVariants: number;
 		}>;
 	}> {
-		return this.productsService.findProductsWithVariantsMissingSkuMeta();
+		return this.productsService.findProductsWithVariantsMissingSkuMeta(status);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader)
