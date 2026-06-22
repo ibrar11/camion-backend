@@ -33,6 +33,9 @@ export class Money {
 	@IsNumber()
 	amount: number;
 
+	@IsNumber()
+	minorAmount: number = 0;
+
 	@IsString()
 	@IsEnum(CurrencyCode)
 	currencyCode: CurrencyCode;

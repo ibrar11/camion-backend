@@ -77,10 +77,12 @@ export class GlobalCouponService {
 		globalCoupon.expiresAt = new Date(body.expiresAt);
 		globalCoupon.totalSales = {
 			amount: 0,
+			minorAmount: 0,
 			currencyCode: CurrencyCode.QAR,
 		};
 		globalCoupon.totalCommission = {
 			amount: 0,
+			minorAmount: 0,
 			currencyCode: CurrencyCode.QAR,
 		};
 		return this.globalCouponRepository.save(globalCoupon);

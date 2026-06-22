@@ -40,6 +40,10 @@ export class Money {
 	@Column({ type: "integer", })
 	amount: number;
 
+	@Field(() => Int)
+	@Column({ type: "integer", nullable: false, default: 0, })
+	minorAmount: number;
+
 	@Field()
 	@Column({
 		type: "enum",

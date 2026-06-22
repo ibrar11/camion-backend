@@ -58,6 +58,7 @@ import { TranslationService } from '../translation/translation.service';
 
 import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
 import { Campaign } from 'src/campaigns/entities/campaign.entity';
+import { PricingModule } from 'src/pricing/pricing.module';
 
 @Module({
 	imports: [
@@ -82,6 +83,7 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 		]),
 		ClientsModule,
 		QueueModule,
+		PricingModule,
 	],
 	providers: [
 		UsersService,
@@ -104,4 +106,4 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 	controllers: [ProcurementController],
 	exports: [ProcurementService],
 })
-export class ProcurementModule {}
+export class ProcurementModule { }

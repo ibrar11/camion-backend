@@ -17,6 +17,9 @@ export class Money {
 	@Column({ type: "integer", })
 	amount: number;
 
+	@Column({ type: "integer", nullable: false, default: 0, })
+	minorAmount: number;
+
 	@Column({
 		type: "enum",
 		enum: CurrencyCode,

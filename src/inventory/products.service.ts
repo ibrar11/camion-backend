@@ -31,6 +31,7 @@ import { UpdateProductFeaturedImageDto } from "./dtos/UpdateProductFeaturedImage
 import { ProductStatus } from './enums/ProductStatus.enum';
 import { ProductSort } from "./enums/ProductSort.enum";
 import { AttachmentMediaType } from "./enums/AttachmentMediaType.enum";
+import { CurrencyCode } from "./enums/CurrencyCode.enum";
 
 import { Category } from "./entities/category.entity";
 import { Product } from './entities/product.entity';
@@ -47,6 +48,7 @@ import { QueueName } from "src/queue/enums/QueueTypes.enum";
 import { ProductCategoryResyncJobData } from "src/queue/types";
 import { Campaign } from "src/campaigns/entities/campaign.entity";
 import { ProductAttachment } from "./entities/product-attachment.entity";
+import { PricingService } from "src/pricing/pricing.service";
 
 @Injectable()
 export class ProductsService {
@@ -67,6 +69,7 @@ export class ProductsService {
 	constructor(
 		@Inject(FileService) private readonly fileService: FileService,
 		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
+		@Inject(PricingService) private readonly pricingService: PricingService,
 		@Inject(QueueService) private readonly queueService: QueueService,
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@Inject(TranslationService) private readonly translationService: TranslationService,
@@ -355,11 +358,9 @@ export class ProductsService {
 	 * Populates each product with its cheapest variant
 	 *
 	 * @param products
-	 * @param campaign
-	 * @param sort
 	 * @returns
 	 */
-	async __populateWithCheapestVariant(products: Array<Product>, campaign: Campaign | null, sort: ProductSort): Promise<Array<Product>> {
+	async __populateWithCheapestVariant(products: Array<Product>): Promise<Array<Product>> {
 		if (!Array.isArray(products) || products.length === 0) {
 			return [];
 		}
@@ -385,13 +386,13 @@ export class ProductsService {
 				.getMany();
 		}
 
-		// Map the variants to their products
+		// Create a map of product to variant
 		const variantsMap = Object.fromEntries(
 			variants.map(variant => [variant.productId, variant]),
 		);
 
-		// Assing the variants to each product.
-		products = products
+		// Attach the variants to each product.
+		return products
 			.filter(product => variantsMap[product.id] !== undefined)
 			.map(product => {
 				product.variants = [
@@ -399,27 +400,15 @@ export class ProductsService {
 				];
 				return product;
 			});
-
-		// Attach the campaign to the products so the pricing service can calculate the pricing based on the campaign
-		if (campaign !== null) {
-			products = products.map(product => {
-				product.campaign = campaign;
-				return product;
-			});
-		}
-
-		return sortProducts(products, sort);
 	}
 
 	/**
-	 * Populates each product with its most expensive variant
+	 * Populates each product with its most expensive variants
 	 *
 	 * @param products
-	 * @param campaign
-	 * @param sort
 	 * @returns
 	 */
-	async __populateWithPriciestVariant(products: Array<Product>, campaign: Campaign | null, sort: ProductSort): Promise<Array<Product>> {
+	async __populateWithPriciestVariant(products: Array<Product>): Promise<Array<Product>> {
 		if (!Array.isArray(products) || products.length === 0) {
 			return [];
 		}
@@ -445,13 +434,13 @@ export class ProductsService {
 				.getMany();
 		}
 
-		// Map the variants to their products
+		// Create a map of product to variant
 		const variantsMap = Object.fromEntries(
 			variants.map(variant => [variant.productId, variant]),
 		);
 
-		// Assing the variants to each product.
-		products = products
+		// Attach the variants to each product.
+		return products
 			.filter(product => variantsMap[product.id] !== undefined)
 			.map(product => {
 				product.variants = [
@@ -459,16 +448,6 @@ export class ProductsService {
 				];
 				return product;
 			});
-
-		// Attach the campaign to the products so the pricing service can calculate the pricing based on the campaign
-		if (campaign !== null) {
-			products = products.map(product => {
-				product.campaign = campaign;
-				return product;
-			});
-		}
-
-		return sortProducts(products, sort);
 	}
 
 	/**
@@ -678,12 +657,13 @@ export class ProductsService {
 	 * Finds a list of products
 	 *
 	 * @param filters
+	 * @param currency
 	 * @param sort
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAll(filters: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async findAll(filters: string, currency: CurrencyCode, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products for graphql`);
 
 		// To make sure we don't always show the latest products on the homepage, we need to return random products.
@@ -698,31 +678,24 @@ export class ProductsService {
 			case ProductSort.BestMatch:
 				products = await this.__getBestMatchProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.BestSellers:
 				products = await this.__getBestSellersProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostFavorited:
 				products = await this.__getMostFavoritedProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.NewArrivals:
 				products = await this.__getNewArrivalsProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostRated:
 				products = await this.__getMostRatedProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceHighToLow:
 				products = await this.__getPriceHighToLowProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceLowToHigh:
 				products = await this.__getPriceLowToHighProducts(pageNumber, itemsPerPage);
 				break;
-
 			default: // do nothing
 				break;
 		}
@@ -730,11 +703,11 @@ export class ProductsService {
 		// Due to random page, sometimes we overshoot the page number,
 		// so as fallback we should show products from page number 2
 		if (Array.isArray(products) && products.length === 0) {
-			return this.findAll(filters, sort, 2, itemsPerPage);
+			return this.findAll(filters, currency, sort, 2, itemsPerPage);
 		}
 
 		// Attach the campaign against each product
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, sort);
 	}
 
 	/**
@@ -769,7 +742,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestMatch);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -804,7 +777,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostViewed);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -839,7 +812,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestSellers);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -874,7 +847,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostFavorited);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -909,7 +882,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.NewArrivals);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -944,7 +917,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostRated);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -978,7 +951,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithPriciestVariant(products, null, ProductSort.PriceHighToLow);
+		return this.__populateWithPriciestVariant(products);
 	}
 
 	/**
@@ -1012,7 +985,7 @@ export class ProductsService {
 			take: take,
 		});
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.PriceLowToHigh);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1266,20 +1239,21 @@ export class ProductsService {
 	/**
 	 * Finds a list of products in a specific category
 	 *
-	 * @param categorySlug
+	 * @param slug
+	 * @param currency
 	 * @param sort
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async findAllByCategory(categorySlug: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
-		this.logger.log(`Retrieving products by category slug: ${categorySlug}`);
+	async findAllByCategory(slug: string, currency: CurrencyCode, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products by category slug: ${slug}`);
 
 		// Find the category, return empty array if there is no category against the slug
 		const category = await this.categoryRepository.findOne({
 			cache: true,
 			where: {
-				slug: categorySlug,
+				slug: slug,
 			},
 		});
 
@@ -1294,40 +1268,43 @@ export class ProductsService {
 			case ProductSort.BestMatch:
 				products = await this.__getBestMatchProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.BestSellers:
 				products = await this.__getBestSellerProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostFavorited:
 				products = await this.__getMostFavoritedProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.NewArrivals:
 				products = await this.__getNewArrivalsProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostRated:
 				products = await this.__getMostRatedProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceHighToLow:
 				products = await this.__getPriceHighToLowProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceLowToHigh:
 				products = await this.__getPriceLowToHighProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			default: // do nothing
 				break;
 		}
 
 		// Attach the campaign against each product
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, sort);
 	}
 
-	async findAllByCategories(slugs: Array<String>, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	/**
+	 * Finds a list of products using a list of category slugs
+	 *
+	 * @param slugs
+	 * @param currency
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAllByCategories(slugs: Array<String>, currency: CurrencyCode, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products by categories, categories: ${slugs.join(', ')}, pageNumber=${pageNumber}, itemsPerPage=${itemsPerPage}`);
 
 		// Find the categories using their slugs
@@ -1380,7 +1357,7 @@ export class ProductsService {
 		}
 
 		// Attach the campaign against each product
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, sort);
 	}
 
 	/**
@@ -1424,7 +1401,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestMatch);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1468,7 +1445,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestSellers);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1512,7 +1489,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostFavorited);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1556,7 +1533,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.NewArrivals);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1600,7 +1577,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostRated);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1644,7 +1621,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithPriciestVariant(products, null, ProductSort.PriceHighToLow);
+		return this.__populateWithPriciestVariant(products);
 	}
 
 	/**
@@ -1688,32 +1665,111 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.PriceLowToHigh);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
-	 * Attaches the best campaign to a product
+	 * Finds and attaches the best campaign to the product
+	 *
+	 * @param product
+	 * @param currency
+	 * @returns
+	 */
+	async __findCampaignAndPrices(product: Product, currency: CurrencyCode): Promise<Product> {
+		// Find the campaign
+		const campaign = await this.__getProductCampaign(product);
+		if (campaign !== null) {
+			product.campaign = campaign;
+		}
+
+		// Set the base price and discounted price of each variant
+		product.variants = await Promise.all(
+			product.variants.map(async variant => {
+				// Apply base price on the variant
+				variant.price = await this.pricingService.applyPriceOnProductVariant(product, variant, campaign, currency, false);
+
+				// Apply discounted price on the variant
+				variant.discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, variant, campaign, currency, true);
+
+				return variant;
+			})
+		);
+
+		return product;
+	}
+
+	/**
+	 * Finds and attaches the best campaign to each product in the array.
 	 *
 	 * @brief The best campaign is the one that provides the best discount
 	 *
 	 * @param products
+	 * @param currency
+	 * @param sort
 	 * @returns
 	 */
-	async __attachAssociatedCampaign(products: Array<Product>): Promise<Array<Product>> {
+	async __findCampaignsAndPrices(products: Array<Product>, currency: CurrencyCode, sort: ProductSort): Promise<Array<Product>> {
 		if (!Array.isArray(products) || products.length === 0) {
 			return [];
 		}
 
-		return Promise.all(
+		// Find campaign, base price and discounted price
+		const res = await Promise.all(
 			products.map(async product => {
 				// Find the campaign against the product
 				const campaign = await this.__getProductCampaign(product);
 				if (campaign !== null) {
 					product.campaign = campaign;
 				}
+
+				// Apply base price on the first variant of the product
+				product.variants[0].price = await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], campaign, currency, false);
+
+				// Apply discounted price on the first variant of the product
+				product.variants[0].discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], campaign, currency, true);
+
 				return product;
 			})
 		);
+
+		// Sort and return the results
+		return sortProducts(res, sort);
+	}
+
+	/**
+	 * Attach the campaign to each product in the array
+	 *
+	 * @param products
+	 * @param campaign
+	 * @param currency
+	 * @param sort
+	 * @returns
+	 */
+	async __attachCampaignAndPrices(products: Array<Product>, campaign: Campaign, currency: CurrencyCode, sort: ProductSort): Promise<Array<Product>> {
+		if (!Array.isArray(products) || products.length === 0) {
+			return [];
+		}
+
+		// Attach campaign, base price and discounted price
+		const res = await Promise.all(
+			products.map(async product => {
+				// Attach the campaign against the product
+				if (campaign !== null) {
+					product.campaign = campaign;
+				}
+
+				// Apply base price on the first variant of the product
+				product.variants[0].price = await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], campaign, currency, false);
+
+				// Apply discounted price on the first variant of the product
+				product.variants[0].discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], campaign, currency, true);
+
+				return product;
+			})
+		);
+
+		// Sort and return the results
+		return sortProducts(res, sort);
 	}
 
 	/**
@@ -1796,7 +1852,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestMatch);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1840,7 +1896,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestSellers);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1884,7 +1940,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostFavorited);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1928,7 +1984,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.NewArrivals);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -1972,7 +2028,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostRated);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2016,7 +2072,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithPriciestVariant(products, null, ProductSort.PriceHighToLow);
+		return this.__populateWithPriciestVariant(products);
 	}
 
 	/**
@@ -2060,18 +2116,19 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.PriceLowToHigh);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
 	 * Returns a list of recently viewed products by a customer
 	 *
 	 * @param customer
+	 * @param currency
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getRecentlyViewedProducts(customer: Customer, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getRecentlyViewedProducts(customer: Customer, currency: CurrencyCode, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of recenty viewed products`);
 
 		// Get pagination params
@@ -2105,24 +2162,25 @@ export class ProductsService {
 		}
 
 		// Populate with the cheapest variant
-		products = await this.__populateWithCheapestVariant(products, null, ProductSort.BestMatch);
+		products = await this.__populateWithCheapestVariant(products);
 		if (!Array.isArray(products) || products.length === 0) {
 			return [];
 		}
 
 		// Attach the products with the associated campaign
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, ProductSort.BestMatch);
 	}
 
 	/**
 	 * Returns products in the featured campaign
 	 *
+	 * @param currency
 	 * @param sort
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getProductsInFeaturedCampaign(sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 24): Promise<Array<Product>> {
+	async getProductsInFeaturedCampaign(currency: CurrencyCode, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 24): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of products in featured campaign`);
 
 		// Find the featured campaign
@@ -2145,45 +2203,49 @@ export class ProductsService {
 			return [];
 		}
 
+		// Find products based on the sort order
+		let products: Array<Product> = [];
 		switch (sort) {
 			case ProductSort.BestMatch:
-				return this.__getBestMatchProductsInCampaign(campaign, pageNumber, itemsPerPage)
-
+				products = await this.__getBestMatchProductsInCampaign(campaign, pageNumber, itemsPerPage)
+				break;
 			case ProductSort.BestSellers:
-				return this.__getBestSellersProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getBestSellersProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.MostFavorited:
-				return this.__getMostFavoritedProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getMostFavoritedProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.NewArrivals:
-				return this.__getNewArrivalsProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getNewArrivalsProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.MostRated:
-				return this.__getMostRatedProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getMostRatedProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.PriceHighToLow:
-				return this.__getPriceHighToLowProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getPriceHighToLowProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.PriceLowToHigh:
-				return this.__getPriceLowToHighProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getPriceLowToHighProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			default: // do nothing
 				break;
 		}
 
-		return [];
+		// Attach the campaign against each product
+		return this.__attachCampaignAndPrices(products, campaign, currency, sort);
 	}
 
 	/**
 	 * Returns the products in the campaign
 	 *
 	 * @param slug
+	 * @param currency
 	 * @param sort
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getProductsInCampaign(slug: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getProductsInCampaign(slug: string, currency: CurrencyCode, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of products by campaign: ${slug}`);
 
 		// Find the campaign by slug
@@ -2203,33 +2265,36 @@ export class ProductsService {
 			return [];
 		}
 
+		// Find products based on the sort order
+		let products: Array<Product> = [];
 		switch (sort) {
 			case ProductSort.BestMatch:
-				return this.__getBestMatchProductsInCampaign(campaign, pageNumber, itemsPerPage)
-
+				products = await this.__getBestMatchProductsInCampaign(campaign, pageNumber, itemsPerPage)
+				break;
 			case ProductSort.BestSellers:
-				return this.__getBestSellersProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getBestSellersProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.MostFavorited:
-				return this.__getMostFavoritedProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getMostFavoritedProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.NewArrivals:
-				return this.__getNewArrivalsProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getNewArrivalsProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.MostRated:
-				return this.__getMostRatedProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getMostRatedProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.PriceHighToLow:
-				return this.__getPriceHighToLowProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getPriceHighToLowProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			case ProductSort.PriceLowToHigh:
-				return this.__getPriceLowToHighProductsInCampaign(campaign, pageNumber, itemsPerPage);
-
+				products = await this.__getPriceLowToHighProductsInCampaign(campaign, pageNumber, itemsPerPage);
+				break;
 			default: // do nothing
 				break;
 		}
 
-		return [];
+		// Attach the campaign against each product
+		return this.__attachCampaignAndPrices(products, campaign, currency, sort);
 	}
 
 	/**
@@ -2281,7 +2346,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, campaign, ProductSort.BestMatch);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2333,7 +2398,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, campaign, ProductSort.BestSellers);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2385,7 +2450,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, campaign, ProductSort.MostFavorited);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2437,7 +2502,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, campaign, ProductSort.NewArrivals);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2489,7 +2554,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, campaign, ProductSort.MostRated);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2541,7 +2606,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithPriciestVariant(products, campaign, ProductSort.PriceHighToLow);
+		return this.__populateWithPriciestVariant(products);
 	}
 
 	/**
@@ -2593,7 +2658,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, campaign, ProductSort.PriceLowToHigh);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2722,12 +2787,13 @@ export class ProductsService {
 	 *
 	 * @param query
 	 * @param language
+	 * @param currency
 	 * @param sort
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async searchProducts(query: string, language: string, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async searchProducts(query: string, language: string, currency: CurrencyCode, sort: ProductSort = ProductSort.BestMatch, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Searching for products, query: ${query}, language: ${language}`);
 
 		// Clean the search query
@@ -2746,37 +2812,30 @@ export class ProductsService {
 			case ProductSort.BestMatch:
 				products = await this.__searchProductsBestMatch(searchQuery, language, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceLowToHigh:
 				products = await this.__searchProductsPriceLowToHigh(searchQuery, language, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceHighToLow:
 				products = await this.__searchProductsPriceHighToLow(searchQuery, language, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.BestSellers:
 				products = await this.__searchProductsBestSellers(searchQuery, language, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostFavorited:
 				products = await this.__searchProductsMostFavorited(searchQuery, language, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.NewArrivals:
 				products = await this.__searchProductsNewArrivals(searchQuery, language, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostRated:
 				products = await this.__searchProductsMostRated(searchQuery, language, pageNumber, itemsPerPage);
 				break;
-
 			default: // do nothing
 				break;
 		}
 
 		// Attach the campaign against each product
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, sort);
 	}
 
 	/**
@@ -2820,7 +2879,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestMatch);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2873,7 +2932,7 @@ export class ProductsService {
 			.skip(skip)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.PriceLowToHigh);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -2929,7 +2988,7 @@ export class ProductsService {
 			.skip(skip)
 			.getMany();
 
-		return this.__populateWithPriciestVariant(products, null, ProductSort.PriceHighToLow);
+		return this.__populateWithPriciestVariant(products);
 	}
 
 	/**
@@ -2973,7 +3032,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.BestSellers);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -3017,7 +3076,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostFavorited);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -3061,7 +3120,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.NewArrivals);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -3105,7 +3164,7 @@ export class ProductsService {
 			.take(take)
 			.getMany();
 
-		return this.__populateWithCheapestVariant(products, null, ProductSort.MostRated);
+		return this.__populateWithCheapestVariant(products);
 	}
 
 	/**
@@ -3113,11 +3172,12 @@ export class ProductsService {
 	 *
 	 * @param customer
 	 * @param slug
+	 * @param currency
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getRecommendedProducts(customer: Customer, slug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getRecommendedProducts(customer: Customer, slug: string, currency: CurrencyCode, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of recommended products for product: ${slug}`);
 
 		// Find some product views of the customer
@@ -3215,23 +3275,24 @@ export class ProductsService {
 		}
 
 		// Populate with the cheapest variant
-		products = await this.__populateWithCheapestVariant(products, null, ProductSort.MostViewed);
+		products = await this.__populateWithCheapestVariant(products);
 		if (!Array.isArray(products) || products.length === 0) {
 			return [];
 		}
 
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, ProductSort.BestMatch);
 	}
 
 	/**
 	 * Returns products by featured category
 	 *
+	 * @param currency
 	 * @param sort
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getFeaturedProducts(sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getFeaturedProducts(currency: CurrencyCode, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of featured products`);
 
 		// Get the featured category
@@ -3244,7 +3305,7 @@ export class ProductsService {
 
 		// Get other products as fallback
 		if (category === null) {
-			return this.findAll("", ProductSort.BestMatch, pageNumber, itemsPerPage);
+			return this.findAll("", currency, ProductSort.BestMatch, pageNumber, itemsPerPage);
 		}
 
 		// Find products based on the sort order
@@ -3253,48 +3314,42 @@ export class ProductsService {
 			case ProductSort.BestMatch:
 				products = await this.__getBestMatchProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.BestSellers:
 				products = await this.__getBestSellerProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostFavorited:
 				products = await this.__getMostFavoritedProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.NewArrivals:
 				products = await this.__getNewArrivalsProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostRated:
 				products = await this.__getMostRatedProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceHighToLow:
 				products = await this.__getPriceHighToLowProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.PriceLowToHigh:
 				products = await this.__getPriceLowToHighProductsInCategory(category, pageNumber, itemsPerPage);
 				break;
-
 			default: // do nothing
 				break;
 		}
 
 		// Attach the campaign against each product
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, sort);
 	}
 
 	/**
 	 * Returns popular products
 	 *
+	 * @param currency
 	 * @param sort
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getPopularProducts(sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getPopularProducts(currency: CurrencyCode, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving popular products`);
 
 		// Find products based on the sort order
@@ -3303,36 +3358,33 @@ export class ProductsService {
 			case ProductSort.MostViewed:
 				products = await this.__getMostViewedProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.BestSellers:
 				products = await this.__getBestSellersProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostFavorited:
 				products = await this.__getMostFavoritedProducts(pageNumber, itemsPerPage);
 				break;
-
 			case ProductSort.MostRated:
 				products = await this.__getMostRatedProducts(pageNumber, itemsPerPage);
 				break;
-
 			default: // do nothing
 				break;
 		}
 
 		// Attach the campaign against each product
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, sort);
 	}
 
 	/**
 	 * Returns the related products of a product
 	 *
 	 * @param slug
+	 * @param currency
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getRelatedProducts(slug: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getRelatedProducts(slug: string, currency: CurrencyCode, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving related products, product: ${slug}`);
 
 		// Find the source product
@@ -3408,12 +3460,12 @@ export class ProductsService {
 		}
 
 		// Populate with the cheapest variant
-		products = await this.__populateWithCheapestVariant(products, null, ProductSort.BestMatch);
+		products = await this.__populateWithCheapestVariant(products);
 		if (!Array.isArray(products) || products.length === 0) {
 			return [];
 		}
 
-		return this.__attachAssociatedCampaign(products);
+		return this.__findCampaignsAndPrices(products, currency, ProductSort.BestMatch);
 	}
 
 	/**
@@ -3464,9 +3516,10 @@ export class ProductsService {
 	 *
 	 * @param customer
 	 * @param slug
+	 * @param currency
 	 * @returns
 	 */
-	async findOneBySlug(customer: Customer, slug: string): Promise<Product> {
+	async findOneBySlug(customer: Customer, slug: string, currency: CurrencyCode): Promise<Product> {
 		this.logger.log(`Retrieving product by slug: ${slug} for customer: ${customer?.uuid ?? "N/A"}`);
 
 		// Find the product
@@ -3519,7 +3572,7 @@ export class ProductsService {
 		// Increment the number of views on the product
 		await this.productRepository.increment({ id: product.id, }, "viewsCount", 1);
 
-		return product;
+		return this.__findCampaignAndPrices(product, currency);
 	}
 
 	/**

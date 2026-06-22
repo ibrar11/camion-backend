@@ -22,8 +22,6 @@ import { ConfigService } from "@nestjs/config";
 import { ProductSort } from "./enums/ProductSort.enum";
 import { CurrencyCode } from "./enums/CurrencyCode.enum";
 
-import { PricingService } from "src/pricing/pricing.service";
-
 import { Product } from "./entities/product.entity";
 import { ProductOption } from "./entities/product-option.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
@@ -45,8 +43,8 @@ export class GetProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field({ defaultValue: ProductSort.BestMatch, })
 	sort: ProductSort;
@@ -66,8 +64,8 @@ export class GetProductsByCategoryArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field({ defaultValue: ProductSort.BestMatch, })
 	sort: ProductSort;
@@ -87,8 +85,8 @@ export class GetProductsByCategoriesArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field({ defaultValue: ProductSort.BestMatch, })
 	sort: ProductSort;
@@ -108,8 +106,8 @@ export class GetProductArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 }
 
 @ArgsType()
@@ -120,8 +118,8 @@ export class SearchProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.QAR, })
+	currency: CurrencyCode;
 
 	@Field({ defaultValue: ProductSort.BestMatch, })
 	sort: ProductSort;
@@ -141,8 +139,8 @@ export class GetRecommendedProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -159,8 +157,8 @@ export class GetFeaturedProductsArgs {
 	@Field({ defaultValue: ProductSort.BestMatch, })
 	sort: ProductSort;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -174,8 +172,8 @@ export class GetPopularProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field({ defaultValue: ProductSort.MostViewed, })
 	sort: ProductSort;
@@ -195,8 +193,8 @@ export class GetRelatedProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -210,8 +208,8 @@ export class GetRecentlyViewedProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -225,8 +223,8 @@ export class GetProductsInFeaturedCampaignArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field({ defaultValue: ProductSort.BestMatch, })
 	sort: ProductSort;
@@ -246,8 +244,8 @@ export class GetProductsInDesiredCampaignArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
-	@Field({ defaultValue: "usd", })
-	currency: string;
+	@Field({ defaultValue: CurrencyCode.USD, })
+	currency: CurrencyCode;
 
 	@Field({ defaultValue: ProductSort.BestMatch, })
 	sort: ProductSort;
@@ -415,17 +413,17 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	getProducts(@Args() args: GetProductsArgs): Promise<Array<Product>> {
-		return this.productsService.findAll("", args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAll("", args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getProductsByCategory(@Args() args: GetProductsByCategoryArgs): Promise<Array<Product>> {
-		return this.productsService.findAllByCategory(args.slug, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAllByCategory(args.slug, args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getProductsByCategories(@Args() args: GetProductsByCategoriesArgs): Promise<Array<Product>> {
-		return this.productsService.findAllByCategories(args.slugs, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAllByCategories(args.slugs, args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => Product, { nullable: true, })
@@ -438,7 +436,7 @@ export class ProductsResolver {
 		args: GetProductArgs
 	): Promise<Product | null> {
 		try {
-			return await this.productsService.findOneBySlug(req.customer, args.slug);
+			return await this.productsService.findOneBySlug(req.customer, args.slug, args.currency);
 		} catch {
 			return Promise.resolve(null);
 		}
@@ -446,7 +444,7 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
-		return this.productsService.searchProducts(args.query, args.language, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.searchProducts(args.query, args.language, args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
@@ -458,37 +456,44 @@ export class ProductsResolver {
 		@Args()
 		args: GetRecommendedProductsArgs
 	): Promise<Array<Product>> {
-		return this.productsService.getRecommendedProducts(req.customer, args.slug, args.pageNumber, args.itemsPerPage);
+		return this.productsService.getRecommendedProducts(req.customer, args.slug, args.currency, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getFeaturedProducts(@Args() args: GetFeaturedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getFeaturedProducts(args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.getFeaturedProducts(args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getPopularProducts(@Args() args: GetPopularProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getPopularProducts(args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.getPopularProducts(args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getRelatedProducts(@Args() args: GetRelatedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getRelatedProducts(args.slug, args.pageNumber, args.itemsPerPage);
+		return this.productsService.getRelatedProducts(args.slug, args.currency, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
-	getRecentlyViewedProducts(@Context('req') req: Request & { jti: string, customer: Customer, }, @Args() args: GetRecentlyViewedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getRecentlyViewedProducts(req.customer, args.pageNumber, args.itemsPerPage);
+	getRecentlyViewedProducts(
+		@Context('req')
+		req: Request & {
+			customer: Customer,
+		},
+		@Args()
+		args: GetRecentlyViewedProductsArgs
+	): Promise<Array<Product>> {
+		return this.productsService.getRecentlyViewedProducts(req.customer, args.currency, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getProductsInFeaturedCampaign(@Args() args: GetProductsInFeaturedCampaignArgs): Promise<Array<Product>> {
-		return this.productsService.getProductsInFeaturedCampaign(args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.getProductsInFeaturedCampaign(args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getProductsInDesiredCampaign(@Args() args: GetProductsInDesiredCampaignArgs): Promise<Array<Product>> {
-		return this.productsService.getProductsInCampaign(args.slug, args.sort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.getProductsInCampaign(args.slug, args.currency, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 }
 
@@ -539,18 +544,29 @@ export class ProductOptionValueResolver {
 
 @Resolver(() => ProductVariant)
 export class ProductVariantResolver {
-	constructor(
-		@Inject(PricingService) private readonly pricingService: PricingService,
-	) { }
 
+	/**
+	 * @deprecated [June 25, 2026] Price is calculated by the product service now. So, we need to remove this in 6 months .
+	 *
+	 * @param variant
+	 * @param args
+	 * @returns
+	 */
 	@ResolveField("price", () => Money)
-	getPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
-		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, variant.product.campaign, args.currency as CurrencyCode, false);
+	getPrice(@Parent() variant: ProductVariant, @Args() args: GetProductsArgs): Money {
+		return variant.price;
 	}
 
+	/**
+	 * @deprecated [June 25, 2026] Discounted price is calculated by the product service now. So, we need to remove this in 6 months .
+	 *
+	 * @param variant
+	 * @param args
+	 * @returns
+	 */
 	@ResolveField("discountedPrice", () => Money)
-	getDiscountedPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
-		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, variant.product.campaign, args.currency as CurrencyCode, true);
+	getDiscountedPrice(@Parent() variant: ProductVariant, @Args() args: GetProductsArgs): Money {
+		return variant.discountedPrice;
 	}
 
 	@ResolveField("title", () => String)

@@ -8,6 +8,8 @@ import { Repository } from 'typeorm';
 
 import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 
+import { getBasePrice, getDiscountedPrice, maxMoney } from '../common/currency';
+
 import {
 	Money,
 	ProductVariant,
@@ -84,6 +86,7 @@ export class PricingService {
 			this.logger.error(`Failed to find the exchange rates. Please create exchange rates for target currency code: ${currency}`);
 			return {
 				amount: -1,
+				minorAmount: 0,
 				currencyCode: currency,
 			};
 		}
@@ -94,6 +97,7 @@ export class PricingService {
 			this.logger.error(`Failed to find the exchange rate for currency code: ${currency}`);
 			return {
 				amount: -2,
+				minorAmount: 0,
 				currencyCode: currency,
 			};
 		}
@@ -141,24 +145,19 @@ export class PricingService {
 			exchangeRateFactor = 1;
 		}
 
-		// Calculate the base price based on the cost and the exchange rate.
-		const basePrice = Math.max(5, variant.cost.amount * pricingFactor * exchangeRateFactor);
-
-		// Apply discount if there is any
-		const discountedPrice = basePrice * (1 - (discountPercentage / 100));
+		// Calculate minimum price based on the currency
+		const minPrice: Money = {
+			amount: 5,
+			minorAmount: 0,
+			currencyCode: currency,
+		};
 
 		// Apply the discount and return the discounted price
 		if (applyDiscount && discountPercentage !== 0) {
-			return {
-				amount: Math.ceil(discountedPrice),
-				currencyCode: currency,
-			};
+			return maxMoney([minPrice, getDiscountedPrice(variant.cost, currency, pricingFactor, exchangeRateFactor, discountPercentage)]);
 		}
 
 		// Don't apply any discount and return full price
-		return {
-			amount: Math.ceil(basePrice),
-			currencyCode: currency,
-		};
+		return maxMoney([minPrice, getBasePrice(variant.cost, currency, pricingFactor, exchangeRateFactor)]);
 	}
 }

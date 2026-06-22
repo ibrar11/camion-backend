@@ -28,17 +28,21 @@ import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
 
 @ObjectType()
 export class CartMoney {
-	@Field(() => Int)
-	@Column({ type: "integer", nullable: true })
-	amount: number;
+    @Field(() => Int)
+    @Column({ type: "integer", nullable: true })
+    amount: number;
 
-	@Field()
-	@Column({
-		type: "enum",
-		enum: CurrencyCode,
-		default: CurrencyCode.USD,
-	})
-	currencyCode: CurrencyCode;
+    @Field(() => Int)
+    @Column({ type: "integer", nullable: false, default: 0, })
+    minorAmount: number;
+
+    @Field()
+    @Column({
+        type: "enum",
+        enum: CurrencyCode,
+        default: CurrencyCode.USD,
+    })
+    currencyCode: CurrencyCode;
 }
 
 @ObjectType()
