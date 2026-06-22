@@ -552,25 +552,27 @@ export class ProductsService {
 	/**
 	 * Finds products that have at least one variant without skuMeta.
 	 */
-	async findProductsWithVariantsMissingSkuMeta(): Promise<{
+	async findProductsWithVariantsMissingSkuMeta(status?: ProductStatus): Promise<{
 		totalMissingSkuVariants: number;
 		totalProducts: number;
 		data: Array<{
 			uuid: string;
 			name: string;
+			procurementId: string | null;
 			totalVariants: number;
 			missingSkuVariants: number;
 		}>;
 	}> {
 		this.logger.log(`Retrieving products with variants missing skuMeta`);
 
-		const rows = await this.productRepository.createQueryBuilder("product")
+		const query = this.productRepository.createQueryBuilder("product")
 			.setFindOptions({
 				relationLoadStrategy: "query",
 			})
 			.leftJoin("product.variants", "variant")
 			.select("product.uuid", "uuid")
 			.addSelect("product.titleEn", "name")
+			.addSelect("product.procurementId", "procurementId")
 			.addSelect("COUNT(variant.id)", "totalVariants")
 			.addSelect(
 				"SUM(CASE WHEN variant.skuMeta IS NULL THEN 1 ELSE 0 END)",
@@ -580,17 +582,24 @@ export class ProductsService {
 			.addGroupBy("product.uuid")
 			.addGroupBy("product.titleEn")
 			.having("SUM(CASE WHEN variant.skuMeta IS NULL THEN 1 ELSE 0 END) > 0")
-			.orderBy("product.id", "DESC")
-			.getRawMany<{
-				uuid: string;
-				name: string;
-				totalVariants: string;
-				missingSkuVariants: string;
-			}>();
+			.orderBy("product.id", "DESC");
+
+		if (status) {
+			query.andWhere("product.status = :status", { status });
+		}
+
+		const rows = await query.getRawMany<{
+			uuid: string;
+			name: string;
+			procurementId: string | null;
+			totalVariants: string;
+			missingSkuVariants: string;
+		}>();
 
 		const data = rows.map((row) => ({
 			uuid: row.uuid,
 			name: row.name,
+			procurementId: row.procurementId ?? null,
 			totalVariants: Number(row.totalVariants ?? 0),
 			missingSkuVariants: Number(row.missingSkuVariants ?? 0),
 		}));
