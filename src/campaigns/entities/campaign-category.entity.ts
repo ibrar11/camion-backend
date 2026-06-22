@@ -4,6 +4,7 @@ import {
 	CreateDateColumn,
 	Entity,
 	Index,
+	JoinColumn,
 	ManyToOne,
 	PrimaryGeneratedColumn,
 	Unique,
@@ -20,15 +21,19 @@ import { Campaign } from "./campaign.entity";
 @Entity({ name: "campaign_category", })
 @Unique(["campaign", "category"])
 export class CampaignCategory {
+	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
 	@ManyToOne(() => Campaign, (campaign) => campaign.campaignCategories, { onDelete: "CASCADE", })
+	@JoinColumn({ name: "campaign_id", })
 	@Index()
 	campaign: Campaign;
 
 	@Field(() => Category)
 	@ManyToOne(() => Category, (category) => category.campaignCategories, { onDelete: "CASCADE", })
+	@JoinColumn({ name: "category_id", })
+	@Index()
 	category: Category;
 
 	@Exclude()

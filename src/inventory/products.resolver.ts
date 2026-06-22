@@ -17,25 +17,25 @@ import {
 	Resolver,
 } from "@nestjs/graphql";
 
+import { ConfigService } from "@nestjs/config";
+
 import { ProductSort } from "./enums/ProductSort.enum";
+import { CurrencyCode } from "./enums/CurrencyCode.enum";
+
+import { PricingService } from "src/pricing/pricing.service";
 
 import { Product } from "./entities/product.entity";
 import { ProductOption } from "./entities/product-option.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
 import { Money, ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage } from "./entities/product-variant-image.entity";
-
 import { ProductsService } from "./products.service";
 
-import { GqlAuthGuard } from "../auth/gql.guard";
-import { PricingService } from "src/pricing/pricing.service";
-import { CurrencyCode } from "./enums/CurrencyCode.enum";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
 import { Category } from "./entities/category.entity";
-import { ConfigService } from "@nestjs/config";
 import { Customer } from "src/customers/entities/customer.entity";
-import { CampaignsService } from "src/campaigns/campaigns.service";
-import { Campaign } from "src/campaigns/entities/campaign.entity";
+
+import { GqlAuthGuard } from "../auth/gql.guard";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -153,6 +153,9 @@ export class GetPopularProductsArgs {
 	@Field({ defaultValue: "usd", })
 	currency: string;
 
+	@Field({ defaultValue: ProductSort.MostViewed, })
+	sort: ProductSort;
+
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
 
@@ -239,7 +242,6 @@ export class ProductsResolver {
 
 	constructor(
 		@Inject(ProductsService) private readonly productsService: ProductsService,
-		@Inject(CampaignsService) private readonly campaignsService: CampaignsService,
 		private readonly configService: ConfigService
 	) {
 		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
@@ -368,7 +370,7 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	getProducts(@Args() args: GetProductsArgs): Promise<Array<Product>> {
-		return this.productsService.findAll("", args.sort as ProductSort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAll("", args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
@@ -386,7 +388,7 @@ export class ProductsResolver {
 	}
 
 	@Query(() => [Product])
-	async searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
+	searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
 		return this.productsService.searchProducts(args.query, args.language, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
@@ -402,7 +404,7 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	getPopularProducts(@Args() args: GetPopularProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getPopularProducts(args.pageNumber, args.itemsPerPage);
+		return this.productsService.getPopularProducts(args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
@@ -416,31 +418,13 @@ export class ProductsResolver {
 	}
 
 	@Query(() => [Product])
-	async getProductsInFeaturedCampaign(@Args() args: GetProductsInFeaturedCampaignArgs): Promise<Array<Product>> {
-		try {
-			// Find the featured campaign
-			const campaign = await this.campaignsService.findOneFeatured();
-			if (campaign === null || campaign.campaignCategories.length === 0) {
-				return Promise.resolve([]);
-			}
-			return this.productsService.getProductsInCampaign(campaign, args.pageNumber, args.itemsPerPage);
-		} catch {
-			return Promise.resolve([]);
-		}
+	getProductsInFeaturedCampaign(@Args() args: GetProductsInFeaturedCampaignArgs): Promise<Array<Product>> {
+		return this.productsService.getProductsInFeaturedCampaign(args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
-	async getProductsInDesiredCampaign(@Args() args: GetProductsInDesiredCampaignArgs): Promise<Array<Product>> {
-		try {
-			// Find the campaign by slug
-			const campaign = await this.campaignsService.findOneBySlug(args.slug);
-			if (campaign === null || campaign.campaignCategories.length === 0) {
-				return Promise.resolve([]);
-			}
-			return this.productsService.getProductsInCampaign(campaign, args.pageNumber, args.itemsPerPage);
-		} catch {
-			return Promise.resolve([]);
-		}
+	getProductsInDesiredCampaign(@Args() args: GetProductsInDesiredCampaignArgs): Promise<Array<Product>> {
+		return this.productsService.getProductsInCampaign(args.slug, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 }
 

@@ -69,6 +69,8 @@ export class CampaignsService {
 		campaign.uuid = crypto.randomUUID();
 		campaign.nameEn = body.name.en.trim();
 		campaign.nameAr = body.name.ar.trim();
+		campaign.briefEn = body.brief.en.trim();
+		campaign.briefAr = body.brief.ar.trim();
 		campaign.slug = generateSlug(body.slug);
 		campaign.discountPercentage = body.discountPercentage;
 		campaign.startsAt = new Date(body.startsAt);
@@ -87,7 +89,7 @@ export class CampaignsService {
 				}
 
 				// Make sure the join between campaign and category exists
-				const exists = await this.campaignCategoryRepository.findOneBy({
+				const existing = await this.campaignCategoryRepository.findOneBy({
 					campaign: {
 						id: campaign.id,
 					},
@@ -96,7 +98,7 @@ export class CampaignsService {
 					},
 				});
 
-				if (exists !== null) {
+				if (existing !== null) {
 					return null;
 				}
 
@@ -266,9 +268,7 @@ export class CampaignsService {
 		// Make sure the campaign isn't expired
 		if (new Date().getTime() >= campaign.finishesAt.getTime()) {
 			throw new BadRequestException({
-				errors: {
-					finishesAt: "Please make sure that the campaign finishes in the future.",
-				},
+				error: "The featured campaign has already finished.",
 			});
 		}
 
@@ -314,6 +314,8 @@ export class CampaignsService {
 		// Update the campaign
 		campaign.nameEn = body.name.en.trim();
 		campaign.nameAr = body.name.ar.trim();
+		campaign.briefEn = body.brief.en.trim();
+		campaign.briefAr = body.brief.ar.trim();
 		campaign.slug = generateSlug(body.slug);
 		campaign.discountPercentage = body.discountPercentage;
 		campaign.startsAt = new Date(body.startsAt);
@@ -332,7 +334,7 @@ export class CampaignsService {
 				}
 
 				// Make sure the join between campaign and category exists
-				const exists = await this.campaignCategoryRepository.findOneBy({
+				const existing = await this.campaignCategoryRepository.findOneBy({
 					campaign: {
 						id: campaign.id,
 					},
@@ -341,7 +343,7 @@ export class CampaignsService {
 					},
 				});
 
-				if (exists !== null) {
+				if (existing !== null) {
 					return null;
 				}
 

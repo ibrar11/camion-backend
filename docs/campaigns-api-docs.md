@@ -9,6 +9,8 @@ POST /v1/campaigns HTTP/1.1
 |---|---|
 | name.en | The name of the campaign in English |
 | name.ar | The name of the campaign in Arabic |
+| brief.en | The brief of the campaign in English |
+| brief.ar | The brief of the campaign in Arabic |
 | slug | The slug of the campaign |
 | discountPercentage | Discount percentage applied of the products in the campaign |
 | startsAt | The date at which the campaign starts |
@@ -23,6 +25,10 @@ POST /v1/campaigns HTTP/1.1
     "name": {
         "en": "Summer 70%",
         "ar": "Summer 70% (Ar)"
+    },
+    "brief": {
+        "en": "Get 70% off on all summer wear",
+        "ar": "Get 70% off on all summer wear (AR)"
     },
     "slug": "summer-70",
     "discountPercentage": 70,
@@ -42,6 +48,8 @@ POST /v1/campaigns HTTP/1.1
     "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
     "nameEn": "Summer 70%",
     "nameAr": "Summer 70% (Ar)",
+    "briefEn": "Get 70% off on all summer wear",
+    "briefAr": "Get 70% off on all summer wear (AR)",
     "slug": "summer-70",
     "discountPercentage": "70",
     "startsAt": "2026-01-01T00:00:00.000Z",
@@ -65,17 +73,19 @@ GET /v1/campaigns HTTP/1.1
 ```json
 [
     {
-        "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
-        "nameEn": "Summer 70%",
-        "nameAr": "Summer 70% (Ar)",
-        "slug": "summer-70",
-        "discountPercentage": "70",
+        "uuid": "3475a613-56cb-457b-b80c-94abd8df4f70",
+        "nameEn": "Summer 50%",
+        "nameAr": "Summer 50% (Ar)",
+        "briefEn": "Get 50% off on all summer wear",
+        "briefAr": "Get 50% off on all summer wear (AR)",
+        "slug": "summer-50",
+        "discountPercentage": "50",
         "startsAt": "2026-01-01T00:00:00.000Z",
         "finishesAt": "2026-12-31T00:00:00.000Z",
         "isActive": true,
         "isFeatured": true,
-        "updatedAt": "2026-06-16T07:16:36.120Z",
-        "createdAt": "2026-06-16T07:16:12.203Z"
+        "updatedAt": "2026-06-18T09:49:00.614Z",
+        "createdAt": "2026-06-18T09:49:00.614Z"
     }
 ]
 ```
@@ -94,6 +104,8 @@ GET /v1/campaigns/<campaign-uuid> HTTP/1.1
     "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
     "nameEn": "Summer 70%",
     "nameAr": "Summer 70% (Ar)",
+    "briefEn": "Get 70% off on all summer wear",
+    "briefAr": "Get 70% off on all summer wear (AR)",
     "slug": "summer-70",
     "discountPercentage": "70",
     "startsAt": "2026-01-01T00:00:00.000Z",
@@ -136,6 +148,10 @@ PUT /v1/campaigns/<campaign-uuid> HTTP/1.1
         "en": "Summer 70%",
         "ar": "Summer 70% (Ar)"
     },
+    "brief": {
+        "en": "Get 70% off on all summer wear",
+        "ar": "Get 70% off on all summer wear (AR)"
+    },
     "slug": "summer-70",
     "discountPercentage": 70,
     "startsAt": "2026-01-01",
@@ -154,6 +170,8 @@ PUT /v1/campaigns/<campaign-uuid> HTTP/1.1
     "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
     "nameEn": "Summer 70%",
     "nameAr": "Summer 70% (Ar)",
+    "briefEn": "Get 70% off on all summer wear",
+    "briefAr": "Get 70% off on all summer wear (AR)",
     "slug": "summer-70",
     "discountPercentage": 70,
     "startsAt": "2026-01-01T00:00:00.000Z",

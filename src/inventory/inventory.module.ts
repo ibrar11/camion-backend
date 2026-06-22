@@ -78,10 +78,12 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
 import { QueueModule } from '../queue/queue.module';
 import { ProductCategoryResyncProcessor } from './workers/product-category-resync.processor';
 import { CampaignsModule } from 'src/campaigns/campaigns.module';
+import { Campaign } from 'src/campaigns/entities/campaign.entity';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
+			Campaign,
 			CartItem,
 			Category,
 			Customer,
@@ -102,9 +104,9 @@ import { CampaignsModule } from 'src/campaigns/campaigns.module';
 			User,
 			Warehouse,
 		]),
+		CampaignsModule,
 		ClientsModule,
 		PricingModule,
-		CampaignsModule,
 		QueueModule,
 	],
 	exports: [
@@ -112,11 +114,12 @@ import { CampaignsModule } from 'src/campaigns/campaigns.module';
 		ProductsService,
 	],
 	providers: [
-		S3Service,
-		UsersService,
-		CustomersService,
-		CategoriesService,
 		CategoriesResolver,
+		CategoriesService,
+		CustomersService,
+		FileService,
+		ImageThumbnailService,
+		ProductCategoryResyncProcessor,
 		ProductOptionResolver,
 		ProductOptionService,
 		ProductOptionValueResolver,
@@ -132,17 +135,14 @@ import { CampaignsModule } from 'src/campaigns/campaigns.module';
 		ProductVariantResolver,
 		ProductVariantService,
 		ProductVariantService,
-		WarehouseService,
-		FileService,
-		ImageThumbnailService,
-		TranslationService,
+		S3Service,
 		TranslationJobRegistryService,
-		ProductCategoryResyncProcessor,
+		TranslationService,
+		UsersService,
+		WarehouseService,
 	],
 	controllers: [
 		CategoriesController,
-		ProductsController,
-		ProductVariantController,
 		ProductOptionController,
 		ProductOptionValueController,
 		ProductReviewController,
