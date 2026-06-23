@@ -99,6 +99,8 @@ import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
 
 import { Product } from "../inventory/entities/product.entity";
 
+import { getBestCampaign } from "../common/bestCampaign";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -264,7 +266,11 @@ export class OrderService {
                 relations: {
                     product: {
                         productCategories: {
-                            category: true,
+                            category: {
+                                campaignCategories: {
+                                    campaign: true,
+                                },
+                            },
                         },
                     },
                     variant: true,
@@ -338,8 +344,10 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
 
+                const campaign = getBestCampaign(cart.product);
+
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, true);
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, campaign, currency, true);
                 const totalAmount = priceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
@@ -1111,7 +1119,11 @@ export class OrderService {
                 relations: {
                     product: {
                         productCategories: {
-                            category: true,
+                            category: {
+                                campaignCategories: {
+                                    campaign: true,
+                                },
+                            },
                         },
                     },
                     variant: {
@@ -1183,8 +1195,10 @@ export class OrderService {
                     );
                 }
 
+                const campaign = getBestCampaign(item.product);
+
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
-                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, currencyCode, true);
+                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, campaign, currencyCode, true);
 
                 const itemTotal = priceDiscount.amount * item.quantity;
                 subTotal += itemTotal;

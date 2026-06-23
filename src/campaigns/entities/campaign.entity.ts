@@ -76,6 +76,9 @@ export class Campaign {
 	@OneToMany(() => CampaignCategory, (campaignCategory) => campaignCategory.campaign, { cascade: true, })
 	campaignCategories: Array<CampaignCategory>;
 
+	@Column({ type: "timestamptz", nullable: true, default: null })
+	cartAdjustedAt: Date | null;
+
 	@UpdateDateColumn({
 		name: "updated_at",
 		type: "timestamptz",
