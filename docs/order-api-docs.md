@@ -148,7 +148,8 @@ itemsPerPage | Results per page | `100`
         "tracking": {
             "stage": "inbound",
             "status": "Goods Being Sourced",
-            "waybillNo": null
+            "waybillNo": null,
+            "trackingUrl": null
         },
         "orderPlacementDate": "2026-05-15T14:05:23.594Z",
         "orderItems": [
@@ -357,7 +358,8 @@ GET /v1/orders/<order-uuid> HTTP/1.1
     "tracking": {
         "stage": "outbound",
         "status": "Shipped",
-        "waybillNo": "DHL1234567890"
+        "waybillNo": "DHL1234567890",
+        "trackingUrl": "https://track.4px.com/#/result/0/DHL1234567890"
     },
     "orderPlacementDate": "2026-05-15T14:05:23.594Z",
     "orderItems": [
@@ -432,6 +434,11 @@ GET /v1/orders/<order-uuid> HTTP/1.1
 
 | Field | Type | Description |
 |---|---|---|
+| `tracking.stage` | `"order" \| "inbound" \| "outbound"` | Furthest stage reached: `order` = not yet dispatched, `inbound` = goods being procured/shipped to warehouse, `outbound` = shipped to customer |
+| `tracking.status` | `String` | Human-readable status label for the current stage |
+| `tracking.waybillNo` | `String \| null` | 4PX carrier tracking number — populated once the outbound order is shipped |
+| `tracking.trackingUrl` | `String \| null` | Direct 4PX tracking link (`https://track.4px.com/#/result/0/<waybillNo>`). `null` until the order is shipped |
+| `tracking.canRetryOutbound` | `Boolean` | `true` when the frontend should show a retry button (inbound stored but outbound never created, or outbound processing failed) |
 | `gulltransOrderSns` | `String[] \| null` | One Gulltrans order ID per 1688 shop involved in this order. `null` if not yet dispatched. |
 | `wmsOrders` | `Object[]` | All JOP WMS orders (inbound and outbound) linked to this order via the link table. Empty array if not yet dispatched. |
 | `wmsOrders[].id` | Number | Internal WMS order record ID |

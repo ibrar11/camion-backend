@@ -62,6 +62,9 @@ export class OrderTracking {
     @Field(() => String, { nullable: true })
     waybillNo: string | null;
 
+    @Field(() => String, { nullable: true })
+    trackingUrl: string | null;
+
     @Field()
     canRetryOutbound: boolean;
 }

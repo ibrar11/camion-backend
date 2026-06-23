@@ -183,10 +183,12 @@ export class OrderService {
                     ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ?? 'Procurement in Progress')
                     : 'Order Confirmed';
 
+            const waybillNo = outbound?.waybillNo ?? null;
             order.tracking = {
                 stage,
                 status,
-                waybillNo: outbound?.waybillNo ?? null,
+                waybillNo,
+                trackingUrl: waybillNo ? `https://track.4px.com/#/result/0/${waybillNo}` : null,
                 canRetryOutbound:
                     (stage === 'inbound' && inbound?.status === JopWmsInboundStatus.STORED) ||
                     (stage === 'outbound' && outbound?.status === JopWmsOutboundStatus.PROCESSING_FAILED),
