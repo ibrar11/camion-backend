@@ -213,14 +213,14 @@ export class PaymentsWebhookService {
                     await this.orderRepository.save(order);
 
                     if (order.customer) {
-                        notification = await this.notificationsService.create({
-                            customerUUID: order.customer.uuid,
-                            type: NotificationType.PAYMENT_FAILED,
-                            title: 'Payment Failed',
-                            brief: 'Your payment could not be processed.',
-                            message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
-                            priority: NotificationPriority.HIGH,
-                        }).catch(err => this.logger.warn(`Failed to send PAYMENT_FAILED notification: ${err?.message}`));
+                        // notification = await this.notificationsService.create({
+                        //     customerUUID: order.customer.uuid,
+                        //     type: NotificationType.PAYMENT_FAILED,
+                        //     title: 'Payment Failed',
+                        //     brief: 'Your payment could not be processed.',
+                        //     message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
+                        //     priority: NotificationPriority.HIGH,
+                        // }).catch(err => this.logger.warn(`Failed to send PAYMENT_FAILED notification: ${err?.message}`));
 
                         if (order.customer.emailAddress) {
                             this.emailService.sendOrderCancelledEmail(
