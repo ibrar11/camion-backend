@@ -22,6 +22,9 @@ import {
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
 
 import { Product } from '../inventory/entities/product.entity';
+import { ProductVariant } from "../inventory/entities/product-variant.entity";
+import { ProductOption } from '../inventory/entities/product-option.entity';
+import { ProductOptionValue } from '../inventory/entities/product-option-value.entity';
 
 import { Translation } from './entities/translation.entity';
 import { TranslationItem } from './entities/translation-item.entity';
@@ -36,6 +39,7 @@ import {
 } from './types';
 
 import { ConfigService } from '@nestjs/config';
+import { generateSlug } from 'src/common/slug';
 
 @Injectable()
 export class TranslationScannerService {
@@ -44,6 +48,9 @@ export class TranslationScannerService {
 
     constructor(
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+        @InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
+        @InjectRepository(ProductOption) private readonly productOptionRepository: Repository<ProductOption>,
+        @InjectRepository(ProductOptionValue) private readonly productOptionValueRepository: Repository<ProductOptionValue>,
         @InjectRepository(Translation) private readonly translationRepository: Repository<Translation>,
         @InjectRepository(TranslationItem) private readonly translationItemRepository: Repository<TranslationItem>,
         @InjectRepository(Language) private readonly languageRepository: Repository<Language>,
@@ -65,7 +72,7 @@ export class TranslationScannerService {
             const targetLanguageCodes = targetLanguages.map(lang => lang.shortCode);
 
             await this.findProductsWithCouldNotTranslateDescritpion();
-            await this.findProductsWithChineseDescritpion();
+            const chineseProducts = await this.findProductsWithChinese();
 
             if (targetLanguageCodes.length === 0) {
                 this.logger.warn('No target languages configured for translation');
@@ -74,6 +81,11 @@ export class TranslationScannerService {
 
             // Find products that need translation
             const productsNeedingTranslation = (await this.findProductsNeedingTranslation(targetLanguageCodes)).slice(0, 100);
+
+            if (chineseProducts && chineseProducts.length > 0) {
+                this.logger.log('Appending chinese product uuids');
+                productsNeedingTranslation.concat(chineseProducts)
+            }
 
             if (productsNeedingTranslation.length === 0) {
                 this.logger.log('No products found needing translation');
@@ -181,204 +193,318 @@ export class TranslationScannerService {
         }
     }
 
-    private async findProductsWithChineseDescritpion(): Promise<void> {
-        this.logger.log(`Attempting to find the products with chinese description`);
-        // Get all active products with Chinese description
+    /**
+     * Find products with Chinese content and translate them
+     * Chinese → English only (Arabic translation handled by queue)
+     */
+    private async findProductsWithChinese(): Promise<Product[]> {
+        this.logger.log(`Attempting to find products with Chinese content`);
+
+        // Get all active products with Chinese content in ANY field
         const allProducts = await this.productRepository
             .createQueryBuilder('product')
-            .leftJoinAndSelect('product.variants', 'variants')
-            .where('product.status = :status', {
-                status: ProductStatus.ACTIVE,
-            })
-            .andWhere(`product.description_en ~ '[一-龥]'`)
+            .distinct(true)
+            .leftJoinAndSelect('product.variants', 'variant')
+            .leftJoinAndSelect('product.options', 'option')
+            .leftJoinAndSelect('option.values', 'optionValue')
+            .where('product.status = :status', { status: ProductStatus.ACTIVE })
+            .andWhere(`
+            (
+                product.title_en ~ '[\\u4e00-\\u9fa5]'
+                OR product.description_en ~ '[\\u4e00-\\u9fa5]'
+                OR variant.title_en ~ '[\\u4e00-\\u9fa5]'
+                OR option.name_en ~ '[\\u4e00-\\u9fa5]'
+                OR optionValue.value_en ~ '[\\u4e00-\\u9fa5]'
+            )
+        `)
             .getMany();
 
+        // Filter products that have at least one variant
         const productsWithVariants = allProducts.filter(p => p.variants && p.variants.length > 0);
 
-        // Take first 50 products
-        const productsToUpdate = productsWithVariants?.slice(0, 30);
+        // Process up to 30 products
+        const productsToUpdate = productsWithVariants.slice(0, 30);
 
-        this.logger.log(`Found ${productsWithVariants?.length} products with Chinese description. Processing ${productsToUpdate?.length} products.`);
+        this.logger.log(`Found ${productsWithVariants.length} products with Chinese content. Processing ${productsToUpdate.length} products.`);
 
-        if (productsToUpdate?.length === 0) {
-            return;
+        if (productsToUpdate.length === 0) {
+            return [];
         }
 
-        // Get all target languages (excluding source language 'en')
-        const allLanguages = await this.languageRepository.find();
-        const targetLanguages = allLanguages.filter(lang => lang.shortCode !== 'en');
-        const targetLanguageCodes = targetLanguages.map(lang => lang.shortCode);
+        // Collect all Chinese text for batch translation
 
+        // Structure to track what needs translation
+        interface TranslationItem {
+            key: string;           // Unique key for mapping back
+            originalText: string;
+            entityType: 'product_title' | 'product_description' | 'variant_title' | 'option_name' | 'option_value';
+            entityUuid: string;
+            field: string;          // The field to update
+            productUuid: string;
+        }
+
+        const translationItems: TranslationItem[] = [];
+        const chineseTexts: string[] = [];
+
+        // Helper to add text to batch if it contains Chinese
+        const addIfChinese = (
+            text: string,
+            entityType: TranslationItem['entityType'],
+            entityUuid: string,
+            field: string,
+            productUuid: string
+        ): void => {
+            if (!text || text.trim().length === 0) return;
+
+            // Check if contains Chinese characters
+            if (/[\u4e00-\u9fa5]/.test(text)) {
+                const key = `${entityType}-${entityUuid}`;
+
+                // Avoid duplicates
+                const existingIndex = translationItems.findIndex(item => item.key === key);
+                if (existingIndex === -1) {
+                    translationItems.push({
+                        key,
+                        originalText: text,
+                        entityType,
+                        entityUuid,
+                        field,
+                        productUuid,
+                    });
+                    chineseTexts.push(text);
+                    }
+                }
+        };
+
+        // Collect all Chinese text from products
         for (const product of productsToUpdate) {
-            try {
-                const chineseDescription = product.descriptionEn;
-
-                // Translate Chinese to English
-                this.logger.log(`Translating Chinese description to English for product: ${product.uuid}`);
-                const englishTranslation = await this.translateText(chineseDescription, 'ch', 'en');
-
-                if (!englishTranslation) {
-                    this.logger.warn(`Failed to translate Chinese description to English for product: ${product.uuid}`);
-                    continue;
-                }
-
-                // Update product's descriptionEn with English translation
-                product.descriptionEn = englishTranslation;
-
-                // Translate English to all target languages
-                const translations: Record<string, string> = {};
-
-                for (const targetLang of targetLanguages) {
-                    this.logger.log(`Translating description to ${targetLang.shortCode} for product: ${product.uuid}`);
-                    const translatedText = await this.translateText(
-                        englishTranslation,
-                        'en',
-                        targetLang.shortCode
-                    );
-                    if (translatedText) {
-                        translations[targetLang.shortCode] = translatedText;
-                    }
-                }
-
-                // Update product's descriptionAr if Arabic is a target language
-                if (translations['ar']) {
-                    product.descriptionAr = translations['ar'];
-                }
-
-                // Save the product changes
-                await this.productRepository.save(product);
-
-                // Step 3: Update translation_items table
-                await this.updateTranslationItems(product, englishTranslation, translations);
-
-                this.logger.log(`Successfully processed product ${product.uuid} with ${Object.keys(translations).length} translations`);
-
-            } catch (error: any) {
-                this.logger.error(`Failed to process product ${product.uuid}: ${error.message}`);
-            }
-        }
-    }
-
-    /**
-     * Translate text using the translation API
-     */
-    private async translateText(text: string, sourceLanguage: string, targetLanguage: string): Promise<string | null> {
-        if (!text || text.trim().length === 0) {
-            return null;
-        }
-
-        try {
-            const response = await fetch(`${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: text,
-                    sourceLanguage: sourceLanguage,
-                    targetLanguage: targetLanguage
-                }),
-            });
-
-            if (!response.ok) {
-                this.logger.error(`Translation API responded with ${response.status} for ${sourceLanguage} -> ${targetLanguage}`);
-                return null;
-            }
-
-            const data = await response.json();
-            return data?.translated || null;
-
-        } catch (error: any) {
-            this.logger.error(`Translation API error: ${error.message}`);
-            return null;
-        }
-    }
-
-    /**
-     * Update translation_items table with new description translations
-     */
-    private async updateTranslationItems(
-        product: Product,
-        englishDescription: string,
-        translations: Record<string, string>
-    ): Promise<void> {
-        // Find or create translation record for the product
-        let translation = await this.translationRepository.findOne({
-            where: {
-                entityUuid: product.uuid,
-                entityType: 'product',
-            },
-            relations: ['translationItems', 'translationItems.language'],
-        });
-
-        if (!translation) {
-            throw new BadRequestException({
-                error: `Translation record not found for product: ${product.uuid}`
-            });
-        }
-
-        // Get all existing translation items for this translation
-        const existingItems = translation.translationItems || [];
-
-        // Group existing items by language ID to find duplicates
-        const itemsByLanguage = new Map<number, typeof existingItems>();
-        for (const item of existingItems) {
-            const languageId = item.language?.id;
-            if (languageId) {
-                if (!itemsByLanguage.has(languageId)) {
-                    itemsByLanguage.set(languageId, []);
-                }
-                itemsByLanguage.get(languageId)!.push(item);
-            }
-        }
-
-        // For each language with duplicates, keep only the latest (highest ID) and delete the rest
-        for (const [languageId, items] of itemsByLanguage.entries()) {
-            if (items.length > 1) {
-                // Sort by ID descending (latest first)
-                items.sort((a, b) => b.id - a.id);
-
-                // Keep the first (latest) one, delete the rest
-                const itemsToDelete = items.slice(1);
-                const idsToDelete = itemsToDelete.map(item => item.id);
-
-                this.logger.log(`Found ${itemsToDelete.length} duplicate translation items for language ${languageId} in product ${product.uuid}. Removing duplicates.`);
-
-                await this.translationItemRepository.delete(idsToDelete);
-
-                // Remove deleted items from the existingItems array reference
-                for (const itemToDelete of itemsToDelete) {
-                    const index = translation.translationItems.findIndex(item => item.id === itemToDelete.id);
-                    if (index !== -1) {
-                        translation.translationItems.splice(index, 1);
-                    }
-                }
-            }
-        }
-
-        // For each target language, update or create the translation item
-        for (const [targetLanguageCode, translatedText] of Object.entries(translations)) {
-            const language = await this.languageRepository.findOne({
-                where: { shortCode: targetLanguageCode },
-            });
-
-            if (!language) {
-                this.logger.warn(`Language ${targetLanguageCode} not found`);
-                continue;
-            }
-
-            // Find existing translation item for this language (after deduplication)
-            let translationItem = translation.translationItems?.find(
-                item => item.language?.id === language.id
+            // Product title
+            addIfChinese(
+                product.titleEn,
+                'product_title',
+                product.uuid,
+                'titleEn',
+                product.uuid
             );
 
-            if (translationItem) {
-                // Update existing translation item
-                translationItem.translatedProductDescription = translatedText;
-                translationItem.updatedAt = new Date();
-                await this.translationItemRepository.save(translationItem);
+            // Product description
+            addIfChinese(
+                product.descriptionEn,
+                'product_description',
+                product.uuid,
+                'descriptionEn',
+                product.uuid
+            );
+
+            // Variant titles
+            for (const variant of product.variants || []) {
+                addIfChinese(
+                    variant.titleEn,
+                    'variant_title',
+                    variant.uuid,
+                    'titleEn',
+                    product.uuid
+                );
+            }
+
+            // Option names and values
+            for (const option of product.options || []) {
+                addIfChinese(
+                    option.nameEn,
+                    'option_name',
+                    option.uuid,
+                    'nameEn',
+                    product.uuid
+                );
+
+                for (const optionValue of option.values || []) {
+                    addIfChinese(
+                        optionValue.valueEn,
+                        'option_value',
+                        optionValue.uuid,
+                        'valueEn',
+                        product.uuid
+                    );
+            }
+        }
+    }
+
+        this.logger.log(`Found ${chineseTexts.length} Chinese text segments to translate`);
+
+        if (chineseTexts.length === 0) {
+            return productsToUpdate; // No Chinese text found
+        }
+
+        // Batch translate Chinese → English
+
+        let translations: string[] = [];
+
+        try {
+            const translationResponse = await fetch(
+                `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/batch`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({
+                        texts: chineseTexts,
+                        sourceLanguage: 'ch',
+                        targetLanguage: 'en',
+                    }),
+                },
+            );
+
+            if (translationResponse.ok) {
+                translations = await translationResponse.json();
+                this.logger.log(`Successfully translated ${translations.length} Chinese segments`);
+            } else {
+                this.logger.warn(`Translation API returned ${translationResponse.status}, using original text`);
+                translations = chineseTexts;
+            }
+        } catch (error: any) {
+            this.logger.error(`Batch translation failed: ${error.message}`);
+            translations = chineseTexts;
+    }
+
+        // Apply translations
+
+        // Group translations by product for batch saving
+        const productUpdates = new Map<string, {
+            product: Product;
+            titleEn?: string;
+            descriptionEn?: string;
+            variants: Map<string, { variant: any; titleEn?: string }>;
+            options: Map<string, { option: any; nameEn?: string; values: Map<string, { value: any; valueEn?: string }> }>;
+        }>();
+
+        // Initialize product update groups
+        for (const product of productsToUpdate) {
+            if (!productUpdates.has(product.uuid)) {
+                productUpdates.set(product.uuid, {
+                    product,
+                    variants: new Map(),
+                    options: new Map(),
+                });
+
+                // Initialize variants
+                for (const variant of product.variants || []) {
+                    productUpdates.get(product.uuid)!.variants.set(variant.uuid, { variant });
+                }
+
+                // Initialize options and their values
+                for (const option of product.options || []) {
+                    const optionData = { option, values: new Map() };
+                    for (const value of option.values || []) {
+                        optionData.values.set(value.uuid, { value });
+                    }
+                    productUpdates.get(product.uuid)!.options.set(option.uuid, optionData);
+                }
             }
         }
 
-        this.logger.log(`Updated translation items for product ${product.uuid}`);
+        // Apply translations
+        for (let i = 0; i < translationItems.length && i < translations.length; i++) {
+            const item = translationItems[i];
+            const translatedText = translations[i] || item.originalText;
+
+            const productUpdate = productUpdates.get(item.productUuid);
+            if (!productUpdate) continue;
+
+            switch (item.entityType) {
+                case 'product_title':
+                    productUpdate.titleEn = translatedText.slice(0, 128);
+                    productUpdate.product.titleEn = translatedText.slice(0, 128);
+                    productUpdate.product.slug = generateSlug(translatedText.slice(0, 128));
+                    break;
+
+                case 'product_description':
+                    productUpdate.descriptionEn = translatedText;
+                    productUpdate.product.descriptionEn = translatedText;
+                    break;
+
+                case 'variant_title': {
+                    const variantData = productUpdate.variants.get(item.entityUuid);
+                    if (variantData) {
+                        variantData.titleEn = translatedText.slice(0, 128);
+                        variantData.variant.titleEn = translatedText.slice(0, 128);
+                    }
+                    break;
+                }
+
+                case 'option_name': {
+                    const optionData = productUpdate.options.get(item.entityUuid);
+                    if (optionData) {
+                        optionData.nameEn = translatedText.slice(0, 64);
+                        optionData.option.nameEn = translatedText.slice(0, 64);
+                    }
+                    break;
+                }
+
+                case 'option_value': {
+                    // Find the option containing this value
+                    for (const [, optionData] of productUpdate.options) {
+                        const valueData = optionData.values.get(item.entityUuid);
+                        if (valueData) {
+                            valueData.valueEn = translatedText.slice(0, 64);
+                            valueData.value.valueEn = translatedText.slice(0, 64);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Save all changes in batch
+
+        for (const [, update] of productUpdates) {
+            try {
+                // Save product
+                await this.productRepository.save(update.product);
+
+                // Save variants
+                if (update.variants.size > 0) {
+                    const variantsToSave = Array.from(update.variants.values())
+                        .filter(v => v.titleEn !== undefined)
+                        .map(v => v.variant);
+                    if (variantsToSave.length > 0) {
+                        await this.productVariantRepository.save(variantsToSave);
+            }
+        }
+
+                // Save options
+                const optionsToSave: any[] = [];
+                const optionValuesToSave: any[] = [];
+
+                for (const [, optionData] of update.options) {
+                    if (optionData.nameEn !== undefined) {
+                        optionsToSave.push(optionData.option);
+                    }
+
+                    for (const [, valueData] of optionData.values) {
+                        if (valueData.valueEn !== undefined) {
+                            optionValuesToSave.push(valueData.value);
+                        }
+                    }
+                }
+
+                if (optionsToSave.length > 0) {
+                    await this.productOptionRepository.save(optionsToSave);
+                }
+
+                if (optionValuesToSave.length > 0) {
+                    await this.productOptionValueRepository.save(optionValuesToSave);
+                }
+
+                this.logger.log(`Successfully applied translations for product ${update.product.uuid}`);
+
+            } catch (error: any) {
+                this.logger.error(`Failed to save translations for product ${update.product.uuid}: ${error.message}`);
+            }
+        }
+
+        return productsToUpdate;
     }
 
     /**
@@ -453,9 +579,17 @@ export class TranslationScannerService {
         const targetLanguageCodes = targetLanguages.map(lang => lang.shortCode);
 
         await this.findProductsWithCouldNotTranslateDescritpion();
-        await this.findProductsWithChineseDescritpion();
+        const chineseProducts = await this.findProductsWithChinese();
 
-        const productsNeedingTranslation = await this.findProductsNeedingTranslation(targetLanguageCodes);
+        const productsNeedingTranslation = await this.findProductsNeedingTranslation(targetLanguageCodes);;
+
+        if (chineseProducts && chineseProducts.length > 0) {
+            this.logger.log('Appending chinese product uuids');
+            productsNeedingTranslation.concat(chineseProducts)
+        }
+
+        this.logger.log(`Found ${productsNeedingTranslation.length} product(s) needing translation`);
+
         const { highPriority, normalPriority } = this.categorizeProductsByPriority(productsNeedingTranslation);
 
         // Queue all products (in batches for normal priority)
