@@ -49,33 +49,35 @@ export class PaymentsService {
             })
             await this.paymentTransactionRepository.save(transaction);
 
-            const exchangeRates = await this.exchangeRateService.findAll("", "");
-            if (dto?.provider === PaymentProvider.SKIPCASH) {
-                if(dto.currency.toLowerCase().trim() !== "qar") {
+            if (dto.amount > 0) {
+                const exchangeRates = await this.exchangeRateService.findAll("", "");
+                if (dto?.provider === PaymentProvider.SKIPCASH) {
+                    if (dto.currency.toLowerCase().trim() !== "qar") {
 
-                    const exchangeRate = exchangeRates
-                    .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === dto.currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
-                    .at(0) ?? null;
-                    
-                    if (!exchangeRate) {
-                        throw new NotFoundException({
-                            error: `Exchange Rate for ${dto.currency} to qar not found`
-                        });
+                        const exchangeRate = exchangeRates
+                            .filter(exchangeRate => exchangeRate.srcCurrencyCode.toLowerCase().trim() === dto.currency.toLowerCase().trim() && exchangeRate.targetCurrencyCode.toLowerCase().trim() === 'qar')
+                            .at(0) ?? null;
+
+                        if (!exchangeRate) {
+                            throw new NotFoundException({
+                                error: `Exchange Rate for ${dto.currency} to qar not found`
+                            });
+                        }
+
+                        // convert the total in QAR for skipcash.
+                        dto.amount = dto.amount * exchangeRate.factor;
                     }
-                    
-                    // convert the total in QAR for skipcash.
-                    dto.amount = dto.amount * exchangeRate.factor;
                 }
+
+                // fetch the strategy for specified provider
+                const strategy = this.strategyfactory.getStrategy(dto.provider);
+
+                // intialize the payment creation for specifed provider
+                const result = await strategy.InitiatePayment(dto);
+
+                transaction.transactionId = result.transactionId;
+                transaction.rawResponse = result.raw;
             }
-
-            // fetch the strategy for specified provider
-            const strategy = this.strategyfactory.getStrategy(dto.provider);
-
-            // intialize the payment creation for specifed provider
-            const result = await strategy.InitiatePayment(dto);
-
-            transaction.transactionId = result.transactionId;
-            transaction.rawResponse = result.raw;
 
             this.logger.log(`Completed create payment for order ${dto.orderUUID} customer: ${dto.firstName} ${dto.lastName}`);
             return await this.paymentTransactionRepository.save(transaction);
