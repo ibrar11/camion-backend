@@ -58,7 +58,6 @@ export class Order {
     @Column({ type: "uuid", nullable: false, unique: true, })
     uuid: string;
 
-    @Exclude()
     @ManyToOne(() => Customer, (customer) => customer.orders)
     @Index()
     customer: Customer;
@@ -116,6 +115,12 @@ export class Order {
     @OneToOne(() => PaymentTransaction, (transaction) => transaction.order, { cascade: true })
     @JoinColumn()
     paymentTransaction: PaymentTransaction;
+
+    @Column({ type: 'varchar', length: 512, nullable: true, default: null, name: 'cancellation_reason' })
+    cancellationReason: string | null;
+
+    @Column({ type: 'jsonb', nullable: true, default: null, name: 'order_review' })
+    orderReview: { rating: number; text: string } | null;
 
     @Exclude()
     @UpdateDateColumn({

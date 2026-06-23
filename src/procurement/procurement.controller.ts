@@ -111,4 +111,31 @@ export class ProcurementController {
     ) {
         return this.procurementService.getInventoryVariantsResyncJob(jobId);
     }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Post('import-sku-meta')
+    @HttpCode(HttpStatus.OK)
+    importSkuMeta(): Promise<{
+        totalProducts: number;
+        totalJobs: number;
+        singleJobProducts: number;
+        batchedJobProducts: number;
+        jobs: Array<{
+            jobId: string;
+            status: "queued";
+            productUuids: string[];
+            productsCount: number;
+        }>;
+    }> {
+        return this.procurementService.enqueueSkuMetaImport();
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+    @Get('import-sku-meta/job/:jobId')
+    @HttpCode(HttpStatus.OK)
+    getImportSkuMetaJob(
+        @Param('jobId') jobId: string
+    ) {
+        return this.procurementService.getSkuMetaImportJob(jobId);
+    }
 }

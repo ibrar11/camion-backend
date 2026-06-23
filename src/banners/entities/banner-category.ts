@@ -6,6 +6,7 @@ import { Exclude } from "class-transformer";
 @Entity({ name: "banner_categories", })
 @Unique(["banner", "category"])
 export class BannerCategory {
+	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 

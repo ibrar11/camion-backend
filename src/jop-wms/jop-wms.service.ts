@@ -443,8 +443,9 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: item.variant.titleEn,
+                name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
+                freight_fee: '0',
                 skus: [{
                     platform_sku: item.variant.sku,
                     price: String(item.variant.cost.amount),
@@ -838,7 +839,7 @@ export class JopWmsService {
                     shop_name: shopName,
                     platform: '1688',
                     platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                    name: item.variant.titleEn,
+                    name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                     goods_amount: String(item.variant.cost.amount * item.quantity),
                     skus: [{
                         platform_sku: item.variant.sku,
@@ -864,6 +865,94 @@ export class JopWmsService {
         }
 
         return { found: matchingJobs.length, retried: retriedShopIds.length, shopIds: retriedShopIds };
+    }
+
+    // ─── Dispatch Status ──────────────────────────────────────────────────────
+
+    async getDispatchJobStatus(dispatchJobId: string) {
+        const allJobs = await this.dispatchQueue.getJobs([
+            'waiting', 'active', 'completed', 'failed', 'delayed', 'prioritized',
+        ]);
+
+        const shopJobs = allJobs.filter(
+            j => (j.data as DispatchShopJobData).dispatchJobId === dispatchJobId,
+        );
+
+        if (!shopJobs.length) {
+            throw new NotFoundException(`No dispatch jobs found for dispatchJobId: ${dispatchJobId}`);
+        }
+
+        const shops = await Promise.all(
+            shopJobs.map(async job => {
+                const data = job.data as DispatchShopJobData;
+                const state = await job.getState();
+
+                const inboundOrder = await this.wmsOrderRepository.findOne({
+                    where: { orderNo: data.inboundVoucherNo },
+                    select: ['orderNo', 'wmsAssignedId', 'status'],
+                });
+
+                return {
+                    jobId: job.id,
+                    shopId: data.shopId,
+                    shopName: data.shopName,
+                    state,
+                    attemptsMade: job.attemptsMade,
+                    maxAttempts: 5,
+                    orderUuids: data.orderUuids,
+                    gulltransOrderSns: data.gulltransOrderSns ?? null,
+                    failedReason: job.failedReason ?? null,
+                    inbound: inboundOrder
+                        ? {
+                            voucherNo: inboundOrder.orderNo,
+                            wmsAssignedId: inboundOrder.wmsAssignedId,
+                            status: inboundOrder.status,
+                        }
+                        : { voucherNo: data.inboundVoucherNo, wmsAssignedId: null, status: null },
+                };
+            }),
+        );
+
+        const states = shops.map(s => s.state);
+        let overallStatus: string;
+        if (states.every(s => s === 'completed')) overallStatus = 'completed';
+        else if (states.every(s => s === 'failed')) overallStatus = 'failed';
+        else if (states.some(s => s === 'failed' || s === 'delayed')) overallStatus = 'partial';
+        else overallStatus = 'processing';
+
+        return { dispatchJobId, overallStatus, shops };
+    }
+
+    async getDispatchSubJob(jobId: string) {
+        const job = await this.dispatchQueue.getJob(jobId);
+        if (!job) {
+            throw new NotFoundException(`Dispatch sub-job not found: ${jobId}`);
+        }
+
+        const data = job.data as DispatchShopJobData;
+        const state = await job.getState();
+
+        const inboundOrder = await this.wmsOrderRepository.findOne({
+            where: { orderNo: data.inboundVoucherNo },
+            select: ['orderNo', 'wmsAssignedId', 'status', 'lastPolledAt', 'lastError', 'errorCount'],
+        });
+
+        return {
+            jobId: job.id,
+            dispatchJobId: data.dispatchJobId,
+            shopId: data.shopId,
+            shopName: data.shopName,
+            state,
+            attemptsMade: job.attemptsMade,
+            failedReason: state === 'failed' ? (job.failedReason ?? null) : null,
+            orderUuids: data.orderUuids,
+            gulltransOrderSns: data.gulltransOrderSns ?? null,
+            inboundVoucherNo: data.inboundVoucherNo,
+            inbound: inboundOrder ?? null,
+            createdAt: new Date(job.timestamp),
+            processedAt: job.processedOn ? new Date(job.processedOn) : null,
+            finishedAt: job.finishedOn ? new Date(job.finishedOn) : null,
+        };
     }
 
     // ─── Recovery ─────────────────────────────────────────────────────────────
@@ -932,7 +1021,7 @@ export class JopWmsService {
                 shop_name: shopName,
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
-                name: item.variant.titleEn,
+                name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                 goods_amount: String(item.variant.cost.amount * item.quantity),
                 freight_fee: '0',
                 skus: [{
@@ -948,21 +1037,25 @@ export class JopWmsService {
                 address: warehouseAddress,
             });
 
-            const shopResult = result.success.find(s => String(s.shopId) === String(shopId));
-            if (!shopResult) {
+            const shopResults = result.success.filter(s => String(s.shopId) === String(shopId));
+            if (!shopResults.length) {
                 const failure = result.failed.find(f => String(f.shopId) === String(shopId));
                 throw new BadRequestException(`Gulltrans failed for shop ${shopId}: ${failure?.reason ?? 'no success entry returned'}`);
             }
 
-            this.logger.log(`recoverInbound ${orderNo}: Gulltrans order ${shopResult.orderSn} created for shop ${shopId}`);
-            gulltransOrders.push({ shopId, orderSn: shopResult.orderSn, raw: shopResult.raw });
+            for (const r of shopResults) {
+                this.logger.log(`recoverInbound ${orderNo}: Gulltrans order ${r.orderSn} created for shop ${shopId}`);
+                gulltransOrders.push({ shopId, orderSn: r.orderSn, raw: r.raw });
+            }
 
-            // Write gulltrans_order_sns to each order
+            // Write all gulltrans_order_sns to each order
             for (const order of orders) {
-                await this.orderRepository.query(
-                    `UPDATE orders SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1) WHERE uuid = $2`,
-                    [shopResult.orderSn, order.uuid],
-                );
+                for (const r of shopResults) {
+                    await this.orderRepository.query(
+                        `UPDATE orders SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1) WHERE uuid = $2`,
+                        [r.orderSn, order.uuid],
+                    );
+                }
             }
         }
 

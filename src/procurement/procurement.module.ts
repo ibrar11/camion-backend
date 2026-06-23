@@ -50,10 +50,12 @@ import { ImageThumbnailService } from '../common/image-thumbnail.service';
 
 import { QueueModule } from '../queue/queue.module';
 import { InventoryResyncProcessor } from './workers/inventory-resync.processor';
+import { SkuMetaImportProcessor } from './workers/sku-meta-import.processor';
 
 import { TranslationService } from '../translation/translation.service';
 
 import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
+import { Campaign } from 'src/campaigns/entities/campaign.entity';
 
 @Module({
 	imports: [
@@ -73,6 +75,7 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
 			ProductView,
 			User,
 			Warehouse,
+			Campaign,
 		]),
 		ClientsModule,
 		QueueModule,
@@ -92,6 +95,7 @@ import { TranslationJobRegistryService } from '../translation/translation-job-re
 		ImageThumbnailService,
 		TranslationService,
 		InventoryResyncProcessor,
+		SkuMetaImportProcessor,
 		TranslationJobRegistryService,
 	],
 	controllers: [ProcurementController],

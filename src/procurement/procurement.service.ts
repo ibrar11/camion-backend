@@ -61,7 +61,7 @@ import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { QueueService } from 'src/queue/queue.service';
 import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 import { QueueName } from 'src/queue/enums/QueueTypes.enum';
-import { InventoryResyncJobData } from 'src/queue/types';
+import { InventoryResyncJobData, SkuMetaImportJobData } from 'src/queue/types';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -174,6 +174,137 @@ export class ProcurementService {
             result: job.returnvalue,
             failedReason: job.failedReason ?? null,
         };
+    }
+
+    async enqueueSkuMetaImport(): Promise<{
+        totalProducts: number;
+        totalJobs: number;
+        singleJobProducts: number;
+        batchedJobProducts: number;
+        jobs: Array<{
+            jobId: string;
+            status: "queued";
+            productUuids: string[];
+            productsCount: number;
+        }>;
+    }> {
+        const products = await this.findProductsWithMissingSkuMetaCounts();
+
+        if (!products.length) {
+            throw new BadRequestException({
+                message: "No products with missing skuMeta were found",
+            });
+        }
+
+        const largeProducts: string[] = [];
+        const normalProducts: string[] = [];
+
+        for (const product of products) {
+            if (product.totalVariants > 50) {
+                largeProducts.push(product.uuid);
+                continue;
+            }
+
+            normalProducts.push(product.uuid);
+        }
+
+        const jobs: Array<{
+            jobId: string;
+            status: "queued";
+            productUuids: string[];
+            productsCount: number;
+        }> = [];
+
+        for (const productUuid of largeProducts) {
+            const queued = await this.queueService.addSkuMetaImportJob([productUuid]);
+            jobs.push({
+                ...queued,
+                productUuids: [productUuid],
+                productsCount: 1,
+            });
+        }
+
+        for (const batch of this.chunkArray(normalProducts, 10)) {
+            const queued = await this.queueService.addSkuMetaImportJob(batch);
+            jobs.push({
+                ...queued,
+                productUuids: batch,
+                productsCount: batch.length,
+            });
+        }
+
+        return {
+            totalProducts: products.length,
+            totalJobs: jobs.length,
+            singleJobProducts: largeProducts.length,
+            batchedJobProducts: normalProducts.length,
+            jobs,
+        };
+    }
+
+    async getSkuMetaImportJob(jobId: string): Promise<{
+        jobId: string;
+        status: "queued" | "active" | "completed" | "failed" | "not_found";
+        progress?: string | number | boolean | object;
+        result?: any;
+        failedReason?: string | null;
+    }> {
+        const job = await this.queueService.getJob(
+            QueueName.SKU_META_IMPORT,
+            jobId
+        ) as Job<SkuMetaImportJobData> | null;
+
+        if (!job) {
+            return { jobId, status: "not_found" };
+        }
+
+        const state = await job.getState();
+        const statusMap: Record<string, "queued" | "active" | "completed" | "failed"> = {
+            waiting: "queued",
+            delayed: "queued",
+            paused: "queued",
+            active: "active",
+            completed: "completed",
+            failed: "failed",
+        };
+
+        return {
+            jobId,
+            status: statusMap[state] ?? "queued",
+            progress: job.progress,
+            result: job.returnvalue,
+            failedReason: job.failedReason ?? null,
+        };
+    }
+
+    private async findProductsWithMissingSkuMetaCounts(): Promise<Array<{
+        uuid: string;
+        totalVariants: number;
+        missingSkuVariants: number;
+    }>> {
+        const products = await this.productRepository
+            .createQueryBuilder("product")
+            .leftJoin("product.variants", "variant")
+            .select("product.uuid", "uuid")
+            .addSelect("COUNT(variant.id)", "totalVariants")
+            .addSelect(
+                "SUM(CASE WHEN variant.skuMeta IS NULL THEN 1 ELSE 0 END)",
+                "missingSkuVariants",
+            )
+            .groupBy("product.id")
+            .addGroupBy("product.uuid")
+            .having("SUM(CASE WHEN variant.skuMeta IS NULL THEN 1 ELSE 0 END) > 0")
+            .getRawMany<{
+                uuid: string;
+                totalVariants: string;
+                missingSkuVariants: string;
+            }>();
+
+        return products.map((product) => ({
+            uuid: product.uuid,
+            totalVariants: Number(product.totalVariants ?? 0),
+            missingSkuVariants: Number(product.missingSkuVariants ?? 0),
+        }));
     }
 
     async resyncInventoryVariantsByProducts(productUuids: string[]): Promise<{
@@ -313,6 +444,96 @@ export class ProcurementService {
 
         return {
             productsRequested: productUuids.length,
+            productsFound,
+            productsWithProcurementId,
+            productsFailed,
+            failedProducts,
+            variantsMatched,
+            variantsUpdated,
+            variantsMissingInSource,
+            productsSkippedWithoutProcurementId,
+        };
+    }
+
+    async importSkuMetaByProducts(productUuids: string[] = []): Promise<{
+        productsRequested: number;
+        productsFound: number;
+        productsWithProcurementId: number;
+        productsFailed: number;
+        failedProducts: Array<{ productUuid: string; procurementId: string | null; error: string }>;
+        variantsMatched: number;
+        variantsUpdated: number;
+        variantsMissingInSource: number;
+        productsSkippedWithoutProcurementId: string[];
+    }> {
+        this.logger.log(`Importing skuMeta from procurement API`);
+
+        const uniqueProductUuids = [...new Set(productUuids)];
+        const productUuidChunks = this.chunkArray(uniqueProductUuids, 200);
+
+        let productsFound = 0;
+        let productsWithProcurementId = 0;
+        let productsFailed = 0;
+        let variantsMatched = 0;
+        let variantsUpdated = 0;
+        let variantsMissingInSource = 0;
+        const productsSkippedWithoutProcurementId: string[] = [];
+        const failedProducts: Array<{ productUuid: string; procurementId: string | null; error: string }> = [];
+
+        for (const productUuidChunk of productUuidChunks) {
+            const products = await this.productRepository.find({
+                where: { uuid: In(productUuidChunk) },
+                relations: {
+                    variants: true,
+                },
+            });
+            productsFound += products.length;
+
+            for (const product of products) {
+                if (!product.procurementId) {
+                    productsSkippedWithoutProcurementId.push(product.uuid);
+                    continue;
+                }
+
+                try {
+                    productsWithProcurementId += 1;
+                    const sourceProduct = await this.getProductDetail(product.procurementId);
+                    const sourceBySku = new Map<string, ProcurementProductVariant>();
+
+                    for (const sourceVariant of sourceProduct.variants ?? []) {
+                        sourceBySku.set(String(sourceVariant.skuId), sourceVariant);
+                    }
+
+                    for (const localVariant of product.variants ?? []) {
+                        const sourceVariant = sourceBySku.get(localVariant.sku);
+                        if (!sourceVariant) {
+                            variantsMissingInSource += 1;
+                            continue;
+                        }
+
+                        variantsMatched += 1;
+                        if (!this.isSameObject(localVariant.skuMeta, sourceVariant.skuMeta)) {
+                            localVariant.skuMeta = sourceVariant.skuMeta as Record<string, any>;
+                            await this.productVariantRepository.save(localVariant);
+                            variantsUpdated += 1;
+                        }
+                    }
+                } catch (error) {
+                    productsFailed += 1;
+                    failedProducts.push({
+                        productUuid: product.uuid,
+                        procurementId: product.procurementId ?? null,
+                        error: (error as Error)?.message ?? "Unknown error",
+                    });
+                    this.logger.error(
+                        `Failed skuMeta import for product ${product.uuid} (procurementId=${product.procurementId}): ${(error as Error).message}`,
+                    );
+                }
+            }
+        }
+
+        return {
+            productsRequested: uniqueProductUuids.length,
             productsFound,
             productsWithProcurementId,
             productsFailed,
@@ -655,7 +876,7 @@ export class ProcurementService {
 
                 const shippingInfo = product.productShippingInfo?.skuShippingDetails?.find(
                     (detail: any) => detail.skuId === sku.skuId.toString()
-                );
+                ) ?? product.productShippingInfo;
 
                 const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
@@ -1322,14 +1543,18 @@ export class ProcurementService {
     }
 
     /**
-     * Groups flat order items by shop_id (falls back to shop_name), merging skus
+     * Groups flat order items by (shop_id, platform_url), merging skus
      * and summing goods_amount and freight_fee within each group.
+     * Grouping by platform_url keeps different products as separate Gulltrans
+     * orders — Gulltrans platform_url and name are order-level fields, not
+     * per-SKU, so mixing products in one order makes all SKUs show the same URL.
      */
     private groupOrdersByShop(orders: BulkCreateProcurementOrderDto['orders']) {
         const groupMap = new Map<string, typeof orders>();
 
         for (const order of orders) {
-            const key = order.shop_id || order.shop_name || `__ungrouped__${orders.indexOf(order)}`;
+            const shopKey = order.shop_id || order.shop_name || `__ungrouped__${orders.indexOf(order)}`;
+            const key = `${shopKey}::${order.platform_url}`;
             if (!groupMap.has(key)) groupMap.set(key, []);
             groupMap.get(key)!.push(order);
         }
@@ -1347,13 +1572,10 @@ export class ProcurementService {
                 .reduce((sum, o) => sum + parseFloat(o.freight_fee || '0'), 0)
                 .toString();
 
-            const name = group.map((o) => o.name).join(' | ').slice(0, 256);
-
             const remark = group.map((o) => o.remark).filter(Boolean).join(' | ') || undefined;
 
             return {
                 ...first,
-                name,
                 goods_amount: totalGoodsAmount,
                 freight_fee: totalFreightFee,
                 remark,
@@ -1372,7 +1594,7 @@ export class ProcurementService {
     async bulkCreateOrder(dto: BulkCreateProcurementOrderDto): Promise<BulkCreateOrderResponse> {
         const results: BulkCreateOrderResponse = { success: [], failed: [] };
 
-        const grouped = this.groupOrdersByShop(dto.orders);
+        const grouped = dto.orders;
         const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
 
         const BATCH_SIZE = 3;

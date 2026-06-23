@@ -536,6 +536,98 @@ Delete Affiliate
 DELETE /v1/referral/affiliates/<affiliate-uuid> HTTP/1.1
 ```
 
+Wallets (User)
+==============
+
+> [!IMPORTANT]
+> You must include your access token as a `Bearer` token in the Authorization header. Your must have a user account to retrieve create and retrieve transactions.
+
+Get Wallets
+-----------
+
+```http
+GET /v1/referral/wallets HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "e5e3889d-d800-4ab3-8f6b-065c9cb5612d",
+        "amount": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "amountPending": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "amountAvailable": {
+            "amount": 0,
+            "currencyCode": "qar"
+        }
+    }
+]
+```
+
+Get Wallets By Affiliate
+------------------------
+
+```http
+GET /v1/referral/wallets?filters={"affiliateUUID":"<affiliate-uuid>"} HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "af2d76c2-8912-4143-8b04-b3131669600a",
+        "amount": {
+            "amount": 121,
+            "currencyCode": "qar"
+        },
+        "amountPending": {
+            "amount": 0,
+            "currencyCode": "qar"
+        },
+        "amountAvailable": {
+            "amount": 121,
+            "currencyCode": "qar"
+        }
+    }
+]
+```
+
+Get Wallet
+----------
+
+```http
+GET /v1/referral/wallets/<wallet-uuid> HTTP/1.1
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "af2d76c2-8912-4143-8b04-b3131669600a",
+    "amount": {
+        "amount": 121,
+        "currencyCode": "qar"
+    },
+    "amountPending": {
+        "amount": 0,
+        "currencyCode": "qar"
+    },
+    "amountAvailable": {
+        "amount": 121,
+        "currencyCode": "qar"
+    }
+}
+```
+
+
 Transactions (User)
 ===================
 
@@ -861,13 +953,88 @@ GET /v1/referral/coupons HTTP/1.1
 ```json
 [
     {
-        "uuid": "32c60164-f17f-4a79-8388-2133e5a4f5e9",
-        "code": "james10",
-        "discountPercentage": "10.4",
-        "expiresAt": "2026-12-31T00:00:00.000Z"
+        "uuid": "a7f3c97b-0f3a-4da3-89b9-3820b526742a",
+        "affiliate": {
+            "uuid": "64077cd1-0c4e-47bb-a125-76fff8445971",
+            "customer": {
+                "uuid": "c439ae78-1132-464c-9940-bf240e1a8f53",
+                "fullName": "jimmy",
+                "emailAddress": "jimmy@gmail.com",
+                "phoneNumber": null,
+                "role": "influencer",
+                "unreadNotificationCount": 0,
+                "ordersCount": 0,
+                "cartItemsCount": 0
+            },
+            "fullName": "jimmy",
+            "gender": "male",
+            "nationality": "american",
+            "bio": "this is my bio",
+            "type": "influencer",
+            "status": "accepted",
+            "totalCommission": {
+                "amount": 0,
+                "currencyCode": "qar"
+            },
+            "totalPaid": {
+                "amount": 0,
+                "currencyCode": "qar"
+            },
+            "remainingBalance": {
+                "amount": 0,
+                "currencyCode": "qar"
+            },
+            "couponsCreated": 1,
+            "couponsUsed": 0,
+            "createdAt": "2026-06-01T23:12:14.030Z"
+        },
+        "code": "ffa",
+        "discountPercentage": "10",
+        "ordersCount": 0,
+        "totalSales": {
+            "amount": 0,
+            "currencyCode": "usd"
+        },
+        "totalCommission": {
+            "amount": 0,
+            "currencyCode": "usd"
+        },
+        "expiresAt": "2026-06-02T00:00:00.000Z",
+        "createdAt": "2026-06-01T23:17:02.551Z"
     }
 ]
 ```
+
+Get Coupons By Affiliate
+------------------------
+
+```http
+GET /v1/referral/coupons?filters={"affiliateUUID":"<affiliate-uuid>"}
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "e002ca52-88fa-4788-a621-4a511b1e795c",
+        "code": "teat",
+        "discountPercentage": "9",
+        "ordersCount": 4,
+        "totalSales": {
+            "amount": 260,
+            "currencyCode": "qar"
+        },
+        "totalCommission": {
+            "amount": 23,
+            "currencyCode": "qar"
+        },
+        "expiresAt": "2026-05-31T00:00:00.000Z",
+        "createdAt": "2026-05-20T05:55:40.802Z"
+    }
+]
+```
+
 
 Get Coupon
 ----------
@@ -1549,6 +1716,11 @@ GET /v1/referral/bank-accounts HTTP/1.1
 Global Coupons
 ==============
 
+| Discount Type | Description |
+|---|---|
+| percentage | The coupon applies a percentage of the coupon. |
+| fixed | The coupon applies a fixed discount at the order. |
+
 Create Global Coupon
 --------------------
 
@@ -1559,12 +1731,25 @@ Create Global Coupon
 POST /v1/referral/global-coupons HTTP/1.1
 ```
 
+| Format | Description |
+|---|---|
+| code | The unique coupon code |
+| discountType | Discount type on the coupon |
+| discountPercentage | Discount percentage. Applicable when `discountType` is 'percentage' |
+| discountValue | Discount value. Applicable when `discountType` is 'fixed' |
+| usageLimit | The number of times a coupon is applicable. |
+| timesUsed | The number of times a coupon has been used. |
+| expiresAt | The expiry date of the coupon |
+
 ### Request Body
 
 ```json
 {
-    "code": "james89",
+    "code": "JAMES89",
+    "discountType": "fixed",
     "discountPercentage": 99,
+    "discountValue": 100,
+    "usageLimit": 1,
     "expiresAt": "2029-12-31"
 }
 ```
@@ -1573,9 +1758,12 @@ POST /v1/referral/global-coupons HTTP/1.1
 
 ```json
 {
-    "uuid": "08467dd2-2c15-4142-8ac4-98c4cbc9867c",
-    "code": "james89",
+    "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+    "code": "JAMES89",
+    "discountType": "fixed",
     "discountPercentage": "99",
+    "discountValue": 100,
+    "usageLimit": 1,
     "ordersCount": 0,
     "totalSales": {
         "amount": 0,
@@ -1586,8 +1774,8 @@ POST /v1/referral/global-coupons HTTP/1.1
         "currencyCode": "qar"
     },
     "expiresAt": "2029-12-31T00:00:00.000Z",
-    "updatedAt": "2026-06-01T13:10:24.978Z",
-    "createdAt": "2026-06-01T13:10:24.978Z"
+    "updatedAt": "2026-06-10T11:43:36.277Z",
+    "createdAt": "2026-06-10T11:43:36.277Z"
 }
 ```
 
@@ -1606,9 +1794,12 @@ GET /v1/referral/global-coupons HTTP/1.1
 ```json
 [
     {
-        "uuid": "08467dd2-2c15-4142-8ac4-98c4cbc9867c",
-        "code": "james89",
+        "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+        "code": "JAMES89",
+        "discountType": "fixed",
         "discountPercentage": "99",
+        "discountValue": 100,
+        "usageLimit": 1,
         "ordersCount": 0,
         "totalSales": {
             "amount": 0,
@@ -1619,8 +1810,8 @@ GET /v1/referral/global-coupons HTTP/1.1
             "currencyCode": "qar"
         },
         "expiresAt": "2029-12-31T00:00:00.000Z",
-        "updatedAt": "2026-06-01T13:10:24.978Z",
-        "createdAt": "2026-06-01T13:10:24.978Z"
+        "updatedAt": "2026-06-10T11:45:33.229Z",
+        "createdAt": "2026-06-10T11:43:36.277Z"
     }
 ]
 ```
@@ -1639,21 +1830,24 @@ GET /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
 
 ```json
 {
-    "uuid": "5fb8b227-dc8b-41b0-b1f0-882b7de2d393",
-    "code": "james99",
+    "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+    "code": "JAMES89",
+    "discountType": "fixed",
     "discountPercentage": "99",
+    "discountValue": 100,
+    "usageLimit": 1,
     "ordersCount": 0,
     "totalSales": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "expiresAt": "2029-12-31T00:00:00.000Z",
-    "updatedAt": "2026-06-01T13:04:55.597Z",
-    "createdAt": "2026-06-01T13:04:55.597Z"
+    "updatedAt": "2026-06-10T11:45:33.229Z",
+    "createdAt": "2026-06-10T11:43:36.277Z"
 }
 ```
 
@@ -1671,8 +1865,11 @@ PUT /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
 
 ```json
 {
-    "code": "james66",
-    "discountPercentage": 66,
+    "code": "JAMES89",
+    "discountType": "fixed",
+    "discountPercentage": 99,
+    "discountValue": 100,
+    "usageLimit": 1,
     "expiresAt": "2029-12-31"
 }
 ```
@@ -1681,21 +1878,24 @@ PUT /v1/referral/global-coupons/<global-coupon-uuid> HTTP/1.1
 
 ```json
 {
-    "uuid": "5fb8b227-dc8b-41b0-b1f0-882b7de2d393",
-    "code": "james66",
-    "discountPercentage": 66,
+    "uuid": "cdc4c904-0dd1-495f-91a4-5e57ae09007d",
+    "code": "JAMES89",
+    "discountType": "fixed",
+    "discountPercentage": 99,
+    "discountValue": 100,
+    "usageLimit": 1,
     "ordersCount": 0,
     "totalSales": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "totalCommission": {
         "amount": 0,
-        "currencyCode": "usd"
+        "currencyCode": "qar"
     },
     "expiresAt": "2029-12-31T00:00:00.000Z",
-    "updatedAt": "2026-06-01T13:50:19.502Z",
-    "createdAt": "2026-06-01T13:04:55.597Z"
+    "updatedAt": "2026-06-10T11:45:33.229Z",
+    "createdAt": "2026-06-10T11:43:36.277Z"
 }
 ```
 

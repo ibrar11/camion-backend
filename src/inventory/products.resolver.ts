@@ -17,23 +17,25 @@ import {
 	Resolver,
 } from "@nestjs/graphql";
 
+import { ConfigService } from "@nestjs/config";
+
 import { ProductSort } from "./enums/ProductSort.enum";
+import { CurrencyCode } from "./enums/CurrencyCode.enum";
+
+import { PricingService } from "src/pricing/pricing.service";
 
 import { Product } from "./entities/product.entity";
 import { ProductOption } from "./entities/product-option.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
 import { Money, ProductVariant } from "./entities/product-variant.entity";
 import { ProductVariantImage } from "./entities/product-variant-image.entity";
-
 import { ProductsService } from "./products.service";
 
-import { GqlAuthGuard } from "../auth/gql.guard";
-import { PricingService } from "src/pricing/pricing.service";
-import { CurrencyCode } from "./enums/CurrencyCode.enum";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
 import { Category } from "./entities/category.entity";
-import { ConfigService } from "@nestjs/config";
 import { Customer } from "src/customers/entities/customer.entity";
+
+import { GqlAuthGuard } from "../auth/gql.guard";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -130,6 +132,9 @@ export class GetFeaturedProductsArgs {
 	@Field({ defaultValue: "en", })
 	language: string;
 
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
 	@Field({ defaultValue: "usd", })
 	currency: string;
 
@@ -147,6 +152,9 @@ export class GetPopularProductsArgs {
 
 	@Field({ defaultValue: "usd", })
 	currency: string;
+
+	@Field({ defaultValue: ProductSort.MostViewed, })
+	sort: ProductSort;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -180,6 +188,45 @@ export class GetRecentlyViewedProductsArgs {
 
 	@Field({ defaultValue: "usd", })
 	currency: string;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 24, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetProductsInFeaturedCampaignArgs {
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 24, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
+export class GetProductsInDesiredCampaignArgs {
+	@Field({ defaultValue: "", })
+	slug: string;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
 
 	@Field(() => Int, { defaultValue: 1, })
 	pageNumber: number;
@@ -323,12 +370,12 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	getProducts(@Args() args: GetProductsArgs): Promise<Array<Product>> {
-		return this.productsService.findAll("", args.sort as ProductSort, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAll("", args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getProductsByCategory(@Args() args: GetProductsByCategoryArgs): Promise<Array<Product>> {
-		return this.productsService.findAllByCategory(args.slug, args.pageNumber, args.itemsPerPage);
+		return this.productsService.findAllByCategory(args.slug, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => Product, { nullable: true, })
@@ -341,7 +388,7 @@ export class ProductsResolver {
 	}
 
 	@Query(() => [Product])
-	async searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
+	searchProducts(@Args() args: SearchProductsArgs): Promise<Array<Product>> {
 		return this.productsService.searchProducts(args.query, args.language, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
@@ -352,12 +399,12 @@ export class ProductsResolver {
 
 	@Query(() => [Product])
 	getFeaturedProducts(@Args() args: GetFeaturedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getFeaturedProducts(args.pageNumber, args.itemsPerPage);
+		return this.productsService.getFeaturedProducts(args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
 	getPopularProducts(@Args() args: GetPopularProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getPopularProducts(args.pageNumber, args.itemsPerPage);
+		return this.productsService.getPopularProducts(args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
@@ -368,6 +415,16 @@ export class ProductsResolver {
 	@Query(() => [Product])
 	getRecentlyViewedProducts(@Context('req') req: Request & { jti: string, customer: Customer, }, @Args() args: GetRecentlyViewedProductsArgs): Promise<Array<Product>> {
 		return this.productsService.getRecentlyViewedProducts(req.customer, args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getProductsInFeaturedCampaign(@Args() args: GetProductsInFeaturedCampaignArgs): Promise<Array<Product>> {
+		return this.productsService.getProductsInFeaturedCampaign(args.sort, args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getProductsInDesiredCampaign(@Args() args: GetProductsInDesiredCampaignArgs): Promise<Array<Product>> {
+		return this.productsService.getProductsInCampaign(args.slug, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 }
 
@@ -424,12 +481,12 @@ export class ProductVariantResolver {
 
 	@ResolveField("price", () => Money)
 	getPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
-		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, false);
+		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, variant.product.campaign, args.currency as CurrencyCode, false);
 	}
 
 	@ResolveField("discountedPrice", () => Money)
 	getDiscountedPrice(@Parent() variant: ProductVariant, @Args() args: GetProductArgs): Promise<Money> {
-		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, args.currency as CurrencyCode, true);
+		return this.pricingService.applyPriceOnProductVariant(variant.product, variant, variant.product.campaign, args.currency as CurrencyCode, true);
 	}
 
 	@ResolveField("title", () => String)

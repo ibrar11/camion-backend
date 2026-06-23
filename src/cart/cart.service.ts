@@ -52,6 +52,12 @@ export class CartItemsService {
     async create(customer: Customer, body: CreateCartItemDto): Promise<CartItem> {
         this.logger.log(`Attempting to add to cart for product: ${body.productUuid}`);
 
+        if (customer?.cartItemsCount >= 100) {
+            throw new BadRequestException({
+                error: 'Cart is full. To add the item first remove an item from cart.',
+            });
+        }
+
         // find the product needs to be added
         const product = await this.productRepository.findOne({
             where: { uuid: body.productUuid, },
@@ -104,8 +110,8 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, true);
+        // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, null, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, null, body.currency, true);
 
         // check if the variant already exists
         const existingCartItem = await this.cartRepository.findOne({
@@ -166,7 +172,12 @@ export class CartItemsService {
             amount: price.amount * body.quantity,
             currencyCode: price.currencyCode
         }
-        return this.cartRepository.save(cartItem);
+        const savedCartItem = await this.cartRepository.save(cartItem);
+
+        customer.cartItemsCount++;
+        await this.customerRepository.save(customer);
+
+        return savedCartItem;
     }
 
     /**
@@ -214,9 +225,7 @@ export class CartItemsService {
                     }
                 },
             },
-            order: { id: 'DESC' },
-            skip: skip,
-            take: take,
+            order: { id: 'DESC' }
         });
 
         const result: CartItem[] = [];
@@ -238,6 +247,7 @@ export class CartItemsService {
             const price = await this.pricingService.applyPriceOnProductVariant(
                 cartItem.product,
                 cartItem.variant,
+                null,
                 currency,
                 true,
             );
@@ -275,6 +285,7 @@ export class CartItemsService {
             relationLoadStrategy: "query",
             where: {
                 customer: { uuid: customer.uuid },
+                product: { status: ProductStatus.ACTIVE }
             },
         });
     }
@@ -381,8 +392,8 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, true);
+        // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, true);
 
         //Check if a cart item with the target variant already exists
         const existingItem = await this.cartRepository.findOne({
@@ -468,6 +479,9 @@ export class CartItemsService {
             where: {
                 uuid: cartItemUUID,
             },
+            relations: {
+                customer: true,
+            }
         });
 
         if (!cartItem) {
@@ -477,6 +491,12 @@ export class CartItemsService {
         }
 
         await this.cartRepository.remove(cartItem);
+
+        cartItem.customer.cartItemsCount--;
+        if (cartItem.customer.cartItemsCount < 0) {
+            cartItem.customer.cartItemsCount = 0;
+        }
+        await this.customerRepository.save(cartItem.customer);
     }
 
     /**
@@ -490,5 +510,8 @@ export class CartItemsService {
         await this.cartRepository.delete({
             customer: { id: customer.id, }
         });
+
+        customer.cartItemsCount = 0;
+        await this.customerRepository.save(customer);
     }
 }

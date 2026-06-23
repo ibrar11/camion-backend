@@ -10,14 +10,15 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
+import { getSkipAndTake } from "../common/pagination";
+
 import { CreateGlobalCouponDto } from "./dtos/CreateGlobalCouponDto";
 import { UpdateGlobalCouponDto } from "./dtos/UpdateGlobalCouponDto";
 
-import { getSkipAndTake } from "src/common/pagination";
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { Coupon } from "./entities/coupon.entity";
 import { GlobalCoupon } from "./entities/global-coupon.entity";
-import { CurrencyCode } from "src/inventory/enums/CurrencyCode.enum";
 
 @Injectable()
 export class GlobalCouponService {
@@ -28,6 +29,12 @@ export class GlobalCouponService {
 		@InjectRepository(GlobalCoupon) private readonly globalCouponRepository: Repository<GlobalCoupon>,
 	) { }
 
+	/**
+	 * Creates a global coupon
+	 *
+	 * @param body
+	 * @returns
+	 */
 	async createGlobalCoupon(body: CreateGlobalCouponDto): Promise<GlobalCoupon> {
 		this.logger.log(`Creating global coupon: ${body.code}`);
 
@@ -63,7 +70,10 @@ export class GlobalCouponService {
 		const globalCoupon = new GlobalCoupon();
 		globalCoupon.uuid = crypto.randomUUID();
 		globalCoupon.code = body.code.toLowerCase().trim();
+		globalCoupon.discountType = body.discountType;
 		globalCoupon.discountPercentage = body.discountPercentage;
+		globalCoupon.discountValue = body.discountValue;
+		globalCoupon.usageLimit = body.usageLimit;
 		globalCoupon.expiresAt = new Date(body.expiresAt);
 		globalCoupon.totalSales = {
 			amount: 0,
@@ -121,6 +131,13 @@ export class GlobalCouponService {
 		return globalCoupon;
 	}
 
+	/**
+	 * Updates a global coupon
+	 *
+	 * @param couponUUID
+	 * @param body
+	 * @returns
+	 */
 	async updateGlobalCoupon(couponUUID: string, body: UpdateGlobalCouponDto): Promise<GlobalCoupon> {
 		this.logger.log(`Updating global coupon by uuid: ${couponUUID}`);
 
@@ -162,7 +179,10 @@ export class GlobalCouponService {
 
 		// Update the coupon
 		globalCoupon.code = body.code.toLowerCase().trim();
+		globalCoupon.discountType = body.discountType;
 		globalCoupon.discountPercentage = body.discountPercentage;
+		globalCoupon.discountValue = body.discountValue;
+		globalCoupon.usageLimit = body.usageLimit;
 		globalCoupon.expiresAt = new Date(body.expiresAt);
 		return this.globalCouponRepository.save(globalCoupon);
 	}

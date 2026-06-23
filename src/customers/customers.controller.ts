@@ -19,6 +19,7 @@ import { CreateCustomerDto } from './dtos/CreateCustomerDto';
 import { UpdateCustomerDto } from './dtos/UpdateCustomerDto';
 import { UpdateEmailAddressDto } from './dtos/UpdateEmailAddressDto';
 import { UpdatePasswordDto } from './dtos/UpdatePasswordDto';
+import { ReactivateCustomerDto } from './dtos/ReactivateCustomerDto';
 
 import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from './enums/CustomerRole';
@@ -108,9 +109,23 @@ export class CustomersController {
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Post('reactivate')
+	@HttpCode(HttpStatus.OK)
+	actionReactivateAccount(@Body() body: ReactivateCustomerDto): Promise<Customer> {
+		return this.customersService.reactivateByEmail(body.emailAddress);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@Delete(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
 		return this.customersService.delete(uuid);
+	}
+
+	@Roles(UserRole.SuperAdmin)
+	@Post('backfill-cart-count')
+	@HttpCode(HttpStatus.OK)
+	actionBackfillCartCount(): Promise<{ updated: number }> {
+		return this.customersService.backfillCartCount();
 	}
 }

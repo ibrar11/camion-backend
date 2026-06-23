@@ -23,6 +23,7 @@ import {
     BaseJobData,
     InventoryResyncJobData,
     ProductCategoryResyncJobData,
+    SkuMetaImportJobData,
     TranslationJobData,
 } from './types';
 
@@ -37,6 +38,7 @@ export class QueueService {
         @InjectQueue(QueueName.FIELD_TRANSLATION) private readonly fieldTranslationQueue: Queue,
         @InjectQueue(QueueName.INVENTORY_RESYNC) private readonly inventoryResyncQueue: Queue,
         @InjectQueue(QueueName.PRODUCT_CATEGORY_RESYNC) private readonly productCategoryResyncQueue: Queue,
+        @InjectQueue(QueueName.SKU_META_IMPORT) private readonly skuMetaImportQueue: Queue,
         @Inject(TranslationJobRegistryService) private readonly jobRegistry: TranslationJobRegistryService,
     ) { }
 
@@ -234,6 +236,25 @@ export class QueueService {
         return { jobId: jobData.jobId, status: "queued" };
     }
 
+    async addSkuMetaImportJob(productUuids: string[]): Promise<{ jobId: string; status: "queued" }> {
+        const jobData: SkuMetaImportJobData = {
+            jobId: crypto.randomUUID(),
+            productUuids,
+            createdAt: new Date(),
+            maxRetries: 3,
+        };
+
+        await this.addJob(
+            QueueName.SKU_META_IMPORT,
+            `sku-meta-import-${jobData.jobId}`,
+            jobData,
+            JobPriority.HIGH,
+            0,
+        );
+
+        return { jobId: jobData.jobId, status: "queued" };
+    }
+
     async getJob(queueName: QueueName, jobId: string): Promise<Job | null> {
         const queue = this.getQueue(queueName);
         return (await queue.getJob(jobId)) ?? null;
@@ -284,6 +305,8 @@ export class QueueService {
                 return this.inventoryResyncQueue;
             case QueueName.PRODUCT_CATEGORY_RESYNC:
                 return this.productCategoryResyncQueue;
+            case QueueName.SKU_META_IMPORT:
+                return this.skuMetaImportQueue;
 
             default:
                 throw new Error(`Queue ${queueName} not found`);

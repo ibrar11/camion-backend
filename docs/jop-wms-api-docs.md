@@ -401,6 +401,139 @@ If no matching jobs are found (e.g. the job was evicted from Redis after 200 new
 
 ---
 
+### Get Dispatch Batch Status
+
+Returns the status of all shop sub-jobs for a dispatch batch. Use the `jobId` returned by `POST /v1/wms/orders/dispatch` as the path parameter. Each shop in the batch is processed as an independent BullMQ sub-job; this endpoint aggregates them into a single response.
+
+```http
+GET /v1/wms/orders/dispatch/:dispatchJobId/status HTTP/1.1
+```
+
+| Parameter | Location | Description |
+|---|---|---|
+| `dispatchJobId` | Path | The `jobId` returned by `POST /v1/wms/orders/dispatch` |
+
+### Response Body
+
+```json
+{
+    "dispatchJobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "overallStatus": "completed",
+    "shops": [
+        {
+            "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890-123456789",
+            "shopId": "123456789",
+            "shopName": "My 1688 Shop",
+            "state": "completed",
+            "orderUuids": ["550e8400-e29b-41d4-a716-446655440000"],
+            "gulltransOrderSns": ["DG646"],
+            "failedReason": null,
+            "inbound": {
+                "voucherNo": "3792156ba31c4bf0923794c34798f8d2",
+                "wmsAssignedId": "98765",
+                "status": "11"
+            }
+        }
+    ]
+}
+```
+
+### Response Fields
+
+| Field | Description |
+|---|---|
+| `dispatchJobId` | The batch ID you queried |
+| `overallStatus` | `completed` — all shops done; `failed` — all failed; `partial` — some failed; `processing` — still in progress |
+| `shops[].jobId` | BullMQ sub-job ID — use this to call the sub-job detail endpoint below |
+| `shops[].state` | BullMQ job state: `waiting`, `active`, `completed`, `failed`, `delayed` |
+| `shops[].gulltransOrderSns` | Gulltrans order SNs created for this shop (populated once Step 4 completes — `null` if not yet reached) |
+| `shops[].failedReason` | Error message if `state === "failed"`, otherwise `null` |
+| `shops[].inbound.voucherNo` | JOP WMS inbound `customerVoucherNo` — use this to poll inbound status |
+| `shops[].inbound.wmsAssignedId` | WMS-assigned internal ID (`null` until the job completes) |
+| `shops[].inbound.status` | Last known inbound status from `jop_wms_orders` (`null` until the job completes) |
+
+**Error — batch not found (404):**
+```json
+{ "message": "No dispatch jobs found for dispatchJobId: a1b2c3d4-..." }
+```
+
+### Notes
+- BullMQ retains completed jobs up to `removeOnComplete: 100` and failed jobs up to `removeOnFail: 200`. Old batches beyond these limits will return 404
+- `gulltransOrderSns` is `null` until the Gulltrans step completes (Step 4 in the processor). On a retry, it will be populated as soon as the checkpoint is written
+
+---
+
+### Get Dispatch Sub-Job Detail
+
+Returns the full detail of a single shop sub-job, including timing, attempt count, Gulltrans checkpoint data, and the linked WMS inbound record. Drill into a specific shop's job using the `jobId` from the batch status response above.
+
+```http
+GET /v1/wms/orders/dispatch/jobs/:jobId HTTP/1.1
+```
+
+| Parameter | Location | Description |
+|---|---|---|
+| `jobId` | Path | The sub-job ID from `shops[].jobId` in the batch status response |
+
+### Response Body
+
+```json
+{
+    "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890-123456789",
+    "dispatchJobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "shopId": "123456789",
+    "shopName": "My 1688 Shop",
+    "state": "failed",
+    "attemptsMade": 3,
+    "failedReason": "Gulltrans failed for shop 123456789: insufficient stock",
+    "orderUuids": ["550e8400-e29b-41d4-a716-446655440000"],
+    "gulltransOrderSns": null,
+    "inboundVoucherNo": "3792156ba31c4bf0923794c34798f8d2",
+    "inbound": null,
+    "createdAt": "2025-04-27T08:00:00.000Z",
+    "processedAt": "2025-04-27T08:00:05.000Z",
+    "finishedAt": "2025-04-27T08:00:07.000Z"
+}
+```
+
+### Response Fields
+
+| Field | Description |
+|---|---|
+| `state` | BullMQ job state |
+| `attemptsMade` | How many times this job has been attempted (max 5) |
+| `failedReason` | Last error message — present when `state === "failed"` |
+| `gulltransOrderSns` | Gulltrans SNs if the procurement step completed (`null` if not reached yet) |
+| `inboundVoucherNo` | Pre-computed WMS inbound voucher number (set at dispatch time) |
+| `inbound` | The `jop_wms_orders` row for this inbound — `null` if the job hasn't completed Step 6 yet. Includes `orderNo`, `wmsAssignedId`, `status`, `lastPolledAt`, `errorCount` |
+| `createdAt` | When the BullMQ job was enqueued |
+| `processedAt` | When the worker first picked up the job |
+| `finishedAt` | When the job last completed or failed |
+
+**Error — sub-job not found (404):**
+```json
+{ "message": "Dispatch sub-job not found: a1b2c3d4-...-123456789" }
+```
+
+### Typical polling flow
+
+```
+1. POST /v1/wms/orders/dispatch
+   → { "jobId": "batch-uuid" }
+
+2. GET /v1/wms/orders/dispatch/batch-uuid/status
+   → see overallStatus + per-shop state and jobId
+
+3. GET /v1/wms/orders/dispatch/jobs/batch-uuid-shopId
+   → full detail: attemptsMade, failedReason, inbound record
+
+4. Once inbound.voucherNo is available and job completed:
+   GET /v1/wms/inbound/status?orderNo=<voucherNo>
+   → poll WMS inbound progress directly
+```
+
+---
+
 Products
 --------
 

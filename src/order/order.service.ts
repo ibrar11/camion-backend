@@ -18,7 +18,13 @@ import {
 } from 'typeorm';
 
 import { OrderStatus } from "./enums/OrderStatus";
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
+import { PaymentStatus } from "../payments/enums/PaymentStatus";
+import { QueueName } from '../queue/enums/QueueTypes.enum';
+import { PaymentTimeoutJobData } from '../queue/types';
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
@@ -71,6 +77,7 @@ import {
     OrderFilters,
     OrderPreviewResponse,
     OrderTracking,
+    OrderTrackingSteps,
 } from "./types";
 
 import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JopWmsOutboundStatus } from '../jop-wms/entities/jop-wms-order.entity';
@@ -113,8 +120,11 @@ export class OrderService {
         @Inject(PricingService) private readonly pricingService: PricingService,
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         @InjectRepository(JopWmsOrderLink) private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
+        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
+        @InjectQueue(QueueName.ORDER_PAYMENT_TIMEOUT)
+        private readonly paymentTimeoutQueue: Queue<PaymentTimeoutJobData>,
     ) { }
 
     private static readonly INBOUND_TRACKING_STATUS: Record<string, string> = {
@@ -178,6 +188,46 @@ export class OrderService {
         }
     }
 
+    private buildTrackingSteps(order: Order, inbound?: JopWmsOrder, outbound?: JopWmsOrder): OrderTrackingSteps {
+        const status = order.status;
+        const payment = order.paymentTransaction;
+
+        const paymentConfirmed =
+            status === OrderStatus.PAYMENT_SUCCESSFUL ||
+            status === OrderStatus.CONFIRMED ||
+            status === OrderStatus.DELIVERED ||
+            payment?.status === PaymentStatus.PAID;
+
+        const paymentRejected =
+            status === OrderStatus.PAYMENT_REJECTED ||
+            payment?.status === PaymentStatus.REJECTED ||
+            payment?.status === PaymentStatus.FAILED;
+
+        const paymentPending =
+            !paymentConfirmed &&
+            !paymentRejected &&
+            (status === OrderStatus.PAYMENT_PENDING || payment?.status === PaymentStatus.PENDING);
+
+        const isCancelled = status === OrderStatus.CANCELLED;
+
+        return {
+            orderPlaced: true,
+            paymentPending,
+            paymentConfirmed,
+            paymentRejected,
+            orderConfirmed: status === OrderStatus.CONFIRMED || status === OrderStatus.DELIVERED,
+            orderCancelled: isCancelled,
+            cancellationReason: isCancelled ? (order.cancellationReason ?? null) : null,
+            processing: !!(order.gulltransOrderSns?.length),
+            packing: inbound?.status === JopWmsInboundStatus.STORED,
+            dispatching: !!outbound,
+            shipped: outbound?.status === JopWmsOutboundStatus.SHIPPED,
+            trackingId: outbound?.waybillNo ?? null,
+            orderDelivered: status === OrderStatus.DELIVERED,
+            orderReview: order.orderReview ?? null,
+        };
+    }
+
     /**
      * Creates a new order
      *
@@ -208,7 +258,8 @@ export class OrderService {
             const cartItems = await this.cartRepository.find({
                 where: {
                     uuid: In(dto.cartItemUuids),
-                    customer: { id: customer.id }
+                    customer: { id: customer.id },
+                    product: { status: ProductStatus.ACTIVE, }
                 },
                 relations: {
                     product: {
@@ -227,27 +278,27 @@ export class OrderService {
                 });
             }
 
-            await Promise.all(
-                cartItems.map(async (item) => {
-                    const checkProduct = await this.productRepository.findOne({
-                        where: {
-                            id: item.product.id,
-                        },
-                    });
+            // await Promise.all(
+            //     cartItems.map(async (item) => {
+            //         const checkProduct = await this.productRepository.findOne({
+            //             where: {
+            //                 id: item.product.id,
+            //             },
+            //         });
 
-                    if (!checkProduct) {
-                        throw new BadRequestException({
-                            error: `Product not found`,
-                        });
-                    }
+            //         if (!checkProduct) {
+            //             throw new BadRequestException({
+            //                 error: `Product not found`,
+            //             });
+            //         }
 
-                    if (checkProduct.status !== ProductStatus.ACTIVE) {
-                        throw new BadRequestException({
-                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
-                        });
-                    }
-                })
-            );
+            //         if (checkProduct.status !== ProductStatus.ACTIVE) {
+            //             throw new BadRequestException({
+            //                 error: `Cannot create order for the non-active product ${checkProduct.slug}`,
+            //             });
+            //         }
+            //     })
+            // );
 
             let subTotal = 0;
             const orderItems: OrderItem[] = [];
@@ -287,8 +338,8 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
 
-                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, true);
                 const totalAmount = priceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
@@ -386,15 +437,20 @@ export class OrderService {
                         where: { code: dto.couponCode.toLowerCase().trim() },
                     });
                     if (!globalCoupon) {
-                        throw new BadRequestException(
-                            "Coupon does not exists. Please try again with valid coupon."
-                        )
+                        throw new BadRequestException({
+                            error: "Coupon does not exists. Please try again with valid coupon."
+                        })
+                    }
+                    if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
+                        throw new BadRequestException({
+                            error: "Coupon usage limit exceeded. Please try again with valid coupon."
+                        })
                     }
                 }
                 const coupon = affiliateCoupon ? affiliateCoupon : globalCoupon;
                 if (coupon) {
                     discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                    discount = Math.ceil(discount);
+                    // discount = Math.ceil(discount);
                 }
             }
 
@@ -502,6 +558,7 @@ export class OrderService {
                 globalCoupon.totalSales.currencyCode = currency;
                 globalCoupon.totalCommission.amount += commissionAmount;
                 globalCoupon.totalCommission.currencyCode = currency;
+                globalCoupon.timesUsed++;
                 await queryRunner.manager.save(globalCoupon);
             }
 
@@ -527,9 +584,16 @@ export class OrderService {
             // External payment call — if this throws, the entire DB transaction rolls back
             const payment = await this.paymentService.createPayment(paymentPayload);
             order.paymentTransaction = payment;
+            if (total === 0) {
+                order.status = OrderStatus.PAYMENT_SUCCESSFUL;
+            }
             await queryRunner.manager.save(order);
 
             await queryRunner.commitTransaction();
+
+            customer.ordersCount++;
+            customer.cartItemsCount = 0;
+            await this.customerRepository.save(customer);
 
             const notification = await this.notificationsService.create({
                 customerUUID: customer.uuid,
@@ -558,10 +622,16 @@ export class OrderService {
                 orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
             }).catch(err => this.logger.error(`[Email] Failed to send admin new-order notification for order ${order.uuid}: ${err?.message}`));
 
+            await this.paymentTimeoutQueue.add(
+                'payment-timeout',
+                { orderUuid: order.uuid },
+                { delay: 30 * 60 * 1000, jobId: `payment-timeout-${order.uuid}` },
+            ).catch(err => this.logger.error(`[Queue] Failed to enqueue payment timeout for order ${order.uuid}: ${err?.message}`));
+
             return order;
         } catch (error: any) {
-            await queryRunner.rollbackTransaction();
             this.logger.error(`Error placing order: ${error?.response?.error || error}`);
+            await queryRunner.rollbackTransaction();
             if (error instanceof HttpException) {
                 throw error;
             } else {
@@ -584,10 +654,20 @@ export class OrderService {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+            let filtersObject: {
+                customerUUID?: string,
+            } = {};
+            try {
+                filtersObject = JSON.parse(filters);
+            } catch {
+                this.logger.warn("Unable to parse filters. Please check the documentation and try again.");
+            }            
             const filter: OrderFilters = {}
 
-            if (status) {
+            if (status || filtersObject) {
                 filter.status = status;
+                filter.customer = { uuid: filtersObject?.customerUUID };
             }
 
             const orders = await this.orderRepository.find({
@@ -602,7 +682,8 @@ export class OrderService {
                             images: true,
                         },
                     },
-                    shippingAddress: true
+                    shippingAddress: true,
+                    customer: true,
                 },
                 order: {
                     id: "DESC",
@@ -769,15 +850,30 @@ export class OrderService {
         }
     }
 
-    async getOrderTracking(orderUuid: string, customerUuid?: string): Promise<Order> {
+    async getOrderTracking(orderUuid: string, customerUuid?: string): Promise<OrderTrackingSteps> {
         const whereClause: any = { uuid: orderUuid };
         if (customerUuid) whereClause.customer = { uuid: customerUuid };
 
-        const order = await this.orderRepository.findOne({ where: whereClause });
+        const order = await this.orderRepository.findOne({
+            where: whereClause,
+            relations: { paymentTransaction: true },
+        });
         if (!order) throw new NotFoundException({ error: 'Order not found' });
 
-        await this.attachTracking([order]);
-        return order;
+        const links = await this.wmsOrderLinkRepository.find({
+            where: { orderUuid },
+            relations: ['wmsOrder'],
+        });
+
+        let inbound: JopWmsOrder | undefined;
+        let outbound: JopWmsOrder | undefined;
+        for (const link of links) {
+            if (!link.wmsOrder) continue;
+            if (link.wmsOrder.type === JopWmsOrderType.INBOUND) inbound = link.wmsOrder;
+            if (link.wmsOrder.type === JopWmsOrderType.OUTBOUND) outbound = link.wmsOrder;
+        }
+
+        return this.buildTrackingSteps(order, inbound, outbound);
     }
 
     /**
@@ -786,11 +882,14 @@ export class OrderService {
      * @param status
      * @returns
      */
-    async updateStatus(uuid: string, status: OrderStatus): Promise<Order> {
+    async updateStatus(uuid: string, status: OrderStatus, cancellationReason?: string): Promise<Order> {
         try {
             const order = await this.findOne(uuid);
 
             order.status = status;
+            if (status === OrderStatus.CANCELLED) {
+                order.cancellationReason = cancellationReason ?? null;
+            }
 
             const saved = await this.orderRepository.save(order);
 
@@ -1003,7 +1102,12 @@ export class OrderService {
         try {
             // Get cart items with relations
             const cartItems = await this.cartRepository.find({
-                where: { customer: { id: customer.id } },
+                where: {
+                    customer: { id: customer.id },
+                    product: {
+                        status: ProductStatus.ACTIVE,
+                    }
+                },
                 relations: {
                     product: {
                         productCategories: {
@@ -1030,27 +1134,27 @@ export class OrderService {
                 );
             }
 
-            await Promise.all(
-                cartItems.map(async (item) => {
-                    const checkProduct = await this.productRepository.findOne({
-                        where: {
-                            id: item.product.id,
-                        },
-                    });
+            // await Promise.all(
+            //     cartItems.map(async (item) => {
+            //         const checkProduct = await this.productRepository.findOne({
+            //             where: {
+            //                 id: item.product.id,
+            //             },
+            //         });
 
-                    if (!checkProduct) {
-                        throw new BadRequestException({
-                            error: `Product not found`,
-                        });
-                    }
+            //         if (!checkProduct) {
+            //             throw new BadRequestException(
+            //                 `Product not found`,
+            //             );
+            //         }
 
-                    if (checkProduct.status !== ProductStatus.ACTIVE) {
-                        throw new BadRequestException({
-                            error: `Cannot create order for the non-active product ${checkProduct.slug}`,
-                        });
-                    }
-                })
-            );
+            //         if (checkProduct.status !== ProductStatus.ACTIVE) {
+            //             throw new BadRequestException(
+            //                 `Cannot create order for the non-active product ${checkProduct.slug}`,
+            //             );
+            //         }
+            //     })
+            // );
 
             const address = await this.addressRepository.findOne({
                 where: {
@@ -1079,8 +1183,8 @@ export class OrderService {
                     );
                 }
 
-                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
-                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, currencyCode, true);
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
+                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, currencyCode, true);
 
                 const itemTotal = priceDiscount.amount * item.quantity;
                 subTotal += itemTotal;
@@ -1164,11 +1268,16 @@ export class OrderService {
                             "Coupon does not exists. Please try again with valid coupon."
                         )
                     }
+                    if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
+                        throw new BadRequestException(
+                            "Coupon usage limit exceeded. Please try again with valid coupon."
+                        )
+                    }
                     coupon = globalCoupon;
                 }
                 if (coupon) {
                     discount = calculateCouponDiscount(coupon, subTotal, customer.uuid);
-                    discount = Math.ceil(discount);
+                    // discount = Math.ceil(discount);
                 }
             }
 

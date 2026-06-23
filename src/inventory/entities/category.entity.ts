@@ -18,6 +18,8 @@ import { Exclude } from "class-transformer";
 
 import { ProductCategory } from "./product-category.entity";
 import { BannerCategory } from "src/banners/entities/banner-category";
+import { ExportRequest } from "src/export-requests/entities/export-request.entity";
+import { CampaignCategory } from "src/campaigns/entities/campaign-category.entity";
 
 @ObjectType()
 @Entity({ name: "categories", })
@@ -78,11 +80,21 @@ export class Category {
 	@OneToMany(() => Category, (category) => category.parent)
 	children: Array<Category>;
 
+	@Field()
+	@Column({ name: "products_count", type: "int", default: 0, })
+	productsCount: number;
+
 	@OneToMany(() => ProductCategory, (productCategory) => productCategory.category)
 	productCategories: Array<ProductCategory>;
 
 	@OneToMany(() => BannerCategory, (bannerCategory) => bannerCategory.category)
 	bannerCategories: Array<BannerCategory>;
+
+	@OneToMany(() => CampaignCategory, (campaignCategory) => campaignCategory.category)
+	campaignCategories: Array<CampaignCategory>;
+
+	@OneToMany(() => ExportRequest, (exportRequest) => exportRequest.category, { cascade: true, })
+	exportRequests: Array<ExportRequest>;
 
 	@Exclude()
 	@UpdateDateColumn({

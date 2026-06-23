@@ -51,6 +51,8 @@ import { CartItem } from "../cart/entities/cart-items.entity";
 
 import { calculateStock } from "../common/calculateStock";
 
+import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
+
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
@@ -242,9 +244,13 @@ export class CustomerAuthService {
 		}
 
 		if (!customer.isActive) {
-			throw new UnauthorizedException({
-				error: "Account is deactivated.",
-			});
+			if (customer.deletedAt) {
+				throw new UnauthorizedException({ error: 'Account has been permanently deleted. Please contact support to restore your account.' });
+			}
+			if (!customer.markedForDeletionAt) {
+				throw new UnauthorizedException({ error: 'Account is deactivated.' });
+			}
+			// Customer is in grace period — allow OTP; reactivation completes on successful verify
 		}
 
 		if (body.firebaseDeviceToken?.trim()) {
@@ -342,6 +348,21 @@ export class CustomerAuthService {
 						await this.cartItemRepository.remove(guestItemsToRemove);
 					}
 				}
+
+				// Update cart count
+				const cartItemsCount = await this.cartItemRepository.count({
+					where: {
+						customer: {
+							id: customer.id,
+						},
+						product: {
+							status: ProductStatus.ACTIVE
+						},
+					},
+				});
+
+				customer.cartItemsCount = cartItemsCount;
+				await this.customerRepository.save(customer);
 
 				// Deactivate guest to prevent re-merge
 				guestCustomer.isActive = false;
@@ -399,9 +420,13 @@ export class CustomerAuthService {
 		}
 
 		if (!customer.isActive) {
-			throw new UnauthorizedException({
-				error: "Account is deactivated.",
-			});
+			if (customer.deletedAt) {
+				throw new UnauthorizedException({ error: 'Account has been permanently deleted. Please contact support to restore your account.' });
+			}
+			if (!customer.markedForDeletionAt) {
+				throw new UnauthorizedException({ error: 'Account is deactivated.' });
+			}
+			// Customer is in grace period — allow OTP; reactivation completes on successful verify
 		}
 
 		if (body.firebaseDeviceToken?.trim()) {
@@ -499,6 +524,21 @@ export class CustomerAuthService {
 						await this.cartItemRepository.remove(guestItemsToRemove);
 					}
 				}
+
+				// Update cart count
+				const cartItemsCount = await this.cartItemRepository.count({
+					where: {
+						customer: {
+							id: customer.id,
+						},
+						product: {
+							status: ProductStatus.ACTIVE
+						},
+					},
+				});
+
+				customer.cartItemsCount = cartItemsCount;
+				await this.customerRepository.save(customer);
 
 				// Deactivate guest to prevent re-merge
 				guestCustomer.isActive = false;
@@ -582,6 +622,11 @@ export class CustomerAuthService {
 		// Delete the login request after successful login
 		await this.loginRequestRepository.delete({ uuid: request.uuid, });
 
+		// Cancel pending deletion if customer is in grace period
+		if (request.customer.markedForDeletionAt) {
+			request.customer = await this.reactivateOrThrow(request.customer);
+		}
+
 		// Create the payload for the jwt
 		const payload = {
 			jti: crypto.randomUUID(),
@@ -650,6 +695,11 @@ export class CustomerAuthService {
 
 		// Delete the login request after successful login
 		await this.loginRequestRepository.delete({ uuid: request.uuid, });
+
+		// Cancel pending deletion if customer is in grace period
+		if (request.customer.markedForDeletionAt) {
+			request.customer = await this.reactivateOrThrow(request.customer);
+		}
 
 		// Create the payload for the jwt
 		const payload = {
@@ -873,8 +923,8 @@ export class CustomerAuthService {
 			}
 		}
 
-		if (!customer.isActive) {
-			throw new UnauthorizedException({ error: 'Account is deactivated.' });
+		if (!customer.isActive || customer.markedForDeletionAt || customer.deletedAt) {
+			customer = await this.reactivateOrThrow(customer);
 		}
 
 		const jwtPayload = {
@@ -944,8 +994,8 @@ export class CustomerAuthService {
 			}
 		}
 
-		if (!customer.isActive) {
-			throw new UnauthorizedException({ error: 'Account is deactivated.' });
+		if (!customer.isActive || customer.markedForDeletionAt || customer.deletedAt) {
+			customer = await this.reactivateOrThrow(customer);
 		}
 
 		const jwtPayload = {
@@ -966,8 +1016,6 @@ export class CustomerAuthService {
 	}
 
 	async loginWithAppleMobile(dto: AppleMobileAuthDto): Promise<CustomerAuthResponse> {
-		this.logger.log(`Apple login attempt: hasIdentityToken=${!!dto.identityToken}, hasAuthCode=${!!dto.authorizationCode}`);
-
 		const { identityToken, authorizationCode, fullName, firebaseDeviceToken } = dto;
 
 		if (!identityToken && !authorizationCode) {
@@ -976,7 +1024,6 @@ export class CustomerAuthService {
 
 		const audience = this.configService.get<string>('APPLE_AUDIENCE');
 		const issuer = this.configService.get<string>('APPLE_ISSUER') || 'https://appleid.apple.com';
-		this.logger.log(`Apple login config: audience=${audience}, issuer=${issuer}`);
 
 		if (!audience) {
 			throw new UnauthorizedException({ error: 'Apple authentication not configured.' });
@@ -1008,7 +1055,6 @@ export class CustomerAuthService {
 
 		const email = (payload['email'] as string) || '';
 		const name = (payload['name'] as string) || fullName || '';
-		this.logger.log(`Apple token verified: appleId=${appleId}, hasEmail=${!!email}`);
 
 		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId, firebaseDeviceToken });
 	}
@@ -1048,7 +1094,6 @@ export class CustomerAuthService {
 		});
 
 		const data = await response.json() as { id_token?: string; error?: string };
-		this.logger.log(`Apple code exchange response: hasIdToken=${!!data.id_token}, error=${data.error ?? 'none'}`);
 		if (!data.id_token) {
 			throw new UnauthorizedException({ error: 'Apple token exchange failed.' });
 		}
@@ -1110,8 +1155,9 @@ export class CustomerAuthService {
 			}
 		}
 
-		if (!customer.isActive) {
-			throw new UnauthorizedException({ error: 'Account is deactivated.' });
+		if (!customer.isActive || customer.deletedAt || customer.markedForDeletionAt) {
+			this.logger.log(`Apple customer needs reactivation check: ${customer.uuid}`);
+			customer = await this.reactivateOrThrow(customer);
 		}
 
 		const jwtPayload = {
@@ -1129,6 +1175,22 @@ export class CustomerAuthService {
 		);
 
 		return { token, customer };
+	}
+
+	/**
+	 * Reactivates a customer if they are within the grace period (markedForDeletionAt set, deletedAt null).
+	 * Throws UnauthorizedException if the account is permanently deleted or deactivated outside a grace period.
+	 */
+	private async reactivateOrThrow(customer: Customer): Promise<Customer> {
+		if (customer.deletedAt) {
+			throw new UnauthorizedException({ error: 'Account has been permanently deleted. Please contact support to restore your account.' });
+		}
+		if (!customer.isActive && !customer.markedForDeletionAt) {
+			throw new UnauthorizedException({ error: 'Account is deactivated.' });
+		}
+		customer.isActive = true;
+		customer.markedForDeletionAt = null;
+		return this.customerRepository.save(customer);
 	}
 
 	/***

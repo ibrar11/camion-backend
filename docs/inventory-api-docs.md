@@ -332,7 +332,8 @@ itemsPerPage | The number of results to retrieve in the response | 100
                 "isFeaturedOnHomepage": true,
                 "children": []
             }
-        ]
+        ],
+        "productsCount": 108
     }
 ]
 ```
@@ -357,7 +358,8 @@ GET /v1/categories/<category-uuid> HTTP/1.1
     "pricingFactor": 1.4,
     "discountPercentage": 5,
     "isFeatured": true,
-    "isFeaturedOnHomepage": true
+    "isFeaturedOnHomepage": true,
+    "productsCount": 108
 }
 ```
 

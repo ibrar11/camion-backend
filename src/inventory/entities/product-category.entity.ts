@@ -11,6 +11,7 @@ import {
 @Entity({ name: "product_categories" })
 @Unique(["product", "category"])
 export class ProductCategory {
+	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 

@@ -10,6 +10,8 @@ import {
 import { Exclude } from "class-transformer";
 
 import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
+import { GlobalCouponDiscountType } from "../enums/GlobalCouponDiscountType";
+
 import { Order } from "../../order/entities/order.entity";
 
 export class GlobalCouponMoney {
@@ -36,8 +38,24 @@ export class GlobalCoupon {
 	@Column({ type: "varchar", length: 32, nullable: false, unique: true, })
 	code: string;
 
+	@Column({
+		type: "enum",
+		enum: GlobalCouponDiscountType,
+		default: GlobalCouponDiscountType.Percentage,
+	})
+	discountType: GlobalCouponDiscountType;
+
 	@Column({ type: "numeric", default: 0, nullable: false, })
 	discountPercentage: number;
+
+	@Column({ type: "integer", default: 0, nullable: false, })
+	discountValue: number;
+
+	@Column({ type: "integer", default: 0, nullable: false, })
+	usageLimit: number;
+
+	@Column({ type: "integer", default: 0, nullable: false, })
+	timesUsed: number;
 
 	@Column({ type: "integer", default: 0, nullable: false, })
 	ordersCount: number;

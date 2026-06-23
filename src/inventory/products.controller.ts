@@ -24,6 +24,7 @@ import { UserRole } from '../users/enums/UserRole';
 import { CustomerRole } from '../customers/enums/CustomerRole';
 import { ClientRole } from '../clients/enums/client-role.enum';
 import { ProductSort } from './enums/ProductSort.enum';
+import { ProductStatus } from './enums/ProductStatus.enum';
 
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
@@ -80,6 +81,25 @@ export class ProductsController {
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Product>> {
 		return this.productsService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Get("variants/missing-skumeta")
+	@HttpCode(HttpStatus.OK)
+	actionGetProductsWithVariantsMissingSkuMeta(
+		@Query("status") status?: ProductStatus,
+	): Promise<{
+		totalMissingSkuVariants: number;
+		totalProducts: number;
+		data: Array<{
+			uuid: string;
+			name: string;
+			procurementId: string | null;
+			totalVariants: number;
+			missingSkuVariants: number;
+		}>;
+	}> {
+		return this.productsService.findProductsWithVariantsMissingSkuMeta(status);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader)

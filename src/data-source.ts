@@ -95,6 +95,13 @@ import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
 import { Translation } from "./translation/entities/translation.entity";
 import { TranslationItem } from "./translation/entities/translation-item.entity";
 
+// export-requests
+import { ExportRequest } from "./export-requests/entities/export-request.entity";
+
+// campaigns
+import { Campaign } from "./campaigns/entities/campaign.entity";
+import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";
+
 export const CamionDataSource = new DataSource({
 	type: "postgres",
 	host: process.env.DB_HOST,
@@ -153,6 +160,9 @@ export const CamionDataSource = new DataSource({
 		ReturnEvidence,
 		Translation,
 		TranslationItem,
+		ExportRequest,
+		Campaign,
+		CampaignCategory,
 	],
 	migrations: [
 		"src/migrations/*",
