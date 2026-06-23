@@ -876,7 +876,7 @@ export class ProcurementService {
 
                 const shippingInfo = product.productShippingInfo?.skuShippingDetails?.find(
                     (detail: any) => detail.skuId === sku.skuId.toString()
-                );
+                ) ?? product.productShippingInfo;
 
                 const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
