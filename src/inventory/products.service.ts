@@ -1304,6 +1304,370 @@ export class ProductsService {
 		return this.__attachAssociatedCampaign(products);
 	}
 
+	async findAllByCategories(slugs: Array<String>, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+		this.logger.log(`Retrieving products by categories, categories: ${slugs.join(', ')}, pageNumber=${pageNumber}, itemsPerPage=${itemsPerPage}`);
+
+		// Find the categories using their slugs
+		const categories = await this.categoryRepository.find({
+			cache: true,
+			where: {
+				slug: In(slugs),
+			},
+			skip: 0,
+			take: 10,
+		});
+
+		// Returns empty products as fallback, if the categories doesn't exist
+		if (!Array.isArray(categories) || categories.length === 0) {
+			return [];
+		}
+
+		// Map categories to their ids
+		const categoryIds: Array<Category['id']> = categories.map(category => category.id).sort((idA, idB) => idA - idB);
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Find products based on sort order
+		let products: Array<Product> = [];
+		switch (sort) {
+			case ProductSort.BestMatch:
+				products = await this.__getBestMatchProductsInCategories(categoryIds, pageNumber, itemsPerPage);
+				break;
+			case ProductSort.BestSellers:
+				products = await this.__getBestSellersProductsInCategories(categoryIds, pageNumber, itemsPerPage);
+				break;
+			case ProductSort.MostFavorited:
+				products = await this.__getMostFavoritedProductsInCategories(categoryIds, pageNumber, itemsPerPage);
+				break;
+			case ProductSort.NewArrivals:
+				products = await this.__getNewArrivalsProductsInCategories(categoryIds, pageNumber, itemsPerPage);
+				break;
+			case ProductSort.MostRated:
+				products = await this.__getMostRatedProductsInCategories(categoryIds, pageNumber, itemsPerPage);
+				break;
+			case ProductSort.PriceHighToLow:
+				products = await this.__getPriceHighToLowProductsInCategories(categoryIds, pageNumber, itemsPerPage);
+				break;
+			case ProductSort.PriceLowToHigh:
+				products = await this.__getPriceLowToHighProductsInCategories(categoryIds, pageNumber, itemsPerPage);
+				break;
+			default: // do nothing
+				break;
+		}
+
+		// Attach the campaign against each product
+		return this.__attachAssociatedCampaign(products);
+	}
+
+	/**
+	 * Get the best matched products in the categories
+	 *
+	 * @param categoryIds
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async __getBestMatchProductsInCategories(categoryIds: Array<Category['id']>, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithCheapestVariant(products, null, ProductSort.BestMatch);
+	}
+
+	/**
+	 * Get the best seller products in the categories
+	 *
+	 * @param categoryIds
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async __getBestSellersProductsInCategories(categoryIds: Array<Category['id']>, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.salesCount", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithCheapestVariant(products, null, ProductSort.BestSellers);
+	}
+
+	/**
+	 * Get the most favorited products in the categories
+	 *
+	 * @param categoryIds
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async __getMostFavoritedProductsInCategories(categoryIds: Array<Category['id']>, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.likesCount", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithCheapestVariant(products, null, ProductSort.MostFavorited);
+	}
+
+	/**
+	 * Get the newly arrived products in the categories
+	 *
+	 * @param categoryIds
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async __getNewArrivalsProductsInCategories(categoryIds: Array<Category['id']>, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithCheapestVariant(products, null, ProductSort.NewArrivals);
+	}
+
+	/**
+	 * Get the most rated products in the categories
+	 *
+	 * @param categoryIds
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async __getMostRatedProductsInCategories(categoryIds: Array<Category['id']>, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.ratingAvg", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithCheapestVariant(products, null, ProductSort.MostRated);
+	}
+
+	/**
+	 * Get the price high to low products in the categories
+	 *
+	 * @param categoryIds
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async __getPriceHighToLowProductsInCategories(categoryIds: Array<Category['id']>, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithPriciestVariant(products, null, ProductSort.PriceHighToLow);
+	}
+
+	/**
+	 * Get the price low to high products in the categories
+	 *
+	 * @param categoryIds
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async __getPriceLowToHighProductsInCategories(categoryIds: Array<Category['id']>, pageNumber: number, itemsPerPage: number): Promise<Array<Product>> {
+		if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+			return [];
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		// Find the products in the desired category
+		const products = await this.productRepository.createQueryBuilder("product")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+
+			// Load all categories
+			.leftJoinAndSelect("product.productCategories", "productCategory")
+			.leftJoinAndSelect("productCategory.category", "category")
+
+			// Filter by category
+			.innerJoin("product.productCategories", "filterProductCategories")
+			.innerJoin("filterProductCategories.category", "filterCategory")
+
+			.where("filterCategory.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("product.status = :status", { status: ProductStatus.ACTIVE, })
+			.distinct(true)
+			.orderBy("product.id", "DESC")
+			.skip(skip)
+			.take(take)
+			.getMany();
+
+		return this.__populateWithCheapestVariant(products, null, ProductSort.PriceLowToHigh);
+	}
+
 	/**
 	 * Attaches the best campaign to a product
 	 *

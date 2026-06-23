@@ -77,6 +77,27 @@ export class GetProductsByCategoryArgs {
 }
 
 @ArgsType()
+export class GetProductsByCategoriesArgs {
+	@Field(() => [String])
+	slugs: Array<string>;
+
+	@Field({ defaultValue: "en", })
+	language: string;
+
+	@Field({ defaultValue: "usd", })
+	currency: string;
+
+	@Field({ defaultValue: ProductSort.BestMatch, })
+	sort: ProductSort;
+
+	@Field(() => Int, { defaultValue: 1, })
+	pageNumber: number;
+
+	@Field(() => Int, { defaultValue: 24, })
+	itemsPerPage: number;
+}
+
+@ArgsType()
 export class GetProductArgs {
 	@Field({ defaultValue: "", })
 	slug: string;
@@ -376,6 +397,11 @@ export class ProductsResolver {
 	@Query(() => [Product])
 	getProductsByCategory(@Args() args: GetProductsByCategoryArgs): Promise<Array<Product>> {
 		return this.productsService.findAllByCategory(args.slug, args.sort, args.pageNumber, args.itemsPerPage);
+	}
+
+	@Query(() => [Product])
+	getProductsByCategories(@Args() args: GetProductsByCategoriesArgs): Promise<Array<Product>> {
+		return this.productsService.findAllByCategories(args.slugs, args.sort, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => Product, { nullable: true, })
