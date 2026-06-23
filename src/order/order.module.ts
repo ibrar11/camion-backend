@@ -5,6 +5,7 @@ import { BullModule } from '@nestjs/bullmq';
 
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
+import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
 import {
@@ -68,6 +69,7 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
         TypeOrmModule.forFeature([
             Order,
             OrderItem,
+            OrderTrackingEvent,
             User,
             Customer,
             CustomerAddress,
