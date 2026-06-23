@@ -35,9 +35,9 @@ import { Category } from '../../inventory/entities/category.entity';
 
 import { TranslationJobRegistryService } from '../translation-job-registry.service';
 
-import { 
-    Cache, 
-    CACHE_MANAGER 
+import {
+    Cache,
+    CACHE_MANAGER
 } from '@nestjs/cache-manager';
 
 
@@ -77,7 +77,7 @@ export class TranslationProcessor extends WorkerHost {
 
         const processedKey = `processed:${deduplicationKey}`;
         const alreadyProcessed = await this.cacheManager.get(processedKey);
-        
+
         if (alreadyProcessed) {
             this.logger.log(`Job ${deduplicationKey} already processed, skipping`);
             return { success: true, skipped: true };
@@ -229,18 +229,43 @@ export class TranslationProcessor extends WorkerHost {
                         translatedText: translated[idx++],
                     }));
 
-                    translationItemsToInsert.push({
-                        uuid: crypto.randomUUID(),
-                        translation: translationEntity,
-                        language,
-                        translatedProductTitle,
-                        translatedProductBrief,
-                        translatedProductDescription,
-                        translatedProductVariants: translatedVariants,
-                        translatedProductOptions: translatedOptions,
-                        translatedProductOptionValues: translatedOptionValues,
-                        translatedCategories,
+                    const existingTranslationItem = await this.translationItemRepository.findOne({
+                        where: {
+                            translation: { id: translationEntity.id },
+                            language: { id: language.id }
+                        },
+                        relations: {
+                            translation: true,
+                            language: true
+                        }
                     });
+
+                    if (existingTranslationItem) {
+                        existingTranslationItem.translation = translationEntity;
+                        existingTranslationItem.language = language;
+                        existingTranslationItem.translatedProductTitle = translatedProductTitle;
+                        existingTranslationItem.translatedProductBrief = translatedProductBrief;
+                        existingTranslationItem.translatedProductDescription = translatedProductDescription;
+                        existingTranslationItem.translatedProductVariants = translatedVariants;
+                        existingTranslationItem.translatedProductOptions = translatedOptions;
+                        existingTranslationItem.translatedProductOptionValues = translatedOptionValues;
+                        existingTranslationItem.translatedCategories = translatedCategories;
+
+                        await this.translationItemRepository.save(existingTranslationItem);
+                    } else {
+                        translationItemsToInsert.push({
+                            uuid: crypto.randomUUID(),
+                            translation: translationEntity,
+                            language,
+                            translatedProductTitle,
+                            translatedProductBrief,
+                            translatedProductDescription,
+                            translatedProductVariants: translatedVariants,
+                            translatedProductOptions: translatedOptions,
+                            translatedProductOptionValues: translatedOptionValues,
+                            translatedCategories,
+                        });
+                    }
 
                     if (language.shortCode === 'ar') {
                         const productToUpdate = await this.productRepository.findOne({
@@ -250,7 +275,7 @@ export class TranslationProcessor extends WorkerHost {
                         });
                         if (productToUpdate) {
                             productToUpdate.titleAr = translatedProductTitle?.trim().slice(0, 128);
-                            productToUpdate.briefAr = translatedProductBrief;
+                            productToUpdate.briefAr = translatedProductBrief?.trim().slice(0, 256);
                             productToUpdate.descriptionAr = translatedProductDescription;
 
                             const updatedProduct = await this.productRepository.save(productToUpdate);
@@ -312,7 +337,7 @@ export class TranslationProcessor extends WorkerHost {
                 }
             }
 
-            if (translationItemsToInsert.length) {
+            if (translationItemsToInsert.length > 0) {
                 await this.translationItemRepository.save(translationItemsToInsert);
             }
 
