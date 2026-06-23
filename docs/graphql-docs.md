@@ -60,6 +60,7 @@ The following features are currently supported by the GraphQL API.
 - Get Recently Viewed Products
 - Get Products
 - Get Products By Category
+- Get Products By Categories
 - Get Product
 - Get Categories
 - Get Notifications
@@ -1687,6 +1688,137 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
 }
 ```
 
+Get Products By Categories
+--------------------------
+
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
+### GraphQL Query
+
+```graphql
+query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getProductsByCategories(slugs: $slugs, language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    title(language: $language)
+    brief(language: $language)
+    description(language: $language)
+    descriptionHtml(language: $language)
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    variants {
+      uuid
+      title(language: $language)
+      sku
+      price(currency: $currency) {
+        amount
+        currencyCode
+      }
+      discountedPrice(currency: $currency) {
+        amount
+        currencyCode
+      }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "slugs": ["women-clothing"],
+    "sort": "best-match",
+    "language": "en",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 24
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getProductsByCategories": [
+            {
+                "uuid": "d7e99058-6148-47f7-9e40-154b4a491921",
+                "slug": "women-s-elastic-waist-drawstring-straight-casual-974575306049",
+                "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "brief": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "description": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "descriptionHtml": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "salesCount": 0,
+                "likesCount": 0,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "variants": [
+                    {
+                        "uuid": "30eb07ef-e95b-4b76-927e-2ba9291bb4c4",
+                        "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trou",
+                        "sku": "6093393018587",
+                        "price": {
+                            "amount": 105,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 53,
+                            "currencyCode": "qar"
+                        },
+                        "images": [
+                            {
+                                "uuid": "ce96f581-06aa-43b8-9871-8b4769cca4ee",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/8827a3e3-684a-4024-9662-a44043072294.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/9aa61a3c-47d5-43e2-be89-061f6b0ec128.webp",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
+                    }
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 70%",
+                    "brief": "",
+                    "slug": "summer-70",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
+            }
+        ]
+    }
+}
+```
 
 Get Product
 -----------
