@@ -584,6 +584,9 @@ export class OrderService {
             // External payment call — if this throws, the entire DB transaction rolls back
             const payment = await this.paymentService.createPayment(paymentPayload);
             order.paymentTransaction = payment;
+            if (total === 0) {
+                order.status = OrderStatus.PAYMENT_SUCCESSFUL;
+            }
             await queryRunner.manager.save(order);
 
             await queryRunner.commitTransaction();
