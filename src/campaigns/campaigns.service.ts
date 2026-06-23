@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -19,6 +20,7 @@ import { UpdateCampaignDto } from "./dtos/UpdateCampaignDto";
 import { Campaign } from './entities/campaign.entity';
 import { CampaignCategory } from './entities/campaign-category.entity';
 import { Category } from '../inventory/entities/category.entity';
+import { CampaignsScheduler } from './campaigns.scheduler';
 
 @Injectable()
 export class CampaignsService {
@@ -28,6 +30,7 @@ export class CampaignsService {
 		@InjectRepository(Campaign) private readonly campaignRepository: Repository<Campaign>,
 		@InjectRepository(CampaignCategory) private readonly campaignCategoryRepository: Repository<CampaignCategory>,
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
+		@Inject(CampaignsScheduler) private readonly campaignsScheduler: CampaignsScheduler,
 	) { }
 
 	/**
@@ -118,6 +121,8 @@ export class CampaignsService {
 				isFeatured: false,
 			});
 		}
+
+		this.campaignsScheduler.scheduleCartAdjustment(campaign);
 
 		return campaign;
 	}
@@ -369,6 +374,8 @@ export class CampaignsService {
 				isFeatured: false,
 			});
 		}
+
+		this.campaignsScheduler.scheduleCartAdjustment(campaign);
 
 		return campaign;
 	}

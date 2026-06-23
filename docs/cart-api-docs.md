@@ -14,6 +14,13 @@ Follow the following steps to use the cart system:
 4. Remove item from cart.
 5. Clear entire cart.
 
+Campaign Pricing in the Cart
+-----------------------------
+
+When a product belongs to a category that is part of an active campaign, the campaign's `discountPercentage` is automatically applied when the item is added to cart or when the cart is fetched. The highest available campaign discount wins.
+
+When a campaign expires, a background scheduler runs within one minute and updates the stored `subTotal` and `total` of every affected cart item back to the standard price. Customers will see the updated (non-discounted) price on their next cart fetch.
+
 Cart API
 =============
 
@@ -22,7 +29,7 @@ Cart API
 > You must include your access token as a `Bearer` token in the Authorization header. Your account must be active while making these requests.
 > Guest users must send x-guest-id header.
 > If a valid Bearer token is provided → cart is linked to user.
-> f no token → x-guest-id header is required.
+> If no token → x-guest-id header is required.
 
 Add to Cart
 ------------------
