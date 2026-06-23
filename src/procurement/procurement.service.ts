@@ -769,7 +769,7 @@ export class ProcurementService {
                 }) ?? [];
 
                 const title = sku.skuAttributes.map(sku => sku.valueTrans).join(' ');
-                const shippingInfo = product.productShippingInfo.skuShippingDetails.find((detail: any) => detail.skuId === sku.skuId.toString());
+                const shippingInfo = product.productShippingInfo.skuShippingDetails.find((detail: any) => detail.skuId === sku.skuId.toString()) ?? product.productShippingInfo;
 
                 const skuImg = sku.skuAttributes?.find((a) => a.skuImageUrl)?.skuImageUrl ?? '';
 
