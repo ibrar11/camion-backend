@@ -104,6 +104,7 @@ import { LanguagesModule } from './languages/languages.module';
 
 import { Order } from "./order/entities/order.entity";
 import { OrderItem } from "./order/entities/order-item.entity";
+import { OrderTrackingEvent } from "./order/entities/order-tracking-event.entity";
 import { OrderModule } from './order/order.module';
 
 import { ReturnRequest } from "./returns/entities/return-request.entity";
@@ -248,6 +249,7 @@ import { CampaignCategory } from "./campaigns/entities/campaign-category.entity"
 
 					Order,
 					OrderItem,
+					OrderTrackingEvent,
 
 					PaymentTransaction,
 
