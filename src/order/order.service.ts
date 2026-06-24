@@ -101,6 +101,8 @@ import { Product } from "../inventory/entities/product.entity";
 
 import { getBestCampaign } from "../common/bestCampaign";
 
+import { Campaign } from "../campaigns/entities/campaign.entity";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -309,6 +311,7 @@ export class OrderService {
             let subTotal = 0;
             const orderItems: OrderItem[] = [];
             const currency = dto.currency ?? "qar";
+            let campaign: Campaign | null = null;
 
             for (const cart of cartItems) {
                 const variant = cart.variant;
@@ -344,7 +347,7 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
 
-                const campaign = getBestCampaign(cart.product);
+                campaign = getBestCampaign(cart.product);
 
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
                 const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, campaign, currency, true);
@@ -439,6 +442,12 @@ export class OrderService {
                         },
                     },
                 });
+
+                if (campaign && affiliateCoupon) {
+                    throw new BadRequestException(
+                        "Coupon cannot be applied. Campaign products exists."
+                    )
+                }
 
                 if (!affiliateCoupon) {
                     globalCoupon = await this.globalCouponRepository.findOne({
@@ -1185,6 +1194,8 @@ export class OrderService {
             const validatedItems: CartItem[] = [];
             let subTotal = 0;
 
+            let campaign: Campaign | null = null;
+
             for (const item of cartItems) {
                 // Check stock availability
                 const stock = calculateStock(item.variant);
@@ -1195,7 +1206,7 @@ export class OrderService {
                     );
                 }
 
-                const campaign = getBestCampaign(item.product);
+                campaign = getBestCampaign(item.product);
 
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
                 const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, campaign, currencyCode, true);
@@ -1270,6 +1281,12 @@ export class OrderService {
                         },
                     },
                 });
+
+                if(campaign && affiliateCoupon) {
+                    throw new BadRequestException(
+                        "Coupon cannot be applied. Campaign products exists."
+                    )
+                }
 
                 coupon = affiliateCoupon;
 
