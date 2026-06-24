@@ -84,7 +84,7 @@ export class TranslationScannerService {
 
             if (chineseProducts && chineseProducts.length > 0) {
                 this.logger.log('Appending chinese product uuids');
-                productsNeedingTranslation.concat(chineseProducts)
+                productsNeedingTranslation.push(...chineseProducts);
             }
 
             if (productsNeedingTranslation.length === 0) {
