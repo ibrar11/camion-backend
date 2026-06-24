@@ -10,6 +10,8 @@ import { DispatchShopJobData } from '../../queue/types';
 import { OrderAddressDto } from '../../procurement/dtos/CreateProcurementOrderDto';
 
 import { Order } from '../../order/entities/order.entity';
+import { OrderTrackingEvent } from '../../order/entities/order-tracking-event.entity';
+import { OrderTrackingStage } from '../../order/enums/OrderTrackingStage';
 import { JopWmsOrder, JopWmsOrderType } from '../entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from '../entities/jop-wms-order-link.entity';
 import { JopWmsClient } from '../jop-wms.client';
@@ -29,6 +31,8 @@ export class DispatchProcessor extends WorkerHost {
         private readonly wmsOrderRepository: Repository<JopWmsOrder>,
         @InjectRepository(JopWmsOrderLink)
         private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
+        @InjectRepository(OrderTrackingEvent)
+        private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         private readonly client: JopWmsClient,
         private readonly procurementService: ProcurementService,
         private readonly dataSource: DataSource,
@@ -106,6 +110,21 @@ export class DispatchProcessor extends WorkerHost {
                              SET gulltrans_order_sns = array_append(COALESCE(gulltrans_order_sns, '{}'), $1)
                              WHERE uuid = $2`,
                             [sn, orderUuid],
+                        );
+                    }
+                }
+                for (const orderUuid of orderUuids) {
+                    const alreadyProcessing = await runner.manager.findOne(OrderTrackingEvent, {
+                        where: { orderUuid, stage: OrderTrackingStage.PROCESSING },
+                    });
+                    if (!alreadyProcessing) {
+                        await runner.manager.save(
+                            runner.manager.create(OrderTrackingEvent, {
+                                orderUuid,
+                                stage: OrderTrackingStage.PROCESSING,
+                                date: new Date(),
+                                trackingId: null,
+                            }),
                         );
                     }
                 }

@@ -62,23 +62,30 @@ export class OrderTracking {
     @Field(() => String, { nullable: true })
     waybillNo: string | null;
 
+    @Field(() => String, { nullable: true })
+    trackingUrl: string | null;
+
     @Field()
     canRetryOutbound: boolean;
 }
 
-export class OrderTrackingSteps {
-    orderPlaced: boolean;
-    paymentPending: boolean;
-    paymentConfirmed: boolean;
-    paymentRejected: boolean;
-    orderConfirmed: boolean;
-    orderCancelled: boolean;
-    cancellationReason: string | null;
-    processing: boolean;
-    packing: boolean;
-    dispatching: boolean;
-    shipped: boolean;
+export class OrderTrackingMetadata {
     trackingId: string | null;
-    orderDelivered: boolean;
-    orderReview: { rating: number; text: string } | null;
+    cancellationReason: string | null;
+    reviewText: string | null;
+    reviewRating: number | null;
+}
+
+export class OrderTrackingItem {
+    id: number;
+    name: string;
+    checked: boolean;
+    date: Date | null;
+    metadata: OrderTrackingMetadata;
+}
+
+export class OrderTrackingResponse {
+    success: boolean;
+    message: string;
+    data: OrderTrackingItem[];
 }

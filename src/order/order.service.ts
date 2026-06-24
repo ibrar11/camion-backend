@@ -77,8 +77,13 @@ import {
     OrderFilters,
     OrderPreviewResponse,
     OrderTracking,
-    OrderTrackingSteps,
+    OrderTrackingItem,
+    OrderTrackingMetadata,
+    OrderTrackingResponse,
 } from "./types";
+
+import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
+import { OrderTrackingStage } from './enums/OrderTrackingStage';
 
 import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JopWmsOutboundStatus } from '../jop-wms/entities/jop-wms-order.entity';
 
@@ -123,6 +128,7 @@ export class OrderService {
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         @InjectRepository(JopWmsOrderLink) private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+        @InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
         @InjectQueue(QueueName.ORDER_PAYMENT_TIMEOUT)
@@ -179,10 +185,12 @@ export class OrderService {
                     ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ?? 'Procurement in Progress')
                     : 'Order Confirmed';
 
+            const waybillNo = outbound?.waybillNo ?? null;
             order.tracking = {
                 stage,
                 status,
-                waybillNo: outbound?.waybillNo ?? null,
+                waybillNo,
+                trackingUrl: waybillNo ? `https://track.4px.com/#/result/0/${waybillNo}` : null,
                 canRetryOutbound:
                     (stage === 'inbound' && inbound?.status === JopWmsInboundStatus.STORED) ||
                     (stage === 'outbound' && outbound?.status === JopWmsOutboundStatus.PROCESSING_FAILED),
@@ -190,45 +198,17 @@ export class OrderService {
         }
     }
 
-    private buildTrackingSteps(order: Order, inbound?: JopWmsOrder, outbound?: JopWmsOrder): OrderTrackingSteps {
-        const status = order.status;
-        const payment = order.paymentTransaction;
-
-        const paymentConfirmed =
-            status === OrderStatus.PAYMENT_SUCCESSFUL ||
-            status === OrderStatus.CONFIRMED ||
-            status === OrderStatus.DELIVERED ||
-            payment?.status === PaymentStatus.PAID;
-
-        const paymentRejected =
-            status === OrderStatus.PAYMENT_REJECTED ||
-            payment?.status === PaymentStatus.REJECTED ||
-            payment?.status === PaymentStatus.FAILED;
-
-        const paymentPending =
-            !paymentConfirmed &&
-            !paymentRejected &&
-            (status === OrderStatus.PAYMENT_PENDING || payment?.status === PaymentStatus.PENDING);
-
-        const isCancelled = status === OrderStatus.CANCELLED;
-
-        return {
-            orderPlaced: true,
-            paymentPending,
-            paymentConfirmed,
-            paymentRejected,
-            orderConfirmed: status === OrderStatus.CONFIRMED || status === OrderStatus.DELIVERED,
-            orderCancelled: isCancelled,
-            cancellationReason: isCancelled ? (order.cancellationReason ?? null) : null,
-            processing: !!(order.gulltransOrderSns?.length),
-            packing: inbound?.status === JopWmsInboundStatus.STORED,
-            dispatching: !!outbound,
-            shipped: outbound?.status === JopWmsOutboundStatus.SHIPPED,
-            trackingId: outbound?.waybillNo ?? null,
-            orderDelivered: status === OrderStatus.DELIVERED,
-            orderReview: order.orderReview ?? null,
-        };
-    }
+    private static readonly TRACKING_STAGES: { id: number; stage: OrderTrackingStage; name: string; nameAr: string }[] = [
+        { id: 1, stage: OrderTrackingStage.ORDER_PLACED,      name: 'Order Placed',      nameAr: 'تم تقديم الطلب' },
+        { id: 2, stage: OrderTrackingStage.PAYMENT_CONFIRMED, name: 'Payment Confirmed', nameAr: 'تم تأكيد الدفع' },
+        { id: 3, stage: OrderTrackingStage.ORDER_CONFIRMED,   name: 'Order Confirmed',   nameAr: 'تم تأكيد الطلب' },
+        { id: 4, stage: OrderTrackingStage.PROCESSING,        name: 'Processing',        nameAr: 'قيد المعالجة' },
+        { id: 5, stage: OrderTrackingStage.PACKING,           name: 'Packing',           nameAr: 'قيد التغليف' },
+        { id: 6, stage: OrderTrackingStage.DISPATCHING,       name: 'Dispatching',       nameAr: 'قيد الشحن' },
+        { id: 7, stage: OrderTrackingStage.ORDER_DELIVERED,   name: 'Order Delivered',   nameAr: 'تم التسليم' },
+        { id: 8, stage: OrderTrackingStage.ORDER_REVIEW,      name: 'Order Review',      nameAr: 'تقييم الطلب' },
+        { id: 9, stage: OrderTrackingStage.ORDER_CANCELLED,   name: 'Order Cancelled',   nameAr: 'تم إلغاء الطلب' },
+    ];
 
     /**
      * Creates a new order
@@ -507,6 +487,15 @@ export class OrderService {
             order.shippingAddress = address;
 
             await queryRunner.manager.save(order);
+
+            await queryRunner.manager.save(
+                queryRunner.manager.create(OrderTrackingEvent, {
+                    orderUuid: order.uuid,
+                    stage: OrderTrackingStage.ORDER_PLACED,
+                    date: new Date(),
+                    trackingId: null,
+                }),
+            );
 
             // Clear the cart within transaction
             await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
@@ -858,31 +847,43 @@ export class OrderService {
         }
     }
 
-    async getOrderTracking(orderUuid: string, customerUuid?: string): Promise<OrderTrackingSteps> {
+    async getOrderTracking(orderUuid: string, customerUuid?: string, lang: string = 'en'): Promise<OrderTrackingResponse> {
         const whereClause: any = { uuid: orderUuid };
         if (customerUuid) whereClause.customer = { uuid: customerUuid };
 
-        const order = await this.orderRepository.findOne({
-            where: whereClause,
-            relations: { paymentTransaction: true },
-        });
+        const order = await this.orderRepository.findOne({ where: whereClause });
         if (!order) throw new NotFoundException({ error: 'Order not found' });
 
-        const links = await this.wmsOrderLinkRepository.find({
+        const events = await this.trackingEventRepository.find({
             where: { orderUuid },
-            relations: ['wmsOrder'],
+            order: { createdAt: 'ASC' },
         });
 
-        let inbound: JopWmsOrder | undefined;
-        let outbound: JopWmsOrder | undefined;
-        for (const link of links) {
-            if (!link.wmsOrder) continue;
-            if (link.wmsOrder.type === JopWmsOrderType.INBOUND) inbound = link.wmsOrder;
-            if (link.wmsOrder.type === JopWmsOrderType.OUTBOUND) outbound = link.wmsOrder;
-        }
+        const eventMap = new Map(events.map(e => [e.stage, e]));
 
-        return this.buildTrackingSteps(order, inbound, outbound);
+        const data: OrderTrackingItem[] = OrderService.TRACKING_STAGES.map(({ id, stage, name, nameAr }) => {
+            const event = eventMap.get(stage);
+            return {
+                id,
+                name: lang === 'ar' ? nameAr : name,
+                checked: !!event,
+                date: event?.date ?? null,
+                metadata: {
+                    trackingId: event?.trackingId ?? null,
+                    cancellationReason: event?.cancellationReason ?? null,
+                    reviewText: event?.reviewText ?? null,
+                    reviewRating: event?.reviewRating ?? null,
+                },
+            };
+        });
+
+        return {
+            success: true,
+            message: 'Order statuses fetched successfully',
+            data,
+        };
     }
+
 
     /**
      * update order
@@ -900,6 +901,72 @@ export class OrderService {
             }
 
             const saved = await this.orderRepository.save(order);
+
+            const trackingEventMap: Partial<Record<OrderStatus, () => Promise<void>>> = {
+                [OrderStatus.PAYMENT_SUCCESSFUL]: async () => {
+                    const exists = await this.trackingEventRepository.findOne({
+                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.PAYMENT_CONFIRMED },
+                    });
+                    if (!exists) {
+                        await this.trackingEventRepository.save(
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                stage: OrderTrackingStage.PAYMENT_CONFIRMED,
+                                date: new Date(),
+                                trackingId: null,
+                            }),
+                        );
+                    }
+                },
+                [OrderStatus.CONFIRMED]: async () => {
+                    const exists = await this.trackingEventRepository.findOne({
+                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CONFIRMED },
+                    });
+                    if (!exists) {
+                        await this.trackingEventRepository.save(
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                stage: OrderTrackingStage.ORDER_CONFIRMED,
+                                date: new Date(),
+                                trackingId: null,
+                            }),
+                        );
+                    }
+                },
+                [OrderStatus.DELIVERED]: async () => {
+                    const exists = await this.trackingEventRepository.findOne({
+                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_DELIVERED },
+                    });
+                    if (!exists) {
+                        await this.trackingEventRepository.save(
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                stage: OrderTrackingStage.ORDER_DELIVERED,
+                                date: new Date(),
+                                trackingId: null,
+                            }),
+                        );
+                    }
+                },
+                [OrderStatus.CANCELLED]: async () => {
+                    const exists = await this.trackingEventRepository.findOne({
+                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED },
+                    });
+                    if (!exists) {
+                        await this.trackingEventRepository.save(
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                stage: OrderTrackingStage.ORDER_CANCELLED,
+                                date: new Date(),
+                                trackingId: null,
+                                cancellationReason: cancellationReason ?? null,
+                            }),
+                        );
+                    }
+                },
+            };
+
+            await trackingEventMap[status]?.();
 
             const notificationMap: Partial<Record<OrderStatus, { type: NotificationType; title: string; brief: string; message: string, payload: NotificationPayload }>> = {
                 [OrderStatus.CONFIRMED]: {
@@ -1070,6 +1137,21 @@ export class OrderService {
             order.status = OrderStatus.CANCELLED;
 
             await this.orderRepository.save(order);
+
+            const cancelledExists = await this.trackingEventRepository.findOne({
+                where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED },
+            });
+            if (!cancelledExists) {
+                await this.trackingEventRepository.save(
+                    this.trackingEventRepository.create({
+                        orderUuid: order.uuid,
+                        stage: OrderTrackingStage.ORDER_CANCELLED,
+                        date: new Date(),
+                        trackingId: null,
+                        cancellationReason: null,
+                    }),
+                );
+            }
 
             if (order.customer) {
                 this.notificationsService.create({
