@@ -567,7 +567,7 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 
 | Name | Description | Default |
 |---|---|---|
-| `lang` | Language for stage names. Supported: `en`, `ar` | `en` |
+| `language` | Language for stage names. Supported: `en`, `ar` | `en` |
 
 ### Stages (always returned in this fixed order)
 
@@ -600,7 +600,7 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 | `data[].metadata.reviewText` | `string \| null` | Review text — populated on stage 8 (Order Review) |
 | `data[].metadata.reviewRating` | `number \| null` | Star rating — populated on stage 8 (Order Review) |
 
-### Example — order dispatched (`?lang=en`)
+### Example — order dispatched (`?language=en`)
 
 ```json
 {
@@ -620,7 +620,7 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 }
 ```
 
-### Example — cancelled order (`?lang=ar`)
+### Example — cancelled order (`?language=ar`)
 
 ```json
 {
@@ -640,7 +640,7 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 }
 ```
 
-### Example — delivered and reviewed (`?lang=en`)
+### Example — delivered and reviewed (`?language=en`)
 
 ```json
 {

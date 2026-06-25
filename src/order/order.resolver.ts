@@ -72,7 +72,7 @@ export class GetOrderTrackingArgs {
     uuid: string;
 
     @Field({ defaultValue: "en" })
-    lang: string;
+    language: string;
 }
 
 @ArgsType()
@@ -116,7 +116,7 @@ export class OrderResolver {
     @Query(() => [OrderTrackingItem])
     getOrderTracking(@Context() context, @Args() args: GetOrderTrackingArgs): Promise<OrderTrackingItem[]> {
         const customerUuid = context.req?.customer?.uuid ?? undefined;
-        return this.orderService.getOrderTracking(args.uuid, customerUuid, args.lang);
+        return this.orderService.getOrderTracking(args.uuid, customerUuid, args.language);
     }
 
     @Query(() => OrderPreviewResponse)

@@ -855,7 +855,7 @@ export class OrderService {
         }
     }
 
-    async getOrderTracking(orderUuid: string, customerUuid?: string, lang: string = 'en'): Promise<OrderTrackingItem[]> {
+    async getOrderTracking(orderUuid: string, customerUuid?: string, language: string = 'en'): Promise<OrderTrackingItem[]> {
         const whereClause: any = { uuid: orderUuid };
         if (customerUuid) whereClause.customer = { uuid: customerUuid };
 
@@ -873,7 +873,7 @@ export class OrderService {
             const event = eventMap.get(stage);
             return {
                 id,
-                name: lang === 'ar' ? nameAr : name,
+                name: language === 'ar' ? nameAr : name,
                 checked: !!event,
                 date: event?.date ?? null,
                 metadata: {
