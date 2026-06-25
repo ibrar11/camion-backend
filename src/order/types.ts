@@ -69,23 +69,47 @@ export class OrderTracking {
     canRetryOutbound: boolean;
 }
 
+@ObjectType()
 export class OrderTrackingMetadata {
+    @Field(() => String, { nullable: true })
     trackingId: string | null;
+
+    @Field(() => String, { nullable: true })
     cancellationReason: string | null;
+
+    @Field(() => String, { nullable: true })
     reviewText: string | null;
+
+    @Field(() => Number, { nullable: true })
     reviewRating: number | null;
 }
 
+@ObjectType()
 export class OrderTrackingItem {
+    @Field()
     id: number;
+
+    @Field()
     name: string;
+
+    @Field()
     checked: boolean;
+
+    @Field(() => Date, { nullable: true })
     date: Date | null;
+
+    @Field(() => OrderTrackingMetadata)
     metadata: OrderTrackingMetadata;
 }
 
+@ObjectType()
 export class OrderTrackingResponse {
+    @Field()
     success: boolean;
+
+    @Field()
     message: string;
+
+    @Field(() => [OrderTrackingItem])
     data: OrderTrackingItem[];
 }
