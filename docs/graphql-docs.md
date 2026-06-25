@@ -3041,13 +3041,13 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
 Get Order Tracking (Timeline)
 ------------------------------
 
-Returns the 9-stage milestone timeline for an order. Customers can only query their own orders; admins can query any order. Pass `lang: "ar"` to get Arabic stage names.
+Returns the 9-stage milestone timeline for an order. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
 
 ### GraphQL Query
 
 ```graphql
-query GetOrderTracking($uuid: String!, $lang: String) {
-    getOrderTracking(uuid: $uuid, lang: $lang) {
+query GetOrderTracking($uuid: String!, $language: String) {
+    getOrderTracking(uuid: $uuid, language: $language) {
         id
         name
         checked
@@ -3067,7 +3067,7 @@ query GetOrderTracking($uuid: String!, $lang: String) {
 ```json
 {
     "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
-    "lang": "en"
+    "language": "en"
 }
 ```
 
@@ -3096,7 +3096,7 @@ query GetOrderTracking($uuid: String!, $lang: String) {
 | Field | Description |
 |---|---|
 | `data[].id` | Stage position (1–9) |
-| `data[].name` | Stage label — English by default, Arabic when `lang: "ar"` |
+| `data[].name` | Stage label — English by default, Arabic when `language: "ar"` |
 | `data[].checked` | `true` if this stage has been reached |
 | `data[].date` | Timestamp when the stage was reached; `null` if not yet reached |
 | `data[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |

@@ -90,10 +90,10 @@ export class OrderController {
     getTracking(
         @Param('uuid') uuid: string,
         @GetCustomer() customer: Customer,
-        @Query('lang') lang: string = 'en',
+        @Query('language') language: string = 'en',
     ): Promise<OrderTrackingItem[]> {
         const customerUuid = customer?.uuid ?? undefined;
-        return this.orderService.getOrderTracking(uuid, customerUuid, lang);
+        return this.orderService.getOrderTracking(uuid, customerUuid, language);
     }
 
 @Roles(UserRole.SuperAdmin, UserRole.Admin)
