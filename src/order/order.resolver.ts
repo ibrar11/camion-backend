@@ -26,7 +26,7 @@ import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { OrderStatus } from "./enums/OrderStatus";
-import { OrderPreviewResponse } from "./types";
+import { OrderPreviewResponse, OrderTrackingItem } from "./types";
 
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
@@ -66,6 +66,16 @@ export class GetCustomerOrderArgs {
     currency: string;
 }
 @ArgsType()
+export class GetOrderTrackingArgs {
+    @Field(() => String)
+    @IsUUID('4')
+    uuid: string;
+
+    @Field({ defaultValue: "en" })
+    lang: string;
+}
+
+@ArgsType()
 export class GetCustomerOrderPreviewArgs {
     @Field({ defaultValue: "en", })
     language: string;
@@ -101,6 +111,12 @@ export class OrderResolver {
             });
         }
         return this.orderService.findOne(args.uuid);
+    }
+
+    @Query(() => [OrderTrackingItem])
+    getOrderTracking(@Context() context, @Args() args: GetOrderTrackingArgs): Promise<OrderTrackingItem[]> {
+        const customerUuid = context.req?.customer?.uuid ?? undefined;
+        return this.orderService.getOrderTracking(args.uuid, customerUuid, args.lang);
     }
 
     @Query(() => OrderPreviewResponse)

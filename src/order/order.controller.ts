@@ -32,7 +32,7 @@ import { OrderService } from './order.service';
 import { Customer } from '../customers/entities/customer.entity';
 import { UserRole } from '../users/enums/UserRole';
 
-import { OrderPreviewResponse, OrderTrackingResponse } from './types';
+import { OrderPreviewResponse, OrderTrackingItem } from './types';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/orders')
@@ -91,7 +91,7 @@ export class OrderController {
         @Param('uuid') uuid: string,
         @GetCustomer() customer: Customer,
         @Query('lang') lang: string = 'en',
-    ): Promise<OrderTrackingResponse> {
+    ): Promise<OrderTrackingItem[]> {
         const customerUuid = customer?.uuid ?? undefined;
         return this.orderService.getOrderTracking(uuid, customerUuid, lang);
     }
