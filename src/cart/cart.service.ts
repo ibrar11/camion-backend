@@ -256,7 +256,11 @@ export class CartItemsService {
             cartItem.availableStock = stock;
             cartItem.isAvailable = stock > 0;
 
-            const campaign = getBestCampaign(cartItem.product);            
+            const campaign = getBestCampaign(cartItem.product);
+            
+            if (campaign !== null) {
+                cartItem.product.campaign = campaign;
+            } 
 
             const price = await this.pricingService.applyPriceOnProductVariant(
                 cartItem.product,

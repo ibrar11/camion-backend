@@ -3638,6 +3638,15 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             ratingThreeStarCount
             ratingFourStarCount
             ratingFiveStarCount
+            campaign {
+                uuid
+                name(language: $language)
+                brief(language: $language)
+                slug
+                discountPercentage
+                startsAt
+                finishesAt
+            }
         }
         variant {
             uuid
@@ -3711,7 +3720,16 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                     "ratingTwoStarCount": 0,
                     "ratingThreeStarCount": 0,
                     "ratingFourStarCount": 0,
-                    "ratingFiveStarCount": 0
+                    "ratingFiveStarCount": 0,
+                    "campaign": {
+                        "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                        "name": "Summer 50%",
+                        "brief": "",
+                        "slug": "summer-50",
+                        "discountPercentage": 50,
+                        "startsAt": "2026-01-01T00:00:00.000Z",
+                        "finishesAt": "2026-12-31T00:00:00.000Z"
+                    }
                 },
                 "variant": {
                     "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
@@ -3802,6 +3820,15 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
             ratingThreeStarCount
             ratingFourStarCount
             ratingFiveStarCount
+            campaign {
+                uuid
+                name(language: $language)
+                brief(language: $language)
+                slug
+                discountPercentage
+                startsAt
+                finishesAt
+            }
         }
         variant {
             uuid
@@ -3901,7 +3928,16 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                     "ratingTwoStarCount": 0,
                     "ratingThreeStarCount": 0,
                     "ratingFourStarCount": 0,
-                    "ratingFiveStarCount": 0
+                    "ratingFiveStarCount": 0,
+                    "campaign": {
+                        "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                        "name": "Summer 50%",
+                        "brief": "",
+                        "slug": "summer-50",
+                        "discountPercentage": 50,
+                        "startsAt": "2026-01-01T00:00:00.000Z",
+                        "finishesAt": "2026-12-31T00:00:00.000Z"
+                    }
                 },
                 "variant": {
                     "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
