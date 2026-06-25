@@ -79,7 +79,6 @@ import {
     OrderTracking,
     OrderTrackingItem,
     OrderTrackingMetadata,
-    OrderTrackingResponse,
 } from "./types";
 
 import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
@@ -836,7 +835,7 @@ export class OrderService {
         }
     }
 
-    async getOrderTracking(orderUuid: string, customerUuid?: string, lang: string = 'en'): Promise<OrderTrackingResponse> {
+    async getOrderTracking(orderUuid: string, customerUuid?: string, lang: string = 'en'): Promise<OrderTrackingItem[]> {
         const whereClause: any = { uuid: orderUuid };
         if (customerUuid) whereClause.customer = { uuid: customerUuid };
 
@@ -866,11 +865,7 @@ export class OrderService {
             };
         });
 
-        return {
-            success: true,
-            message: 'Order statuses fetched successfully',
-            data,
-        };
+        return data;
     }
 
 

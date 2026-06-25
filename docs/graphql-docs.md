@@ -3048,19 +3048,15 @@ Returns the 9-stage milestone timeline for an order. Customers can only query th
 ```graphql
 query GetOrderTracking($uuid: String!, $lang: String) {
     getOrderTracking(uuid: $uuid, lang: $lang) {
-        success
-        message
-        data {
-            id
-            name
-            checked
-            date
-            metadata {
-                trackingId
-                cancellationReason
-                reviewText
-                reviewRating
-            }
+        id
+        name
+        checked
+        date
+        metadata {
+            trackingId
+            cancellationReason
+            reviewText
+            reviewRating
         }
     }
 }
@@ -3080,21 +3076,17 @@ query GetOrderTracking($uuid: String!, $lang: String) {
 ```json
 {
     "data": {
-        "getOrderTracking": {
-            "success": true,
-            "message": "Order statuses fetched successfully",
-            "data": [
-                { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00.000Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 9, "name": "Order Cancelled",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
-            ]
-        }
+        "getOrderTracking": [
+            { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00.000Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 9, "name": "Order Cancelled",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+        ]
     }
 }
 ```

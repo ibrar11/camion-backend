@@ -102,14 +102,3 @@ export class OrderTrackingItem {
     metadata: OrderTrackingMetadata;
 }
 
-@ObjectType()
-export class OrderTrackingResponse {
-    @Field()
-    success: boolean;
-
-    @Field()
-    message: string;
-
-    @Field(() => [OrderTrackingItem])
-    data: OrderTrackingItem[];
-}
