@@ -1,6 +1,8 @@
 import {
 	IsNumber,
+	IsOptional,
 	IsString,
+	IsUUID,
 	Max,
 	MaxLength,
 	Min,
@@ -8,6 +10,10 @@ import {
 } from "class-validator";
 
 export class CreateReviewDto {
+	@IsOptional()
+	@IsUUID('4')
+	orderUuid?: string;
+
 	@IsNumber()
 	@Min(1)
 	@Max(5)

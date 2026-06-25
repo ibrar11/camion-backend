@@ -32,6 +32,7 @@ import { ClientRefreshToken } from '../oauth/entities/oauth-refresh-token.entity
 import { OauthService } from '../oauth/oauth.service';
 
 import { Order } from '../order/entities/order.entity';
+import { OrderTrackingEvent } from '../order/entities/order-tracking-event.entity';
 
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { ExchangeRateService } from '../pricing/exchange-rate.service';
@@ -56,6 +57,7 @@ import { CartItem } from '../cart/entities/cart-items.entity';
             Client,
             ClientRefreshToken,
             Order,
+            OrderTrackingEvent,
             ExchangeRate,
             Notification,
             PushNotification,

@@ -70,6 +70,9 @@ import { ClientsModule } from '../clients/clients.module';
 
 import { CartItem } from '../cart/entities/cart-items.entity';
 
+import { Order } from '../order/entities/order.entity';
+import { OrderTrackingEvent } from '../order/entities/order-tracking-event.entity';
+
 import { PricingModule } from '../pricing/pricing.module';
 
 import { Translation } from '../translation/entities/translation.entity';
@@ -84,6 +87,8 @@ import { CampaignsModule } from 'src/campaigns/campaigns.module';
 		TypeOrmModule.forFeature([
 			CartItem,
 			Category,
+			Order,
+			OrderTrackingEvent,
 			Customer,
 			InventoryItem,
 			InventoryLevel,
