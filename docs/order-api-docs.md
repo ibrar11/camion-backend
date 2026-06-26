@@ -555,7 +555,7 @@ DELETE /v1/orders/<order-uuid> HTTP/1.1
 Order Tracking
 --------------
 
-Returns an ordered list of 9 tracking stages for the frontend timeline. All 9 stages are always returned. Stages that have been reached have `checked: true` and a populated `date`; pending stages have `checked: false` and `date: null`.
+Returns 8 happy-path tracking stages plus a separate `cancelled` field. Stages that have been reached have `checked: true` and a populated `date`; pending stages have `checked: false` and `date: null`. The `cancelled` field is `null` for active orders and an `OrderTrackingItem` object when the order has been cancelled.
 
 Customers can only retrieve tracking for their own orders; admins can query any order.
 
@@ -580,33 +580,36 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 | `5` | Packing | قيد التغليف | JOP WMS inbound reaches status 14 (STORED — goods at warehouse) |
 | `6` | Dispatching | قيد الشحن | JOP WMS outbound receives a waybill number — `metadata.trackingId` is populated |
 | `7` | Order Delivered | تم التسليم | Admin sets order status to `delivered` |
-| `8` | Order Review | تقييم الطلب | Customer submits a review — `metadata.reviewText` and `metadata.reviewRating` are populated |
-| `9` | Order Cancelled | تم إلغاء الطلب | Order is cancelled — `metadata.cancellationReason` is populated if a reason was provided |
+| `8` | Order Review | تقييم الطلب | Customer submits a product review with `orderUuid` via `POST /v1/products/:uuid/reviews` — `metadata.reviewText` and `metadata.reviewRating` are populated automatically |
+
+The `cancelled` field (id `9`, name `Order Cancelled` / `تم إلغاء الطلب`) is a separate top-level field returned alongside `stages`. It is `null` for active orders and contains the cancellation event object (with `metadata.cancellationReason`) when the order has been cancelled.
 
 ### Response Fields
 
 | Field | Type | Description |
 |---|---|---|
-| `success` | `boolean` | Always `true` |
-| `message` | `string` | Always `"Order statuses fetched successfully"` |
-| `data` | `Array` | Ordered list of all 9 tracking stages |
-| `data[].id` | `number` | Stage ID (1–9, fixed) |
-| `data[].name` | `string` | Stage label in the requested language |
-| `data[].checked` | `boolean` | `true` if this stage has been reached |
-| `data[].date` | `string (ISO 8601) \| null` | When the stage was reached; `null` if not yet reached |
-| `data[].metadata` | `object` | Stage-specific data; all fields `null` unless relevant to that stage |
-| `data[].metadata.trackingId` | `string \| null` | Carrier waybill number — populated on stage 6 (Dispatching) |
-| `data[].metadata.cancellationReason` | `string \| null` | Cancellation reason — populated on stage 9 (Order Cancelled) |
-| `data[].metadata.reviewText` | `string \| null` | Review text — populated on stage 8 (Order Review) |
-| `data[].metadata.reviewRating` | `number \| null` | Star rating — populated on stage 8 (Order Review) |
+| `stages` | `Array` | Ordered list of the 8 happy-path tracking stages |
+| `stages[].id` | `number` | Stage ID (1–8, fixed) |
+| `stages[].name` | `string` | Stage label in the requested language |
+| `stages[].checked` | `boolean` | `true` if this stage has been reached |
+| `stages[].date` | `string (ISO 8601) \| null` | When the stage was reached; `null` if not yet reached |
+| `stages[].metadata` | `object` | Stage-specific data; all fields `null` unless relevant to that stage |
+| `stages[].metadata.trackingId` | `string \| null` | Carrier waybill number — populated on stage 6 (Dispatching) |
+| `stages[].metadata.cancellationReason` | `string \| null` | Always `null` on happy-path stages |
+| `stages[].metadata.reviewText` | `string \| null` | Review text — populated on stage 8 (Order Review) |
+| `stages[].metadata.reviewRating` | `number \| null` | Star rating (1–5) — populated on stage 8 (Order Review) |
+| `cancelled` | `object \| null` | Cancellation event (id `9`); `null` if the order has not been cancelled |
+| `cancelled.id` | `number` | Always `9` |
+| `cancelled.name` | `string` | `"Order Cancelled"` / `"تم إلغاء الطلب"` |
+| `cancelled.checked` | `boolean` | Always `true` when present |
+| `cancelled.date` | `string (ISO 8601)` | When the order was cancelled |
+| `cancelled.metadata.cancellationReason` | `string \| null` | Reason provided at cancellation time |
 
 ### Example — order dispatched (`?language=en`)
 
 ```json
 {
-    "success": true,
-    "message": "Order statuses fetched successfully",
-    "data": [
+    "stages": [
         { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
@@ -614,9 +617,9 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
         { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-        { "id": 8, "name": "Order Review",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-        { "id": 9, "name": "Order Cancelled",    "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
-    ]
+        { "id": 8, "name": "Order Review",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+    ],
+    "cancelled": null
 }
 ```
 
@@ -624,9 +627,7 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 
 ```json
 {
-    "success": true,
-    "message": "Order statuses fetched successfully",
-    "data": [
+    "stages": [
         { "id": 1, "name": "تم تقديم الطلب",   "checked": true,  "date": "2026-06-23T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 2, "name": "تم تأكيد الدفع",   "checked": true,  "date": "2026-06-23T10:01:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 3, "name": "تم تأكيد الطلب",   "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
@@ -634,9 +635,9 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
         { "id": 5, "name": "قيد التغليف",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 6, "name": "قيد الشحن",         "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 7, "name": "تم التسليم",        "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-        { "id": 8, "name": "تقييم الطلب",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-        { "id": 9, "name": "تم إلغاء الطلب",   "checked": true,  "date": "2026-06-23T10:30:00Z", "metadata": { "trackingId": null, "cancellationReason": "Out of stock", "reviewText": null, "reviewRating": null } }
-    ]
+        { "id": 8, "name": "تقييم الطلب",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+    ],
+    "cancelled": { "id": 9, "name": "تم إلغاء الطلب", "checked": true, "date": "2026-06-23T10:30:00Z", "metadata": { "trackingId": null, "cancellationReason": "Out of stock", "reviewText": null, "reviewRating": null } }
 }
 ```
 
@@ -644,9 +645,7 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 
 ```json
 {
-    "success": true,
-    "message": "Order statuses fetched successfully",
-    "data": [
+    "stages": [
         { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
@@ -654,15 +653,17 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
         { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
         { "id": 7, "name": "Order Delivered",    "checked": true,  "date": "2026-06-27T14:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-        { "id": 8, "name": "Order Review",       "checked": true,  "date": "2026-06-28T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": "Great quality, fast delivery!", "reviewRating": 5 } },
-        { "id": 9, "name": "Order Cancelled",    "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
-    ]
+        { "id": 8, "name": "Order Review",       "checked": true,  "date": "2026-06-28T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": "Great quality, fast delivery!", "reviewRating": 5 } }
+    ],
+    "cancelled": null
 }
 ```
 
 ### Backing store
 
 Stage events are persisted in the `order_tracking_events` table. Each row records `order_uuid`, `stage` (enum), `date`, `tracking_id`, `cancellation_reason`, `review_text`, and `review_rating`. Rows are append-only and idempotent — duplicate events for the same order + stage are never inserted.
+
+The `ORDER_REVIEW` stage is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. If the customer leaves multiple product reviews for the same order, the text is appended (separated by `\n---\n`) and the rating is averaged.
 
 ---
 

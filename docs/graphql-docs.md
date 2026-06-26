@@ -3041,22 +3041,33 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
 Get Order Tracking (Timeline)
 ------------------------------
 
-Returns the 9-stage milestone timeline for an order. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
+Returns 8 happy-path tracking stages (`stages`) plus a separate `cancelled` field. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
 
 ### GraphQL Query
 
 ```graphql
 query GetOrderTracking($uuid: String!, $language: String) {
     getOrderTracking(uuid: $uuid, language: $language) {
-        id
-        name
-        checked
-        date
-        metadata {
-            trackingId
-            cancellationReason
-            reviewText
-            reviewRating
+        stages {
+            id
+            name
+            checked
+            date
+            metadata {
+                trackingId
+                cancellationReason
+                reviewText
+                reviewRating
+            }
+        }
+        cancelled {
+            id
+            name
+            checked
+            date
+            metadata {
+                cancellationReason
+            }
         }
     }
 }
@@ -3076,17 +3087,19 @@ query GetOrderTracking($uuid: String!, $language: String) {
 ```json
 {
     "data": {
-        "getOrderTracking": [
-            { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00.000Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-            { "id": 9, "name": "Order Cancelled",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
-        ]
+        "getOrderTracking": {
+            "stages": [
+                { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00.000Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+            ],
+            "cancelled": null
+        }
     }
 }
 ```
@@ -3095,16 +3108,17 @@ query GetOrderTracking($uuid: String!, $language: String) {
 
 | Field | Description |
 |---|---|
-| `data[].id` | Stage position (1–9) |
-| `data[].name` | Stage label — English by default, Arabic when `language: "ar"` |
-| `data[].checked` | `true` if this stage has been reached |
-| `data[].date` | Timestamp when the stage was reached; `null` if not yet reached |
-| `data[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
-| `data[].metadata.cancellationReason` | Populated on stage 9 (Order Cancelled) if a reason was provided |
-| `data[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
-| `data[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
+| `stages[].id` | Stage position (1–8) |
+| `stages[].name` | Stage label — English by default, Arabic when `language: "ar"` |
+| `stages[].checked` | `true` if this stage has been reached |
+| `stages[].date` | Timestamp when the stage was reached; `null` if not yet reached |
+| `stages[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
+| `stages[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
+| `stages[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
+| `cancelled` | `null` for active orders; contains the cancellation event object when the order is cancelled |
+| `cancelled.metadata.cancellationReason` | Reason provided at cancellation time |
 
-All 9 stages are always returned. The array is ordered from earliest to latest stage.
+The `ORDER_REVIEW` stage (id 8) is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. Multiple reviews for the same order append text and average the rating.
 
 Get Current Customer Order Preview
 -----------------------------------
