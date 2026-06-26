@@ -79,6 +79,7 @@ import {
     OrderTracking,
     OrderTrackingItem,
     OrderTrackingMetadata,
+    OrderTrackingResponse,
 } from "./types";
 
 import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
@@ -204,8 +205,9 @@ export class OrderService {
         { id: 6, stage: OrderTrackingStage.DISPATCHING,       name: 'Dispatching',       nameAr: 'قيد الشحن' },
         { id: 7, stage: OrderTrackingStage.ORDER_DELIVERED,   name: 'Order Delivered',   nameAr: 'تم التسليم' },
         { id: 8, stage: OrderTrackingStage.ORDER_REVIEW,      name: 'Order Review',      nameAr: 'تقييم الطلب' },
-        { id: 9, stage: OrderTrackingStage.ORDER_CANCELLED,   name: 'Order Cancelled',   nameAr: 'تم إلغاء الطلب' },
     ];
+
+    private static readonly CANCELLED_STAGE = { id: 9, name: 'Order Cancelled', nameAr: 'تم إلغاء الطلب' };
 
     /**
      * Creates a new order
@@ -835,7 +837,7 @@ export class OrderService {
         }
     }
 
-    async getOrderTracking(orderUuid: string, customerUuid?: string, language: string = 'en'): Promise<OrderTrackingItem[]> {
+    async getOrderTracking(orderUuid: string, customerUuid?: string, language: string = 'en'): Promise<OrderTrackingResponse> {
         const whereClause: any = { uuid: orderUuid };
         if (customerUuid) whereClause.customer = { uuid: customerUuid };
 
@@ -849,7 +851,7 @@ export class OrderService {
 
         const eventMap = new Map(events.map(e => [e.stage, e]));
 
-        const data: OrderTrackingItem[] = OrderService.TRACKING_STAGES.map(({ id, stage, name, nameAr }) => {
+        const stages: OrderTrackingItem[] = OrderService.TRACKING_STAGES.map(({ id, stage, name, nameAr }) => {
             const event = eventMap.get(stage);
             return {
                 id,
@@ -865,7 +867,22 @@ export class OrderService {
             };
         });
 
-        return data;
+        const cancelledEvent = eventMap.get(OrderTrackingStage.ORDER_CANCELLED);
+        const { id, name, nameAr } = OrderService.CANCELLED_STAGE;
+        const cancelled: OrderTrackingItem | null = cancelledEvent ? {
+            id,
+            name: language === 'ar' ? nameAr : name,
+            checked: true,
+            date: cancelledEvent.date,
+            metadata: {
+                trackingId: null,
+                cancellationReason: cancelledEvent.cancellationReason ?? null,
+                reviewText: null,
+                reviewRating: null,
+            },
+        } : null;
+
+        return { stages, cancelled };
     }
 
 

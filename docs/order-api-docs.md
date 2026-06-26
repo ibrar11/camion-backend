@@ -574,7 +574,7 @@ GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 | `id` | `name (en)` | `name (ar)` | Set automatically when… |
 |---|---|---|---|
 | `1` | Order Placed | تم تقديم الطلب | Order is created |
-| `2` | Payment Confirmed | تم تأكيد الدفع | Payment gateway confirms successful payment |
+| `2` | Payment Confirmed | تم تأكيد الدفع | Skipcash webhook fires with a successful payment status, OR `updateStatus()` is called with `PAYMENT_SUCCESSFUL` |
 | `3` | Order Confirmed | تم تأكيد الطلب | Admin sets order status to `confirmed` |
 | `4` | Processing | قيد المعالجة | Dispatch worker creates Gulltrans procurement order (1688) |
 | `5` | Packing | قيد التغليف | JOP WMS inbound reaches status 14 (STORED — goods at warehouse) |
@@ -681,6 +681,8 @@ If payment arrives before the 30 minutes expire, the timeout job exits silently 
 Order Review
 -------------
 
-Customers can submit a review once an order is delivered. The review is recorded as a tracking event on stage 8 (Order Review). Once submitted, `data[7].checked` becomes `true` and `data[7].metadata.reviewText` / `data[7].metadata.reviewRating` are populated in the tracking response.
+Customers submit a review via `POST /v1/products/:productUUID/reviews` with an `orderUuid` in the body. The server validates that the order belongs to the customer, has status `delivered`, and contains the product being reviewed — then automatically stamps stage 8 (Order Review).
 
-> Review submission endpoint is not yet implemented.
+Once stamped, `stages[7].checked` becomes `true` and `stages[7].metadata.reviewText` / `stages[7].metadata.reviewRating` are populated in the tracking response.
+
+If the customer submits multiple product reviews linked to the same order, the review text is appended (separated by `\n---\n`) and the rating is averaged. The review is always saved regardless of whether the tracking stamp succeeds.
