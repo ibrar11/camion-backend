@@ -28,6 +28,9 @@ export class OrderTrackingEvent {
     @Column({ type: 'int', nullable: true, default: null, name: 'review_rating' })
     reviewRating: number | null;
 
+    @Column({ type: 'boolean', default: true })
+    active: boolean;
+
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt: Date;
 }

@@ -661,7 +661,11 @@ The `cancelled` field (id `9`, name `Order Cancelled` / `تم إلغاء الط�
 
 ### Backing store
 
-Stage events are persisted in the `order_tracking_events` table. Each row records `order_uuid`, `stage` (enum), `date`, `tracking_id`, `cancellation_reason`, `review_text`, and `review_rating`. Rows are append-only and idempotent — duplicate events for the same order + stage are never inserted.
+Stage events are persisted in the `order_tracking_events` table. Each row records `order_uuid`, `stage` (enum), `date`, `tracking_id`, `cancellation_reason`, `review_text`, `review_rating`, and `active` (boolean, default `true`). The tracking API only returns events where `active = true`.
+
+All stages except `ORDER_CANCELLED` are append-only and idempotent — once stamped they are never deactivated. `ORDER_CANCELLED` is the only stage that can be deactivated:
+- **Reopen:** when a successful payment arrives for a cancelled order, the active `ORDER_CANCELLED` event is set to `active = false` and the order resumes. The `cancelled` field returns `null` on the next tracking call.
+- **Re-cancellation:** the existing active `ORDER_CANCELLED` event is set to `active = false` and a new one is created with the latest reason. Historical cancellation rows are preserved in the DB as `active = false` for audit purposes.
 
 The `ORDER_REVIEW` stage is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. If the customer leaves multiple product reviews for the same order, the text is appended (separated by `\n---\n`) and the rating is averaged.
 
@@ -674,7 +678,7 @@ When an order is placed, a 30-minute delayed job is queued. If the order status 
 
 If payment arrives before the 30 minutes expire, the timeout job exits silently with no action.
 
-**Webhook reopen behaviour:** If a successful payment webhook arrives for an already-cancelled order (e.g. payment completed just after the timeout), the order is automatically reopened — status is set back to `payment_successful`, `cancellationReason` is cleared, and the customer receives a "Payment Successful" push notification and order-confirmed email.
+**Webhook reopen behaviour:** If a successful payment webhook arrives for an already-cancelled order (e.g. payment completed just after the timeout), the order is automatically reopened — status is set back to `payment_successful`, `cancellationReason` is cleared, the active `ORDER_CANCELLED` tracking event is deactivated (`active = false`), and the customer receives a "Payment Successful" push notification and order-confirmed email. The `cancelled` field in the tracking response returns `null` after a reopen.
 
 ---
 

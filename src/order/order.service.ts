@@ -845,7 +845,7 @@ export class OrderService {
         if (!order) throw new NotFoundException({ error: 'Order not found' });
 
         const events = await this.trackingEventRepository.find({
-            where: { orderUuid },
+            where: { orderUuid, active: true },
             order: { createdAt: 'ASC' },
         });
 
@@ -950,20 +950,20 @@ export class OrderService {
                     }
                 },
                 [OrderStatus.CANCELLED]: async () => {
-                    const exists = await this.trackingEventRepository.findOne({
-                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED },
-                    });
-                    if (!exists) {
-                        await this.trackingEventRepository.save(
-                            this.trackingEventRepository.create({
-                                orderUuid: order.uuid,
-                                stage: OrderTrackingStage.ORDER_CANCELLED,
-                                date: new Date(),
-                                trackingId: null,
-                                cancellationReason: cancellationReason ?? null,
-                            }),
-                        );
-                    }
+                    await this.trackingEventRepository.update(
+                        { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED, active: true },
+                        { active: false },
+                    );
+                    await this.trackingEventRepository.save(
+                        this.trackingEventRepository.create({
+                            orderUuid: order.uuid,
+                            stage: OrderTrackingStage.ORDER_CANCELLED,
+                            date: new Date(),
+                            trackingId: null,
+                            cancellationReason: cancellationReason ?? null,
+                            active: true,
+                        }),
+                    );
                 },
             };
 

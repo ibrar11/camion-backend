@@ -3115,8 +3115,10 @@ query GetOrderTracking($uuid: String!, $language: String) {
 | `stages[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
 | `stages[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
 | `stages[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
-| `cancelled` | `null` for active orders; contains the cancellation event object when the order is cancelled |
+| `cancelled` | `null` for active orders and reopened orders; contains the cancellation event when the order is currently cancelled |
 | `cancelled.metadata.cancellationReason` | Reason provided at cancellation time |
+
+**Cancellation / reopen behaviour:** The `ORDER_CANCELLED` tracking event has an `active` flag. Only the active event is returned. When an order is reopened via a successful payment, the cancellation event is deactivated and `cancelled` returns `null`. If an order is cancelled again after a reopen, the previous cancellation is deactivated and a new one is created — only the latest cancellation is visible. Historical rows are kept in the DB as `active = false` for audit purposes.
 
 The `ORDER_REVIEW` stage (id 8) is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. Multiple reviews for the same order append text and average the rating.
 

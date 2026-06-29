@@ -147,6 +147,10 @@ export class PaymentsWebhookService {
                 if (wasReopened) {
                     this.logger.log(`Order ${order.uuid} was cancelled — reopening after successful payment`);
                     order.cancellationReason = null;
+                    await this.trackingEventRepository.update(
+                        { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED, active: true },
+                        { active: false },
+                    );
                 }
 
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
