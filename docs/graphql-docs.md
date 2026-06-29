@@ -4582,7 +4582,7 @@ Get Minimum Order Key Value Pair
 ### GraphQL Query
 
 ```graphql
-uery GetMinimumOrderValue($currency: String) {
+query GetMinimumOrderValue($currency: String) {
   getMinimumOrderValue(currency: $currency) {
     uuid
     name
@@ -4606,6 +4606,44 @@ uery GetMinimumOrderValue($currency: String) {
             "name": "min_order_amount_qar",
             "type": "integer",
             "integerValue": 300,
+            "decimalValue": 0,
+            "stringValue": "0",
+            "booleanValue": false,
+            "sensitive": false
+        }
+    }
+}
+```
+Get Free Shipping Key Value Pair
+--------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetFreeShippingValue($currency: String) {
+  getFreeShippingValue(currency: $currency) {
+    uuid
+    name
+    type
+    integerValue
+    decimalValue
+    stringValue
+    booleanValue
+    sensitive
+  }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getFreeShippingValue": {
+            "uuid": "da8dcbb7-7220-4632-91c0-dd99dd6848ca",
+            "name": "free_shipping_above_qar",
+            "type": "integer",
+            "integerValue": 200,
             "decimalValue": 0,
             "stringValue": "0",
             "booleanValue": false,

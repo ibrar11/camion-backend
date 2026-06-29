@@ -44,4 +44,14 @@ export class KeyValuePairResolver {
         return this.keyValuePairsService.findMinimumOrderAmount(args.currency);
     }
 
+    @Query(() => KeyValuePair)
+    getFreeShippingValue(@Context() context, @Args() args: GetKeyValuePairArgs): Promise<KeyValuePair> {
+        if (!context.req || !context.req.customer || !context.req.customer.uuid) {
+            throw new ForbiddenException({
+                error: "You're not allowed to retrieve key value pairs. Please check and try again.",
+            });
+        }
+        return this.keyValuePairsService.findFreeShippingAmount(args.currency);
+    }
+
 }
