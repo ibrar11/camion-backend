@@ -11,6 +11,8 @@ import { In, Repository } from "typeorm";
 import { verifySkipcashSignature } from "../common/skipcash";
 
 import { OrderStatus } from "../order/enums/OrderStatus";
+import { OrderTrackingEvent } from "../order/entities/order-tracking-event.entity";
+import { OrderTrackingStage } from "../order/enums/OrderTrackingStage";
 
 import { SkipcashWebhookDto } from "./dtos/SkipcashWebhookDto";
 
@@ -38,6 +40,7 @@ export class PaymentsWebhookService {
         @InjectRepository(PaymentTransaction) private readonly paymentRepository: Repository<PaymentTransaction>,
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
+        @InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
@@ -148,6 +151,20 @@ export class PaymentsWebhookService {
 
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
+
+                const paymentEventExists = await this.trackingEventRepository.findOne({
+                    where: { orderUuid: order.uuid, stage: OrderTrackingStage.PAYMENT_CONFIRMED },
+                });
+                if (!paymentEventExists) {
+                    await this.trackingEventRepository.save(
+                        this.trackingEventRepository.create({
+                            orderUuid: order.uuid,
+                            stage: OrderTrackingStage.PAYMENT_CONFIRMED,
+                            date: new Date(),
+                            trackingId: null,
+                        }),
+                    );
+                }
 
                 // const orderProductVariants = order.orderItems.map(item => ({
                 //     productId: item.product.id,

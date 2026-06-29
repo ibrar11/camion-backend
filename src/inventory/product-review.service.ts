@@ -19,6 +19,11 @@ import { Customer } from "../customers/entities/customer.entity";
 import { Product } from "./entities/product.entity";
 import { ProductReview } from "./entities/product-review.entity";
 
+import { Order } from "../order/entities/order.entity";
+import { OrderStatus } from "../order/enums/OrderStatus";
+import { OrderTrackingEvent } from "../order/entities/order-tracking-event.entity";
+import { OrderTrackingStage } from "../order/enums/OrderTrackingStage";
+
 @Injectable()
 export class ProductReviewService {
 	private readonly logger = new Logger(ProductReviewService.name);
@@ -26,6 +31,8 @@ export class ProductReviewService {
 	constructor(
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductReview) private readonly reviewRepository: Repository<ProductReview>,
+		@InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+		@InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
 	) { }
 
 	/**
@@ -99,7 +106,43 @@ export class ProductReviewService {
 		productReview.product = product;
 		productReview.rating = rating;
 		productReview.comment = body.comment.trim();
-		return this.reviewRepository.save(productReview);
+		productReview.orderUuid = body.orderUuid ?? null;
+		const saved = await this.reviewRepository.save(productReview);
+
+		if (body.orderUuid) {
+			try {
+				const order = await this.orderRepository.findOne({
+					where: { uuid: body.orderUuid, customer: { uuid: customer.uuid } },
+					relations: { orderItems: { product: true } },
+				});
+				const productInOrder = order?.orderItems?.some(item => item.product?.uuid === productUUID);
+				if (order && order.status === OrderStatus.DELIVERED && productInOrder) {
+					const existing = await this.trackingEventRepository.findOne({
+						where: { orderUuid: body.orderUuid, stage: OrderTrackingStage.ORDER_REVIEW },
+					});
+					if (!existing) {
+						await this.trackingEventRepository.save(
+							this.trackingEventRepository.create({
+								orderUuid: body.orderUuid,
+								stage: OrderTrackingStage.ORDER_REVIEW,
+								date: new Date(),
+								reviewText: body.comment.trim(),
+								reviewRating: rating,
+								trackingId: null,
+							}),
+						);
+					} else {
+						existing.reviewText = `${existing.reviewText}\n---\n${body.comment.trim()}`;
+						existing.reviewRating = Math.round(((existing.reviewRating ?? rating) + rating) / 2);
+						await this.trackingEventRepository.save(existing);
+					}
+				}
+			} catch (err: any) {
+				this.logger.warn(`Failed to stamp ORDER_REVIEW tracking event for order ${body.orderUuid}: ${err?.message}`);
+			}
+		}
+
+		return saved;
 	}
 
 	/**

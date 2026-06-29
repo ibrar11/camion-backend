@@ -45,6 +45,10 @@ export class ProductReview {
 	@Column({ type: "varchar", length: 512, })
 	comment: string;
 
+	@Field(() => String, { nullable: true })
+	@Column({ type: "uuid", nullable: true, default: null, name: "order_uuid" })
+	orderUuid: string | null;
+
 	@Field()
 	@Column({ type: "boolean", default: false, })
 	isEdited: boolean;

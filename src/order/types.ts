@@ -102,3 +102,12 @@ export class OrderTrackingItem {
     metadata: OrderTrackingMetadata;
 }
 
+@ObjectType()
+export class OrderTrackingResponse {
+    @Field(() => [OrderTrackingItem])
+    stages: OrderTrackingItem[];
+
+    @Field(() => OrderTrackingItem, { nullable: true })
+    cancelled: OrderTrackingItem | null;
+}
+
