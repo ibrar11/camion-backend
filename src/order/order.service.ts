@@ -370,7 +370,7 @@ export class OrderService {
             // Fetch free shipping threshold once
             const freeShippingValue = Number(
                 (await this.keyValuePairRepository.findOne({
-                    where: { name: "free_shipping_above" }
+                    where: { name: `free_shipping_above_${dto.currency}`.toLowerCase().trim() }
                 }))?.integerValue
             ) || 0;
 
@@ -1327,7 +1327,7 @@ export class OrderService {
             // Fetch free shipping threshold once
             const freeShippingValue = Number(
                 (await this.keyValuePairRepository.findOne({
-                    where: { name: "free_shipping_above" }
+                    where: { name: `free_shipping_above_${currency}`.toLowerCase().trim() }
                 }))?.integerValue
             ) || 0;
 
