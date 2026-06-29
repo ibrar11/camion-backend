@@ -251,7 +251,28 @@ type OrderTracking {
   canRetryOutbound: Boolean!
   stage: String!
   status: String!
+  trackingUrl: String
   waybillNo: String
+}
+
+type OrderTrackingItem {
+  checked: Boolean!
+  date: DateTime
+  id: Float!
+  metadata: OrderTrackingMetadata!
+  name: String!
+}
+
+type OrderTrackingMetadata {
+  cancellationReason: String
+  reviewRating: Float
+  reviewText: String
+  trackingId: String
+}
+
+type OrderTrackingResponse {
+  cancelled: OrderTrackingItem
+  stages: [OrderTrackingItem!]!
 }
 
 type PollElement {
@@ -346,6 +367,7 @@ type ProductReview {
   customer: Customer!
   images: [ProductReviewImage!]!
   isEdited: Boolean!
+  orderUuid: String
   rating: Int!
   uuid: String!
 }
@@ -426,9 +448,11 @@ type Query {
   getFeaturedCampaign(language: String! = "en"): Campaign
   getFeaturedCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getFeaturedProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
+  getFreeShippingValue(currency: String! = "usd"): KeyValuePair!
   getLanguages: [Language!]!
   getMinimumOrderValue(currency: String! = "usd"): KeyValuePair!
   getNotifications: [Notification!]!
+  getOrderTracking(language: String! = "en", uuid: String!): OrderTrackingResponse!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "most-viewed"): [Product!]!
   getPost(slug: String!): Post!
   getPosts: [Post!]!
