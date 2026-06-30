@@ -26,7 +26,7 @@ import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { OrderStatus } from "./enums/OrderStatus";
-import { OrderPreviewResponse, OrderTrackingResponse } from "./types";
+import { OrderPreviewResponse, OrderTrackingItem } from "./types";
 
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
@@ -113,10 +113,11 @@ export class OrderResolver {
         return this.orderService.findOne(args.uuid);
     }
 
-    @Query(() => OrderTrackingResponse)
-    getOrderTracking(@Context() context, @Args() args: GetOrderTrackingArgs): Promise<OrderTrackingResponse> {
+    @Query(() => [OrderTrackingItem])
+    async getOrderTracking(@Context() context, @Args() args: GetOrderTrackingArgs): Promise<OrderTrackingItem[]> {
         const customerUuid = context.req?.customer?.uuid ?? undefined;
-        return this.orderService.getOrderTracking(args.uuid, customerUuid, args.language);
+        const result = await this.orderService.getOrderTracking(args.uuid, customerUuid, args.language);
+        return result.stages;
     }
 
     @Query(() => OrderPreviewResponse)

@@ -3392,33 +3392,24 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
 Get Order Tracking (Timeline)
 ------------------------------
 
-Returns 8 happy-path tracking stages (`stages`) plus a separate `cancelled` field. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
+Returns the 8 happy-path tracking stages as a flat array. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
+
+> **Note:** The `cancelled` stage is not included in the GraphQL response. Use `GET /v1/orders/:uuid/tracking` (REST) to get the full `{ stages, cancelled }` shape.
 
 ### GraphQL Query
 
 ```graphql
 query GetOrderTracking($uuid: String!, $language: String) {
     getOrderTracking(uuid: $uuid, language: $language) {
-        stages {
-            id
-            name
-            checked
-            date
-            metadata {
-                trackingId
-                cancellationReason
-                reviewText
-                reviewRating
-            }
-        }
-        cancelled {
-            id
-            name
-            checked
-            date
-            metadata {
-                cancellationReason
-            }
+        id
+        name
+        checked
+        date
+        metadata {
+            trackingId
+            cancellationReason
+            reviewText
+            reviewRating
         }
     }
 }
@@ -3438,19 +3429,16 @@ query GetOrderTracking($uuid: String!, $language: String) {
 ```json
 {
     "data": {
-        "getOrderTracking": {
-            "stages": [
-                { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00.000Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
-                { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
-            ],
-            "cancelled": null
-        }
+        "getOrderTracking": [
+            { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00.000Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+        ]
     }
 }
 ```
@@ -3459,15 +3447,13 @@ query GetOrderTracking($uuid: String!, $language: String) {
 
 | Field | Description |
 |---|---|
-| `stages[].id` | Stage position (1–8) |
-| `stages[].name` | Stage label — English by default, Arabic when `language: "ar"` |
-| `stages[].checked` | `true` if this stage has been reached |
-| `stages[].date` | Timestamp when the stage was reached; `null` if not yet reached |
-| `stages[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
-| `stages[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
-| `stages[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
-| `cancelled` | `null` for active orders and reopened orders; contains the cancellation event when the order is currently cancelled |
-| `cancelled.metadata.cancellationReason` | Reason provided at cancellation time |
+| `[].id` | Stage position (1–8) |
+| `[].name` | Stage label — English by default, Arabic when `language: "ar"` |
+| `[].checked` | `true` if this stage has been reached |
+| `[].date` | Timestamp when the stage was reached; `null` if not yet reached |
+| `[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
+| `[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
+| `[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
 
 **Cancellation / reopen behaviour:** The `ORDER_CANCELLED` tracking event has an `active` flag. Only the active event is returned. When an order is reopened via a successful payment, the cancellation event is deactivated and `cancelled` returns `null`. If an order is cancelled again after a reopen, the previous cancellation is deactivated and a new one is created — only the latest cancellation is visible. Historical rows are kept in the DB as `active = false` for audit purposes.
 
