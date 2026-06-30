@@ -46,6 +46,7 @@ import { OrderAddressDto } from '../procurement/dtos/CreateProcurementOrderDto';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 import { DispatchShopJobData } from '../queue/types';
+import { WmsOutboundStatus } from './enums/WmsOutboundStatus';
 
 @Injectable()
 export class JopWmsService {
@@ -70,14 +71,14 @@ export class JopWmsService {
         private readonly dispatchQueue: Queue,
     ) { }
 
-    private static readonly OUTBOUND_STATUS_LABELS: Record<string, string> = {
-        'pending': 'Preparing Your Shipment',
-        '10': 'Preparing Your Shipment',
-        '11': 'Shipment in Progress',
-        '12': 'Shipment Delayed',
-        '13': 'Shipment Ready',
-        '14': 'Shipped',
-        '15': 'Shipment Cancelled',
+    private static readonly OUTBOUND_STATUS_LABELS: Record<WmsOutboundStatus, string> = {
+        [WmsOutboundStatus.PENDING]: 'Preparing Your Shipment',
+        [WmsOutboundStatus.DRAFT]: 'Preparing Your Shipment',
+        [WmsOutboundStatus.PROCESSING]: 'Shipment in Progress',
+        [WmsOutboundStatus.PROCESSING_FAILED]: 'Shipment Delayed',
+        [WmsOutboundStatus.PROCESSING_COMPLETE]: 'Shipment Ready',
+        [WmsOutboundStatus.SHIPPED]: 'Shipped',
+        [WmsOutboundStatus.INVALIDATED]: 'Shipment Cancelled',
     };
 
     private async trackOrder(orderNo: string, type: JopWmsOrderType, orderUuids?: string[], wmsAssignedId?: string) {
@@ -904,14 +905,14 @@ export class JopWmsService {
                 error: `WMS returned no status for outbound ${customerVoucherNo}`,
             });
         }
-        const statusLabel = JopWmsService.OUTBOUND_STATUS_LABELS[jopStatus] ?? jopStatus;
+        const statusLabel = JopWmsService.OUTBOUND_STATUS_LABELS[jopStatus  as WmsOutboundStatus] ?? jopStatus;
 
         const existing = await this.wmsOrderRepository.findOne({
             where: { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },
         });
 
         if (existing) {
-            const prevStatusLabel = JopWmsService.OUTBOUND_STATUS_LABELS[existing.status] ?? existing.status;
+            const prevStatusLabel = JopWmsService.OUTBOUND_STATUS_LABELS[existing.status as WmsOutboundStatus] ?? existing.status;
             await this.wmsOrderRepository.update(existing.id, {
                 status: jopStatus,
                 lastPolledAt: new Date(),
