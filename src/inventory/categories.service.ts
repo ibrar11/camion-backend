@@ -12,6 +12,8 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Not, Repository } from "typeorm";
 
+import { ProductCategory } from "./entities/product-category.entity";
+
 import { S3Service } from "../common/s3.service";
 import { FileService } from "../common/file.service";
 
@@ -31,6 +33,7 @@ export class CategoriesService {
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@Inject(FileService) private readonly fileService: FileService,
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
+		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
 	) { }
 
 	/**
@@ -319,5 +322,23 @@ export class CategoriesService {
 		await this.categoryRepository.delete({
 			uuid: uuid,
 		});
+	}
+
+	/**
+	 * Backfills productsCount for all categories based on current product_categories rows.
+	 * Run once after deploying the productsCount column.
+	 */
+	async backfillProductsCount(): Promise<{ updated: number }> {
+		this.logger.log(`Backfilling productsCount for all categories`);
+
+		const result = await this.categoryRepository
+			.createQueryBuilder()
+			.update(Category)
+			.set({
+				productsCount: () => `(SELECT COUNT(*) FROM product_categories WHERE product_categories.category_id = categories.id)`,
+			})
+			.execute();
+
+		return { updated: result.affected ?? 0 };
 	}
 }

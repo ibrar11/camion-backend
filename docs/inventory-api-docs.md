@@ -332,7 +332,8 @@ itemsPerPage | The number of results to retrieve in the response | 100
                 "isFeaturedOnHomepage": true,
                 "children": []
             }
-        ]
+        ],
+        "productsCount": 108
     }
 ]
 ```
@@ -357,7 +358,8 @@ GET /v1/categories/<category-uuid> HTTP/1.1
     "pricingFactor": 1.4,
     "discountPercentage": 5,
     "isFeatured": true,
-    "isFeaturedOnHomepage": true
+    "isFeaturedOnHomepage": true,
+    "productsCount": 108
 }
 ```
 
@@ -1756,12 +1758,21 @@ POST /v1/products/<product-uuid>/reviews HTTP/1.1
 
 ### Request Body
 
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `rating` | `number` (1–5) | Yes | Star rating |
+| `comment` | `string` (1–512 chars) | Yes | Review text |
+| `orderUuid` | `string (UUID v4)` | No | When provided, automatically stamps the `ORDER_REVIEW` tracking stage on the linked order |
+
 ```json
 {
-    "rating": 1.0,
-    "comment": "This was very bad"
+    "rating": 5,
+    "comment": "Great quality, fast delivery!",
+    "orderUuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9"
 }
 ```
+
+> **Order tracking auto-stamp:** If `orderUuid` is provided, the server validates that the order belongs to the authenticated customer, has status `delivered`, and contains the product being reviewed. If all conditions pass, the `ORDER_REVIEW` tracking stage is stamped automatically. If the customer leaves a second review for the same order, the review text is appended (separated by `\n---\n`) and the rating is averaged. The review is always saved regardless of whether the tracking stamp succeeds.
 
 ### Response Body
 
@@ -1788,8 +1799,9 @@ POST /v1/products/<product-uuid>/reviews HTTP/1.1
         "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
         "status": "DRAFT"
     },
-    "rating": "1",
-    "comment": "This was very bad",
+    "rating": "5",
+    "comment": "Great quality, fast delivery!",
+    "orderUuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
     "isEdited": false
 }
 ```

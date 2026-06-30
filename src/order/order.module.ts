@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
+import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
 import {
@@ -58,11 +60,16 @@ import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
 import { Product } from '../inventory/entities/product.entity';
 
+import { QueueName } from '../queue/enums/QueueTypes.enum';
+
+import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
             Order,
             OrderItem,
+            OrderTrackingEvent,
             User,
             Customer,
             CustomerAddress,
@@ -83,6 +90,7 @@ import { Product } from '../inventory/entities/product.entity';
             PushNotification,
             Product,
         ]),
+        BullModule.registerQueue({ name: QueueName.ORDER_PAYMENT_TIMEOUT }),
         ClientsModule,
         NotificationsModule,
         EmailModule,
@@ -103,6 +111,7 @@ import { Product } from '../inventory/entities/product.entity';
         PricingService,
         PushNotificationService,
         FirebaseAdminProvider,
+        PaymentTimeoutProcessor,
     ],
     controllers: [
         OrderController

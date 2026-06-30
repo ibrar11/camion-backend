@@ -1,7 +1,7 @@
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
+import { ProductSort } from "../inventory/enums/ProductSort.enum";
 
 import { Product } from "../inventory/entities/product.entity";
-import { ProductSort } from "src/inventory/enums/ProductSort.enum";
 
 /**
  * Filters in the active product and products with variants only
@@ -10,7 +10,7 @@ import { ProductSort } from "src/inventory/enums/ProductSort.enum";
  * @param sort
  * @returns
  */
-export const formatProductVariants = (products: Array<Product>, sort: ProductSort): Array<Product> => {
+export const sortProducts = (products: Array<Product>, sort: ProductSort): Array<Product> => {
 	if (!Array.isArray(products) || products.length === 0) {
 		return [];
 	}
@@ -22,11 +22,31 @@ export const formatProductVariants = (products: Array<Product>, sort: ProductSor
 
 	// Sort the products based on the cost of their first variant
 	switch (sort) {
+		case ProductSort.BestMatch:
+			return products.sort((productA, productB) => productB.id - productA.id);
+
+		case ProductSort.MostViewed:
+			return products.sort((productA, productB) => productB.viewsCount - productA.viewsCount);
+
 		case ProductSort.PriceLowToHigh:
-			products = products.sort((productA, productB) => productA.variants[0].cost.amount - productB.variants[0].cost.amount);
-			break;
+			return products.sort((productA, productB) => productA.variants[0].cost.amount - productB.variants[0].cost.amount);
+
 		case ProductSort.PriceHighToLow:
-			products = products.sort((productA, productB) => productB.variants[0].cost.amount - productA.variants[0].cost.amount);
+			return products.sort((productA, productB) => productB.variants[0].cost.amount - productA.variants[0].cost.amount);
+
+		case ProductSort.BestSellers:
+			return products.sort((productA, productB) => productB.salesCount - productA.salesCount);
+
+		case ProductSort.MostFavorited:
+			return products.sort((productA, productB) => productB.likesCount - productA.likesCount);
+
+		case ProductSort.NewArrivals:
+			return products.sort((productA, productB) => productB.id - productA.id);
+
+		case ProductSort.MostRated:
+			return products.sort((productA, productB) => productB.ratingAvg - productA.ratingAvg);
+
+		default: // do nothing
 			break;
 	}
 

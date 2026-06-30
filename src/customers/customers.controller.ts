@@ -121,4 +121,11 @@ export class CustomersController {
 	actionDeleteOne(@Param('uuid') uuid: string): Promise<void> {
 		return this.customersService.delete(uuid);
 	}
+
+	@Roles(UserRole.SuperAdmin)
+	@Post('backfill-cart-count')
+	@HttpCode(HttpStatus.OK)
+	actionBackfillCartCount(): Promise<{ updated: number }> {
+		return this.customersService.backfillCartCount();
+	}
 }

@@ -8,6 +8,8 @@ import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JopWmsOutboundStatus
 import { JopWmsService } from './jop-wms.service';
 
 import { Order } from '../order/entities/order.entity';
+import { OrderTrackingEvent } from '../order/entities/order-tracking-event.entity';
+import { OrderTrackingStage } from '../order/enums/OrderTrackingStage';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/enums/notification-type.enum';
 import { NotificationPriority } from '../notifications/enums/notification-priority.enum';
@@ -26,6 +28,8 @@ export class JopWmsScheduler {
         private readonly wmsOrderRepository: Repository<JopWmsOrder>,
         @InjectRepository(Order)
         private readonly orderRepository: Repository<Order>,
+        @InjectRepository(OrderTrackingEvent)
+        private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         private readonly client: JopWmsClient,
         private readonly wmsService: JopWmsService,
         private readonly notificationsService: NotificationsService,
@@ -207,6 +211,21 @@ export class JopWmsScheduler {
                     this.logger.log(`Inbound ${order.orderNo} stored — creating outbound orders`);
                     await this.wmsService.createOutboundsForInbound(order);
                     const linkedUuids = order.sourceOrders?.map(l => l.orderUuid) ?? [];
+                    for (const orderUuid of linkedUuids) {
+                        const exists = await this.trackingEventRepository.findOne({
+                            where: { orderUuid, stage: OrderTrackingStage.PACKING },
+                        });
+                        if (!exists) {
+                            await this.trackingEventRepository.save(
+                                this.trackingEventRepository.create({
+                                    orderUuid,
+                                    stage: OrderTrackingStage.PACKING,
+                                    date: new Date(),
+                                    trackingId: null,
+                                }),
+                            );
+                        }
+                    }
                     if (linkedUuids.length) {
                         await this.notifyOrderCustomers(linkedUuids, NotificationType.ORDER_PROCESSING, {
                             title: 'Order Processing',
@@ -216,7 +235,7 @@ export class JopWmsScheduler {
                     }
                 }
 
-                // Notify customer when outbound order receives a waybill number
+                // Notify customer and record DISPATCHING event when waybill is received
                 const linkedUuids = order.sourceOrders?.map(l => l.orderUuid) ?? [];
                 if (order.type === JopWmsOrderType.OUTBOUND && order.waybillNo && !prevWaybillNo && linkedUuids.length) {
                     await this.notifyOrderCustomers(linkedUuids, NotificationType.ORDER_SHIPPED, {
@@ -224,6 +243,22 @@ export class JopWmsScheduler {
                         brief: 'Your order is on its way.',
                         message: `Your order has been shipped. Tracking number: ${order.waybillNo}.`,
                     });
+
+                    for (const orderUuid of linkedUuids) {
+                        const existing = await this.trackingEventRepository.findOne({
+                            where: { orderUuid, stage: OrderTrackingStage.DISPATCHING },
+                        });
+                        if (!existing) {
+                            await this.trackingEventRepository.save(
+                                this.trackingEventRepository.create({
+                                    orderUuid,
+                                    stage: OrderTrackingStage.DISPATCHING,
+                                    date: new Date(),
+                                    trackingId: order.waybillNo,
+                                }),
+                            );
+                        }
+                    }
                 }
             } catch (err: any) {
                 order.errorCount += 1;

@@ -116,6 +116,12 @@ export class Order {
     @JoinColumn()
     paymentTransaction: PaymentTransaction;
 
+    @Column({ type: 'varchar', length: 512, nullable: true, default: null, name: 'cancellation_reason' })
+    cancellationReason: string | null;
+
+    @Column({ type: 'jsonb', nullable: true, default: null, name: 'order_review' })
+    orderReview: { rating: number; text: string } | null;
+
     @Exclude()
     @UpdateDateColumn({
         name: "updated_at",

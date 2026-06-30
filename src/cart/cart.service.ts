@@ -30,6 +30,8 @@ import { ExchangeRate } from "../pricing/entities/exchange-rate.entity";
 
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
+import { getBestCampaign } from "../common/bestCampaign";
+
 @Injectable()
 export class CartItemsService {
     private readonly logger = new Logger(CartItemsService.name);
@@ -68,7 +70,11 @@ export class CartItemsService {
                     },
                 },
                 productCategories: {
-                    category: true,
+                    category: {
+                        campaignCategories: {
+                            campaign: true,
+                        },
+                    },
                 },
             },
         });
@@ -109,9 +115,11 @@ export class CartItemsService {
             });
         }
 
+        const campaign = getBestCampaign(product);
+
         // Calculate the price of the product/variant
-        // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, body.currency, true);
+        // const price = await this.pricingService.applyPriceOnProductVariant(product, variant, null, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(product, variant, campaign, body.currency, true);
 
         // check if the variant already exists
         const existingCartItem = await this.cartRepository.findOne({
@@ -210,7 +218,11 @@ export class CartItemsService {
             relations: {
                 product: {
                     productCategories: {
-                        category: true,
+                        category: {
+                            campaignCategories: {
+                                campaign: true,
+                            },
+                        },
                     },
                 },
                 variant: {
@@ -244,9 +256,16 @@ export class CartItemsService {
             cartItem.availableStock = stock;
             cartItem.isAvailable = stock > 0;
 
+            const campaign = getBestCampaign(cartItem.product);
+            
+            if (campaign !== null) {
+                cartItem.product.campaign = campaign;
+            } 
+
             const price = await this.pricingService.applyPriceOnProductVariant(
                 cartItem.product,
                 cartItem.variant,
+                campaign,
                 currency,
                 true,
             );
@@ -391,8 +410,8 @@ export class CartItemsService {
         }
 
         // Calculate the price of the product/variant
-        // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, body.currency, true);
+        // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, false);
+        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, true);
 
         //Check if a cart item with the target variant already exists
         const existingItem = await this.cartRepository.findOne({
@@ -492,7 +511,7 @@ export class CartItemsService {
         await this.cartRepository.remove(cartItem);
 
         cartItem.customer.cartItemsCount--;
-        if(cartItem.customer.cartItemsCount < 0) {
+        if (cartItem.customer.cartItemsCount < 0) {
             cartItem.customer.cartItemsCount = 0;
         }
         await this.customerRepository.save(cartItem.customer);

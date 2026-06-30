@@ -17,6 +17,8 @@ import {
 
 import { Exclude } from "class-transformer";
 
+import { Campaign } from "../../campaigns/entities/campaign.entity";
+
 import { ProductStatus } from "../enums/ProductStatus.enum";
 
 import { ProductOption } from "./product-option.entity";
@@ -64,6 +66,7 @@ export class Product {
 	CREATE INDEX "idx_products_search_en" ON "products" USING gin("search_vector_en");
 	*/
 
+	@Exclude()
 	@Column({
 		type: 'tsvector',
 		asExpression: `to_tsvector('english', coalesce(title_en, ''))`,
@@ -73,6 +76,7 @@ export class Product {
 	@Index('idx_products_search_en', { unique: false })
 	tsvTitleEn: string;
 
+	@Exclude()
 	@Column({
 		type: 'tsvector',
 		asExpression: `to_tsvector('arabic', coalesce(title_ar, ''))`,
@@ -146,10 +150,12 @@ export class Product {
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
 	salesCount: number;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
 	likesCount: number;
 
 	@Field()
@@ -165,6 +171,7 @@ export class Product {
 	ratingSum: number;
 
 	@Column({ type: "integer", nullable: false, default: 0, })
+	@Index()
 	ratingCount: number;
 
 	@Field()
@@ -243,4 +250,11 @@ export class Product {
 		type: "timestamptz",
 	})
 	createdAt: Date;
+
+	/// DO NOT ADD THE PROPERTIES BELOW TO THE SCHEMA ///
+
+	/// Campaign ///
+	// Campaign is dynamically attached to the product entity
+	@Field(() => Campaign, { nullable: true, })
+	campaign: Campaign | null;
 }

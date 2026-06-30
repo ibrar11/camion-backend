@@ -60,6 +60,7 @@ The following features are currently supported by the GraphQL API.
 - Get Recently Viewed Products
 - Get Products
 - Get Products By Category
+- Get Products By Categories
 - Get Product
 - Get Categories
 - Get Notifications
@@ -404,8 +405,18 @@ query GetStories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 }
 ```
 
-Search Products (Best Match)
-----------------------------
+Search Products
+---------------
+
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
 
 ### Request Body
 
@@ -416,14 +427,13 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     slug
     title(language: $language)
     brief(language: $language)
-    description(language: $language)
-    descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
+    # description(language: $language)
+    # descriptionHtml(language: $language)
     salesCount
     likesCount
     reviewsCount
     ratingAvg
+    status
     variants {
       uuid
       title(language: $language)
@@ -444,6 +454,15 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
           isFeatured
           position
       }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
     }
   }
 }
@@ -505,7 +524,16 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50%",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -526,12 +554,11 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
     ratingAvg
+    status
     variants {
       uuid
       title(language: $language)
@@ -552,6 +579,15 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
           isFeatured
           position
       }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
     }
   }
 }
@@ -613,7 +649,16 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50%",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -660,6 +705,15 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
           isFeatured
           position
       }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
     }
   }
 }
@@ -721,7 +775,16 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50%",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -742,12 +805,11 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
     ratingAvg
+    status
     variants {
       uuid
       title(language: $language)
@@ -768,6 +830,15 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
           isFeatured
           position
       }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
     }
   }
 }
@@ -814,7 +885,7 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
-                            "amount": 6750,
+                            "amount": 3750,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -828,7 +899,16 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50%",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -838,19 +918,26 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
 Get Featured Products
 ---------------------
 
-### Request Body
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
+### GraphQL Query
 
 ```graphql
-query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: Int, $itemsPerPage: Int) {
-  getFeaturedProducts(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+query GetFeaturedProducts($language: String, $sort: String, $currency: String!, $pageNumber: Int, $itemsPerPage: Int) {
+  getFeaturedProducts(language: $language, sort: $sort, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
     uuid
     slug
     title(language: $language)
     brief(language: $language)
     description(language: $language)
-    descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
@@ -876,6 +963,15 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
           position
       }
     }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
   }
 }
 ```
@@ -885,9 +981,10 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
 ```json
 {
     "language":"en",
+    "sort": "price:high-to-low",
     "currency": "qar",
     "pageNumber": 1,
-    "itemsPerPage": 2
+    "itemsPerPage": 24
 }
 ```
 
@@ -934,7 +1031,16 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50%",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -944,23 +1050,29 @@ query GetFeaturedProducts($language: String, $currency: String!, $pageNumber: In
 Get Popular Products
 --------------------
 
+| Sort | Description |
+|---|---|
+| `most-viewed` | The default list of products, based on most number of views |
+| `best-sellers` | A list of products that are best sellers |
+| `most-favorited` | A list of products that are most favorited |
+| `most-rated` | A list of products that are rated highly |
+
 ### Request Body
 
 ```graphql
-query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int, $itemsPerPage: Int) {
-  getPopularProducts(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+query GetPopularProducts($language: String, $currency: String!, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getPopularProducts(language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
     uuid
     slug
     title(language: $language)
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
     ratingAvg
+    status
     variants {
       uuid
       title(language: $language)
@@ -982,6 +1094,15 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
           position
       }
     }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
   }
 }
 ```
@@ -990,8 +1111,9 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
 
 ```json
 {
-    "language":"en",
+    "language":"ar",
     "currency": "qar",
+    "sort": "most-viewed",
     "pageNumber": 1,
     "itemsPerPage": 10
 }
@@ -1004,43 +1126,51 @@ query GetPopularProducts($language: String, $currency: String!, $pageNumber: Int
     "data": {
         "getPopularProducts": [
             {
-                "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
-                "slug": "iphone-22",
-                "title": "iPhone 22",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "uuid": "d4c34d2a-a0cc-4776-bc8a-7ca5efbd7fd3",
+                "slug": "2026-new-printed-casual-holiday-style-bohemian-sh-915523703462",
+                "title": "بلوزة طويلة بأكمام قصيرة بنمط بوهيمي مطبوع جديد لعام 2026، مناسبة للعطلات غير الرسمية",
+                "brief": "بلوزة طويلة بأكمام قصيرة بنمط بوهيمي مطبوع جديد لعام 2026، مناسبة للعطلات غير الرسمية",
+                "description": "بلوزة طويلة بأكمام قصيرة بنمط بوهيمي مطبوع جديد لعام 2026، مناسبة للعطلات غير الرسمية",
+                "descriptionHtml": "2026 New Printed Casual Holiday Style Bohemian Short-sleeved Top Long Dress Women's",
                 "salesCount": 0,
                 "likesCount": 0,
-                "reviewsCount": 1,
-                "ratingAvg": 5,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "status": "active",
                 "variants": [
                     {
-                        "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
-                        "title": "iPhone 20 RED 1 TB",
-                        "sku": "iphone-20-red-1tb",
+                        "uuid": "a60d076f-ecd9-46db-a36a-a601e105bc75",
+                        "title": "بلوزة طويلة بأكمام قصيرة بنمط بوهيمي مطبوع جديد لعام 2026، مناسبة للعطلات، لون L",
+                        "sku": "5784415029004",
                         "price": {
-                            "amount": 7500,
+                            "amount": 166,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
-                            "amount": 6750,
+                            "amount": 83,
                             "currencyCode": "qar"
                         },
                         "images": [
                             {
-                                "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
-                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "uuid": "27edf891-f99d-4b0a-8b21-68a0117bbae5",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/2007925d-6706-4385-a3e9-ac9eb8212859.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/29b63de7-f217-40f2-81a4-8bb832f74b73.webp",
                                 "alt": "",
                                 "isFeatured": false,
                                 "position": 0
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50% (Ar)",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -1061,12 +1191,11 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
     ratingAvg
+    status
     variants {
       uuid
       title(language: $language)
@@ -1087,6 +1216,15 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
           isFeatured
           position
       }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
     }
   }
 }
@@ -1133,7 +1271,7 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
-                            "amount": 6750,
+                            "amount": 3750,
                             "currencyCode": "qar"
                         },
                         "images": [
@@ -1147,7 +1285,16 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50%",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -1162,18 +1309,17 @@ Get Recently Viewed Products
 ```graphql
 query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumber: Int, $itemsPerPage: Int) {
   getRecentlyViewedProducts(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
-    uuid
+   uuid
     slug
     title(language: $language)
     brief(language: $language)
     description(language: $language)
     descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
     ratingAvg
+    status
     variants {
       uuid
       title(language: $language)
@@ -1194,6 +1340,15 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
           isFeatured
           position
       }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
     }
   }
 }
@@ -1217,43 +1372,51 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
     "data": {
         "getRecentlyViewedProducts": [
             {
-                "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
-                "slug": "iphone-22",
-                "title": "iPhone 22",
-                "brief": "From $799 or $33.29/mo. per month for 24 months",
-                "description": "Your new iPhone awaits. Make it yours.",
-                "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "uuid": "a3eb9111-fbca-4773-8032-098be5253491",
+                "slug": "new-style-2026-spring-short-bell-sleeve-long-slee-925264134587",
+                "title": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                "brief": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                "description": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                "descriptionHtml": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
                 "salesCount": 0,
                 "likesCount": 0,
-                "reviewsCount": 1,
-                "ratingAvg": 5,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "status": "active",
                 "variants": [
                     {
-                        "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
-                        "title": "iPhone 20 RED 1 TB",
-                        "sku": "iphone-20-red-1tb",
+                        "uuid": "e6e66427-5ae0-49cb-bafc-876381ac4de8",
+                        "title": "New Style 2026 Spring Short Bell Sleeve Long Sleeve Round Neck Simple T-Shirt For Women New Arrival",
+                        "sku": "5961352229474",
                         "price": {
-                            "amount": 7500,
+                            "amount": 52,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
-                            "amount": 6750,
+                            "amount": 26,
                             "currencyCode": "qar"
                         },
                         "images": [
                             {
-                                "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
-                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "uuid": "13b1b4bf-69ad-4589-9339-813a698648fa",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/397e1704-f4ca-4a25-b83d-be6587881cd2.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/2ed305f2-8792-4804-9950-df99c24081e2.webp",
                                 "alt": "",
                                 "isFeatured": false,
                                 "position": 0
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 50%",
+                    "brief": "",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -1263,6 +1426,16 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
 Get Products
 ------------
 
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
 ### Request Body
 
 ```graphql
@@ -1271,15 +1444,11 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     uuid
     slug
     title(language: $language)
-    brief(language: $language)
-    description(language: $language)
-    descriptionHtml(language: $language)
-    featuredImageUrl
-    featuredThumbnailUrl
     salesCount
     likesCount
     reviewsCount
     ratingAvg
+    status
     variants {
       uuid
       title(language: $language)
@@ -1301,6 +1470,15 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
           position
       }
     }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
   }
 }
 ```
@@ -1311,8 +1489,9 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
 {
     "language": "en",
     "currency": "qar",
+    "sort": "best-match",
     "pageNumber": 1,
-    "itemsPerPage": 1
+    "itemsPerPage": 24
 }
 ```
 
@@ -1359,7 +1538,16 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 70%",
+                    "brief": "",
+                    "slug": "summer-70",
+                    "discountPercentage": 70,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
@@ -1369,12 +1557,22 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
 Get Products By Category
 ------------------------
 
-### Request Body
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
+### GraphQL Query
 
 ```graphql
 query GetProductsByCategory($slug: String!, $language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
   getProductsByCategory(slug: $slug, language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
-   uuid
+    uuid
     slug
     title(language: $language)
     brief(language: $language)
@@ -1405,6 +1603,15 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
           position
       }
     }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
   }
 }
 ```
@@ -1413,7 +1620,8 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
 
 ```json
 {
-    "slug": "iphones",
+    "slug": "women-shirts",
+    "sort": "price:low-to-high",
     "language": "en",
     "currency": "qar",
     "pageNumber": 1,
@@ -1464,13 +1672,153 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
                             }
                         ]
                     }
-                ]
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 70%",
+                    "brief": "Get 70% off on all summer wear",
+                    "slug": "summer-70",
+                    "discountPercentage": 70,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
             }
         ]
     }
 }
 ```
 
+Get Products By Categories
+--------------------------
+
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
+### GraphQL Query
+
+```graphql
+query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getProductsByCategories(slugs: $slugs, language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    title(language: $language)
+    brief(language: $language)
+    description(language: $language)
+    descriptionHtml(language: $language)
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    variants {
+      uuid
+      title(language: $language)
+      sku
+      price(currency: $currency) {
+        amount
+        currencyCode
+      }
+      discountedPrice(currency: $currency) {
+        amount
+        currencyCode
+      }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "slugs": ["women-clothing"],
+    "sort": "best-match",
+    "language": "en",
+    "currency": "qar",
+    "pageNumber": 1,
+    "itemsPerPage": 24
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getProductsByCategories": [
+            {
+                "uuid": "d7e99058-6148-47f7-9e40-154b4a491921",
+                "slug": "women-s-elastic-waist-drawstring-straight-casual-974575306049",
+                "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "brief": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "description": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "descriptionHtml": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "salesCount": 0,
+                "likesCount": 0,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "variants": [
+                    {
+                        "uuid": "30eb07ef-e95b-4b76-927e-2ba9291bb4c4",
+                        "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trou",
+                        "sku": "6093393018587",
+                        "price": {
+                            "amount": 105,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 53,
+                            "currencyCode": "qar"
+                        },
+                        "images": [
+                            {
+                                "uuid": "ce96f581-06aa-43b8-9871-8b4769cca4ee",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/8827a3e3-684a-4024-9662-a44043072294.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/9aa61a3c-47d5-43e2-be89-061f6b0ec128.webp",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
+                    }
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 70%",
+                    "brief": "",
+                    "slug": "summer-70",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
+            }
+        ]
+    }
+}
+```
 
 Get Product
 -----------
@@ -1483,9 +1831,9 @@ query GetProduct($slug: String, $language: String, $currency: String) {
     uuid
     slug
     title(language: $language)
-    brief(language: $language)
-    description(language: $language)
-    descriptionHtml(language: $language)
+    # brief(language: $language)
+    # description(language: $language)
+    # descriptionHtml(language: $language)
     featuredImageUrl
     featuredThumbnailUrl
     status
@@ -1551,6 +1899,15 @@ query GetProduct($slug: String, $language: String, $currency: String) {
           isFeatured
           position
       }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
     }
     reviews {
         uuid
@@ -1713,6 +2070,15 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                     ]
                 }
             ],
+            "campaign": {
+                "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                "name": "Summer 70%",
+                "brief": "Get 70% off on all summer wear",
+                "slug": "summer-70",
+                "discountPercentage": 70,
+                "startsAt": "2026-01-01T00:00:00.000Z",
+                "finishesAt": "2026-12-31T00:00:00.000Z"
+            },
             "reviews": [
                 {
                     "uuid": "337579b9-bf12-456a-89f4-d8c1e85507e7",
@@ -1864,6 +2230,7 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
         thumbnailUrl
       }
     }
+    productsCount
   }
 }
 ```
@@ -1897,7 +2264,8 @@ query GetCategories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
                         "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/c87816c4-2abb-4224-9ff3-3793d615001d.jpg",
                         "children": []
                     }
-                ]
+                ],
+                "productsCount": 108
             }
         ]
     }
@@ -1917,6 +2285,7 @@ query GetFeaturedCategories($language: String, $pageNumber: Int, $itemsPerPage: 
     name(language: $language)
     isFeatured
     thumbnailUrl
+    productsCount
   }
 }
 ```
@@ -1942,7 +2311,8 @@ query GetFeaturedCategories($language: String, $pageNumber: Int, $itemsPerPage: 
                 "slug": "iphones-six",
                 "name": "iphones",
                 "isFeatured": true,
-                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/c87816c4-2abb-4224-9ff3-3793d615001d.jpg"
+                "thumbnailUrl": "https://camion.s3.us-east-1.amazonaws.com/c87816c4-2abb-4224-9ff3-3793d615001d.jpg",
+                "productsCount": 108
             }
         ]
     }
@@ -3019,6 +3389,90 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
 }
 ```
 
+Get Order Tracking (Timeline)
+------------------------------
+
+Returns 8 happy-path tracking stages (`stages`) plus a separate `cancelled` field. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
+
+### GraphQL Query
+
+```graphql
+query GetOrderTracking($uuid: String!, $language: String) {
+    getOrderTracking(uuid: $uuid, language: $language) {
+        stages {
+            id
+            name
+            checked
+            date
+            metadata {
+                trackingId
+                cancellationReason
+                reviewText
+                reviewRating
+            }
+        }
+        cancelled {
+            id
+            name
+            checked
+            date
+            metadata {
+                cancellationReason
+            }
+        }
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
+    "language": "en"
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getOrderTracking": {
+            "stages": [
+                { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00.000Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+                { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+            ],
+            "cancelled": null
+        }
+    }
+}
+```
+
+### Notes
+
+| Field | Description |
+|---|---|
+| `stages[].id` | Stage position (1–8) |
+| `stages[].name` | Stage label — English by default, Arabic when `language: "ar"` |
+| `stages[].checked` | `true` if this stage has been reached |
+| `stages[].date` | Timestamp when the stage was reached; `null` if not yet reached |
+| `stages[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
+| `stages[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
+| `stages[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
+| `cancelled` | `null` for active orders and reopened orders; contains the cancellation event when the order is currently cancelled |
+| `cancelled.metadata.cancellationReason` | Reason provided at cancellation time |
+
+**Cancellation / reopen behaviour:** The `ORDER_CANCELLED` tracking event has an `active` flag. Only the active event is returned. When an order is reopened via a successful payment, the cancellation event is deactivated and `cancelled` returns `null`. If an order is cancelled again after a reopen, the previous cancellation is deactivated and a new one is created — only the latest cancellation is visible. Historical rows are kept in the DB as `active = false` for audit purposes.
+
+The `ORDER_REVIEW` stage (id 8) is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. Multiple reviews for the same order append text and average the rating.
+
 Get Current Customer Order Preview
 -----------------------------------
 
@@ -3268,6 +3722,15 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             ratingThreeStarCount
             ratingFourStarCount
             ratingFiveStarCount
+            campaign {
+                uuid
+                name(language: $language)
+                brief(language: $language)
+                slug
+                discountPercentage
+                startsAt
+                finishesAt
+            }
         }
         variant {
             uuid
@@ -3341,7 +3804,16 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                     "ratingTwoStarCount": 0,
                     "ratingThreeStarCount": 0,
                     "ratingFourStarCount": 0,
-                    "ratingFiveStarCount": 0
+                    "ratingFiveStarCount": 0,
+                    "campaign": {
+                        "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                        "name": "Summer 50%",
+                        "brief": "",
+                        "slug": "summer-50",
+                        "discountPercentage": 50,
+                        "startsAt": "2026-01-01T00:00:00.000Z",
+                        "finishesAt": "2026-12-31T00:00:00.000Z"
+                    }
                 },
                 "variant": {
                     "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
@@ -3432,6 +3904,15 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
             ratingThreeStarCount
             ratingFourStarCount
             ratingFiveStarCount
+            campaign {
+                uuid
+                name(language: $language)
+                brief(language: $language)
+                slug
+                discountPercentage
+                startsAt
+                finishesAt
+            }
         }
         variant {
             uuid
@@ -3531,7 +4012,16 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                     "ratingTwoStarCount": 0,
                     "ratingThreeStarCount": 0,
                     "ratingFourStarCount": 0,
-                    "ratingFiveStarCount": 0
+                    "ratingFiveStarCount": 0,
+                    "campaign": {
+                        "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                        "name": "Summer 50%",
+                        "brief": "",
+                        "slug": "summer-50",
+                        "discountPercentage": 50,
+                        "startsAt": "2026-01-01T00:00:00.000Z",
+                        "finishesAt": "2026-12-31T00:00:00.000Z"
+                    }
                 },
                 "variant": {
                     "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
@@ -4094,7 +4584,7 @@ Get Minimum Order Key Value Pair
 ### GraphQL Query
 
 ```graphql
-uery GetMinimumOrderValue($currency: String) {
+query GetMinimumOrderValue($currency: String) {
   getMinimumOrderValue(currency: $currency) {
     uuid
     name
@@ -4123,6 +4613,408 @@ uery GetMinimumOrderValue($currency: String) {
             "booleanValue": false,
             "sensitive": false
         }
+    }
+}
+```
+Get Free Shipping Key Value Pair
+--------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetFreeShippingValue($currency: String) {
+  getFreeShippingValue(currency: $currency) {
+    uuid
+    name
+    type
+    integerValue
+    decimalValue
+    stringValue
+    booleanValue
+    sensitive
+  }
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getFreeShippingValue": {
+            "uuid": "da8dcbb7-7220-4632-91c0-dd99dd6848ca",
+            "name": "free_shipping_above_qar",
+            "type": "integer",
+            "integerValue": 200,
+            "decimalValue": 0,
+            "stringValue": "0",
+            "booleanValue": false,
+            "sensitive": false
+        }
+    }
+}
+```
+
+Get Campaigns
+-------------
+
+### GraphQL Query
+
+```graphql
+query GetCampaigns($language: String) {
+  getCampaigns(language: $language) {
+    uuid
+    name(language: $language)
+    slug
+    discountPercentage
+    startsAt
+    finishesAt
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### GraphQL Response
+
+
+```json
+{
+    "data": {
+        "getCampaigns": [
+            {
+                "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                "name": "Summer 70%",
+                "slug": "summer-70",
+                "discountPercentage": 50,
+                "startsAt": "2026-01-01T00:00:00.000Z",
+                "finishesAt": "2026-12-31T00:00:00.000Z"
+            }
+        ]
+    }
+}
+```
+
+Get Featured Campaign
+---------------------
+
+### GraphQL Query
+
+```graphql
+query GetFeaturedCampaign($language: String) {
+  getFeaturedCampaign(language: $language) {
+    uuid
+    name(language: $language)
+    slug
+    discountPercentage
+    startsAt
+    finishesAt
+    campaignCategories {
+        category {
+            uuid
+            slug
+            name(language: $language)
+            thumbnailUrl
+        }
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en"
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getFeaturedCampaign": {
+            "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+            "name": "Summer 50%",
+            "slug": "summer-50",
+            "discountPercentage": 50,
+            "startsAt": "2026-01-01T00:00:00.000Z",
+            "finishesAt": "2026-12-31T00:00:00.000Z",
+            "campaignCategories": [
+                {
+                    "category": {
+                        "uuid": "4b5e04b0-631e-4a01-841e-0fb7bad45928",
+                        "slug": "women-clothing",
+                        "name": "Clothing",
+                        "thumbnailUrl": "https://assets.dev.camiontrading.com/categories/1042cd68-f047-492d-a127-ce4e6b667a52.jpg"
+                    }
+                }
+            ]
+        }
+    }
+}
+```
+
+Get Products In Featured Campaign
+---------------------------------
+
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
+### GraphQL Query
+
+```graphql
+query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getProductsInFeaturedCampaign(language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    title(language: $language)
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    status
+    variants {
+      uuid
+      title(language: $language)
+      sku
+      price(currency: $currency) {
+        amount
+        currencyCode
+      }
+      discountedPrice(currency: $currency) {
+        amount
+        currencyCode
+      }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language": "en",
+    "currency": "qar",
+    "sort": "best-match",
+    "pageNumber": 1,
+    "itemsPerPage": 1
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getProductsInFeaturedCampaign": [
+            {
+                "uuid": "d7e99058-6148-47f7-9e40-154b4a491921",
+                "slug": "women-s-elastic-waist-drawstring-straight-casual-974575306049",
+                "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "salesCount": 0,
+                "likesCount": 0,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "status": "active",
+                "variants": [
+                    {
+                        "uuid": "e35b7309-343c-43ed-826a-fe132e7eabfc",
+                        "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trou",
+                        "sku": "6093393018584",
+                        "price": {
+                            "amount": 105,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 53,
+                            "currencyCode": "qar"
+                        },
+                        "images": [
+                            {
+                                "uuid": "12c23ee3-a3b0-4557-a8c8-8e0550dea528",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/2eb538dd-f8a7-440c-acc2-faf8f3970bca.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/56a28b7c-0dbf-4e7c-bf18-240b3432106a.webp",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
+                    }
+                ],
+                "campaign": {
+                    "uuid": "3475a613-56cb-457b-b80c-94abd8df4f70",
+                    "name": "Summer 50%",
+                    "brief": "Get 50% off on all summer wear",
+                    "slug": "summer-50",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
+            }
+        ]
+    }
+}
+```
+
+Get Products In Desired Campaign
+--------------------------------
+
+| Sort | Description |
+|---|---|
+| `best-match` | The default list of products |
+| `price:low-to-high` | A list of products, from low to high cost |
+| `price:high-to-low` | A list of products, from high to low cost |
+| `best-sellers` | A list of best sellers |
+| `most-favorited` | A list of most favorited products |
+| `new-arrivals` | A list of newly added products |
+| `most-rated` | A list of most rated products |
+
+### GraphQL Query
+
+```graphql
+query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: String, $sort: String, $pageNumber: Int, $itemsPerPage: Int) {
+  getProductsInDesiredCampaign(slug: $slug, language: $language, currency: $currency, sort: $sort, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+    uuid
+    slug
+    title(language: $language)
+    salesCount
+    likesCount
+    reviewsCount
+    ratingAvg
+    status
+    variants {
+      uuid
+      title(language: $language)
+      sku
+      price(currency: $currency) {
+        amount
+        currencyCode
+      }
+      discountedPrice(currency: $currency) {
+        amount
+        currencyCode
+      }
+      images {
+          uuid
+          imageUrl
+          thumbnailUrl
+          alt
+          isFeatured
+          position
+      }
+    }
+    campaign {
+        uuid
+        name(language: $language)
+        brief(language: $language)
+        slug
+        discountPercentage
+        startsAt
+        finishesAt
+    }
+  }
+}
+```
+
+### GraphQL Query
+
+```json
+{
+    "slug": "summer-70",
+    "language": "en",
+    "currency": "qar",
+    "sort": "price:high-to-low",
+    "pageNumber": 1,
+    "itemsPerPage": 10
+}
+```
+
+### GraphQL Response
+
+```json
+{
+    "data": {
+        "getProductsInDesiredCampaign": [
+            {
+                "uuid": "d7e99058-6148-47f7-9e40-154b4a491921",
+                "slug": "women-s-elastic-waist-drawstring-straight-casual-974575306049",
+                "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "salesCount": 0,
+                "likesCount": 0,
+                "reviewsCount": 0,
+                "ratingAvg": 0,
+                "status": "active",
+                "variants": [
+                    {
+                        "uuid": "e35b7309-343c-43ed-826a-fe132e7eabfc",
+                        "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trou",
+                        "sku": "6093393018584",
+                        "price": {
+                            "amount": 105,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 53,
+                            "currencyCode": "qar"
+                        },
+                        "images": [
+                            {
+                                "uuid": "12c23ee3-a3b0-4557-a8c8-8e0550dea528",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/2eb538dd-f8a7-440c-acc2-faf8f3970bca.webp",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/56a28b7c-0dbf-4e7c-bf18-240b3432106a.webp",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
+                    }
+                ],
+                "campaign": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "name": "Summer 70%",
+                    "brief": "Get 70% off on all summer wear",
+                    "slug": "summer-70",
+                    "discountPercentage": 50,
+                    "startsAt": "2026-01-01T00:00:00.000Z",
+                    "finishesAt": "2026-12-31T00:00:00.000Z"
+                }
+            }
+        ]
     }
 }
 ```

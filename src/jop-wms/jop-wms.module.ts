@@ -23,6 +23,7 @@ import { QueueName } from '../queue/enums/QueueTypes.enum';
 
 import { JopWmsOrder } from './entities/jop-wms-order.entity';
 import { JopWmsOrderLink } from './entities/jop-wms-order-link.entity';
+import { OrderTrackingEvent } from '../order/entities/order-tracking-event.entity';
 import { JopWmsClient } from './jop-wms.client';
 import { JopWmsService } from './jop-wms.service';
 import { JopWmsController } from './jop-wms.controller';
@@ -39,6 +40,7 @@ import { DispatchProcessor } from './workers/dispatch.processor';
             OrderItem,
             JopWmsOrder,
             JopWmsOrderLink,
+            OrderTrackingEvent,
             User,
             Customer,
         ]),

@@ -171,8 +171,8 @@ JOP WMS has no webhooks, so order status must be polled. Four cron jobs run auto
 > Inbound status `14` (STORED) is terminal — polling stops — but also triggers outbound creation. Status `14` for outbound orders means SHIPPED (waybill available); outbound `15` means Invalidated. Return `40` means returned goods are re-shelved.
 
 **Customer notifications sent automatically by the scheduler:**
-- Inbound → status `14` (STORED): sends `ORDER_PROCESSING` to all customers linked to that inbound
-- Outbound receives a waybill number (first time): sends `ORDER_SHIPPED` with the tracking number included in the message
+- Inbound → status `14` (STORED): sends `ORDER_PROCESSING` to all customers linked to that inbound; also writes a `Packing` event to `order_tracking_events` (stage 5)
+- Outbound receives a waybill number (first time): sends `ORDER_SHIPPED` with the tracking number included in the message; also writes a `Dispatching` event to `order_tracking_events` (stage 6) with `metadata.trackingId` set to the waybill number
 
 ### Error handling
 

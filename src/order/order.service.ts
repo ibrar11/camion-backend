@@ -18,7 +18,13 @@ import {
 } from 'typeorm';
 
 import { OrderStatus } from "./enums/OrderStatus";
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
+import { PaymentStatus } from "../payments/enums/PaymentStatus";
+import { QueueName } from '../queue/enums/QueueTypes.enum';
+import { PaymentTimeoutJobData } from '../queue/types';
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
@@ -71,7 +77,13 @@ import {
     OrderFilters,
     OrderPreviewResponse,
     OrderTracking,
+    OrderTrackingItem,
+    OrderTrackingMetadata,
+    OrderTrackingResponse,
 } from "./types";
+
+import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
+import { OrderTrackingStage } from './enums/OrderTrackingStage';
 
 import { JopWmsOrder, JopWmsInboundStatus, JopWmsOrderType, JopWmsOutboundStatus } from '../jop-wms/entities/jop-wms-order.entity';
 
@@ -91,6 +103,10 @@ import { PushNotificationService } from "../notifications/push-notification.serv
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
 
 import { Product } from "../inventory/entities/product.entity";
+
+import { getBestCampaign } from "../common/bestCampaign";
+
+import { Campaign } from "../campaigns/entities/campaign.entity";
 
 @Injectable()
 export class OrderService {
@@ -114,8 +130,11 @@ export class OrderService {
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         @InjectRepository(JopWmsOrderLink) private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
         @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+        @InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
+        @InjectQueue(QueueName.ORDER_PAYMENT_TIMEOUT)
+        private readonly paymentTimeoutQueue: Queue<PaymentTimeoutJobData>,
     ) { }
 
     private static readonly INBOUND_TRACKING_STATUS: Record<string, string> = {
@@ -168,16 +187,31 @@ export class OrderService {
                     ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ?? 'Procurement in Progress')
                     : 'Order Confirmed';
 
+            const waybillNo = outbound?.waybillNo ?? null;
             order.tracking = {
                 stage,
                 status,
-                waybillNo: outbound?.waybillNo ?? null,
+                waybillNo,
+                trackingUrl: waybillNo ? `https://track.4px.com/#/result/0/${waybillNo}` : null,
                 canRetryOutbound:
                     (stage === 'inbound' && inbound?.status === JopWmsInboundStatus.STORED) ||
                     (stage === 'outbound' && outbound?.status === JopWmsOutboundStatus.PROCESSING_FAILED),
             };
         }
     }
+
+    private static readonly TRACKING_STAGES: { id: number; stage: OrderTrackingStage; name: string; nameAr: string }[] = [
+        { id: 1, stage: OrderTrackingStage.ORDER_PLACED,      name: 'Order Placed',      nameAr: 'تم تقديم الطلب' },
+        { id: 2, stage: OrderTrackingStage.PAYMENT_CONFIRMED, name: 'Payment Confirmed', nameAr: 'تم تأكيد الدفع' },
+        { id: 3, stage: OrderTrackingStage.ORDER_CONFIRMED,   name: 'Order Confirmed',   nameAr: 'تم تأكيد الطلب' },
+        { id: 4, stage: OrderTrackingStage.PROCESSING,        name: 'Processing',        nameAr: 'قيد المعالجة' },
+        { id: 5, stage: OrderTrackingStage.PACKING,           name: 'Packing',           nameAr: 'قيد التغليف' },
+        { id: 6, stage: OrderTrackingStage.DISPATCHING,       name: 'Dispatching',       nameAr: 'قيد الشحن' },
+        { id: 7, stage: OrderTrackingStage.ORDER_DELIVERED,   name: 'Order Delivered',   nameAr: 'تم التسليم' },
+        { id: 8, stage: OrderTrackingStage.ORDER_REVIEW,      name: 'Order Review',      nameAr: 'تقييم الطلب' },
+    ];
+
+    private static readonly CANCELLED_STAGE = { id: 9, name: 'Order Cancelled', nameAr: 'تم إلغاء الطلب' };
 
     /**
      * Creates a new order
@@ -215,7 +249,11 @@ export class OrderService {
                 relations: {
                     product: {
                         productCategories: {
-                            category: true,
+                            category: {
+                                campaignCategories: {
+                                    campaign: true,
+                                },
+                            },
                         },
                     },
                     variant: true,
@@ -254,6 +292,7 @@ export class OrderService {
             let subTotal = 0;
             const orderItems: OrderItem[] = [];
             const currency = dto.currency ?? "qar";
+            let campaign: Campaign | null = null;
 
             for (const cart of cartItems) {
                 const variant = cart.variant;
@@ -289,8 +328,10 @@ export class OrderService {
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
 
-                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, false);
-                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, currency, true);
+                campaign = getBestCampaign(cart.product);
+
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
+                const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, campaign, currency, true);
                 const totalAmount = priceAmount.amount * cart.quantity;
 
                 subTotal += totalAmount;
@@ -329,7 +370,7 @@ export class OrderService {
             // Fetch free shipping threshold once
             const freeShippingValue = Number(
                 (await this.keyValuePairRepository.findOne({
-                    where: { name: "free_shipping_above" }
+                    where: { name: `free_shipping_above_${dto.currency}`.toLowerCase().trim() }
                 }))?.integerValue
             ) || 0;
 
@@ -382,6 +423,12 @@ export class OrderService {
                         },
                     },
                 });
+
+                if (campaign && affiliateCoupon) {
+                    throw new BadRequestException(
+                        "Coupon cannot be applied. Campaign products exists."
+                    )
+                }
 
                 if (!affiliateCoupon) {
                     globalCoupon = await this.globalCouponRepository.findOne({
@@ -450,6 +497,15 @@ export class OrderService {
             order.shippingAddress = address;
 
             await queryRunner.manager.save(order);
+
+            await queryRunner.manager.save(
+                queryRunner.manager.create(OrderTrackingEvent, {
+                    orderUuid: order.uuid,
+                    stage: OrderTrackingStage.ORDER_PLACED,
+                    date: new Date(),
+                    trackingId: null,
+                }),
+            );
 
             // Clear the cart within transaction
             await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
@@ -535,6 +591,9 @@ export class OrderService {
             // External payment call — if this throws, the entire DB transaction rolls back
             const payment = await this.paymentService.createPayment(paymentPayload);
             order.paymentTransaction = payment;
+            if (total === 0) {
+                order.status = OrderStatus.PAYMENT_SUCCESSFUL;
+            }
             await queryRunner.manager.save(order);
 
             await queryRunner.commitTransaction();
@@ -570,10 +629,16 @@ export class OrderService {
                 orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
             }).catch(err => this.logger.error(`[Email] Failed to send admin new-order notification for order ${order.uuid}: ${err?.message}`));
 
+            await this.paymentTimeoutQueue.add(
+                'payment-timeout',
+                { orderUuid: order.uuid },
+                { delay: 30 * 60 * 1000, jobId: `payment-timeout-${order.uuid}` },
+            ).catch(err => this.logger.error(`[Queue] Failed to enqueue payment timeout for order ${order.uuid}: ${err?.message}`));
+
             return order;
         } catch (error: any) {
-            await queryRunner.rollbackTransaction();
             this.logger.error(`Error placing order: ${error?.response?.error || error}`);
+            await queryRunner.rollbackTransaction();
             if (error instanceof HttpException) {
                 throw error;
             } else {
@@ -596,10 +661,20 @@ export class OrderService {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+            let filtersObject: {
+                customerUUID?: string,
+            } = {};
+            try {
+                filtersObject = JSON.parse(filters);
+            } catch {
+                this.logger.warn("Unable to parse filters. Please check the documentation and try again.");
+            }            
             const filter: OrderFilters = {}
 
-            if (status) {
+            if (status || filtersObject) {
                 filter.status = status;
+                filter.customer = { uuid: filtersObject?.customerUUID };
             }
 
             const orders = await this.orderRepository.find({
@@ -782,16 +857,54 @@ export class OrderService {
         }
     }
 
-    async getOrderTracking(orderUuid: string, customerUuid?: string): Promise<Order> {
+    async getOrderTracking(orderUuid: string, customerUuid?: string, language: string = 'en'): Promise<OrderTrackingResponse> {
         const whereClause: any = { uuid: orderUuid };
         if (customerUuid) whereClause.customer = { uuid: customerUuid };
 
         const order = await this.orderRepository.findOne({ where: whereClause });
         if (!order) throw new NotFoundException({ error: 'Order not found' });
 
-        await this.attachTracking([order]);
-        return order;
+        const events = await this.trackingEventRepository.find({
+            where: { orderUuid, active: true },
+            order: { createdAt: 'ASC' },
+        });
+
+        const eventMap = new Map(events.map(e => [e.stage, e]));
+
+        const stages: OrderTrackingItem[] = OrderService.TRACKING_STAGES.map(({ id, stage, name, nameAr }) => {
+            const event = eventMap.get(stage);
+            return {
+                id,
+                name: language === 'ar' ? nameAr : name,
+                checked: !!event,
+                date: event?.date ?? null,
+                metadata: {
+                    trackingId: event?.trackingId ?? null,
+                    cancellationReason: event?.cancellationReason ?? null,
+                    reviewText: event?.reviewText ?? null,
+                    reviewRating: event?.reviewRating ?? null,
+                },
+            };
+        });
+
+        const cancelledEvent = eventMap.get(OrderTrackingStage.ORDER_CANCELLED);
+        const { id, name, nameAr } = OrderService.CANCELLED_STAGE;
+        const cancelled: OrderTrackingItem | null = cancelledEvent ? {
+            id,
+            name: language === 'ar' ? nameAr : name,
+            checked: true,
+            date: cancelledEvent.date,
+            metadata: {
+                trackingId: null,
+                cancellationReason: cancelledEvent.cancellationReason ?? null,
+                reviewText: null,
+                reviewRating: null,
+            },
+        } : null;
+
+        return { stages, cancelled };
     }
+
 
     /**
      * update order
@@ -799,13 +912,82 @@ export class OrderService {
      * @param status
      * @returns
      */
-    async updateStatus(uuid: string, status: OrderStatus): Promise<Order> {
+    async updateStatus(uuid: string, status: OrderStatus, cancellationReason?: string): Promise<Order> {
         try {
             const order = await this.findOne(uuid);
 
             order.status = status;
+            if (status === OrderStatus.CANCELLED) {
+                order.cancellationReason = cancellationReason ?? null;
+            }
 
             const saved = await this.orderRepository.save(order);
+
+            const trackingEventMap: Partial<Record<OrderStatus, () => Promise<void>>> = {
+                [OrderStatus.PAYMENT_SUCCESSFUL]: async () => {
+                    const exists = await this.trackingEventRepository.findOne({
+                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.PAYMENT_CONFIRMED },
+                    });
+                    if (!exists) {
+                        await this.trackingEventRepository.save(
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                stage: OrderTrackingStage.PAYMENT_CONFIRMED,
+                                date: new Date(),
+                                trackingId: null,
+                            }),
+                        );
+                    }
+                },
+                [OrderStatus.CONFIRMED]: async () => {
+                    const exists = await this.trackingEventRepository.findOne({
+                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CONFIRMED },
+                    });
+                    if (!exists) {
+                        await this.trackingEventRepository.save(
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                stage: OrderTrackingStage.ORDER_CONFIRMED,
+                                date: new Date(),
+                                trackingId: null,
+                            }),
+                        );
+                    }
+                },
+                [OrderStatus.DELIVERED]: async () => {
+                    const exists = await this.trackingEventRepository.findOne({
+                        where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_DELIVERED },
+                    });
+                    if (!exists) {
+                        await this.trackingEventRepository.save(
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                stage: OrderTrackingStage.ORDER_DELIVERED,
+                                date: new Date(),
+                                trackingId: null,
+                            }),
+                        );
+                    }
+                },
+                [OrderStatus.CANCELLED]: async () => {
+                    await this.trackingEventRepository.update(
+                        { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED, active: true },
+                        { active: false },
+                    );
+                    await this.trackingEventRepository.save(
+                        this.trackingEventRepository.create({
+                            orderUuid: order.uuid,
+                            stage: OrderTrackingStage.ORDER_CANCELLED,
+                            date: new Date(),
+                            trackingId: null,
+                            cancellationReason: cancellationReason ?? null,
+                            active: true,
+                        }),
+                    );
+                },
+            };
+
+            await trackingEventMap[status]?.();
 
             const notificationMap: Partial<Record<OrderStatus, { type: NotificationType; title: string; brief: string; message: string, payload: NotificationPayload }>> = {
                 [OrderStatus.CONFIRMED]: {
@@ -977,6 +1159,21 @@ export class OrderService {
 
             await this.orderRepository.save(order);
 
+            const cancelledExists = await this.trackingEventRepository.findOne({
+                where: { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED },
+            });
+            if (!cancelledExists) {
+                await this.trackingEventRepository.save(
+                    this.trackingEventRepository.create({
+                        orderUuid: order.uuid,
+                        stage: OrderTrackingStage.ORDER_CANCELLED,
+                        date: new Date(),
+                        trackingId: null,
+                        cancellationReason: null,
+                    }),
+                );
+            }
+
             if (order.customer) {
                 this.notificationsService.create({
                     customerUUID: order.customer.uuid,
@@ -1025,7 +1222,11 @@ export class OrderService {
                 relations: {
                     product: {
                         productCategories: {
-                            category: true,
+                            category: {
+                                campaignCategories: {
+                                    campaign: true,
+                                },
+                            },
                         },
                     },
                     variant: {
@@ -1087,6 +1288,8 @@ export class OrderService {
             const validatedItems: CartItem[] = [];
             let subTotal = 0;
 
+            let campaign: Campaign | null = null;
+
             for (const item of cartItems) {
                 // Check stock availability
                 const stock = calculateStock(item.variant);
@@ -1097,8 +1300,10 @@ export class OrderService {
                     );
                 }
 
-                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, item.subTotal.currencyCode, false);
-                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, currencyCode, true);
+                campaign = getBestCampaign(item.product);
+
+                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
+                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, campaign, currencyCode, true);
 
                 const itemTotal = priceDiscount.amount * item.quantity;
                 subTotal += itemTotal;
@@ -1122,7 +1327,7 @@ export class OrderService {
             // Fetch free shipping threshold once
             const freeShippingValue = Number(
                 (await this.keyValuePairRepository.findOne({
-                    where: { name: "free_shipping_above" }
+                    where: { name: `free_shipping_above_${currency}`.toLowerCase().trim() }
                 }))?.integerValue
             ) || 0;
 
@@ -1170,6 +1375,12 @@ export class OrderService {
                         },
                     },
                 });
+
+                if(campaign && affiliateCoupon) {
+                    throw new BadRequestException(
+                        "Coupon cannot be applied. Campaign products exists."
+                    )
+                }
 
                 coupon = affiliateCoupon;
 

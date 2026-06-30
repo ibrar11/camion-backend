@@ -32,7 +32,7 @@ import { OrderService } from './order.service';
 import { Customer } from '../customers/entities/customer.entity';
 import { UserRole } from '../users/enums/UserRole';
 
-import { OrderPreviewResponse } from './types';
+import { OrderPreviewResponse, OrderTrackingResponse } from './types';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/orders')
@@ -90,19 +90,21 @@ export class OrderController {
     getTracking(
         @Param('uuid') uuid: string,
         @GetCustomer() customer: Customer,
-    ): Promise<Order> {
+        @Query('language') language: string = 'en',
+    ): Promise<OrderTrackingResponse> {
         const customerUuid = customer?.uuid ?? undefined;
-        return this.orderService.getOrderTracking(uuid, customerUuid);
+        return this.orderService.getOrderTracking(uuid, customerUuid, language);
     }
 
-    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+@Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Patch(':uuid/status')
     @HttpCode(HttpStatus.OK)
     updateStatus(
         @Param('uuid') uuid: string,
         @Body('status') status: OrderStatus,
+        @Body('cancellationReason') cancellationReason?: string,
     ): Promise<Order> {
-        return this.orderService.updateStatus(uuid, status);
+        return this.orderService.updateStatus(uuid, status, cancellationReason);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)

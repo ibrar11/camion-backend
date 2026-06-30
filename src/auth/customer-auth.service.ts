@@ -51,6 +51,8 @@ import { CartItem } from "../cart/entities/cart-items.entity";
 
 import { calculateStock } from "../common/calculateStock";
 
+import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
+
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
@@ -347,6 +349,21 @@ export class CustomerAuthService {
 					}
 				}
 
+				// Update cart count
+				const cartItemsCount = await this.cartItemRepository.count({
+					where: {
+						customer: {
+							id: customer.id,
+						},
+						product: {
+							status: ProductStatus.ACTIVE
+						},
+					},
+				});
+
+				customer.cartItemsCount = cartItemsCount;
+				await this.customerRepository.save(customer);
+
 				// Deactivate guest to prevent re-merge
 				guestCustomer.isActive = false;
 				await this.customerRepository.save(guestCustomer);
@@ -507,6 +524,21 @@ export class CustomerAuthService {
 						await this.cartItemRepository.remove(guestItemsToRemove);
 					}
 				}
+
+				// Update cart count
+				const cartItemsCount = await this.cartItemRepository.count({
+					where: {
+						customer: {
+							id: customer.id,
+						},
+						product: {
+							status: ProductStatus.ACTIVE
+						},
+					},
+				});
+
+				customer.cartItemsCount = cartItemsCount;
+				await this.customerRepository.save(customer);
 
 				// Deactivate guest to prevent re-merge
 				guestCustomer.isActive = false;

@@ -112,6 +112,32 @@ export class KeyValuePairsService {
 	}
 
 	/**
+ * Retrieves a free shipping amount key value pair
+ *
+ * @param currency
+ * @returns
+ */
+	async findFreeShippingAmount(currency: string): Promise<KeyValuePair> {
+		this.logger.log(`Retrieving free shipping amount key value pairs for ${currency}`);
+
+		const keyValuePair =  await this.keyValuePairRepository.findOne({
+			where: {
+				type: KeyValuePairType.Integer,
+				name: `free_shipping_above_${currency}`,
+				sensitive: false
+			}
+		});
+
+		if (keyValuePair === null) {
+			throw new NotFoundException({
+				error: "Failed to find the key value pair. Please check and try again.",
+			});
+		}
+
+		return keyValuePair;
+	}
+
+	/**
 	 * Retrieves a key value pair
 	 *
 	 * @param uuid

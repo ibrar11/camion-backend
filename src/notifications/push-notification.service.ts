@@ -25,6 +25,8 @@ import { FIREBASE_ADMIN } from '../firebase/provider/firebase.provider';
 
 import { Customer } from '../customers/entities/customer.entity';
 
+import { ConfigService } from '@nestjs/config';
+
 @Injectable()
 export class PushNotificationService {
     private readonly logger = new Logger(PushNotificationService.name);
@@ -34,6 +36,7 @@ export class PushNotificationService {
         @InjectRepository(PushNotification) private readonly pushNotificationRepository: Repository<PushNotification>,
         @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
         @Inject(FIREBASE_ADMIN) private readonly firebase: typeof admin | null,
+        private readonly configService: ConfigService,
     ) {
         if (!this.firebase) {
             this.logger.warn('Firebase not initialized. Push notifications are disabled.');
@@ -151,7 +154,14 @@ export class PushNotificationService {
 
             const customers = await this.customerRepository.find({
                 where: {
-                    uuid: In(["2cb38bf2-3b98-4780-901c-880571abbb14", "9d86ed0a-a1f7-453f-9346-8142115d40ac", "b2ebe199-1550-400d-90c2-51f4a998e54a","fa1d2ad5-fe07-4c76-be40-e92232cb9d77"])
+                    uuid: In([
+                        "6174c251-dafe-4ed7-bd19-5db02d7e3e09", 
+                        "3bc7d83d-1e41-4e7c-8e8a-322bc0005661", 
+                        "2e7d7557-b950-4946-b1b5-d1cf56bf51d0", 
+                        "5ca759cd-1d33-4b92-9005-0f921238964f",
+                        "7266b8a7-714c-4fa6-b625-0b3ddc9e49cc",
+                        "2cb38bf2-3b98-4780-901c-880571abbb14", // hafiz bilal dev customer uuid
+                    ])
                 }
             });
 
@@ -179,10 +189,18 @@ export class PushNotificationService {
             for (const notification of notifications) {
                 this.logger.log(`Pushing announcement notification: ${notification.uuid}`);
 
-                const imageUrl =
+                let imageUrl =
                     notification.imageUrl ||
                     notification.images?.[0]?.imageUrl ||
                     undefined;
+                if (imageUrl) {
+                    const segments = imageUrl.split("/");
+                    if (imageUrl.startsWith("https://")) {
+                        imageUrl = `${this.configService.get<string>('ASSETS_HOST')}/${segments[3]}/${segments[4]}`;
+                    } else if (imageUrl.startsWith("s3://")) {
+                        imageUrl = `${this.configService.get<string>('ASSETS_HOST')}/${segments[2]}/${segments[3]}`;
+                    }
+                }
 
                 const BATCH_SIZE = 500;
                 for (let i = 0; i < allTokens.length; i += BATCH_SIZE) {
@@ -194,6 +212,21 @@ export class PushNotificationService {
                             title: notification.title,
                             body: notification.message,
                             ...(imageUrl && { imageUrl }),
+                        },
+                        android: {
+                            notification: {
+                                imageUrl,
+                            },
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    "mutable-content": 1,
+                                },
+                            },
+                            fcmOptions: {
+                                imageUrl,
+                            },
                         },
                     };
 

@@ -21,6 +21,8 @@ import { Customer } from '../customers/entities/customer.entity';
 import { WishlistItem } from './entities/wishlist.entity';
 import { Product } from '../inventory/entities/product.entity';
 
+import { getBestCampaign } from "../common/bestCampaign";
+
 @Injectable()
 export class WishlistService {
     private readonly logger = new Logger(WishlistService.name);
@@ -110,11 +112,11 @@ export class WishlistService {
      * @param customer
      * @returns
      */
-    getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
+    async getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
         // Get pagination params
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-        return this.wishlistRepository.find({
+        const wishListItems = await this.wishlistRepository.find({
             // cache: true,
             relationLoadStrategy: "query",
             where: {
@@ -128,7 +130,11 @@ export class WishlistService {
             relations: {
                 product: {
                     productCategories: {
-                        category: true,
+                        category: {
+                            campaignCategories: {
+                                campaign: true,
+                            },
+                        },
                     },
                 },
                 variant: {
@@ -139,6 +145,25 @@ export class WishlistService {
             skip: skip,
             take: take,
         });
+
+        for (const wishListItem of wishListItems) {
+            if (!wishListItem.product || wishListItem.product.status !== ProductStatus.ACTIVE) {
+                continue;
+            }
+
+            if (!wishListItem.variant) {
+                continue;
+            }
+
+            const campaign = getBestCampaign(wishListItem.product);
+
+            if (campaign !== null) {
+                wishListItem.product.campaign = campaign;
+            }
+
+        }
+
+        return wishListItems;
     }
 
     /**

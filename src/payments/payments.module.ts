@@ -32,11 +32,13 @@ import { ClientRefreshToken } from '../oauth/entities/oauth-refresh-token.entity
 import { OauthService } from '../oauth/oauth.service';
 
 import { Order } from '../order/entities/order.entity';
+import { OrderTrackingEvent } from '../order/entities/order-tracking-event.entity';
 
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { ExchangeRateService } from '../pricing/exchange-rate.service';
 
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailModule } from '../email/email.module';
 
 import { Notification } from '../notifications/entities/notification.entity';
 import { PushNotification } from '../notifications/entities/push-notification';
@@ -55,12 +57,14 @@ import { CartItem } from '../cart/entities/cart-items.entity';
             Client,
             ClientRefreshToken,
             Order,
+            OrderTrackingEvent,
             ExchangeRate,
             Notification,
             PushNotification,
             CartItem,
         ]),
         NotificationsModule,
+        EmailModule,
     ],
     providers: [
         PaymentsService,

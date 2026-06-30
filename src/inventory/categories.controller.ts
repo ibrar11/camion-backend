@@ -94,4 +94,11 @@ export class CategoriesController {
 	actionDeleteProductCategory(@Param('uuid') uuid: string): Promise<void> {
 		return this.productCategoryService.delete(uuid);
 	}
+
+	@Roles(UserRole.SuperAdmin)
+	@Post('backfill-products-count')
+	@HttpCode(HttpStatus.OK)
+	actionBackfillProductsCount(): Promise<{ updated: number }> {
+		return this.productCategoryService.backfillProductsCount();
+	}
 }

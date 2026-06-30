@@ -118,6 +118,7 @@ GET /v1/orders HTTP/1.1
 Name | Description | Default
 -----|-------------|--------
 status | Filter by order status | _(all)_
+filters | A JSON string containing your search term, or any advanced search parameters. | `{}`
 pageNumber | Page number | `1`
 itemsPerPage | Results per page | `100`
 
@@ -147,7 +148,8 @@ itemsPerPage | Results per page | `100`
         "tracking": {
             "stage": "inbound",
             "status": "Goods Being Sourced",
-            "waybillNo": null
+            "waybillNo": null,
+            "trackingUrl": null
         },
         "orderPlacementDate": "2026-05-15T14:05:23.594Z",
         "orderItems": [
@@ -356,7 +358,8 @@ GET /v1/orders/<order-uuid> HTTP/1.1
     "tracking": {
         "stage": "outbound",
         "status": "Shipped",
-        "waybillNo": "DHL1234567890"
+        "waybillNo": "DHL1234567890",
+        "trackingUrl": "https://track.4px.com/#/result/0/DHL1234567890"
     },
     "orderPlacementDate": "2026-05-15T14:05:23.594Z",
     "orderItems": [
@@ -431,6 +434,11 @@ GET /v1/orders/<order-uuid> HTTP/1.1
 
 | Field | Type | Description |
 |---|---|---|
+| `tracking.stage` | `"order" \| "inbound" \| "outbound"` | Furthest stage reached: `order` = not yet dispatched, `inbound` = goods being procured/shipped to warehouse, `outbound` = shipped to customer |
+| `tracking.status` | `String` | Human-readable status label for the current stage |
+| `tracking.waybillNo` | `String \| null` | 4PX carrier tracking number — populated once the outbound order is shipped |
+| `tracking.trackingUrl` | `String \| null` | Direct 4PX tracking link (`https://track.4px.com/#/result/0/<waybillNo>`). `null` until the order is shipped |
+| `tracking.canRetryOutbound` | `Boolean` | `true` when the frontend should show a retry button (inbound stored but outbound never created, or outbound processing failed) |
 | `gulltransOrderSns` | `String[] \| null` | One Gulltrans order ID per 1688 shop involved in this order. `null` if not yet dispatched. |
 | `wmsOrders` | `Object[]` | All JOP WMS orders (inbound and outbound) linked to this order via the link table. Empty array if not yet dispatched. |
 | `wmsOrders[].id` | Number | Internal WMS order record ID |
@@ -449,14 +457,18 @@ Update Order
 PATCH /v1/orders/<order-uuid>/status HTTP/1.1
 ```
 
+Admin only (`SuperAdmin` or `Admin` role).
+
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
-status | Yes | String | new status for order
+status | Yes | String | New status for the order
+cancellationReason | No | String | Human-readable reason stored on the order when `status` is `cancelled`
 
 ### Request Body
 ```json
 {
     "status": "cancelled",
+    "cancellationReason": "Out of stock"
 }
 ```
 
@@ -543,106 +555,138 @@ DELETE /v1/orders/<order-uuid> HTTP/1.1
 Order Tracking
 --------------
 
-Tracking is computed on the backend and embedded as a `tracking` object on every order response — no separate call needed. The `/tracking` endpoint is a convenience alias that returns the same order shape.
+Returns 8 happy-path tracking stages plus a separate `cancelled` field. Stages that have been reached have `checked: true` and a populated `date`; pending stages have `checked: false` and `date: null`. The `cancelled` field is `null` for active orders and an `OrderTrackingItem` object when the order has been cancelled.
 
 Customers can only retrieve tracking for their own orders; admins can query any order.
-
-> **GraphQL**: The `tracking` field is available on both `getCurrentCustomerOrder` and `getCurrentCustomerOrders`. No separate query needed — just add `tracking { stage status waybillNo }` to the existing selection set.
 
 ```http
 GET /v1/orders/<order-uuid>/tracking HTTP/1.1
 ```
 
-The response is the full order object (same shape as `GET /v1/orders/<order-uuid>`) with `tracking` populated.
+### Query Parameters
 
-### `tracking` Object
+| Name | Description | Default |
+|---|---|---|
+| `language` | Language for stage names. Supported: `en`, `ar` | `en` |
+
+### Stages (always returned in this fixed order)
+
+| `id` | `name (en)` | `name (ar)` | Set automatically when… |
+|---|---|---|---|
+| `1` | Order Placed | تم تقديم الطلب | Order is created |
+| `2` | Payment Confirmed | تم تأكيد الدفع | Skipcash webhook fires with a successful payment status, OR `updateStatus()` is called with `PAYMENT_SUCCESSFUL` |
+| `3` | Order Confirmed | تم تأكيد الطلب | Admin sets order status to `confirmed` |
+| `4` | Processing | قيد المعالجة | Dispatch worker creates Gulltrans procurement order (1688) |
+| `5` | Packing | قيد التغليف | JOP WMS inbound reaches status 14 (STORED — goods at warehouse) |
+| `6` | Dispatching | قيد الشحن | JOP WMS outbound receives a waybill number — `metadata.trackingId` is populated |
+| `7` | Order Delivered | تم التسليم | Admin sets order status to `delivered` |
+| `8` | Order Review | تقييم الطلب | Customer submits a product review with `orderUuid` via `POST /v1/products/:uuid/reviews` — `metadata.reviewText` and `metadata.reviewRating` are populated automatically |
+
+The `cancelled` field (id `9`, name `Order Cancelled` / `تم إلغاء الطلب`) is a separate top-level field returned alongside `stages`. It is `null` for active orders and contains the cancellation event object (with `metadata.cancellationReason`) when the order has been cancelled.
+
+### Response Fields
 
 | Field | Type | Description |
 |---|---|---|
-| `stage` | String | Furthest fulfillment stage reached — see values below |
-| `status` | String | Customer-friendly status label computed from internal WMS state |
-| `waybillNo` | String \| null | Carrier tracking number — populated once the order is shipped |
+| `stages` | `Array` | Ordered list of the 8 happy-path tracking stages |
+| `stages[].id` | `number` | Stage ID (1–8, fixed) |
+| `stages[].name` | `string` | Stage label in the requested language |
+| `stages[].checked` | `boolean` | `true` if this stage has been reached |
+| `stages[].date` | `string (ISO 8601) \| null` | When the stage was reached; `null` if not yet reached |
+| `stages[].metadata` | `object` | Stage-specific data; all fields `null` unless relevant to that stage |
+| `stages[].metadata.trackingId` | `string \| null` | Carrier waybill number — populated on stage 6 (Dispatching) |
+| `stages[].metadata.cancellationReason` | `string \| null` | Always `null` on happy-path stages |
+| `stages[].metadata.reviewText` | `string \| null` | Review text — populated on stage 8 (Order Review) |
+| `stages[].metadata.reviewRating` | `number \| null` | Star rating (1–5) — populated on stage 8 (Order Review) |
+| `cancelled` | `object \| null` | Cancellation event (id `9`); `null` if the order has not been cancelled |
+| `cancelled.id` | `number` | Always `9` |
+| `cancelled.name` | `string` | `"Order Cancelled"` / `"تم إلغاء الطلب"` |
+| `cancelled.checked` | `boolean` | Always `true` when present |
+| `cancelled.date` | `string (ISO 8601)` | When the order was cancelled |
+| `cancelled.metadata.cancellationReason` | `string \| null` | Reason provided at cancellation time |
 
-### `stage` Values
-
-| Value | Meaning |
-|---|---|
-| `order` | Order placed, not yet dispatched to warehouse |
-| `inbound` | Goods being procured and shipped to the warehouse |
-| `outbound` | Goods shipped to the customer |
-
-### `status` Labels by Stage
-
-**`order` stage**
-
-| Status |
-|--------|
-| Order Confirmed |
-
-**`inbound` stage** (goods being sourced / arriving at warehouse)
-
-| Status |
-|--------|
-| Procurement in Progress |
-| Goods Being Sourced |
-| Goods Arrived at Warehouse |
-| Goods Being Processed |
-| Ready to Ship |
-| Processing Complete |
-| Order Issue — Contact Support |
-
-**`outbound` stage** (goods on the way to the customer)
-
-| Status |
-|--------|
-| Preparing Your Shipment |
-| Shipment in Progress |
-| Shipment Delayed |
-| Shipment Ready |
-| Shipped |
-| Shipment Cancelled |
-
-### Example — order not yet dispatched
+### Example — order dispatched (`?language=en`)
 
 ```json
 {
-    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-    "status": "confirmed",
-    "tracking": {
-        "stage": "order",
-        "status": "Order Confirmed",
-        "waybillNo": null
-    },
-    ...
+    "stages": [
+        { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 8, "name": "Order Review",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+    ],
+    "cancelled": null
 }
 ```
 
-### Example — goods en route to warehouse
+### Example — cancelled order (`?language=ar`)
 
 ```json
 {
-    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-    "status": "confirmed",
-    "tracking": {
-        "stage": "inbound",
-        "status": "Goods Being Sourced",
-        "waybillNo": null
-    },
-    ...
+    "stages": [
+        { "id": 1, "name": "تم تقديم الطلب",   "checked": true,  "date": "2026-06-23T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 2, "name": "تم تأكيد الدفع",   "checked": true,  "date": "2026-06-23T10:01:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 3, "name": "تم تأكيد الطلب",   "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 4, "name": "قيد المعالجة",      "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 5, "name": "قيد التغليف",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 6, "name": "قيد الشحن",         "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 7, "name": "تم التسليم",        "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 8, "name": "تقييم الطلب",       "checked": false, "date": null,                   "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } }
+    ],
+    "cancelled": { "id": 9, "name": "تم إلغاء الطلب", "checked": true, "date": "2026-06-23T10:30:00Z", "metadata": { "trackingId": null, "cancellationReason": "Out of stock", "reviewText": null, "reviewRating": null } }
 }
 ```
 
-### Example — shipped to customer
+### Example — delivered and reviewed (`?language=en`)
 
 ```json
 {
-    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
-    "status": "confirmed",
-    "tracking": {
-        "stage": "outbound",
-        "status": "Shipped",
-        "waybillNo": "DHL1234567890"
-    },
-    ...
+    "stages": [
+        { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 2, "name": "Payment Confirmed",  "checked": true,  "date": "2026-06-23T10:01:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 3, "name": "Order Confirmed",    "checked": true,  "date": "2026-06-23T10:05:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 4, "name": "Processing",         "checked": true,  "date": "2026-06-23T11:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 5, "name": "Packing",            "checked": true,  "date": "2026-06-24T06:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 6, "name": "Dispatching",        "checked": true,  "date": "2026-06-25T08:00:00Z", "metadata": { "trackingId": "TRK1234567890", "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 7, "name": "Order Delivered",    "checked": true,  "date": "2026-06-27T14:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+        { "id": 8, "name": "Order Review",       "checked": true,  "date": "2026-06-28T10:00:00Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": "Great quality, fast delivery!", "reviewRating": 5 } }
+    ],
+    "cancelled": null
 }
 ```
+
+### Backing store
+
+Stage events are persisted in the `order_tracking_events` table. Each row records `order_uuid`, `stage` (enum), `date`, `tracking_id`, `cancellation_reason`, `review_text`, `review_rating`, and `active` (boolean, default `true`). The tracking API only returns events where `active = true`.
+
+All stages except `ORDER_CANCELLED` are append-only and idempotent — once stamped they are never deactivated. `ORDER_CANCELLED` is the only stage that can be deactivated:
+- **Reopen:** when a successful payment arrives for a cancelled order, the active `ORDER_CANCELLED` event is set to `active = false` and the order resumes. The `cancelled` field returns `null` on the next tracking call.
+- **Re-cancellation:** the existing active `ORDER_CANCELLED` event is set to `active = false` and a new one is created with the latest reason. Historical cancellation rows are preserved in the DB as `active = false` for audit purposes.
+
+The `ORDER_REVIEW` stage is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. If the customer leaves multiple product reviews for the same order, the text is appended (separated by `\n---\n`) and the rating is averaged.
+
+---
+
+Payment Timeout — Auto-Cancel
+------------------------------
+
+When an order is placed, a 30-minute delayed job is queued. If the order status is still `pending` or `payment_pending` when the job fires, the order is automatically cancelled with the reason `"Payment not completed within 30 minutes"` and the customer receives a cancellation push notification.
+
+If payment arrives before the 30 minutes expire, the timeout job exits silently with no action.
+
+**Webhook reopen behaviour:** If a successful payment webhook arrives for an already-cancelled order (e.g. payment completed just after the timeout), the order is automatically reopened — status is set back to `payment_successful`, `cancellationReason` is cleared, the active `ORDER_CANCELLED` tracking event is deactivated (`active = false`), and the customer receives a "Payment Successful" push notification and order-confirmed email. The `cancelled` field in the tracking response returns `null` after a reopen.
+
+---
+
+Order Review
+-------------
+
+Customers submit a review via `POST /v1/products/:productUUID/reviews` with an `orderUuid` in the body. The server validates that the order belongs to the customer, has status `delivered`, and contains the product being reviewed — then automatically stamps stage 8 (Order Review).
+
+Once stamped, `stages[7].checked` becomes `true` and `stages[7].metadata.reviewText` / `stages[7].metadata.reviewRating` are populated in the tracking response.
+
+If the customer submits multiple product reviews linked to the same order, the review text is appended (separated by `\n---\n`) and the rating is averaged. The review is always saved regardless of whether the tracking stamp succeeds.
