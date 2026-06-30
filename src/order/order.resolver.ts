@@ -117,6 +117,9 @@ export class OrderResolver {
     async getOrderTracking(@Context() context, @Args() args: GetOrderTrackingArgs): Promise<OrderTrackingItem[]> {
         const customerUuid = context.req?.customer?.uuid ?? undefined;
         const result = await this.orderService.getOrderTracking(args.uuid, customerUuid, args.language);
+        if (result.cancelled) {
+            return [...result.stages, result.cancelled];
+        }
         return result.stages;
     }
 

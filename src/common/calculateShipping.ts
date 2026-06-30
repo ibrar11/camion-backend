@@ -138,7 +138,7 @@ export function calculateCartShipping(
 ): ShippingCalculationResult {
     try {
         // Todo: exchange rate implementation (CNY -> target and USD -> target)
-        const cnyToTarget = rates?.find(rate => rate.srcCurrencyCode.toLowerCase() === CurrencyCode.CNY.toLowerCase() && rate.targetCurrencyCode.toLowerCase() === currency.toLowerCase());        
+        const cnyToTarget = rates?.find(rate => rate.srcCurrencyCode.toLowerCase() === CurrencyCode.CNY.toLowerCase() && rate.targetCurrencyCode.toLowerCase() === currency.toLowerCase());
         const usdToTarget = rates?.find(rate => rate.srcCurrencyCode.toLowerCase() === CurrencyCode.USD.toLowerCase() && rate.targetCurrencyCode.toLowerCase() === currency.toLowerCase());
 
         const exchangeRates = {
@@ -270,11 +270,7 @@ export function calculateShipping(input: ShippingCalculationInput): ShippingCalc
         const customsFeeAmount = customsFee ? customsFee.amount : 0;
 
         // Calculate total shipping cost (base shipping + handling + taxes)
-        const totalShippingCost =
-            shippingFee +
-            handlingFee +
-            vatAmount +
-            customsFeeAmount;
+        const totalShippingCost = Math.ceil((shippingFee + handlingFee + vatAmount + customsFeeAmount) / 2);
 
         return {
             shippingFee: {
