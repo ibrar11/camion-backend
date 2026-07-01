@@ -270,11 +270,6 @@ type OrderTrackingMetadata {
   trackingId: String
 }
 
-type OrderTrackingResponse {
-  cancelled: OrderTrackingItem
-  stages: [OrderTrackingItem!]!
-}
-
 type PollElement {
   options: PollOptionElement!
   question: String!
@@ -452,7 +447,7 @@ type Query {
   getLanguages: [Language!]!
   getMinimumOrderValue(currency: String! = "usd"): KeyValuePair!
   getNotifications: [Notification!]!
-  getOrderTracking(language: String! = "en", uuid: String!): OrderTrackingResponse!
+  getOrderTracking(language: String! = "en", uuid: String!): [OrderTrackingItem!]!
   getPopularProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "most-viewed"): [Product!]!
   getPost(slug: String!): Post!
   getPosts: [Post!]!
