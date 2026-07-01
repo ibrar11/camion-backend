@@ -75,6 +75,7 @@ export class CampaignsService {
 		campaign.briefEn = body.brief.en.trim();
 		campaign.briefAr = body.brief.ar.trim();
 		campaign.slug = generateSlug(body.slug);
+		campaign.pricingFactor = body.pricingFactor;
 		campaign.discountPercentage = body.discountPercentage;
 		campaign.startsAt = new Date(body.startsAt);
 		campaign.finishesAt = new Date(body.finishesAt);
@@ -322,6 +323,7 @@ export class CampaignsService {
 		campaign.briefEn = body.brief.en.trim();
 		campaign.briefAr = body.brief.ar.trim();
 		campaign.slug = generateSlug(body.slug);
+		campaign.pricingFactor = body.pricingFactor;
 		campaign.discountPercentage = body.discountPercentage;
 		campaign.startsAt = new Date(body.startsAt);
 		campaign.finishesAt = new Date(body.finishesAt);
