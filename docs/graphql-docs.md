@@ -3392,9 +3392,7 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
 Get Order Tracking (Timeline)
 ------------------------------
 
-Returns the 8 happy-path tracking stages as a flat array. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
-
-> **Note:** The `cancelled` stage is not included in the GraphQL response. Use `GET /v1/orders/:uuid/tracking` (REST) to get the full `{ stages, cancelled }` shape.
+Returns 8 happy-path tracking stages as a flat array. If the order is cancelled, a 9th item (`Order Cancelled`, id `9`) is appended. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
 
 ### GraphQL Query
 
@@ -3424,7 +3422,7 @@ query GetOrderTracking($uuid: String!, $language: String) {
 }
 ```
 
-### Response
+### Response — active order (8 items)
 
 ```json
 {
@@ -3443,19 +3441,40 @@ query GetOrderTracking($uuid: String!, $language: String) {
 }
 ```
 
+### Response — cancelled order (9 items)
+
+```json
+{
+    "data": {
+        "getOrderTracking": [
+            { "id": 1, "name": "Order Placed",      "checked": true,  "date": "2026-06-23T10:00:00.000Z", "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 2, "name": "Payment Confirmed",  "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 3, "name": "Order Confirmed",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 4, "name": "Processing",         "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 5, "name": "Packing",            "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 6, "name": "Dispatching",        "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 7, "name": "Order Delivered",    "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 8, "name": "Order Review",       "checked": false, "date": null,                       "metadata": { "trackingId": null, "cancellationReason": null, "reviewText": null, "reviewRating": null } },
+            { "id": 9, "name": "Order Cancelled",    "checked": true,  "date": "2026-06-23T10:30:00.000Z", "metadata": { "trackingId": null, "cancellationReason": "Out of stock", "reviewText": null, "reviewRating": null } }
+        ]
+    }
+}
+```
+
 ### Notes
 
 | Field | Description |
 |---|---|
-| `[].id` | Stage position (1–8) |
+| `[].id` | Stage position (1–8 for active orders; 1–9 when cancelled) |
 | `[].name` | Stage label — English by default, Arabic when `language: "ar"` |
 | `[].checked` | `true` if this stage has been reached |
 | `[].date` | Timestamp when the stage was reached; `null` if not yet reached |
 | `[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
+| `[].metadata.cancellationReason` | Populated on stage 9 (Order Cancelled) |
 | `[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
 | `[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
 
-**Cancellation / reopen behaviour:** The `ORDER_CANCELLED` tracking event has an `active` flag. Only the active event is returned. When an order is reopened via a successful payment, the cancellation event is deactivated and `cancelled` returns `null`. If an order is cancelled again after a reopen, the previous cancellation is deactivated and a new one is created — only the latest cancellation is visible. Historical rows are kept in the DB as `active = false` for audit purposes.
+**Cancellation / reopen behaviour:** The `ORDER_CANCELLED` event uses an `active` flag. When an order is reopened via a successful payment, the cancellation event is deactivated and the 9th item is no longer returned. If cancelled again, a fresh event is created with the latest reason.
 
 The `ORDER_REVIEW` stage (id 8) is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. Multiple reviews for the same order append text and average the rating.
 

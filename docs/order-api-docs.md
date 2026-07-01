@@ -682,6 +682,49 @@ If payment arrives before the 30 minutes expire, the timeout job exits silently 
 
 ---
 
+Backfill Tracking Events
+-------------------------
+
+One-time admin utility to populate missing tracking events for historical orders based on their current state. Safe to run multiple times — already-stamped events are skipped.
+
+> [!IMPORTANT]
+> Required role: `SuperAdmin`
+
+```http
+POST /v1/orders/backfill-tracking HTTP/1.1
+```
+
+For each order the worker stamps the following events (only if not already present):
+
+| Stage | Condition | Date used |
+|---|---|---|
+| `ORDER_PLACED` | Always | `order.createdAt` |
+| `PAYMENT_CONFIRMED` | `paymentTransaction.status === PAID` | `paymentTransaction.updatedAt` |
+| `ORDER_CONFIRMED` | Status is `confirmed`, `delivered`, `return_requested`, or `returned` | `order.updatedAt` |
+| `ORDER_DELIVERED` | Status is `delivered`, `return_requested`, or `returned` | `order.updatedAt` |
+| `ORDER_CANCELLED` | Status is `cancelled` | `order.updatedAt` |
+| `PROCESSING` | A linked JOP WMS inbound order exists | Inbound `createdAt` |
+| `PACKING` | Linked inbound has reached status 14 (STORED) | Inbound `updatedAt` |
+| `DISPATCHING` | Linked outbound has a `waybillNo` | Outbound `updatedAt` |
+
+### Response Body
+
+```json
+{
+    "processed": 120,
+    "stamped": 340,
+    "errors": []
+}
+```
+
+| Field | Description |
+|---|---|
+| `processed` | Total number of orders scanned |
+| `stamped` | Total number of new tracking events created |
+| `errors` | Array of order UUIDs + error messages for any orders that failed |
+
+---
+
 Order Review
 -------------
 
