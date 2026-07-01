@@ -46,6 +46,7 @@ import { OrderAddressDto } from '../procurement/dtos/CreateProcurementOrderDto';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 import { DispatchShopJobData } from '../queue/types';
+import { WmsOutboundStatus } from './enums/WmsOutboundStatus';
 
 @Injectable()
 export class JopWmsService {
@@ -69,6 +70,16 @@ export class JopWmsService {
         @InjectQueue(QueueName.WMS_DISPATCH)
         private readonly dispatchQueue: Queue,
     ) { }
+
+    private static readonly OUTBOUND_STATUS_LABELS: Record<WmsOutboundStatus, string> = {
+        [WmsOutboundStatus.PENDING]: 'Preparing Your Shipment',
+        [WmsOutboundStatus.DRAFT]: 'Preparing Your Shipment',
+        [WmsOutboundStatus.PROCESSING]: 'Shipment in Progress',
+        [WmsOutboundStatus.PROCESSING_FAILED]: 'Shipment Delayed',
+        [WmsOutboundStatus.PROCESSING_COMPLETE]: 'Shipment Ready',
+        [WmsOutboundStatus.SHIPPED]: 'Shipped',
+        [WmsOutboundStatus.INVALIDATED]: 'Shipment Cancelled',
+    };
 
     private async trackOrder(orderNo: string, type: JopWmsOrderType, orderUuids?: string[], wmsAssignedId?: string) {
         const existing = await this.wmsOrderRepository.findOne({ where: { orderNo } });
@@ -865,6 +876,64 @@ export class JopWmsService {
         }
 
         return { found: matchingJobs.length, retried: retriedShopIds.length, shopIds: retriedShopIds };
+    }
+
+    async syncOutbound(orderUuid: string): Promise<{ message: string }> {
+        const order = await this.orderRepository.findOne({
+            where: { uuid: orderUuid },
+        });
+
+        if (!order) {
+            throw new NotFoundException({ error: `Order ${orderUuid} not found` });
+        }
+
+        const customerVoucherNo = `${orderUuid.replace(/-/g, '').substring(0, 29)}out`;
+
+        // get status from WMS
+        let jopStatus: string;
+        try {
+            const statusResult: any = await this.client.post('outboundorder/status', { customerVoucherNo });
+            jopStatus = String(statusResult?.data?.status ?? '');
+        } catch (err: any) {
+            throw new BadRequestException({
+                error: `Outbound ${customerVoucherNo} not found on WMS, make sure it was created`,
+            });
+        }
+
+        if (!jopStatus) {
+            throw new BadRequestException({
+                error: `WMS returned no status for outbound ${customerVoucherNo}`,
+            });
+        }
+        const statusLabel = JopWmsService.OUTBOUND_STATUS_LABELS[jopStatus  as WmsOutboundStatus] ?? jopStatus;
+
+        const existing = await this.wmsOrderRepository.findOne({
+            where: { orderNo: customerVoucherNo, type: JopWmsOrderType.OUTBOUND },
+        });
+
+        if (existing) {
+            const prevStatusLabel = JopWmsService.OUTBOUND_STATUS_LABELS[existing.status as WmsOutboundStatus] ?? existing.status;
+            await this.wmsOrderRepository.update(existing.id, {
+                status: jopStatus,
+                lastPolledAt: new Date(),
+                errorCount: 0,
+            });
+            this.logger.log(`Synced outbound ${customerVoucherNo}: ${prevStatusLabel} to ${statusLabel}`);
+            return { message: `Outbound ${customerVoucherNo} synced from ${prevStatusLabel} to ${statusLabel}` };
+        }
+
+        const synced = await this.wmsOrderRepository.save(
+            this.wmsOrderRepository.create({
+                orderNo: customerVoucherNo,
+                type: JopWmsOrderType.OUTBOUND,
+                status: jopStatus,
+                lastPolledAt: new Date(),
+            }),
+        );
+        await this.linkOrdersToWmsOrder(synced.id, [orderUuid]);
+        this.logger.log(`Outbound ${customerVoucherNo} synced at status : ${statusLabel}`);
+
+        return { message: `Outbound ${customerVoucherNo} synced successfully at status : ${statusLabel}` };
     }
 
     // ─── Dispatch Status ──────────────────────────────────────────────────────
