@@ -106,7 +106,7 @@ export class PricingService {
 			discountPercentage = Math.max(discountPercentage, campaign.discountPercentage);
 		}
 
-		// As a fallback, calculate the discount factor from the categories applied in the product
+		// As a fallback, calculate the discount factor from the categories applied on the product
 		if (discountPercentage === 0 && product !== null && Array.isArray(product.productCategories) && product.productCategories.length !== 0) {
 			discountPercentage = Math.max(discountPercentage, ...(
 				product.productCategories
@@ -115,9 +115,16 @@ export class PricingService {
 			);
 		}
 
-		// Set the pricing based on the maximum pricing factor and discount percentage
-		let pricingFactor: number = 1;
-		if (product !== null && Array.isArray(product.productCategories) && product.productCategories.length !== 0) {
+		// The pricing factor applied on each product variant
+		let pricingFactor: number = 0;
+
+		// Apply the pricing factor from the campaign
+		if (product !== null && campaign !== null && campaign !== undefined && campaign.isActive) {
+			pricingFactor = Math.max(pricingFactor, campaign.pricingFactor);
+		}
+
+		// As a fallback, calculate the pricing factor from the categories applied on the product
+		if (pricingFactor === 0 && product !== null && Array.isArray(product.productCategories) && product.productCategories.length !== 0) {
 			pricingFactor = Math.max(pricingFactor, ...(
 				product.productCategories
 					.filter(entry => entry.category !== null && entry.category !== undefined)

@@ -52,7 +52,7 @@ export class Campaign {
 	@Column({ type: "varchar", length: 64, nullable: false, unique: true, })
 	slug: string;
 
-	@Column({ type: "numeric", default: 1, })
+	@Column({ type: "numeric", default: 0, })
 	pricingFactor: number;
 
 	@Field(() => Int)
