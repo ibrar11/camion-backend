@@ -66,6 +66,30 @@ export class PromosService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
+	findAllUncached(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Promo>> {
+		this.logger.log(`Retrieving promos`);
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.promoRepository.find({
+			order: {
+				id: "DESC",
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Returns a list of promos
+	 *
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
 	findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Promo>> {
 		this.logger.log(`Retrieving promos`);
 
