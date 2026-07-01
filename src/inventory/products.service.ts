@@ -675,6 +675,12 @@ export class ProductsService {
 	async findAll(filters: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products for graphql`);
 
+		// To make sure we don't always show the latest products on the homepage, we need to return random products.
+		// This will be done by making page number a random value between 2 and 100 on the default request
+		if (pageNumber === 1) {
+			pageNumber = Math.max(2, Math.floor(Math.random() * 100));
+		}
+
 		// Find products based on the sort order
 		let products: Array<Product> = [];
 		switch (sort) {
