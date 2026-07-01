@@ -47,7 +47,7 @@ export class PromosController {
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<Promo>> {
-		return this.promoService.findAll(filters, sort, pageNumber, itemsPerPage);
+		return this.promoService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
