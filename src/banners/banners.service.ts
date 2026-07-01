@@ -147,6 +147,9 @@ export class BannersService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.bannerRepository.find({
+			where: {
+				isActive: true,
+			},
 			cache: true,
 			order: {
 				id: "DESC",
@@ -171,21 +174,18 @@ export class BannersService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		const banners = await this.bannerRepository.find({
+		return this.bannerRepository.find({
 			cache: true,
 			where: {
+				isActive: true,
 				placement: placement,
+			},
+			order: {
+				id: "DESC",
 			},
 			skip: skip,
 			take: take,
 		});
-
-		// Fallback to all banners when there are no banners for the desired placement
-		if (!Array.isArray(banners) || banners.length === 0) {
-			return this.findAll("", sort, pageNumber, itemsPerPage);
-		}
-
-		return banners;
 	}
 
 	/**
@@ -207,16 +207,16 @@ export class BannersService {
 			},
 		});
 
-		// Get other banners as fallback
+		// Return empty banners as fallback
 		if (category === null) {
-			return this.findAll("", "", pageNumber, itemsPerPage);
+			return [];
 		}
 
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Find the banners in the desired category
-		const banners = await this.bannerRepository.createQueryBuilder("banner")
+		return this.bannerRepository.createQueryBuilder("banner")
 			.cache(true)
 			.setFindOptions({
 				relationLoadStrategy: "query",
@@ -227,18 +227,13 @@ export class BannersService {
 			.leftJoin("bannerCategory.category", "category")
 
 			.where("category.id = :id", { id: category.id, })
+			.andWhere("banner.isActive = :isActive", { isActive: true, })
+			.andWhere("banner.placement = :placement", { placement: "single-category" })
 			.distinct(true)
 			.orderBy("banner.id", "DESC")
 			.skip(skip)
 			.take(take)
 			.getMany();
-
-		// Fallback to all banners when there are no banners for the category
-		if (!Array.isArray(banners) || banners.length === 0) {
-			return this.findAll("", sort, pageNumber, itemsPerPage);
-		}
-
-		return banners;
 	}
 
 	/**
