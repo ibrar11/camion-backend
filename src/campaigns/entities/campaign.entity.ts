@@ -52,6 +52,9 @@ export class Campaign {
 	@Column({ type: "varchar", length: 64, nullable: false, unique: true, })
 	slug: string;
 
+	@Column({ type: "numeric", default: 1, })
+	pricingFactor: number;
+
 	@Field(() => Int)
 	@Column({ type: "numeric", default: 0, nullable: false, })
 	discountPercentage: number;
