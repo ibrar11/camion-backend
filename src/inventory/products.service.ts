@@ -716,6 +716,12 @@ export class ProductsService {
 				break;
 		}
 
+		// Due to random page, sometimes we overshoot the page number,
+		// so as fallback we should show products from page number 2
+		if (Array.isArray(products) && products.length === 0) {
+			return this.findAll(filters, sort, 2, itemsPerPage);
+		}
+
 		// Attach the campaign against each product
 		return this.__attachAssociatedCampaign(products);
 	}
