@@ -401,6 +401,59 @@ If no matching jobs are found (e.g. the job was evicted from Redis after 200 new
 
 ---
 
+### Sync Outbound for wms order
+
+Syncs the outbound order status from JOP WMS into the camion DB. Used when an admin has manually created an outbound order directly on the WMS panel and wants to sync that in the camion DB.
+
+```http
+POST /v1/wms/orders/:uuid/sync-outbound HTTP/1.1
+```
+
+| Parameter | Location | Description |
+|---|---|---|
+| `uuid` | Path | Internal order UUID (not the WMS `orderNo`) |
+
+No request body required.
+
+**When to use:**
+
+| Scenario | Result |
+|---|---|
+| Admin created outbound manually on WMS panel — not yet in camion DB | Creates a new record in camion DB and links it to the order |
+
+**What it does:**
+1. Derives the `customerVoucherNo` from the order UUID (`first 29 chars of uuid stripped of dashes + "out"`)
+2. Calls `outboundorder/status` on JOP WMS to fetch the real current status
+3. If a record already exists in camion DB — updates its status, resets `errorCount`, and updates `lastPolledAt`
+4. If no record exists in camion DB — creates one and links it to the order via `jop_wms_order_links`
+
+### Response Body
+
+**Outbound already tracked in camion database — status updated:**
+```json
+{ "message": "Outbound 9f71e2650343cb59f0017b515bfb980out synced from Shipment in Progress to Shipped" }
+```
+
+**Outbound not tracked in camion database — created and linked:**
+```json
+{ "message": "Outbound 9f71e2650343cb59f0017b515bfb980out synced successfully at status : Shipment in Progress" }
+```
+
+**Error responses (4xx):**
+
+| Status | Condition |
+|---|---|
+| `404` | Order UUID not found in camion DB |
+| `400` | Outbound not found on WMS — make sure it was created |
+| `400` | WMS returned no status for the outbound |
+
+### Notes
+- This endpoint does **not** create the outbound on WMS — it only syncs an already-existing WMS outbound into the camion DB
+- The `customerVoucherNo` is derived automatically from the order UUID — you do not need to provide it
+- Once synced, the outbound enters the normal scheduler polling loop and will be updated automatically every 3 hours
+
+---
+
 ### Get Dispatch Batch Status
 
 Returns the status of all shop sub-jobs for a dispatch batch. Use the `jobId` returned by `POST /v1/wms/orders/dispatch` as the path parameter. Each shop in the batch is processed as an independent BullMQ sub-job; this endpoint aggregates them into a single response.

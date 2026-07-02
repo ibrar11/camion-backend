@@ -48,6 +48,10 @@ export class CreateCampaignDto {
 
 	@IsNumber()
 	@Min(1)
+	readonly pricingFactor: number;
+
+	@IsNumber()
+	@Min(1)
 	@Max(99)
 	readonly discountPercentage: number;
 

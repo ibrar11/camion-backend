@@ -96,6 +96,13 @@ export class OrderController {
         return this.orderService.getOrderTracking(uuid, customerUuid, language);
     }
 
+    @Roles(UserRole.SuperAdmin)
+    @Post('backfill-tracking')
+    @HttpCode(HttpStatus.OK)
+    backfillTrackingEvents(): Promise<{ processed: number; stamped: number; errors: string[] }> {
+        return this.orderService.backfillTrackingEvents();
+    }
+
 @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Patch(':uuid/status')
     @HttpCode(HttpStatus.OK)

@@ -905,6 +905,109 @@ export class OrderService {
         return { stages, cancelled };
     }
 
+    async backfillTrackingEvents(): Promise<{ processed: number; stamped: number; errors: string[] }> {
+        const orders = await this.orderRepository.find({
+            relations: { paymentTransaction: true },
+            order: { createdAt: 'ASC' },
+        });
+
+        let stamped = 0;
+        const errors: string[] = [];
+
+        const confirmedImplied = new Set([
+            OrderStatus.CONFIRMED,
+            OrderStatus.DELIVERED,
+            OrderStatus.RETURN_REQUESTED,
+            OrderStatus.RETURNED,
+        ]);
+        const deliveredImplied = new Set([
+            OrderStatus.DELIVERED,
+            OrderStatus.RETURN_REQUESTED,
+            OrderStatus.RETURNED,
+        ]);
+
+        for (const order of orders) {
+            try {
+                const existing = await this.trackingEventRepository.find({
+                    where: { orderUuid: order.uuid },
+                    select: ['stage'],
+                });
+                const alreadyStamped = new Set(existing.map(e => e.stage));
+
+                const toStamp: Array<Partial<OrderTrackingEvent>> = [];
+
+                const maybe = (stage: OrderTrackingStage, event: Partial<OrderTrackingEvent>) => {
+                    if (!alreadyStamped.has(stage)) toStamp.push({ stage, active: true, trackingId: null, cancellationReason: null, ...event });
+                };
+
+                maybe(OrderTrackingStage.ORDER_PLACED, { date: new Date(order.createdAt) });
+
+                if (order.paymentTransaction?.status === PaymentStatus.PAID) {
+                    maybe(OrderTrackingStage.PAYMENT_CONFIRMED, { date: order.paymentTransaction.updatedAt });
+                }
+
+                if (confirmedImplied.has(order.status)) {
+                    maybe(OrderTrackingStage.ORDER_CONFIRMED, { date: order.updatedAt });
+                }
+
+                if (deliveredImplied.has(order.status)) {
+                    maybe(OrderTrackingStage.ORDER_DELIVERED, { date: order.updatedAt });
+                }
+
+                if (order.status === OrderStatus.CANCELLED) {
+                    maybe(OrderTrackingStage.ORDER_CANCELLED, {
+                        date: order.updatedAt,
+                        cancellationReason: order.cancellationReason ?? null,
+                    });
+                }
+
+                // WMS stages via linked orders
+                const links = await this.wmsOrderLinkRepository.find({
+                    where: { orderUuid: order.uuid },
+                    relations: ['wmsOrder'],
+                });
+
+                const inbounds = links
+                    .filter(l => l.wmsOrder?.type === JopWmsOrderType.INBOUND)
+                    .map(l => l.wmsOrder)
+                    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+                const outbounds = links
+                    .filter(l => l.wmsOrder?.type === JopWmsOrderType.OUTBOUND)
+                    .map(l => l.wmsOrder);
+
+                if (inbounds.length > 0) {
+                    maybe(OrderTrackingStage.PROCESSING, { date: inbounds[0].createdAt });
+                }
+
+                const storedInbound = inbounds.find(i => i.status === JopWmsInboundStatus.STORED);
+                if (storedInbound) {
+                    maybe(OrderTrackingStage.PACKING, { date: storedInbound.updatedAt });
+                }
+
+                const shippedOutbound = outbounds.find(o => !!o.waybillNo);
+                if (shippedOutbound) {
+                    maybe(OrderTrackingStage.DISPATCHING, {
+                        date: shippedOutbound.updatedAt,
+                        trackingId: shippedOutbound.waybillNo,
+                    });
+                }
+
+                if (toStamp.length > 0) {
+                    await this.trackingEventRepository.save(
+                        toStamp.map(event => this.trackingEventRepository.create({ orderUuid: order.uuid, ...event }))
+                    );
+                    stamped += toStamp.length;
+                }
+            } catch (err: any) {
+                this.logger.warn(`backfillTrackingEvents: failed for order ${order.uuid}: ${err?.message}`);
+                errors.push(`${order.uuid}: ${err?.message}`);
+            }
+        }
+
+        this.logger.log(`backfillTrackingEvents: processed=${orders.length} stamped=${stamped} errors=${errors.length}`);
+        return { processed: orders.length, stamped, errors };
+    }
 
     /**
      * update order

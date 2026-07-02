@@ -209,6 +209,13 @@ export class JopWmsController {
         return this.wmsService.dispatchMissingItems(uuid);
     }
 
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Post('orders/:uuid/sync-outbound')
+    @HttpCode(HttpStatus.OK)
+    syncOutbound(@Param('uuid') uuid: string) {
+        return this.wmsService.syncOutbound(uuid);
+    }
+
     // ─── Recovery ─────────────────────────────────────────────────────────────
 
     @Roles(UserRole.SuperAdmin)

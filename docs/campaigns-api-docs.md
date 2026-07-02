@@ -12,6 +12,7 @@ POST /v1/campaigns HTTP/1.1
 | brief.en | The brief of the campaign in English |
 | brief.ar | The brief of the campaign in Arabic |
 | slug | The slug of the campaign |
+| pricingFactor | The pricing factor applied on the products in the campaign |
 | discountPercentage | Discount percentage applied of the products in the campaign |
 | startsAt | The date at which the campaign starts |
 | finishesAt | The date at which the campaign finishes |
@@ -31,6 +32,7 @@ POST /v1/campaigns HTTP/1.1
         "ar": "Get 70% off on all summer wear (AR)"
     },
     "slug": "summer-70",
+    "pricingFactor": 10,
     "discountPercentage": 70,
     "startsAt": "2026-01-01",
     "finishesAt": "2026-12-31",
@@ -51,6 +53,7 @@ POST /v1/campaigns HTTP/1.1
     "briefEn": "Get 70% off on all summer wear",
     "briefAr": "Get 70% off on all summer wear (AR)",
     "slug": "summer-70",
+    "pricingFactor": 10,
     "discountPercentage": "70",
     "startsAt": "2026-01-01T00:00:00.000Z",
     "finishesAt": "2026-12-31T00:00:00.000Z",
@@ -80,6 +83,7 @@ GET /v1/campaigns HTTP/1.1
         "briefEn": "Get 50% off on all summer wear",
         "briefAr": "Get 50% off on all summer wear (AR)",
         "slug": "summer-50",
+        "pricingFactor": 10,
         "discountPercentage": "50",
         "startsAt": "2026-01-01T00:00:00.000Z",
         "finishesAt": "2026-12-31T00:00:00.000Z",
@@ -109,6 +113,7 @@ GET /v1/campaigns/<campaign-uuid> HTTP/1.1
     "briefEn": "Get 70% off on all summer wear",
     "briefAr": "Get 70% off on all summer wear (AR)",
     "slug": "summer-70",
+    "pricingFactor": 10,
     "discountPercentage": "70",
     "startsAt": "2026-01-01T00:00:00.000Z",
     "finishesAt": "2026-12-31T00:00:00.000Z",
@@ -157,6 +162,7 @@ PUT /v1/campaigns/<campaign-uuid> HTTP/1.1
         "ar": "Get 70% off on all summer wear (AR)"
     },
     "slug": "summer-70",
+    "pricingFactor": 10,
     "discountPercentage": 70,
     "startsAt": "2026-01-01",
     "finishesAt": "2026-12-31",
@@ -177,6 +183,7 @@ PUT /v1/campaigns/<campaign-uuid> HTTP/1.1
     "briefEn": "Get 70% off on all summer wear",
     "briefAr": "Get 70% off on all summer wear (AR)",
     "slug": "summer-70",
+    "pricingFactor": 10,
     "discountPercentage": 70,
     "startsAt": "2026-01-01T00:00:00.000Z",
     "finishesAt": "2026-12-31T00:00:00.000Z",
