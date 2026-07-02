@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class AppleMobileAuthDto {
 	@IsOptional()
@@ -12,6 +12,11 @@ export class AppleMobileAuthDto {
 	@IsOptional()
 	@IsString()
 	fullName?: string;
+
+	@IsOptional()
+	@IsString()
+	@IsUUID('4')
+	guestUUID?: string;
 
 	@IsOptional()
 	@IsString()
