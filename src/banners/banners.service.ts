@@ -174,7 +174,8 @@ export class BannersService {
 		// Get pagination params
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-		return this.bannerRepository.find({
+		// Get banners from the desired placement
+		const banners = await this.bannerRepository.find({
 			cache: true,
 			where: {
 				isActive: true,
@@ -186,6 +187,13 @@ export class BannersService {
 			skip: skip,
 			take: take,
 		});
+
+		// As a fallback, switch to banners from homepage
+		if (Array.isArray(banners) && banners.length === 0 && placement !== "homepage") {
+			return this.findAllByPlacement("homepage", sort, pageNumber, itemsPerPage);
+		}
+
+		return banners;
 	}
 
 	/**
@@ -202,8 +210,15 @@ export class BannersService {
 
 		// Find the category, return empty array if there is no category against the slug
 		const category = await this.categoryRepository.findOne({
+			cache: true,
+			relationLoadStrategy: "query",
 			where: {
 				slug: categorySlug,
+			},
+			relations: {
+				parent: {
+					parent: true,
+				},
 			},
 		});
 
@@ -216,7 +231,7 @@ export class BannersService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Find the banners in the desired category
-		return this.bannerRepository.createQueryBuilder("banner")
+		const banners = await this.bannerRepository.createQueryBuilder("banner")
 			.cache(true)
 			.setFindOptions({
 				relationLoadStrategy: "query",
@@ -226,14 +241,50 @@ export class BannersService {
 			.leftJoin("banner.bannerCategories", "bannerCategory")
 			.leftJoin("bannerCategory.category", "category")
 
-			.where("category.id = :id", { id: category.id, })
-			.andWhere("banner.isActive = :isActive", { isActive: true, })
-			.andWhere("banner.placement = :placement", { placement: "single-category" })
+			.where("category.id = :id", {
+				id: category.id,
+			})
+			.andWhere("banner.isActive = :isActive", {
+				isActive: true,
+			})
+			.andWhere("banner.placement = :placement", {
+				placement: "single-category",
+			})
 			.distinct(true)
 			.orderBy("banner.id", "DESC")
 			.skip(skip)
 			.take(take)
 			.getMany();
+
+		// As a fallback, if we don't have banners in the 3rd level, return banners from the 2nd level
+		if (Array.isArray(banners) && banners.length === 0 && category.parent !== null && category.parent.parent !== null) {
+			return this.bannerRepository.createQueryBuilder("banner")
+				.cache(true)
+				.setFindOptions({
+					relationLoadStrategy: "query",
+				})
+
+				// Many-to-many join
+				.leftJoin("banner.bannerCategories", "bannerCategory")
+				.leftJoin("bannerCategory.category", "category")
+
+				.where("category.id = :id", {
+					id: category.parent.id,
+				})
+				.andWhere("banner.isActive = :isActive", {
+					isActive: true,
+				})
+				.andWhere("banner.placement = :placement", {
+					placement: "single-category",
+				})
+				.distinct(true)
+				.orderBy("banner.id", "DESC")
+				.skip(skip)
+				.take(take)
+				.getMany();
+		}
+
+		return banners;
 	}
 
 	/**
