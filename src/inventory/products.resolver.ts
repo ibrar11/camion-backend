@@ -37,6 +37,8 @@ import { Customer } from "src/customers/entities/customer.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
 
+import { REVIEWS } from "./data/reviews";
+
 @ArgsType()
 export class GetProductsArgs {
 	@Field({ defaultValue: "en", })
@@ -407,7 +409,11 @@ export class ProductsResolver {
 	@Query(() => Product, { nullable: true, })
 	async getProduct(@Context('req') req: Request & { jti: string, customer: Customer, }, @Args() args: GetProductArgs): Promise<Product | null> {
 		try {
-			return await this.productsService.findOneBySlug(req.customer, args.slug);
+			const product = await this.productsService.findOneBySlug(req.customer, args.slug);
+			if (product !== null && args.slug !== null && REVIEWS[args.slug] !== undefined && REVIEWS[args.slug] !== null) {
+				product.reviews = REVIEWS[args.slug][args.language];
+			}
+			return product;
 		} catch {
 			return Promise.resolve(null);
 		}
