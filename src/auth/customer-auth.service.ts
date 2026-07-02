@@ -154,30 +154,7 @@ export class CustomerAuthService {
 		}
 		await this.customerRepository.save(customer);
 
-		// merge the customer guest cart
-		if (body.guestUUID) {
-			const guestCustomer = await this.customerRepository.findOneBy({
-				uuid: body.guestUUID.trim(),
-			});
-
-			if (guestCustomer) {
-				const cartItems = await this.cartItemRepository.find({
-					where: {
-						customer: { id: guestCustomer.id }
-					}
-				});
-
-				for (const item of cartItems) {
-					item.customer = customer;
-				}
-
-				await this.cartItemRepository.save(cartItems);
-
-				// deactivate the guest user after merge
-				guestCustomer.isActive = false;
-				await this.customerRepository.save(guestCustomer);
-			}
-		}
+		await this.mergeGuestCart(customer, body.guestUUID);
 
 		// Create the payload
 		const payload = {
@@ -269,106 +246,7 @@ export class CustomerAuthService {
 			await this.customerRepository.save(customer);
 		}
 
-		// merge the customer gurst cart
-		if (body.guestUUID) {
-			const guestCustomer = await this.customerRepository.findOne({
-				where: { uuid: body.guestUUID.trim() },
-			});
-
-			if (
-				guestCustomer &&
-				guestCustomer.id !== customer.id &&
-				guestCustomer.isActive
-			) {
-				const guestCartItems = await this.cartItemRepository.find({
-					where: { customer: { id: guestCustomer.id } },
-					relations: {
-						product: true,
-						variant: true
-					},
-				});
-
-				if (guestCartItems.length > 0) {
-					const existingCartItems = await this.cartItemRepository.find({
-						where: { customer: { id: customer.id } },
-						relations: {
-							product: true,
-							variant: {
-								inventoryItem: {
-									levels: true,
-								},
-							},
-						},
-					});
-
-					// Build lookup map
-					const existingMap = new Map<string, CartItem>();
-					for (const item of existingCartItems) {
-						const key = `${item.product.id}-${item.variant.id}`;
-						existingMap.set(key, item);
-					}
-
-					const itemsToSave: CartItem[] = [];
-					const guestItemsToRemove: CartItem[] = [];
-
-					for (const guestItem of guestCartItems) {
-						const key = `${guestItem.product.id}-${guestItem.variant.id}`;
-						const existingItem = existingMap.get(key);
-
-						if (existingItem) {
-							const availableStock = calculateStock(existingItem.variant);
-							const totalQuantity = existingItem.quantity + guestItem.quantity;
-
-							// Merge quantity
-							existingItem.quantity = (availableStock < totalQuantity) ? availableStock : totalQuantity;
-
-							existingItem.subTotal = {
-								...existingItem.subTotal,
-								amount:
-									existingItem.quantity *
-									existingItem.variant.cost.amount,
-							};
-
-							itemsToSave.push(existingItem);
-							guestItemsToRemove.push(guestItem);
-						} else {
-							// Reassign guest item
-							guestItem.customer = customer;
-							itemsToSave.push(guestItem);
-						}
-					}
-
-					// Save items
-					if (itemsToSave.length > 0) {
-						await this.cartItemRepository.save(itemsToSave);
-					}
-
-					// remove merged guest items
-					if (guestItemsToRemove.length > 0) {
-						await this.cartItemRepository.remove(guestItemsToRemove);
-					}
-				}
-
-				// Update cart count
-				const cartItemsCount = await this.cartItemRepository.count({
-					where: {
-						customer: {
-							id: customer.id,
-						},
-						product: {
-							status: ProductStatus.ACTIVE
-						},
-					},
-				});
-
-				customer.cartItemsCount = cartItemsCount;
-				await this.customerRepository.save(customer);
-
-				// Deactivate guest to prevent re-merge
-				guestCustomer.isActive = false;
-				await this.customerRepository.save(guestCustomer);
-			}
-		}
+		await this.mergeGuestCart(customer, body.guestUUID);
 
 		const secret = crypto.randomInt(100000, 1000000).toString();
 
@@ -445,106 +323,7 @@ export class CustomerAuthService {
 			await this.customerRepository.save(customer);
 		}
 
-		// merge the customer gurst cart
-		if (body.guestUUID) {
-			const guestCustomer = await this.customerRepository.findOne({
-				where: { uuid: body.guestUUID.trim() },
-			});
-
-			if (
-				guestCustomer &&
-				guestCustomer.id !== customer.id &&
-				guestCustomer.isActive
-			) {
-				const guestCartItems = await this.cartItemRepository.find({
-					where: { customer: { id: guestCustomer.id } },
-					relations: {
-						product: true,
-						variant: true
-					},
-				});
-
-				if (guestCartItems.length > 0) {
-					const existingCartItems = await this.cartItemRepository.find({
-						where: { customer: { id: customer.id } },
-						relations: {
-							product: true,
-							variant: {
-								inventoryItem: {
-									levels: true,
-								},
-							},
-						},
-					});
-
-					// Build lookup map
-					const existingMap = new Map<string, CartItem>();
-					for (const item of existingCartItems) {
-						const key = `${item.product.id}-${item.variant.id}`;
-						existingMap.set(key, item);
-					}
-
-					const itemsToSave: CartItem[] = [];
-					const guestItemsToRemove: CartItem[] = [];
-
-					for (const guestItem of guestCartItems) {
-						const key = `${guestItem.product.id}-${guestItem.variant.id}`;
-						const existingItem = existingMap.get(key);
-
-						if (existingItem) {
-							const availableStock = calculateStock(existingItem.variant);
-							const totalQuantity = existingItem.quantity + guestItem.quantity;
-
-							// Merge quantity
-							existingItem.quantity = (availableStock < totalQuantity) ? availableStock : totalQuantity;
-
-							existingItem.subTotal = {
-								...existingItem.subTotal,
-								amount:
-									existingItem.quantity *
-									existingItem.variant.cost.amount,
-							};
-
-							itemsToSave.push(existingItem);
-							guestItemsToRemove.push(guestItem);
-						} else {
-							// Reassign guest item
-							guestItem.customer = customer;
-							itemsToSave.push(guestItem);
-						}
-					}
-
-					// Save items
-					if (itemsToSave.length > 0) {
-						await this.cartItemRepository.save(itemsToSave);
-					}
-
-					// remove merged guest items
-					if (guestItemsToRemove.length > 0) {
-						await this.cartItemRepository.remove(guestItemsToRemove);
-					}
-				}
-
-				// Update cart count
-				const cartItemsCount = await this.cartItemRepository.count({
-					where: {
-						customer: {
-							id: customer.id,
-						},
-						product: {
-							status: ProductStatus.ACTIVE
-						},
-					},
-				});
-
-				customer.cartItemsCount = cartItemsCount;
-				await this.customerRepository.save(customer);
-
-				// Deactivate guest to prevent re-merge
-				guestCustomer.isActive = false;
-				await this.customerRepository.save(guestCustomer);
-			}
-		}
+		await this.mergeGuestCart(customer, body.guestUUID);
 
 		const secret = crypto.randomInt(100000, 1000000).toString();
 		// Create a login request
@@ -627,6 +406,8 @@ export class CustomerAuthService {
 			request.customer = await this.reactivateOrThrow(request.customer);
 		}
 
+		await this.mergeGuestCart(request.customer, body.guestUUID);
+
 		// Create the payload for the jwt
 		const payload = {
 			jti: crypto.randomUUID(),
@@ -701,6 +482,8 @@ export class CustomerAuthService {
 			request.customer = await this.reactivateOrThrow(request.customer);
 		}
 
+		await this.mergeGuestCart(request.customer, body.guestUUID);
+
 		// Create the payload for the jwt
 		const payload = {
 			jti: crypto.randomUUID(),
@@ -771,7 +554,9 @@ export class CustomerAuthService {
 			throw new UnauthorizedException({ error: 'Email or Google ID not found in token.' });
 		}
 
-		return this.findOrCreateGoogleCustomer({ email, fullName, googleId, firebaseDeviceToken });
+		const result = await this.findOrCreateGoogleCustomer({ email, fullName, googleId, firebaseDeviceToken });
+		await this.mergeGuestCart(result.customer, dto.guestUUID);
+		return result;
 	}
 
 	async loginWithGoogleWeb(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
@@ -785,11 +570,11 @@ export class CustomerAuthService {
 
 		const isJwt = dto.accessToken.split('.').length === 3;
 
-		if (isJwt) {
-			return this.loginWithFacebookLimitedLogin(dto.accessToken, dto.firebaseDeviceToken);
-		}
-
-		return this.loginWithFacebookAccessToken(dto.accessToken, dto.firebaseDeviceToken);
+		const result = isJwt
+			? await this.loginWithFacebookLimitedLogin(dto.accessToken, dto.firebaseDeviceToken)
+			: await this.loginWithFacebookAccessToken(dto.accessToken, dto.firebaseDeviceToken);
+		await this.mergeGuestCart(result.customer, dto.guestUUID);
+		return result;
 	}
 
 	private async loginWithFacebookAccessToken(accessToken: string, firebaseDeviceToken?: string): Promise<CustomerAuthResponse> {
@@ -1056,7 +841,9 @@ export class CustomerAuthService {
 		const email = (payload['email'] as string) || '';
 		const name = (payload['name'] as string) || fullName || '';
 
-		return this.findOrCreateAppleCustomer({ email, fullName: name, appleId, firebaseDeviceToken });
+		const result = await this.findOrCreateAppleCustomer({ email, fullName: name, appleId, firebaseDeviceToken });
+		await this.mergeGuestCart(result.customer, dto.guestUUID);
+		return result;
 	}
 
 	private async exchangeAppleCode(code: string, audience: string, issuer: string): Promise<string> {
@@ -1175,6 +962,69 @@ export class CustomerAuthService {
 		);
 
 		return { token, customer };
+	}
+
+	private async mergeGuestCart(customer: Customer, guestUUID?: string): Promise<void> {
+		if (!guestUUID) return;
+
+		const guestCustomer = await this.customerRepository.findOne({
+			where: { uuid: guestUUID.trim() },
+		});
+
+		if (!guestCustomer || guestCustomer.id === customer.id || !guestCustomer.isActive) return;
+
+		const guestCartItems = await this.cartItemRepository.find({
+			where: { customer: { id: guestCustomer.id } },
+			relations: { product: true, variant: true },
+		});
+
+		if (guestCartItems.length > 0) {
+			const existingCartItems = await this.cartItemRepository.find({
+				where: { customer: { id: customer.id } },
+				relations: {
+					product: true,
+					variant: { inventoryItem: { levels: true } },
+				},
+			});
+
+			const existingMap = new Map<string, CartItem>();
+			for (const item of existingCartItems) {
+				existingMap.set(`${item.product.id}-${item.variant.id}`, item);
+			}
+
+			const itemsToSave: CartItem[] = [];
+			const guestItemsToRemove: CartItem[] = [];
+
+			for (const guestItem of guestCartItems) {
+				const existingItem = existingMap.get(`${guestItem.product.id}-${guestItem.variant.id}`);
+				if (existingItem) {
+					const availableStock = calculateStock(existingItem.variant);
+					const totalQuantity = existingItem.quantity + guestItem.quantity;
+					existingItem.quantity = availableStock < totalQuantity ? availableStock : totalQuantity;
+					existingItem.subTotal = {
+						...existingItem.subTotal,
+						amount: existingItem.quantity * existingItem.variant.cost.amount,
+					};
+					itemsToSave.push(existingItem);
+					guestItemsToRemove.push(guestItem);
+				} else {
+					guestItem.customer = customer;
+					itemsToSave.push(guestItem);
+				}
+			}
+
+			if (itemsToSave.length > 0) await this.cartItemRepository.save(itemsToSave);
+			if (guestItemsToRemove.length > 0) await this.cartItemRepository.remove(guestItemsToRemove);
+		}
+
+		const cartItemsCount = await this.cartItemRepository.count({
+			where: { customer: { id: customer.id }, product: { status: ProductStatus.ACTIVE } },
+		});
+		customer.cartItemsCount = cartItemsCount;
+		await this.customerRepository.save(customer);
+
+		guestCustomer.isActive = false;
+		await this.customerRepository.save(guestCustomer);
 	}
 
 	/**
