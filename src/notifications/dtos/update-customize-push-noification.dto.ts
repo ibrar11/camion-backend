@@ -1,5 +1,6 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import { NotificationPriority } from "../enums/notification-priority.enum";
+import { NotificationScheduler } from "../enums/notification-scheduler.enum";
 
 export class UpdateCustomizePushNotificationDto {
     @IsString()
@@ -22,4 +23,9 @@ export class UpdateCustomizePushNotificationDto {
     @IsOptional()
     @IsEnum(NotificationPriority)
     priority?: NotificationPriority;
+
+    @IsString()
+    @IsOptional()
+    @IsEnum(NotificationScheduler)
+    scheduledFor?: NotificationScheduler; ƒ
 }
