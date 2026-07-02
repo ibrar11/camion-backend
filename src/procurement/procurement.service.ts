@@ -1,9 +1,10 @@
 import {
-    Injectable,
-    Logger,
-    BadRequestException,
-    InternalServerErrorException,
-    Inject,
+	Injectable,
+	Logger,
+	BadRequestException,
+	InternalServerErrorException,
+	NotFoundException,
+	Inject,
 } from '@nestjs/common';
 import { Job } from 'bullmq';
 import * as crypto from 'node:crypto';
@@ -59,7 +60,6 @@ import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
 import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { QueueService } from 'src/queue/queue.service';
-import { ProductOptionValue } from 'src/inventory/entities/product-option-value.entity';
 import { QueueName } from 'src/queue/enums/QueueTypes.enum';
 import { InventoryResyncJobData, SkuMetaImportJobData } from 'src/queue/types';
 
@@ -80,9 +80,9 @@ export class ProcurementService {
         @Inject(ProductOptionValueService) private readonly optionValueService: ProductOptionValueService,
         @Inject(ProductVariantImageService) private readonly variantImageService: ProductVariantImageService,
         @Inject(QueueService) private readonly queueService: QueueService,
-        @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
-        @InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
-        @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+		@InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+		@InjectRepository(Warehouse) private readonly warehouseRepository: Repository<Warehouse>,
+		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
         @Inject(TranslationJobRegistryService) private readonly jobRegistry: TranslationJobRegistryService,
     ) { }
@@ -307,11 +307,201 @@ export class ProcurementService {
         }));
     }
 
+    private normalizeLookupText(value: unknown): string {
+        return String(value ?? "").trim().toLowerCase();
+    }
+
+    private getErrorReason(error: unknown): string {
+        if (!error) {
+            return "Unknown error";
+        }
+
+        const anyError = error as any;
+        const response = anyError?.response ?? anyError?.getResponse?.();
+        if (response) {
+            if (typeof response === "string") {
+                return response;
+            }
+
+            if (typeof response === "object") {
+                const reason =
+                    response.message ??
+                    response.error ??
+                    response.msg ??
+                    anyError?.message ??
+                    "Unknown error";
+
+                if (Array.isArray(reason)) {
+                    return reason.join(", ");
+                }
+
+                return (
+                    String(reason)
+                );
+            }
+        }
+
+        return anyError?.message ?? String(error);
+    }
+
+    private isProcurementNotFoundError(error: unknown): boolean {
+        const reason = this.getErrorReason(error).toLowerCase();
+        return (
+            reason.includes("product not found") ||
+            reason.includes("not found with that procurement id") ||
+            (reason.includes("not found") && reason.includes("gulltrans")) ||
+            (reason.includes("not found") && reason.includes("gultans"))
+        );
+    }
+
+    private async fetchProcurementProductDetailWithRetry(productId: string): Promise<
+        | { status: "success"; product: ProductDetail }
+        | { status: "not_found"; reason: string }
+        | { status: "failed"; reason: string }
+    > {
+        const maxAttempts = 3;
+        let lastReason = "Unknown error";
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                const product = await this.getProductDetail(productId);
+                return { status: "success", product };
+            } catch (error) {
+                const reason = this.getErrorReason(error);
+                lastReason = reason;
+
+                if (this.isProcurementNotFoundError(error)) {
+                    return { status: "not_found", reason };
+                }
+
+                if (attempt < maxAttempts) {
+                    this.logger.warn(
+                        `Retrying procurement lookup for ${productId} after attempt ${attempt} failed: ${reason}`,
+                    );
+                    continue;
+                }
+            }
+        }
+
+        return { status: "failed", reason: lastReason };
+    }
+
+    private async getActiveWarehouse(): Promise<Warehouse> {
+        const warehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
+        if (!warehouse) {
+            throw new BadRequestException({
+                message: "No active warehouse found for procurement resync",
+            });
+        }
+        return warehouse;
+    }
+
+    private getMatchingOptionValueUUIDs(product: Product, sourceVariant: ProcurementProductVariant): string[] {
+        const optionValueUUIDs: string[] = [];
+        const seen = new Set<string>();
+        const options = product.options ?? [];
+
+        for (const sourceAttribute of sourceVariant.attributes ?? []) {
+            const sourceName = this.normalizeLookupText(
+                sourceAttribute.name,
+            );
+            const sourceValue = this.normalizeLookupText(
+                sourceAttribute.value,
+            );
+
+            const matchedOption = options.find((option) => {
+                return (
+                    this.normalizeLookupText(option.nameEn) === sourceName ||
+                    this.normalizeLookupText(option.nameAr) === sourceName
+                );
+            });
+
+            if (!matchedOption) {
+                continue;
+            }
+
+            const matchedValue = matchedOption.values?.find((optionValue) => {
+                return (
+                    this.normalizeLookupText(optionValue.valueEn) === sourceValue ||
+                    this.normalizeLookupText(optionValue.valueAr) === sourceValue ||
+                    this.normalizeLookupText(optionValue.value) === sourceValue
+                );
+            });
+
+            if (!matchedValue || seen.has(matchedValue.uuid)) {
+                continue;
+            }
+
+            seen.add(matchedValue.uuid);
+            optionValueUUIDs.push(matchedValue.uuid);
+        }
+
+        return optionValueUUIDs;
+    }
+
+    private async createMissingVariantFromSource(
+        product: Product,
+        sourceProduct: ProductDetail,
+        sourceVariant: ProcurementProductVariant,
+    ): Promise<ProductVariant> {
+        const warehouse = await this.getActiveWarehouse();
+        const sku = String(sourceVariant.skuId);
+        const title = (sourceVariant.title || sku).trim().slice(0, 128);
+        const optionValues = this.getMatchingOptionValueUUIDs(product, sourceVariant);
+
+        const dto: CreateProductVariantDto = {
+            warehouse: warehouse.uuid,
+            title: {
+                en: title,
+                ar: title,
+            },
+            sku,
+            barcode: sku,
+            quantity: sourceVariant.stock || 0,
+            cost: {
+                amount: smartRoundInt(sourceVariant.price) || 0,
+                currencyCode: sourceProduct.currencyCode,
+            },
+            weight: {
+                amount: smartRoundInt(sourceVariant.shipping?.weight || 0) || 0,
+                unit: WeightUnit.Kilograms,
+            },
+            dimensions: {
+                width: smartRoundInt(sourceVariant.shipping?.width || 0) || 0,
+                height: smartRoundInt(sourceVariant.shipping?.height || 0) || 0,
+                length: smartRoundInt(sourceVariant.shipping?.length || 0) || 0,
+                unit: DimensionsUnit.Centimeter,
+            },
+            optionValues,
+            skuMeta: sourceVariant.skuMeta ?? undefined,
+        };
+
+        const createdVariant = await this.variantService.createProductVariantForProduct(
+            product.uuid,
+            dto,
+            false,
+        );
+
+        if (sourceVariant.image) {
+            try {
+                const imageFile = await fetchImageAsFile(sourceVariant.image);
+                await this.variantImageService.createProductVariantImage(createdVariant.uuid, imageFile);
+            } catch (error) {
+                this.logger.warn(
+                    `Failed to attach procurement image for new variant ${createdVariant.uuid} on product ${product.uuid}: ${(error as Error)?.message ?? error}`,
+                );
+            }
+        }
+
+        return createdVariant;
+    }
+
     async resyncInventoryVariantsByProducts(productUuids: string[]): Promise<{
         productsRequested: number;
         productsFound: number;
         productsWithProcurementId: number;
         productsFailed: number;
+        productsArchived: number;
         failedProducts: Array<{
             productUuid: string;
             procurementId: string | null;
@@ -319,6 +509,7 @@ export class ProcurementService {
         }>;
         variantsMatched: number;
         variantsUpdated: number;
+        variantsCreated: number;
         variantsMissingInSource: number;
         productsSkippedWithoutProcurementId: string[];
     }> {
@@ -330,8 +521,10 @@ export class ProcurementService {
         }> = [];
         let productsFound = 0;
         let productsFailed = 0;
+        let productsArchived = 0;
         let variantsMatched = 0;
         let variantsUpdated = 0;
+        let variantsCreated = 0;
         let variantsMissingInSource = 0;
         let productsWithProcurementId = 0;
 
@@ -341,6 +534,9 @@ export class ProcurementService {
                 where: { uuid: In(productUuidChunk) },
                 relations: {
                     variants: true,
+                    options: {
+                        values: true,
+                    },
                 },
             });
             productsFound += products.length;
@@ -353,7 +549,23 @@ export class ProcurementService {
 
                 try {
                     productsWithProcurementId += 1;
-                    const sourceProduct = await this.getProductDetail(product.procurementId);
+                    const procurementLookup = await this.fetchProcurementProductDetailWithRetry(product.procurementId);
+
+                    if (procurementLookup.status === "not_found") {
+                        product.status = ProductStatus.ARCHIVED;
+                        await this.productRepository.save(product);
+                        productsArchived += 1;
+                        this.logger.warn(
+                            `Archived product ${product.uuid} because procurement id ${product.procurementId} was not found: ${procurementLookup.reason}`,
+                        );
+                        continue;
+                    }
+
+                    if (procurementLookup.status === "failed") {
+                        throw new Error(procurementLookup.reason);
+                    }
+
+                    const sourceProduct = procurementLookup.product;
                     const sourceBySku = new Map<string, ProcurementProductVariant>();
 
                     for (const sourceVariant of sourceProduct.variants ?? []) {
@@ -428,6 +640,16 @@ export class ProcurementService {
                             variantsUpdated += 1;
                         }
                     }
+
+                    for (const sourceVariant of sourceProduct.variants ?? []) {
+                        const localVariant = (product.variants ?? []).find((variant) => variant.sku === String(sourceVariant.skuId));
+                        if (localVariant) {
+                            continue;
+                        }
+
+                        await this.createMissingVariantFromSource(product, sourceProduct, sourceVariant);
+                        variantsCreated += 1;
+                    }
                 } catch (error) {
                     productsFailed += 1;
                     failedProducts.push({
@@ -447,9 +669,11 @@ export class ProcurementService {
             productsFound,
             productsWithProcurementId,
             productsFailed,
+            productsArchived,
             failedProducts,
             variantsMatched,
             variantsUpdated,
+            variantsCreated,
             variantsMissingInSource,
             productsSkippedWithoutProcurementId,
         };
@@ -703,6 +927,12 @@ export class ProcurementService {
             const data = await response.json();
 
             if (data.ret !== 1) {
+                if (this.normalizeLookupText(data?.msg).includes("not found")) {
+                    throw new NotFoundException({
+                        error: data.msg || "Product not found with that procurement id in gulltrans",
+                    });
+                }
+
                 throw new BadRequestException({
                     error: data.msg,
                 });
@@ -710,9 +940,9 @@ export class ProcurementService {
 
             const product = data?.data?.result || {};
 
-            if (!product) {
-                throw new BadRequestException({
-                    error: "Product not found",
+            if (!product || Object.keys(product).length === 0) {
+                throw new NotFoundException({
+                    error: "Product not found with that procurement id in gulltrans",
                 });
             }
 
@@ -1009,6 +1239,9 @@ export class ProcurementService {
 
             return formattedProduct;
         } catch (error: any) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
             this.logger.error(`Error fetching product: ${error?.message}`, error);
             throw new InternalServerErrorException({
                 error: 'Failed to fetch product',
