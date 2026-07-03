@@ -1,7 +1,7 @@
 import { NotificationReceiver } from './enums/notification-receiver.enum';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Between, Repository } from 'typeorm';
+import { LessThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { PushNotification } from './entities/push-notification';
@@ -30,20 +30,19 @@ export class PushNotificationScheduler {
     async broadcastScheduledNotifications() {
         const now = new Date();
 
-        const start = new Date(now);
-        start.setMinutes(0, 0, 0);
-
-        const end = new Date(start);
-        end.setHours(end.getHours() + 1);
-
         const notifications = await this.pushNotificationRepository.find({
             where: {
-                scheduledFor: Between(start, end),
+                scheduledFor: LessThanOrEqual(now),
             },
             relations: {
                 images: true,
             },
         });
+
+        if (!notifications.length) {
+            this.logger.log("No scheduled notifications due.");
+            return;
+        }
 
         const notificationUUIDs = notifications.map(notification => notification.uuid);
         const payload = {

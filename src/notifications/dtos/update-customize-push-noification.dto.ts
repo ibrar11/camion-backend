@@ -27,5 +27,5 @@ export class UpdateCustomizePushNotificationDto {
     @IsString()
     @IsOptional()
     @IsEnum(NotificationScheduler)
-    scheduledFor?: NotificationScheduler; ƒ
+    scheduledFor?: NotificationScheduler;
 }
