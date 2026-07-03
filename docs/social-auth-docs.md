@@ -93,13 +93,13 @@ Use the returned `token` as a `Bearer` token on subsequent requests.
 
 ### Web — initiate redirect
 
-Redirect the browser to this URL to start the OAuth flow. Pass `guestUUID` as a query parameter to carry the guest cart through the redirect cycle.
+Redirect the browser to this URL to start the OAuth flow.
 
 ```http
-GET /auth/google?guestUUID=<guest-customer-uuid> HTTP/1.1
+GET /auth/google HTTP/1.1
 ```
 
-The `guestUUID` is encoded into the OAuth `state` parameter and echoed back by Google in the callback, so the cart is merged after authentication completes. Omit the parameter if there is no guest cart to merge.
+The browser is redirected to Google's consent screen. No request body or query params required here.
 
 ---
 
@@ -108,10 +108,12 @@ The `guestUUID` is encoded into the OAuth `state` parameter and echoed back by G
 Google redirects back to this endpoint after the user authenticates. The API sets a `token` cookie and redirects the browser to `FRONTEND_REDIRECT_URL`.
 
 ```http
-GET /auth/google/callback HTTP/1.1
+GET /auth/google/callback?code=...&state=...&guestUUID=<guest-customer-uuid> HTTP/1.1
 ```
 
-This endpoint is called by Google — do not call it directly.
+Pass `guestUUID` as an extra query parameter on the callback URL to merge the guest cart into the authenticated account. If omitted, no cart merge is performed.
+
+This endpoint is called by Google — do not call it directly from the app.
 
 ---
 
@@ -181,13 +183,13 @@ Use the returned `token` as a `Bearer` token on subsequent requests.
 
 ### Web — initiate redirect
 
-Redirect the browser to this URL to start the OAuth flow. Pass `guestUUID` as a query parameter to carry the guest cart through the redirect cycle.
+Redirect the browser to this URL to start the OAuth flow.
 
 ```http
-GET /auth/facebook?guestUUID=<guest-customer-uuid> HTTP/1.1
+GET /auth/facebook HTTP/1.1
 ```
 
-The `guestUUID` is encoded into the OAuth `state` parameter and echoed back by Facebook in the callback, so the cart is merged after authentication completes. Omit the parameter if there is no guest cart to merge.
+The browser is redirected to Facebook's login screen. No request body or query params required here.
 
 ---
 
@@ -196,10 +198,12 @@ The `guestUUID` is encoded into the OAuth `state` parameter and echoed back by F
 Facebook redirects back to this endpoint after the user authenticates. The API sets a `token` cookie and redirects the browser to `FRONTEND_REDIRECT_URL`.
 
 ```http
-GET /auth/facebook/callback HTTP/1.1
+GET /auth/facebook/callback?code=...&state=...&guestUUID=<guest-customer-uuid> HTTP/1.1
 ```
 
-This endpoint is called by Facebook — do not call it directly.
+Pass `guestUUID` as an extra query parameter on the callback URL to merge the guest cart into the authenticated account. If omitted, no cart merge is performed.
+
+This endpoint is called by Facebook — do not call it directly from the app.
 
 ---
 

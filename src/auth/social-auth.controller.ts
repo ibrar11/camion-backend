@@ -1,27 +1,9 @@
-import { Controller, ExecutionContext, Get, Inject, Injectable, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Req, Res, UseGuards } from '@nestjs/common';
 
 import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
 
 import { CustomerAuthService } from './customer-auth.service';
-
-@Injectable()
-class GoogleOAuthInitGuard extends PassportAuthGuard('google') {
-	getAuthenticateOptions(context: ExecutionContext) {
-		const req: Request = context.switchToHttp().getRequest();
-		const guestUUID = req.query?.guestUUID as string | undefined;
-		return guestUUID ? { state: guestUUID } : {};
-	}
-}
-
-@Injectable()
-class FacebookOAuthInitGuard extends PassportAuthGuard('facebook') {
-	getAuthenticateOptions(context: ExecutionContext) {
-		const req: Request = context.switchToHttp().getRequest();
-		const guestUUID = req.query?.guestUUID as string | undefined;
-		return guestUUID ? { state: guestUUID } : {};
-	}
-}
 
 @Controller('auth')
 export class SocialAuthController {
@@ -30,7 +12,7 @@ export class SocialAuthController {
 	) { }
 
 	@Get('google')
-	@UseGuards(GoogleOAuthInitGuard)
+	@UseGuards(PassportAuthGuard('google'))
 	actionGoogleWebAuth() {
 		return;
 	}
@@ -39,7 +21,7 @@ export class SocialAuthController {
 	@UseGuards(PassportAuthGuard('google'))
 	async actionGoogleWebCallback(
 		@Req() req: Request & { user: { email: string; fullName: string; googleId: string } },
-		@Query('state') guestUUID: string | undefined,
+		@Query('guestUUID') guestUUID: string | undefined,
 		@Res() res: Response,
 	) {
 		const result = await this.customerAuthService.loginWithGoogleWeb(req.user, guestUUID);
@@ -47,7 +29,7 @@ export class SocialAuthController {
 	}
 
 	@Get('facebook')
-	@UseGuards(FacebookOAuthInitGuard)
+	@UseGuards(PassportAuthGuard('facebook'))
 	actionFacebookWebAuth() {
 		return;
 	}
@@ -56,7 +38,7 @@ export class SocialAuthController {
 	@UseGuards(PassportAuthGuard('facebook'))
 	async actionFacebookWebCallback(
 		@Req() req: Request & { user: { email: string; fullName: string; facebookId: string } },
-		@Query('state') guestUUID: string | undefined,
+		@Query('guestUUID') guestUUID: string | undefined,
 		@Res() res: Response,
 	) {
 		const result = await this.customerAuthService.loginWithFacebookWeb(req.user, guestUUID);
