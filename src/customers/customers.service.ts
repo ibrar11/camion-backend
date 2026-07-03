@@ -457,7 +457,7 @@ export class CustomersService {
 		 */
 		async backfillCartCount(): Promise<{ updated: number }> {
 			this.logger.log(`Backfilling cartCount for all customers having zero count`);
-	
+
 			const result = await this.customerRepository
 				.createQueryBuilder()
 				.update(Customer)
@@ -485,7 +485,7 @@ export class CustomersService {
 					)
 				`)
 				.execute();
-	
+
 			return { updated: result.affected ?? 0 };
 		}
 }
