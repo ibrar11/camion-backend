@@ -3552,6 +3552,19 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                     }
                 }
             }
+            availableStock
+            subTotal {
+                amount
+                currencyCode
+            }
+            discountPrice {
+                amount
+                currencyCode
+            }
+            total {
+                amount
+                currencyCode
+            }
         }
         shippingAddress {
             uuid
@@ -3673,7 +3686,20 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
                                 }
                             }
                         ]
-                    }
+                    },
+                    "availableStock": 100,
+                    "subTotal": {
+                        "amount": 15000,
+                        "currencyCode": "qar"
+                    },
+                    "discountPrice": {
+                        "amount": 2000,
+                        "currencyCode": "qar"
+                    },
+                    "subTotal": {
+                        "amount": 13000,
+                        "currencyCode": "qar"
+                    },
                 }
             ],
             "shippingAddress": {
@@ -3966,15 +3992,15 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
         availableStock
         subTotal {
             amount
-            currency
+            currencyCode
         }
         discountPrice {
             amount
-            currency
+            currencyCode
         }
         total {
             amount
-            currency
+            currencyCode
         }
     }
 }
