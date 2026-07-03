@@ -90,9 +90,16 @@ POST /v1/auth/customer/verify/email-address HTTP/1.1
 ```json
 {
     "token": "<your-login-session-token>",
-    "secret": "123456"
+    "secret": "123456",
+    "guestUUID": "<optional-guest-customer-uuid>"
 }
 ```
+
+| Field | Required | Description |
+|---|---|---|
+| `token` | Yes | Session token returned from the login step |
+| `secret` | Yes | OTP received via email |
+| `guestUUID` | No | Guest customer UUID — if provided, guest cart is merged into the authenticated account |
 
 ### Response Body
 ```json
@@ -166,9 +173,16 @@ POST /v1/auth/customer/verify/phone-number HTTP/1.1
 ```json
 {
     "token": "<your-login-session-token>",
-    "secret": "123456"
+    "secret": "123456",
+    "guestUUID": "<optional-guest-customer-uuid>"
 }
 ```
+
+| Field | Required | Description |
+|---|---|---|
+| `token` | Yes | Session token returned from the login step |
+| `secret` | Yes | OTP received via SMS |
+| `guestUUID` | No | Guest customer UUID — if provided, guest cart is merged into the authenticated account |
 
 ### Response Body
 ```json

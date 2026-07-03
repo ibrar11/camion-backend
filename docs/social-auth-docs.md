@@ -63,9 +63,17 @@ Content-Type: application/json
 **Request body**
 ```json
 {
-    "idToken": "<google-id-token-from-native-sdk>"
+    "idToken": "<google-id-token-from-native-sdk>",
+    "guestUUID": "<optional-guest-customer-uuid>",
+    "firebaseDeviceToken": "<optional-firebase-token>"
 }
 ```
+
+| Field | Required | Description |
+|---|---|---|
+| `idToken` | Yes | ID token from the native Google SDK |
+| `guestUUID` | No | Guest customer UUID — if provided, guest cart is merged into the authenticated account |
+| `firebaseDeviceToken` | No | Device token for push notifications |
 
 **Response**
 ```json
@@ -85,13 +93,13 @@ Use the returned `token` as a `Bearer` token on subsequent requests.
 
 ### Web — initiate redirect
 
-Redirect the browser to this URL to start the OAuth flow.
+Redirect the browser to this URL to start the OAuth flow. Pass `guestUUID` as a query parameter to carry the guest cart through the redirect cycle.
 
 ```http
-GET /auth/google HTTP/1.1
+GET /auth/google?guestUUID=<guest-customer-uuid> HTTP/1.1
 ```
 
-The browser is redirected to Google's consent screen. No request body required.
+The `guestUUID` is encoded into the OAuth `state` parameter and echoed back by Google in the callback, so the cart is merged after authentication completes. Omit the parameter if there is no guest cart to merge.
 
 ---
 
@@ -138,13 +146,16 @@ Content-Type: application/json
 **Request body**
 ```json
 {
-    "accessToken": "<token-from-facebook-sdk>"
+    "accessToken": "<token-from-facebook-sdk>",
+    "guestUUID": "<optional-guest-customer-uuid>",
+    "firebaseDeviceToken": "<optional-firebase-token>"
 }
 ```
 
 | Field | Required | Description |
 |---|---|---|
 | `accessToken` | Yes | Standard access token **or** iOS Limited Login OIDC JWT — send whichever the SDK returns |
+| `guestUUID` | No | Guest customer UUID — if provided, guest cart is merged into the authenticated account |
 | `firebaseDeviceToken` | No | Device token for push notifications |
 
 **How the API distinguishes the two:**
@@ -170,13 +181,13 @@ Use the returned `token` as a `Bearer` token on subsequent requests.
 
 ### Web — initiate redirect
 
-Redirect the browser to this URL to start the OAuth flow.
+Redirect the browser to this URL to start the OAuth flow. Pass `guestUUID` as a query parameter to carry the guest cart through the redirect cycle.
 
 ```http
-GET /auth/facebook HTTP/1.1
+GET /auth/facebook?guestUUID=<guest-customer-uuid> HTTP/1.1
 ```
 
-The browser is redirected to Facebook's login screen. No request body required.
+The `guestUUID` is encoded into the OAuth `state` parameter and echoed back by Facebook in the callback, so the cart is merged after authentication completes. Omit the parameter if there is no guest cart to merge.
 
 ---
 
@@ -224,7 +235,8 @@ Content-Type: application/json
 {
     "identityToken": "<jwt-from-apple-sdk>",
     "authorizationCode": "<code-from-apple-sdk>",
-    "fullName": "John Doe"
+    "fullName": "John Doe",
+    "guestUUID": "<optional-guest-customer-uuid>"
 }
 ```
 
@@ -233,6 +245,7 @@ Content-Type: application/json
 | `identityToken` | One of these two | JWT from Apple SDK — verified directly |
 | `authorizationCode` | One of these two | Exchanged server-side for an identity token using Apple's token endpoint |
 | `fullName` | No | Only sent by Apple on first login; pass it along when available |
+| `guestUUID` | No | Guest customer UUID — if provided, guest cart is merged into the authenticated account |
 
 **Response**
 ```json
@@ -257,7 +270,7 @@ To add another social provider:
 1. **Install the Passport strategy** for the provider and its types.
 2. **Add a strategy file** at `src/auth/strategies/<provider>.strategy.ts` — implement `validate()` to return `{ email, fullName, <provider>Id }`.
 3. **Add a `<provider>Id` column** to the `Customer` entity (`nullable: true, unique: true`).
-4. **Add a service method** in `CustomerAuthService` for mobile verification, and a `findOrCreate<Provider>Customer` private method following the same pattern as `findOrCreateGoogleCustomer`.
+4. **Add a service method** in `CustomerAuthService` for mobile verification, and a `findOrCreate<Provider>Customer` private method following the same pattern as `findOrCreateGoogleCustomer`. Call `mergeGuestCart(result.customer, guestUUID)` after the `findOrCreate` call in both mobile and web entry points.
 5. **Add endpoints** to `SocialAuthController` for the web flow (`GET /auth/<provider>` + `GET /auth/<provider>/callback`) and to `CustomerAuthController` for the mobile flow (`POST /v1/auth/customer/oauth/<provider>`).
 6. **Register the strategy** in `AuthModule` providers.
 7. **Add env vars** to `.env` and `.env.example`.
