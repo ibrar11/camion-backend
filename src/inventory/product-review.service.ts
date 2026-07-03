@@ -23,6 +23,7 @@ import { Order } from "../order/entities/order.entity";
 import { OrderStatus } from "../order/enums/OrderStatus";
 import { OrderTrackingEvent } from "../order/entities/order-tracking-event.entity";
 import { OrderTrackingStage } from "../order/enums/OrderTrackingStage";
+import { CreateGenuineReviewDto } from "./dtos/CreateGenuineReviewDto";
 
 @Injectable()
 export class ProductReviewService {
@@ -33,6 +34,7 @@ export class ProductReviewService {
 		@InjectRepository(ProductReview) private readonly reviewRepository: Repository<ProductReview>,
 		@InjectRepository(Order) private readonly orderRepository: Repository<Order>,
 		@InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
+		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>
 	) { }
 
 	/**
@@ -143,6 +145,88 @@ export class ProductReviewService {
 		}
 
 		return saved;
+	}
+
+	/**
+	 * Creates a genuine review on a product
+	 *
+	 * @param productUUID
+	 * @param body
+	 * @returns
+	 */
+	async createGenuineProductReview(productUUID: string, body: CreateGenuineReviewDto): Promise<ProductReview> {
+		this.logger.log(`Attempting to create genuine product review for product: ${productUUID}`);
+
+		// Find the customer
+		const customer = await this.customerRepository.findOneBy({ emailAddress: body.emailAddress.trim().toLowerCase(), });
+		if (customer === null) {
+			throw new NotFoundException({
+				emailAddress: "Failed to find the customer. Please check and try again.",
+			});
+		}
+
+		// Find the product
+		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
+		if (product === null) {
+			throw new NotFoundException({
+				slug: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Clamp the rating between 0 and 5
+		const rating = Math.floor(Math.min(Math.max(0, body.rating), 5));
+		switch (rating) {
+			case 1:
+				product.ratingOneStarCount += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 1;
+				product.ratingCount += 1;
+				break;
+			case 2:
+				product.ratingTwoStarCount += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 2;
+				product.ratingCount += 1;
+				break;
+			case 3:
+				product.ratingThreeStarCount += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 3;
+				product.ratingCount += 1;
+				break;
+			case 4:
+				product.ratingFourStarCount += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 4;
+				product.ratingCount += 1;
+				break;
+			case 5:
+				product.ratingFiveStarCount += 1;
+				product.reviewsCount += 1;
+				product.ratingSum += 5;
+				product.ratingCount += 1;
+				break;
+			default: // do nothing
+				break;
+		}
+
+		// Calculate the new rating
+		if (product.ratingSum !== 0 && product.ratingCount !== 0) {
+			product.ratingAvg = product.ratingSum / product.ratingCount;
+		}
+
+		// Save the product after updating the rating.
+		await this.productRepository.save(product);
+
+		// Create the product review
+		const productReview = new ProductReview();
+		productReview.uuid = crypto.randomUUID();
+		productReview.customer = customer;
+		productReview.product = product;
+		productReview.rating = rating;
+		productReview.comment = body.comment.trim();
+		productReview.orderUuid = "c2eb7cc0-653d-42bf-98dd-f80aa289e1d4";
+		return this.reviewRepository.save(productReview);
 	}
 
 	/**

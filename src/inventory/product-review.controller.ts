@@ -22,6 +22,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 
 import { CreateReviewDto } from "./dtos/CreateReviewDto";
 import { UpdateReviewDto } from "./dtos/UpdateReviewDto";
+import { CreateGenuineReviewDto } from "./dtos/CreateGenuineReviewDto";
 
 import { ProductReview } from "./entities/product-review.entity";
 import { ProductReviewService } from "./product-review.service";
@@ -59,6 +60,16 @@ export class ProductReviewController {
 		@Body() body: CreateReviewDto,
 	): Promise<ProductReview> {
 		return this.reviewService.createProductReview(req.customer, productUUID, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Post('/genuine')
+	@HttpCode(HttpStatus.CREATED)
+	actionCreateGenuineProductReview(
+		@Param('productUUID') productUUID: string,
+		@Body() body: CreateGenuineReviewDto,
+	): Promise<ProductReview> {
+		return this.reviewService.createGenuineProductReview(productUUID, body);
 	}
 
 	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
