@@ -521,7 +521,7 @@ export class CustomerAuthService {
 	async loginWithGoogleMobile(dto: GoogleMobileAuthDto): Promise<CustomerAuthResponse> {
 		this.logger.log(`Attempting to login customer by google mobile: ${JSON.stringify(dto)}`);
 
-		const { idToken, firebaseDeviceToken } = dto;
+		const { idToken, firebaseDeviceToken, guestUUID } = dto;
 
 		const allowedAudiences: string[] = [];
 		const iosClientId = this.configService.get<string>('GOOGLE_IOS_CLIENT_ID');
@@ -555,12 +555,14 @@ export class CustomerAuthService {
 		}
 
 		const result = await this.findOrCreateGoogleCustomer({ email, fullName, googleId, firebaseDeviceToken });
-		await this.mergeGuestCart(result.customer, dto.guestUUID);
+		await this.mergeGuestCart(result.customer, guestUUID);
 		return result;
 	}
 
-	async loginWithGoogleWeb(profile: { email: string; fullName: string; googleId: string }): Promise<CustomerAuthResponse> {
-		return this.findOrCreateGoogleCustomer(profile);
+	async loginWithGoogleWeb(profile: { email: string; fullName: string; googleId: string }, guestUUID?: string): Promise<CustomerAuthResponse> {
+		const result = await this.findOrCreateGoogleCustomer(profile);
+		await this.mergeGuestCart(result.customer, guestUUID);
+		return result;
 	}
 
 	async loginWithFacebookMobile(dto: FacebookMobileAuthDto): Promise<CustomerAuthResponse> {
@@ -648,8 +650,10 @@ export class CustomerAuthService {
 		});
 	}
 
-	async loginWithFacebookWeb(profile: { email: string; fullName: string; facebookId: string }): Promise<CustomerAuthResponse> {
-		return this.findOrCreateFacebookCustomer(profile);
+	async loginWithFacebookWeb(profile: { email: string; fullName: string; facebookId: string }, guestUUID?: string): Promise<CustomerAuthResponse> {
+		const result = await this.findOrCreateFacebookCustomer(profile);
+		await this.mergeGuestCart(result.customer, guestUUID);
+		return result;
 	}
 
 	private async findOrCreateFacebookCustomer(profile: { email: string; fullName: string; facebookId: string, firebaseDeviceToken?: string }): Promise<CustomerAuthResponse> {

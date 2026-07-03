@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Req, Res, UseGuards } from '@nestjs/common';
 
 import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
@@ -21,9 +21,10 @@ export class SocialAuthController {
 	@UseGuards(PassportAuthGuard('google'))
 	async actionGoogleWebCallback(
 		@Req() req: Request & { user: { email: string; fullName: string; googleId: string } },
+		@Query('guestUUID') guestUUID: string | undefined,
 		@Res() res: Response,
 	) {
-		const result = await this.customerAuthService.loginWithGoogleWeb(req.user);
+		const result = await this.customerAuthService.loginWithGoogleWeb(req.user, guestUUID);
 		return this.redirectWithToken(res, result.token);
 	}
 
@@ -37,9 +38,10 @@ export class SocialAuthController {
 	@UseGuards(PassportAuthGuard('facebook'))
 	async actionFacebookWebCallback(
 		@Req() req: Request & { user: { email: string; fullName: string; facebookId: string } },
+		@Query('guestUUID') guestUUID: string | undefined,
 		@Res() res: Response,
 	) {
-		const result = await this.customerAuthService.loginWithFacebookWeb(req.user);
+		const result = await this.customerAuthService.loginWithFacebookWeb(req.user, guestUUID);
 		return this.redirectWithToken(res, result.token);
 	}
 
