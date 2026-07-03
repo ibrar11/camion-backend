@@ -521,7 +521,7 @@ export class CustomerAuthService {
 	async loginWithGoogleMobile(dto: GoogleMobileAuthDto): Promise<CustomerAuthResponse> {
 		this.logger.log(`Attempting to login customer by google mobile: ${JSON.stringify(dto)}`);
 
-		const { idToken, firebaseDeviceToken } = dto;
+		const { idToken, firebaseDeviceToken, guestUUID } = dto;
 
 		const allowedAudiences: string[] = [];
 		const iosClientId = this.configService.get<string>('GOOGLE_IOS_CLIENT_ID');
@@ -555,7 +555,7 @@ export class CustomerAuthService {
 		}
 
 		const result = await this.findOrCreateGoogleCustomer({ email, fullName, googleId, firebaseDeviceToken });
-		await this.mergeGuestCart(result.customer, dto.guestUUID);
+		await this.mergeGuestCart(result.customer, guestUUID);
 		return result;
 	}
 
