@@ -211,7 +211,6 @@ export class BannersService {
 		// Find the category, return empty array if there is no category against the slug
 		const category = await this.categoryRepository.findOne({
 			cache: true,
-			relationLoadStrategy: "query",
 			where: {
 				slug: categorySlug,
 			},
