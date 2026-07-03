@@ -1806,6 +1806,81 @@ POST /v1/products/<product-uuid>/reviews HTTP/1.1
 }
 ```
 
+Create Product Review (Genuine)
+-------------------------------
+
+```http
+POST /v1/products/<product-uuid>/reviews/genuine HTTP/1.1
+```
+
+### Request Body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `emailAddress` | `string` | Yes | The email of the customer on whose behalf the genuine review is being created.
+| `rating` | `number` (1–5) | Yes | Star rating |
+| `comment` | `string` (1–512 chars) | Yes | Review text |
+
+```json
+{
+    "emailAddress": "your-name@your-domain.com",
+    "rating": 1,
+    "comment": "This was very bad"
+}
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "23af61b1-1d3f-464d-b69e-61a29c2300f8",
+    "customer": {
+        "uuid": "71b7f3cd-50a4-4a0a-8ccb-cd9c8587b565",
+        "fullName": "Your Name",
+        "emailAddress": "your-name@your-domain.com",
+        "phoneNumber": null,
+        "role": "customer",
+        "unreadNotificationCount": 4,
+        "ordersCount": 0,
+        "cartItemsCount": 10
+    },
+    "product": {
+        "uuid": "2048895e-3579-41d6-b956-0840588c54b6",
+        "slug": "2026-new-oval-fashion-sunglasses-new-style-small-1045502562250",
+        "titleEn": "2026 New Oval Fashion Sunglasses New Style Small Frame Sunglasses For Women's",
+        "titleAr": "نظارات شمسية نسائية موديل 2026 بإطار بيضاوي صغير وأسلوب عصري",
+        "briefEn": "2026 New Oval Fashion Sunglasses New Style Small Frame Sunglasses For Women's",
+        "briefAr": "نظارات شمسية نسائية موديل 2026 بإطار بيضاوي صغير وأسلوب عصري",
+        "descriptionEn": "2026 New Oval Fashion Sunglasses New Style Small Frame Sunglasses For Women's",
+        "descriptionAr": "نظارات شمسية نسائية موديل 2026 بإطار بيضاوي صغير وأسلوب عصري",
+        "descriptionHtmlEn": "2026 New Oval Fashion Sunglasses New Style Small Frame Sunglasses For Women's",
+        "descriptionHtmlAr": "2026 New Oval Fashion Sunglasses New Style Small Frame Sunglasses For Women's",
+        "featuredImageUrl": "s3://product-images/a1eac554-0e68-47d7-b071-a01b34162b7c.webp",
+        "featuredThumbnailUrl": "s3://product-images/6db6b3dd-18d6-4c42-a86b-c0dbdb5aa713.webp",
+        "status": "active",
+        "shopId": "BBB9yoiIngOTqVwzYePJTHj8Q",
+        "shopName": "台州市新西音眼镜有限公司",
+        "procurementId": "1045502562250",
+        "salesCount": 0,
+        "likesCount": 0,
+        "reviewsCount": 1,
+        "viewsCount": 0,
+        "ratingSum": 1,
+        "ratingCount": 1,
+        "ratingAvg": 1,
+        "ratingOneStarCount": 1,
+        "ratingTwoStarCount": 0,
+        "ratingThreeStarCount": 0,
+        "ratingFourStarCount": 0,
+        "ratingFiveStarCount": 0
+    },
+    "rating": 1,
+    "comment": "This was very bad",
+    "orderUuid": "c2eb7cc0-653d-42bf-98dd-f80aa289e1d4",
+    "isEdited": false
+}
+```
+
 Create Product Review Image
 ---------------------------
 
