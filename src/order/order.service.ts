@@ -1411,9 +1411,23 @@ export class OrderService {
                 const itemTotal = priceDiscount.amount * item.quantity;
                 subTotal += itemTotal;
 
-                validatedItems.push({
-                    ...item
-                });
+                item.availableStock = stock;
+                item.isAvailable = stock > 0;
+
+                item.subTotal = {
+                    amount: priceDiscount.amount * item.quantity,
+                    currencyCode: priceDiscount.currencyCode,
+                };
+                item.discountPrice = {
+                    amount: 0,
+                    currencyCode: priceDiscount.currencyCode,
+                };
+                item.total = {
+                    amount: priceDiscount.amount * item.quantity,
+                    currencyCode: priceDiscount.currencyCode,
+                };
+                
+                validatedItems.push(item);
             }
 
             const [exchangeRates] = await Promise.all([

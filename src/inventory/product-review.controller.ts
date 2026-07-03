@@ -83,7 +83,7 @@ export class ProductReviewController {
 		return this.productReviewImageService.createProductReviewImage(reviewUUID, file);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductReviews(
@@ -96,7 +96,7 @@ export class ProductReviewController {
 		return this.reviewService.findAll(productUUID, filters, sort, pageNumber, itemsPerPage);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProductReview(@Param('uuid') reviewUUID: string): Promise<ProductReview> {
