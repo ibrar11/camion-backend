@@ -50,6 +50,7 @@ import { ProductVariantImageController } from './product-variant-image.controlle
 import { ProductReview } from './entities/product-review.entity';
 import { ProductReviewService } from './product-review.service';
 import { ProductReviewController } from './product-review.controller';
+import { ProductReviewControllerV2 } from './product-review.controller-v2';
 
 import { ProductReviewImage } from './entities/product-review-image.entity';
 import { ProductReviewImageService } from './product-review-image.service';
@@ -151,6 +152,7 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 		ProductOptionController,
 		ProductOptionValueController,
 		ProductReviewController,
+		ProductReviewControllerV2,
 		ProductsController,
 		ProductVariantController,
 		ProductVariantImageController,

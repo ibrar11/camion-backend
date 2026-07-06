@@ -1,5 +1,6 @@
+import { Type } from "class-transformer";
 import {
-	IsNumber,
+	IsInt,
 	IsOptional,
 	IsString,
 	IsUUID,
@@ -14,11 +15,13 @@ export class CreateReviewDto {
 	@IsUUID('4')
 	orderUuid?: string;
 
-	@IsNumber()
+	@Type(() => Number)
+	@IsInt()
 	@Min(1)
 	@Max(5)
 	rating: number;
 
+	@Type(() => String)
 	@IsString()
 	@MinLength(1)
 	@MaxLength(512)
