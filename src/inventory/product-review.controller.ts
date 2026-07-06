@@ -73,7 +73,7 @@ export class ProductReviewController {
 		return this.reviewService.createGenuineProductReview(productUUID, body);
 	}
 
-	@Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Post(':uuid/images')
 	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.CREATED)
