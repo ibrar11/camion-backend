@@ -332,6 +332,48 @@ export class ProductReviewService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.reviewRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
+			where: {
+				product: {
+					id: product.id,
+				},
+			},
+			relations: {
+				customer: true,
+				images: true,
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Finds the uncached reviews of a product
+	 *
+	 * @param productUUID
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAllUncached(productUUID: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ProductReview>> {
+		this.logger.log(`Retrieving uncached reviews of product: ${productUUID}`);
+
+		// Find the product
+		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.reviewRepository.find({
+			relationLoadStrategy: "query",
 			where: {
 				product: {
 					id: product.id,

@@ -39,6 +39,7 @@ import { AuthGuard } from "../auth/auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 
 import { Roles } from "../auth/roles.decorator";
+import { User } from "src/users/entities/user.entity";
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products/:productUUID/reviews')
@@ -87,12 +88,19 @@ export class ProductReviewController {
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductReviews(
+		@Req()
+		req: Request & {
+			user: User,
+		},
 		@Param('productUUID') productUUID: string,
 		@Query("filters") filters: string,
 		@Query("sort") sort: string,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
 	): Promise<Array<ProductReview>> {
+		if (req.user) {
+			return this.reviewService.findAllUncached(productUUID, filters, sort, pageNumber, itemsPerPage);
+		}
 		return this.reviewService.findAll(productUUID, filters, sort, pageNumber, itemsPerPage);
 	}
 
