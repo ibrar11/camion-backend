@@ -1806,6 +1806,84 @@ POST /v1/products/<product-uuid>/reviews HTTP/1.1
 }
 ```
 
+Create Product Review (v2)
+--------------------------
+
+```http
+GET /v2/products/<product-uuid>/reviews HTTP/1.1
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `rating` | `number` (1–5) | Yes | Star rating |
+| `comment` | `string` (1–512 chars) | Yes | Review text |
+| `orderUuid` | `string (UUID v4)` | No | When provided, automatically stamps the `ORDER_REVIEW` tracking stage on the linked order |
+| `images` | Image[] | No | A list of images in the review. The max number of images per review is 5. |
+
+### Request Body
+
+```bash
+curl --location --request POST 'http://localhost:8000/v2/products/b2389dfe-16c6-441d-8c62-0af01be49ee1/reviews' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+--form 'images=@"/C:/m_Direct_Media____YWCMXRBDU8.jpg"' \
+--form 'images=@"/C:/m_Freerangestock-Skintone_Studios-12.jpg"' \
+--form 'rating="5"' \
+--form 'comment="This is a little bad."' \
+--form 'orderUuid="8298ad98-12c0-4901-820e-29c16df3301f"'
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "c218c439-43fb-4fb6-9c85-92115ba65e0b",
+    "customer": {
+        "uuid": "de4b1f29-d5c7-4f7b-98a4-9a9cd62a9287",
+        "fullName": "Your Name",
+        "emailAddress": "your-name@your-domain.com",
+        "phoneNumber": "+92 304 1234567",
+        "role": "influencer",
+        "unreadNotificationCount": 0,
+        "ordersCount": 0,
+        "cartItemsCount": 0
+    },
+    "product": {
+        "uuid": "b2389dfe-16c6-441d-8c62-0af01be49ee1",
+        "slug": "2026-new-style-metal-buckle-flat-sandals-for-wome-803773003590",
+        "titleEn": "2026 New Style Metal Buckle Flat Sandals for Women, Summer Outdoor Wear, Fashionable Square-Toed Soft-Soled Women's Flat",
+        "titleAr": "صنادل نسائية مسطحة بمشبك معدني موديل 2026 جديد، مناسبة للارتداء الصيفي الخارجي، تصميم عصري بأصابع مربعة ونعل ناعم",
+        "briefEn": "2026 New Style Metal Buckle Flat Sandals for Women, Summer Outdoor Wear, Fashionable Square-Toed Soft-Soled Women's Flat",
+        "briefAr": "صنادل نسائية مسطحة بمشبك معدني موديل 2026 جديد، مناسبة للارتداء الصيفي الخارجي، تصميم عصري بأصابع مربعة ونعل ناعم",
+        "descriptionEn": "2026 New Style Metal Buckle Flat Sandals for Women, Summer Outdoor Wear, Fashionable Square-Toed Soft-Soled Women's Flat",
+        "descriptionAr": "null\nnull",
+        "descriptionHtmlEn": "null\nnull",
+        "descriptionHtmlAr": "null\nnull",
+        "featuredImageUrl": "s3://product-images/7c828d72-414c-476f-b0e3-4d4462760bda.webp",
+        "featuredThumbnailUrl": "s3://product-images/4654ef37-07c2-4658-b164-b94475d2c28f.webp",
+        "status": "active",
+        "shopId": "BBBTXVhUs23KBMjQuVftwvEhw",
+        "shopName": "台州伞灯鞋业有限公司",
+        "procurementId": "803773003590",
+        "salesCount": 0,
+        "likesCount": 0,
+        "reviewsCount": 8,
+        "viewsCount": 2,
+        "ratingSum": 36,
+        "ratingCount": 8,
+        "ratingAvg": 4.5,
+        "ratingOneStarCount": 1,
+        "ratingTwoStarCount": 0,
+        "ratingThreeStarCount": 0,
+        "ratingFourStarCount": 0,
+        "ratingFiveStarCount": 7
+    },
+    "rating": 5,
+    "comment": "This is a little bad.",
+    "orderUuid": "8298ad98-12c0-4901-820e-29c16df3301f",
+    "isEdited": false
+}
+```
+
 Create Product Review (Genuine)
 -------------------------------
 

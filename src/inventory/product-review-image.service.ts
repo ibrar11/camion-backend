@@ -16,6 +16,7 @@ import { FileService } from "../common/file.service";
 
 import { ProductReview } from "./entities/product-review.entity";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
+import { ImageThumbnailService } from "src/common/image-thumbnail.service";
 
 @Injectable()
 export class ProductReviewImageService {
@@ -24,6 +25,8 @@ export class ProductReviewImageService {
 	constructor(
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@Inject(FileService) private readonly fileService: FileService,
+		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
+
 		@InjectRepository(ProductReview) private readonly productReview: Repository<ProductReview>,
 		@InjectRepository(ProductReviewImage) private readonly productReviewImageRepository: Repository<ProductReviewImage>,
 	) { }
@@ -45,10 +48,16 @@ export class ProductReviewImageService {
 			});
 		}
 
-		// Upload the file to s3
-		let params: { key: string; url: string; } | null = null;
+		// Generate a small image for the image
+		const imagePath = await this.imageThumbnailService.generateImage(file.path);
+
+		// Generate a thumbnail for the image
+		const thumbnailPath = await this.imageThumbnailService.generateThumbnail(file.path);
+
+		// Upload the image to s3
+		let imageParams: { key: string, url: string, } | null = null;
 		try {
-			params = await this.s3Service.uploadFile("reviews", file);
+			imageParams = await this.s3Service.uploadPath("reviews", imagePath, "image/webp");
 		} catch (err) {
 			this.logger.error(err);
 			throw new InternalServerErrorException({
@@ -56,15 +65,28 @@ export class ProductReviewImageService {
 			});
 		}
 
-		// Delete the temporary files
+		// Upload the thumbnail to s3
+		let thumbnailParams: { key: string, url: string, } | null = null;
+		try {
+			thumbnailParams = await this.s3Service.uploadPath("reviews", thumbnailPath, "image/webp");
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the product review thumbnail. Please try again.",
+			});
+		}
+
+		// Delete the temporary files from the disk
+		await this.fileService.deletePath(imagePath);
+		await this.fileService.deletePath(thumbnailPath);
 		await this.fileService.deleteFile(file);
 
 		// Create a review image
 		const image = new ProductReviewImage();
 		image.uuid = crypto.randomUUID();
 		image.review = review;
-		image.imageUrl = params.url;
-		image.thumbnailUrl = params.url;
+		image.imageUrl = imageParams.url;
+		image.thumbnailUrl = thumbnailParams.url;
 		return this.productReviewImageRepository.save(image);
 	}
 }
