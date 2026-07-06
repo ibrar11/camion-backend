@@ -67,26 +67,62 @@ export class ProductVariantService {
 			});
 		}
 
+		return this.saveProductVariant(product, warehouse, body, skipTranslation, false);
+	}
+
+	/**
+	 * Creates or updates a variant for a specific product only.
+	 * This is safer for procurement resync because SKU matches are scoped to the product.
+	 */
+	async createProductVariantForProduct(productUUID: string, body: CreateProductVariantDto, skipTranslation: boolean = false): Promise<ProductVariant> {
+		this.logger.log(`Attempting to create product-scoped variant for product: ${productUUID}`);
+
+		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		const warehouse = await this.warehouseRepository.findOneBy({ uuid: body.warehouse, });
+		if (warehouse === null) {
+			throw new NotFoundException({
+				error: "Failed to find the warehouse. Please check and try again.",
+			});
+		}
+
+		return this.saveProductVariant(product, warehouse, body, skipTranslation, true);
+	}
+
+	private async saveProductVariant(
+		product: Product,
+		warehouse: Warehouse,
+		body: CreateProductVariantDto,
+		skipTranslation: boolean,
+		restrictToProduct: boolean,
+	): Promise<ProductVariant> {
+		const sku = body.sku.trim();
+		const variantWhere = restrictToProduct
+			? { sku: sku, product: { uuid: product.uuid } }
+			: { sku: sku };
+
 		let variant = await this.variantRepository.findOne({
-			where: { sku: body.sku.trim() },
+			where: variantWhere,
 			relations: ["inventoryItem"],
 		});
 
-		// UPDATE
 		if (variant) {
-			this.logger.log(`Updating variant with SKU: ${body.sku}`);
+			this.logger.log(`Updating variant with SKU: ${sku}`);
 		} else {
-			// CREATE
-			this.logger.log(`Creating new variant with SKU: ${body.sku}`);
+			this.logger.log(`Creating new variant with SKU: ${sku}`);
 			variant = new ProductVariant();
 			variant.uuid = crypto.randomUUID();
 			variant.product = product;
 		}
 
-		// common fields (create + update)
 		variant.titleEn = body.title.en.trim();
 		variant.titleAr = body.title.ar.trim();
-		variant.sku = body.sku.trim();
+		variant.sku = sku;
 		variant.barcode = body.barcode.trim();
 		variant.cost = body.cost;
 		variant.weight = body.weight;
@@ -95,7 +131,6 @@ export class ProductVariantService {
 
 		await this.variantRepository.save(variant);
 
-		// INVENTORY ITEM (update or create)
 		let inventoryItem = await this.inventoryItemRepository.findOne({
 			where: { variant: { uuid: variant.uuid } },
 		});
@@ -106,10 +141,9 @@ export class ProductVariantService {
 			inventoryItem.variant = variant;
 		}
 
-		inventoryItem.sku = body.sku.trim();
+		inventoryItem.sku = sku;
 		await this.inventoryItemRepository.save(inventoryItem);
 
-		// INVENTORY LEVEL (update or create)
 		let inventoryLevel = await this.inventoryLevelRepository.findOne({
 			where: {
 				inventoryItem: { uuid: inventoryItem.uuid },
@@ -128,7 +162,6 @@ export class ProductVariantService {
 		inventoryLevel.quantity = body.quantity;
 		await this.inventoryLevelRepository.save(inventoryLevel);
 
-		// OPTION VALUES (reset + reassign)
 		if (body.optionValues && Array.isArray(body.optionValues)) {
 			const rows = await this.productVariantOptionValueRepository.find({
 				where: { variant: { uuid: variant.uuid } },
@@ -155,8 +188,7 @@ export class ProductVariantService {
 		}
 
 		if (!skipTranslation) {
-			// Only trigger translation for manual saves (not bulk import)
-			await this.translationService.queueProductTranslation(productUUID, 5000);
+			await this.translationService.queueProductTranslation(product.uuid, 5000);
 		}
 
 		return variant;
