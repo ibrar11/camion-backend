@@ -39,13 +39,15 @@ import { GetLogisticsDto } from './dtos/GetLogisticsDto';
 import { CreateReturnOrderDto } from './dtos/CreateReturnOrderDto';
 import { QueryReturnOrderDto } from './dtos/QueryReturnOrderDto';
 import { DispatchOrdersDto } from './dtos/DispatchOrdersDto';
+
+import { HIOBUY_DISPATCH_ENABLED } from './hiobuy-dispatch.config';
 import { RecoverInboundDto } from './dtos/RecoverInboundDto';
 
 import { ProcurementService } from '../procurement/procurement.service';
 import { OrderAddressDto } from '../procurement/dtos/CreateProcurementOrderDto';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
-import { DispatchShopJobData } from '../queue/types';
+import { DispatchShopJobData, DispatchOrderJobData } from '../queue/types';
 import { WmsOutboundStatus } from './enums/WmsOutboundStatus';
 
 @Injectable()
@@ -69,6 +71,8 @@ export class JopWmsService {
         private readonly procurementService: ProcurementService,
         @InjectQueue(QueueName.WMS_DISPATCH)
         private readonly dispatchQueue: Queue,
+        @InjectQueue(QueueName.WMS_DISPATCH_HIOBUY)
+        private readonly hiobuyDispatchQueue: Queue,
     ) { }
 
     private static readonly OUTBOUND_STATUS_LABELS: Record<WmsOutboundStatus, string> = {
@@ -321,47 +325,58 @@ export class JopWmsService {
 
     // ─── Dispatch ─────────────────────────────────────────────────────────────
 
-    async dispatchApprovedOrders(dto: DispatchOrdersDto): Promise<{ jobId: string }> {
-        if (dto.orderUuids?.length) {
-            const linkedOrders = await this.orderRepository.find({
-                where: { uuid: In(dto.orderUuids) },
-                select: ['id', 'uuid'],
+    private async assertOrdersNotAlreadyDispatched(orderUuids?: string[]): Promise<void> {
+        if (!orderUuids?.length) return;
+
+        const linkedOrders = await this.orderRepository.find({
+            where: { uuid: In(orderUuids) },
+            select: ['id', 'uuid'],
+        });
+        const linkedOrderIds = linkedOrders.map(o => o.id);
+
+        const existingLinks = linkedOrderIds.length
+            ? await this.wmsOrderLinkRepository
+                .createQueryBuilder('link')
+                .innerJoin('link.wmsOrder', 'wmsOrder', 'wmsOrder.type = :type', { type: JopWmsOrderType.INBOUND })
+                .where('link.orderId IN (:...orderIds)', { orderIds: linkedOrderIds })
+                .select(['link.orderId'])
+                .getMany()
+            : [];
+
+        if (existingLinks.length) {
+            const dispatchedIds = new Set(existingLinks.map(l => l.orderId));
+            const alreadyDispatched = linkedOrders
+                .filter(o => dispatchedIds.has(o.id))
+                .map(o => o.uuid);
+            throw new BadRequestException({
+                message: 'Some orders have already been dispatched to WMS',
+                alreadyDispatched,
             });
-            const linkedOrderIds = linkedOrders.map(o => o.id);
-
-            const existingLinks = linkedOrderIds.length
-                ? await this.wmsOrderLinkRepository
-                    .createQueryBuilder('link')
-                    .innerJoin('link.wmsOrder', 'wmsOrder', 'wmsOrder.type = :type', { type: JopWmsOrderType.INBOUND })
-                    .where('link.orderId IN (:...orderIds)', { orderIds: linkedOrderIds })
-                    .select(['link.orderId'])
-                    .getMany()
-                : [];
-
-            if (existingLinks.length) {
-                const dispatchedIds = new Set(existingLinks.map(l => l.orderId));
-                const alreadyDispatched = linkedOrders
-                    .filter(o => dispatchedIds.has(o.id))
-                    .map(o => o.uuid);
-                throw new BadRequestException({
-                    message: 'Some orders have already been dispatched to WMS',
-                    alreadyDispatched,
-                });
-            }
         }
+    }
 
-        // ── Load eligible orders ───────────────────────────────────────────────
+    private async loadEligibleOrdersForDispatch(orderUuids?: string[]): Promise<Order[]> {
         const where: any = { status: OrderStatus.CONFIRMED, gulltransOrderSns: IsNull() };
-        if (dto.orderUuids?.length) where.uuid = In(dto.orderUuids);
+        if (orderUuids?.length) where.uuid = In(orderUuids);
 
-        const orders = await this.orderRepository.find({
+        return this.orderRepository.find({
             where,
             relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
         });
+    }
+
+    async dispatchApprovedOrders(dto: DispatchOrdersDto): Promise<{ jobId: string }> {
+        await this.assertOrdersNotAlreadyDispatched(dto.orderUuids);
+
+        const orders = await this.loadEligibleOrdersForDispatch(dto.orderUuids);
 
         if (!orders.length) {
             this.logger.log('dispatchApprovedOrders: no eligible orders found');
             return { jobId: '' };
+        }
+
+        if (HIOBUY_DISPATCH_ENABLED) {
+            return this.dispatchApprovedOrdersViaHiobuy(orders, dto);
         }
 
         // ── Group items by shop ────────────────────────────────────────────────
@@ -532,6 +547,127 @@ export class JopWmsService {
         }
 
         this.logger.log(`Dispatch ${dispatchJobId}: ${shopGroups.size} shop job(s) queued`);
+        return { jobId: dispatchJobId };
+    }
+
+    // ─── Dispatch (Hiobuy, per-order, flag-gated) ──────────────────────────────
+
+    private async dispatchApprovedOrdersViaHiobuy(orders: Order[], dto: DispatchOrdersDto): Promise<{ jobId: string }> {
+        // ── Guard: reject if any variant is missing skuMeta ───────────────────
+        const missingSkuMeta: Array<{ productId: string; sku: string; orderUuid: string }> = [];
+        for (const order of orders) {
+            for (const item of order.orderItems) {
+                if (!item.variant?.skuMeta || Object.keys(item.variant.skuMeta).length === 0) {
+                    missingSkuMeta.push({
+                        productId: item.variant?.product?.uuid ?? item.variant?.product?.procurementId ?? 'unknown',
+                        sku: item.variant?.sku ?? 'unknown',
+                        orderUuid: order.uuid,
+                    });
+                }
+            }
+        }
+        if (missingSkuMeta.length) {
+            throw new BadRequestException({
+                message: 'Cannot dispatch: some variants are missing skuMeta. Fix them and retry.',
+                missingSkuMeta,
+            });
+        }
+
+        // ── Guard: reject if any item quantity is below the supplier's minimum ──
+        const belowMinQty: Array<{ sku: string; orderUuid: string; quantity: number; minOrderQuantity: number }> = [];
+        for (const order of orders) {
+            for (const item of order.orderItems) {
+                const minQty = Number(item.variant?.skuMeta?.min_order_quantity ?? 1);
+                if (item.quantity < minQty) {
+                    belowMinQty.push({
+                        sku: item.variant?.sku ?? 'unknown',
+                        orderUuid: order.uuid,
+                        quantity: item.quantity,
+                        minOrderQuantity: minQty,
+                    });
+                }
+            }
+        }
+        if (belowMinQty.length) {
+            throw new BadRequestException({
+                message: 'Cannot dispatch: some items are below the supplier minimum order quantity.',
+                belowMinQty,
+            });
+        }
+
+        // ── Load warehouse address (needed by Hiobuy's `receiver` shape) ───────
+        const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
+        if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
+
+        // Hiobuy's receiver.mobile expects a bare CN mobile number, no country-code prefix
+        const mobile = (activeWarehouse.phone ?? '').replace(/^\+?86/, '');
+
+        const warehouseAddress = {
+            name: activeWarehouse.contactName ?? '',
+            mobile,
+            province: activeWarehouse.state,
+            city: activeWarehouse.city,
+            district: activeWarehouse.district ?? '',
+            address: [activeWarehouse.addressLine1, activeWarehouse.addressLine2].filter(Boolean).join(', '),
+        };
+
+        // ── Enqueue one BullMQ job per order (no shop grouping) ───────────────
+        const dispatchJobId = crypto.randomUUID();
+
+        for (const order of orders) {
+            const inboundVoucherNo = crypto.randomUUID().replace(/-/g, '');
+
+            const hiobuyLines = order.orderItems.map(item => ({
+                offer_id: String(item.variant.product.procurementId),
+                spec_id: item.variant.skuMeta?.spec_id ?? '',
+                quantity: String(item.quantity),
+            }));
+
+            const seenSkus = new Set<string>();
+            const variantSyncData = order.orderItems.reduce<DispatchOrderJobData['variantSyncData']>((acc, item) => {
+                if (!seenSkus.has(item.variant.sku)) {
+                    seenSkus.add(item.variant.sku);
+                    acc.push({
+                        synchronizeType: 1,
+                        sku: item.variant.sku,
+                        barcode: item.variant.sku,
+                        name: item.variant.titleEn || item.variant.titleAr,
+                        enName: item.variant.titleEn,
+                        weightUnit: (item.variant.weight?.unit ?? WeightUnit.Kilograms).toUpperCase(),
+                        weight: item.variant.weight?.amount ?? 0,
+                        ...this.normalizeDimensions(item.variant.dimensions),
+                        packingType: 0,
+                        declaredPrice: item.variant.cost?.amount ?? 0,
+                    });
+                }
+                return acc;
+            }, []);
+
+            const jobData: DispatchOrderJobData = {
+                jobId: `${dispatchJobId}-${order.uuid}`,
+                dispatchJobId,
+                orderUuid: order.uuid,
+                inboundVoucherNo,
+                shipperMethod: dto.shipperMethod,
+                shipperCompany: dto.shipperCompany,
+                warehouseAddress,
+                hiobuyLines,
+                variantSyncData,
+                createdAt: new Date(),
+            };
+
+            await this.hiobuyDispatchQueue.add('dispatch-order', jobData, {
+                jobId: jobData.jobId,
+                attempts: 5,
+                backoff: { type: 'exponential', delay: 2 * 60 * 1000 },
+                removeOnComplete: 100,
+                removeOnFail: 200,
+            });
+
+            this.logger.log(`Dispatch ${dispatchJobId}: enqueued order ${order.uuid} (Hiobuy)`);
+        }
+
+        this.logger.log(`Dispatch ${dispatchJobId}: ${orders.length} order job(s) queued (Hiobuy)`);
         return { jobId: dispatchJobId };
     }
 
@@ -1016,6 +1152,90 @@ export class JopWmsService {
             failedReason: state === 'failed' ? (job.failedReason ?? null) : null,
             orderUuids: data.orderUuids,
             gulltransOrderSns: data.gulltransOrderSns ?? null,
+            inboundVoucherNo: data.inboundVoucherNo,
+            inbound: inboundOrder ?? null,
+            createdAt: new Date(job.timestamp),
+            processedAt: job.processedOn ? new Date(job.processedOn) : null,
+            finishedAt: job.finishedOn ? new Date(job.finishedOn) : null,
+        };
+    }
+
+    // ─── Dispatch Status (Hiobuy) ───────────────────────────────────────────────
+
+    async getHiobuyDispatchJobStatus(dispatchJobId: string) {
+        const allJobs = await this.hiobuyDispatchQueue.getJobs([
+            'waiting', 'active', 'completed', 'failed', 'delayed', 'prioritized',
+        ]);
+
+        const orderJobs = allJobs.filter(
+            j => (j.data as DispatchOrderJobData).dispatchJobId === dispatchJobId,
+        );
+
+        if (!orderJobs.length) {
+            throw new NotFoundException(`No Hiobuy dispatch jobs found for dispatchJobId: ${dispatchJobId}`);
+        }
+
+        const jobs = await Promise.all(
+            orderJobs.map(async job => {
+                const data = job.data as DispatchOrderJobData;
+                const state = await job.getState();
+
+                const inboundOrder = await this.wmsOrderRepository.findOne({
+                    where: { orderNo: data.inboundVoucherNo },
+                    select: ['orderNo', 'wmsAssignedId', 'status'],
+                });
+
+                return {
+                    jobId: job.id,
+                    orderUuid: data.orderUuid,
+                    state,
+                    attemptsMade: job.attemptsMade,
+                    maxAttempts: 5,
+                    hiobuyOrderId: data.hiobuyOrderId ?? null,
+                    failedReason: job.failedReason ?? null,
+                    inbound: inboundOrder
+                        ? {
+                            voucherNo: inboundOrder.orderNo,
+                            wmsAssignedId: inboundOrder.wmsAssignedId,
+                            status: inboundOrder.status,
+                        }
+                        : { voucherNo: data.inboundVoucherNo, wmsAssignedId: null, status: null },
+                };
+            }),
+        );
+
+        const states = jobs.map(j => j.state);
+        let overallStatus: string;
+        if (states.every(s => s === 'completed')) overallStatus = 'completed';
+        else if (states.every(s => s === 'failed')) overallStatus = 'failed';
+        else if (states.some(s => s === 'failed' || s === 'delayed')) overallStatus = 'partial';
+        else overallStatus = 'processing';
+
+        return { dispatchJobId, overallStatus, jobs };
+    }
+
+    async getHiobuyDispatchSubJob(jobId: string) {
+        const job = await this.hiobuyDispatchQueue.getJob(jobId);
+        if (!job) {
+            throw new NotFoundException(`Hiobuy dispatch sub-job not found: ${jobId}`);
+        }
+
+        const data = job.data as DispatchOrderJobData;
+        const state = await job.getState();
+
+        const inboundOrder = await this.wmsOrderRepository.findOne({
+            where: { orderNo: data.inboundVoucherNo },
+            select: ['orderNo', 'wmsAssignedId', 'status', 'lastPolledAt', 'lastError', 'errorCount'],
+        });
+
+        return {
+            jobId: job.id,
+            dispatchJobId: data.dispatchJobId,
+            orderUuid: data.orderUuid,
+            state,
+            attemptsMade: job.attemptsMade,
+            failedReason: state === 'failed' ? (job.failedReason ?? null) : null,
+            hiobuyOrderId: data.hiobuyOrderId ?? null,
             inboundVoucherNo: data.inboundVoucherNo,
             inbound: inboundOrder ?? null,
             createdAt: new Date(job.timestamp),

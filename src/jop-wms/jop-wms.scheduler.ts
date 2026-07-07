@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Not, In, IsNull, Repository } from 'typeorm';
 
 import { JopWmsClient } from './jop-wms.client';
-import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JopWmsOutboundStatus, JOP_WMS_TERMINAL_STATUSES } from './entities/jop-wms-order.entity';
+import { JopWmsOrder, JopWmsOrderType, JopWmsInboundStatus, JopWmsOutboundStatus, JOP_WMS_TERMINAL_STATUSES, JOP_WMS_AWAITING_TRACKING_STATUS } from './entities/jop-wms-order.entity';
 import { JopWmsService } from './jop-wms.service';
 
 import { Order } from '../order/entities/order.entity';
@@ -13,6 +13,7 @@ import { OrderTrackingStage } from '../order/enums/OrderTrackingStage';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/enums/notification-type.enum';
 import { NotificationPriority } from '../notifications/enums/notification-priority.enum';
+import { ProcurementService } from '../procurement/procurement.service';
 
 @Injectable()
 export class JopWmsScheduler {
@@ -22,6 +23,8 @@ export class JopWmsScheduler {
     private readonly MAX_ERRORS = 5;
 
     private readonly STALE_DAYS = parseInt(process.env.WMS_STALE_INBOUND_DAYS ?? '30', 10);
+
+    private readonly HIOBUY_TRACE_STALE_DAYS = parseInt(process.env.HIOBUY_TRACE_POLL_STALE_DAYS ?? '14', 10);
 
     constructor(
         @InjectRepository(JopWmsOrder)
@@ -33,6 +36,7 @@ export class JopWmsScheduler {
         private readonly client: JopWmsClient,
         private readonly wmsService: JopWmsService,
         private readonly notificationsService: NotificationsService,
+        private readonly procurementService: ProcurementService,
     ) { }
 
     /**
@@ -42,6 +46,126 @@ export class JopWmsScheduler {
     @Cron('0 0 */3 * * *')
     async pollInboundOrders() {
         await this.pollByType(JopWmsOrderType.INBOUND, 'inboundorder/status', 'customerVoucherNo');
+    }
+
+    /**
+     * Hiobuy flow only: polls placeholder inbounds (status: awaiting_tracking) for a real
+     * freight tracking number via Hiobuy's /logistics/trace, and once available, creates the
+     * actual JOP WMS inbound order. Force-expires placeholders whose seller never shipped
+     * within HIOBUY_TRACE_POLL_STALE_DAYS.
+     */
+    @Cron('0 0 * * * *')
+    async pollHiobuyPendingInbounds() {
+        const pending = await this.wmsOrderRepository.find({
+            where: { type: JopWmsOrderType.INBOUND, status: JOP_WMS_AWAITING_TRACKING_STATUS },
+            relations: ['sourceOrders', 'sourceOrders.order'],
+        });
+
+        if (!pending.length) return;
+
+        this.logger.log(`Polling ${pending.length} Hiobuy pending inbound(s)`);
+
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - this.HIOBUY_TRACE_STALE_DAYS);
+
+        for (const inbound of pending) {
+            if (inbound.errorCount >= this.MAX_ERRORS) {
+                this.logger.warn(`Skipping ${inbound.orderNo} — exceeded max errors (${this.MAX_ERRORS})`);
+                continue;
+            }
+
+            if (inbound.createdAt < cutoff) {
+                this.logger.warn(`Force-expiring stale awaiting_tracking inbound ${inbound.orderNo} (created: ${inbound.createdAt.toISOString()})`);
+                inbound.status = JopWmsInboundStatus.DELETED;
+                await this.wmsOrderRepository.save(inbound);
+                try {
+                    await this.wmsService.createOutboundsForInbound(inbound);
+                } catch (err: any) {
+                    this.logger.error(`Force-expire outbound creation failed for ${inbound.orderNo}: ${err?.message}`);
+                }
+                continue;
+            }
+
+            const orderUuid = inbound.sourceOrders?.[0]?.orderUuid;
+            const hiobuyOrderId = inbound.sourceOrders?.[0]?.order?.gulltransOrderSns?.[0];
+
+            if (!orderUuid || !hiobuyOrderId) {
+                this.logger.warn(`${inbound.orderNo}: missing linked order or Hiobuy order id — skipping`);
+                continue;
+            }
+
+            try {
+                const { trackingNumber } = await this.procurementService.getHiobuyLogisticsTrace(hiobuyOrderId);
+
+                if (!trackingNumber) {
+                    // Not shipped yet — not an error, don't touch errorCount
+                    continue;
+                }
+
+                const order = await this.orderRepository.findOne({
+                    where: { uuid: orderUuid },
+                    relations: ['orderItems', 'orderItems.variant'],
+                });
+                if (!order) {
+                    this.logger.warn(`${inbound.orderNo}: linked order ${orderUuid} not found — skipping`);
+                    continue;
+                }
+
+                const wmsBoxList = this.buildWmsBoxList(inbound.orderNo, order.orderItems);
+
+                const result: any = await this.client.post('inboundorder/create', {
+                    warehouseCode: process.env.JOP_WMS_WAREHOUSE_CODE ?? '',
+                    customerVoucherNo: inbound.orderNo,
+                    shipperMethod: inbound.hiobuyShipperMethod ?? 0,
+                    shipperCompany: inbound.hiobuyShipperCompany ?? '',
+                    equipmentNumber: '',
+                    waybillNo: trackingNumber,
+                    vat: '',
+                    vatInfo: '',
+                    memo: '',
+                    boxList: wmsBoxList,
+                });
+
+                inbound.wmsAssignedId = String(result?.data?.inboundOrderId ?? '') || null;
+                inbound.status = 'pending';
+                inbound.waybillNo = trackingNumber;
+                inbound.errorCount = 0;
+                inbound.lastError = null;
+                inbound.lastPolledAt = new Date();
+                await this.wmsOrderRepository.save(inbound);
+
+                this.logger.log(`${inbound.orderNo}: WMS inbound created — tracking ${trackingNumber}`);
+            } catch (err: any) {
+                inbound.errorCount += 1;
+                inbound.lastError = err?.message ?? 'Unknown error';
+                inbound.lastPolledAt = new Date();
+                this.logger.error(`Hiobuy trace poll failed for ${inbound.orderNo} (attempt ${inbound.errorCount}): ${inbound.lastError}`);
+                await this.wmsOrderRepository.save(inbound);
+            }
+        }
+    }
+
+    private buildWmsBoxList(inboundVoucherNo: string, orderItems: { variant: { sku: string; weight?: { amount?: number }; dimensions?: { length?: number; width?: number; height?: number } }; quantity: number }[]) {
+        let totalWeight = 0, maxLength = 0, maxWidth = 0, maxHeight = 0;
+        const skuQtyMap = new Map<string, number>();
+
+        for (const item of orderItems) {
+            totalWeight += (item.variant.weight?.amount ?? 0) * item.quantity;
+            maxLength = Math.max(maxLength, item.variant.dimensions?.length ?? 0);
+            maxWidth = Math.max(maxWidth, item.variant.dimensions?.width ?? 0);
+            maxHeight = Math.max(maxHeight, item.variant.dimensions?.height ?? 0);
+            skuQtyMap.set(item.variant.sku, (skuQtyMap.get(item.variant.sku) ?? 0) + item.quantity);
+        }
+
+        return [{
+            boxNo: `BOX-${inboundVoucherNo.slice(0, 8).toUpperCase()}`,
+            serialNumber: 1,
+            length: maxLength || 1,
+            width: maxWidth || 1,
+            height: maxHeight || 1,
+            weight: totalWeight || 1,
+            productList: [...skuQtyMap.entries()].map(([sku, qty]) => ({ sku, qty })),
+        }];
     }
 
     @Cron('0 0 9,21 * * *')
@@ -140,7 +264,9 @@ export class JopWmsScheduler {
         const orders = await this.wmsOrderRepository.find({
             where: {
                 type,
-                status: Not(In([...JOP_WMS_TERMINAL_STATUSES])),
+                // Excludes awaiting_tracking placeholders too — those haven't been created
+                // on JOP WMS yet, so inboundorder/status would error on a voucher WMS never saw.
+                status: Not(In([...JOP_WMS_TERMINAL_STATUSES, JOP_WMS_AWAITING_TRACKING_STATUS])),
             },
             relations: ['sourceOrders'],
         });

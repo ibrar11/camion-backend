@@ -683,3 +683,28 @@ address | Yes | Object | Shared delivery address applied to all orders
     ]
 }
 ```
+
+---
+
+Hiobuy Order Creation (internal only, feature-flagged)
+------------------
+
+`ProcurementService` also has two Hiobuy-specific methods used exclusively by the JOP WMS dispatch pipeline when `HIOBUY_DISPATCH_ENABLED=true` (see `docs/jop-wms-api-docs.md`, "Hiobuy flow" section). Neither is exposed as a public REST endpoint under `/v1/procurement` — they are called internally by `DispatchOrderProcessor` and `JopWmsScheduler`. Documented here for completeness since they live in this module.
+
+Product search/detail/import (everything above this section) always stays on Gulltrans, regardless of the flag.
+
+**`createHiobuyOrder(dto: CreateHiobuyOrderDto)`** — calls Hiobuy's `POST /v1/orders/create`.
+
+```ts
+{
+    lines: [{ offer_id: "873666228807", spec_id: "30603cdeb27f2834dbf798d1c2299c1c", quantity: "1" }],
+    receiver: {
+        name: "张三", mobile: "15251667788", province: "浙江省", city: "杭州市",
+        district: "滨江区", address: "网商路699号"
+    }
+}
+```
+
+Unlike Gulltrans's `createOrder`/`bulkCreateOrder`, there is no `shop_id`/`platform_url` grouping constraint — all of a Camion order's items are sent as `lines[]` in a single call regardless of which 1688 shop/offer they came from. `offer_id` comes from `Product.procurementId`, `spec_id` from `ProductVariant.skuMeta.spec_id`. Returns `{ orderId, raw }`, where `orderId` is the real 1688 platform order id (Hiobuy's `order_id`) — this is what Gulltrans could never provide, and what ultimately gets threaded into the JOP WMS inbound's `waybillNo` field once shipped.
+
+**`getHiobuyLogisticsTrace(orderId: string)`** — calls Hiobuy's `POST /v1/orders/logistics/trace` with `{ channel: '1688', order_id: orderId }`. Returns `{ trackingNumber, raw }` — `trackingNumber` is `null` until the 1688 seller actually ships (this can take hours to days), at which point it becomes the real courier freight tracking number (e.g. ZTO Express). Polled hourly by `JopWmsScheduler.pollHiobuyPendingInbounds`, which creates the real WMS inbound order once a tracking number appears.

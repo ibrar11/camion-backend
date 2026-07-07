@@ -70,6 +70,23 @@ export interface DispatchShopJobData extends BaseJobData {
     }>;
 }
 
+export interface DispatchOrderJobData extends BaseJobData {
+    dispatchJobId: string;
+    orderUuid: string;                 // singular — one Hiobuy order call per Camion order
+    inboundVoucherNo: string;
+    shipperMethod: number;
+    shipperCompany?: string;
+    hiobuyOrderId?: string;            // checkpoint, analogous to gulltransOrderSns but singular
+    hiobuyResponse?: Record<string, any>;
+    warehouseAddress: Record<string, any>;
+    hiobuyLines: Array<{
+        offer_id: string;
+        spec_id: string;
+        quantity: string;
+    }>;
+    variantSyncData: DispatchShopJobData['variantSyncData'];
+}
+
 export interface InventoryResyncJobData extends BaseJobData {
     productUuids: string[];
 }
