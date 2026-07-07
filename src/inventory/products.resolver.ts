@@ -350,6 +350,27 @@ export class ProductsResolver {
 		return "";
 	}
 
+	@ResolveField("sizechartUrl", () => String)
+	getSizechartUrl(@Parent() product: Product): string {
+		if (product === null) {
+			return "";
+		}
+
+		// Get the sizechart url from the product
+		let sizechartUrl = "";
+		if (product.sizechartUrl !== undefined && product.sizechartUrl !== null) {
+			sizechartUrl = product.sizechartUrl;
+		}
+
+		// Split the path to get the full address
+		const segments = sizechartUrl.split("/")
+		if (sizechartUrl.startsWith("s3://")) {
+			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+
 	@ResolveField("featuredThumbnailUrl", () => String)
 	getFeaturedThumbnailUrl(@Parent() product: Product): string {
 		if (product === null) {

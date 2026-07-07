@@ -127,6 +127,10 @@ export class Product {
 	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
 	featuredThumbnailUrl: string;
 
+	@Field(() => String)
+	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
+	sizechartUrl: string;
+
 	@Field()
 	@Column({
 		type: "enum",
