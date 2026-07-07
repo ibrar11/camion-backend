@@ -1836,6 +1836,7 @@ query GetProduct($slug: String, $language: String, $currency: String) {
     # descriptionHtml(language: $language)
     featuredImageUrl
     featuredThumbnailUrl
+    sizechartUrl
     status
     salesCount
     likesCount
@@ -1963,6 +1964,7 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
             "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
             "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+            "sizechartUrl": "https://assets.dev.camiontrading.com/sizecharts/6e6992af-e7a2-4be4-8d23-46c0c7836afd.webp",
             "status": "active",
             "salesCount": 0,
             "likesCount": 0,

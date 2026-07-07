@@ -84,8 +84,15 @@ export class PushNotificationController {
     @Roles(UserRole.Manager, UserRole.SuperAdmin, UserRole.Admin)
     @Put(':uuid')
     @HttpCode(HttpStatus.OK)
-    actionUpdateProductVariant(@Param('uuid') pushNotificationUUID: string, @Body() body: UpdateCustomizePushNotificationDto): Promise<PushNotification> {
+    actionUpdatePushNotification(@Param('uuid') pushNotificationUUID: string, @Body() body: UpdateCustomizePushNotificationDto): Promise<PushNotification> {
         return this.pushNotificationService.updatePushNotification(pushNotificationUUID, body);
+    }
+
+    @Roles(UserRole.Manager, UserRole.SuperAdmin, UserRole.Admin)
+    @Put('stop/:uuid')
+    @HttpCode(HttpStatus.OK)
+    actionStopPushNotificationSchedule(@Param('uuid') pushNotificationUUID: string): Promise<void> {
+        return this.pushNotificationService.stopPushNotificationSchedule(pushNotificationUUID);
     }
 
     @Roles(UserRole.Manager, UserRole.SuperAdmin, UserRole.Admin)

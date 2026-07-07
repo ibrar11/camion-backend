@@ -325,6 +325,7 @@ type Product {
   salesCount: Float!
   shopId: String
   shopName: String
+  sizechartUrl: String!
   slug: String!
   status: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
