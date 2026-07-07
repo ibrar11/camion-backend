@@ -3727,7 +3727,7 @@ export class ProductsService {
 		}
 
 		// Generate a small image for the image
-		const imagePath = await this.imageThumbnailService.generateImage(file.path);
+		const imagePath = await this.imageThumbnailService.generateImageWithoutCrop(file.path);
 
 		// Upload the image to s3
 		let imageParams: { key: string, url: string, } | null = null;

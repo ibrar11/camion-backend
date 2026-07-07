@@ -34,6 +34,24 @@ export class ImageThumbnailService {
 	}
 
 	/**
+	 * Generates images without applying crop
+	 *
+	 * @param imagePath
+	 * @returns
+	 */
+	generateImageWithoutCrop(imagePath: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const outputPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.webp`);
+
+			sharp(imagePath)
+				.toFormat("webp", { quality: 90 })
+				.toFile(outputPath)
+				.then(() => resolve(outputPath))
+				.catch(err => reject(err));
+		});
+	}
+
+	/**
 	 * Generates thumbnails of a image
 	 *
 	 * @param imagePath
