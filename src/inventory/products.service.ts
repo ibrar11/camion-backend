@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException
 } from '@nestjs/common';
@@ -12,6 +13,10 @@ import { Job } from "bullmq";
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+
+import { S3Service } from "../common/s3.service";
+import { FileService } from "../common/file.service";
+import { ImageThumbnailService } from "../common/image-thumbnail.service";
 
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
@@ -40,6 +45,7 @@ import { QueueService } from "src/queue/queue.service";
 import { QueueName } from "src/queue/enums/QueueTypes.enum";
 import { ProductCategoryResyncJobData } from "src/queue/types";
 import { Campaign } from "src/campaigns/entities/campaign.entity";
+import { ProductsResolver } from "./products.resolver";
 
 @Injectable()
 export class ProductsService {
@@ -67,6 +73,9 @@ export class ProductsService {
 		@InjectRepository(ProductView) private readonly productViewRepository: Repository<ProductView>,
 		@InjectRepository(Campaign) private readonly campaignRepository: Repository<Campaign>,
 		@Inject(QueueService) private readonly queueService: QueueService,
+		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
+		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
 	) { }
 
 	private chunkArray<T>(items: T[], chunkSize: number): T[][] {
@@ -3396,7 +3405,6 @@ export class ProductsService {
 
 		// Find the product
 		const product = await this.productRepository.findOne({
-			cache: true,
 			relationLoadStrategy: "query",
 			where: { uuid: uuid, },
 			relations: {
@@ -3694,6 +3702,87 @@ export class ProductsService {
 		product.featuredImageUrl = image.imageUrl;
 		product.featuredThumbnailUrl = image.thumbnailUrl;
 		return this.productRepository.save(product);
+	}
+
+	/**
+	 * Updates the sizechart of a product
+	 *
+	 * @param uuid
+	 * @param file
+	 * @returns
+	 */
+	async updateProductSizechart(uuid: string, file: Express.Multer.File): Promise<Product> {
+		this.logger.log(`Updating product size chart: ${uuid}`);
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Generate a small image for the image
+		const imagePath = await this.imageThumbnailService.generateImage(file.path);
+
+		// Upload the image to s3
+		let imageParams: { key: string, url: string, } | null = null;
+		try {
+			imageParams = await this.s3Service.uploadPath("sizecharts", imagePath, "image/webp");
+		} catch (err) {
+			this.logger.error(err);
+			throw new InternalServerErrorException({
+				error: "Failed to upload the product sizechart image. Please try again.",
+			});
+		}
+
+		// Delete the temporary files from the disk
+		await this.fileService.deletePath(imagePath);
+		await this.fileService.deleteFile(file);
+
+		// Update the product with sizechart image
+		product.sizechartUrl = imageParams.url;
+		return this.productRepository.save(product);
+	}
+
+	/**
+	 * Deletes the sizechart of a product
+	 *
+	 * @param uuid
+	 */
+	async deleteProductSizechart(uuid: string): Promise<void> {
+		this.logger.log(`Deleting product size chart: ${uuid}`);
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Delete the sizechart
+		try {
+			// Format the key using the sizechart url
+			let key = product.sizechartUrl;
+			if (key !== undefined && key !== null && key.startsWith('s3://')) {
+				key = key.substring(5);
+			}
+			await this.s3Service.deleteFile(key);
+		} catch (err) {
+			this.logger.error(err);
+		}
+
+		product.sizechartUrl = "";
+		await this.productRepository.save(product);
 	}
 
 	/**

@@ -61,7 +61,7 @@ export class ProductReviewImageService {
 		} catch (err) {
 			this.logger.error(err);
 			throw new InternalServerErrorException({
-				error: "Failed to upload the product review image image. Please try again.",
+				error: "Failed to upload the product review image. Please try again.",
 			});
 		}
 

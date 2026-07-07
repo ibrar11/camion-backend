@@ -1,3 +1,5 @@
+import os from "node:os";
+
 import {
 	Body,
 	Controller,
@@ -10,8 +12,12 @@ import {
 	Post,
 	Put,
 	Query,
+	UploadedFile,
 	UseGuards,
+	UseInterceptors,
 } from '@nestjs/common';
+
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
@@ -135,6 +141,26 @@ export class ProductsController {
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductFeaturedImage(@Param('uuid') uuid: string, @Body() body: UpdateProductFeaturedImageDto): Promise<Product> {
 		return this.productsService.updateProductFeaturedImage(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Put(':uuid/sizechart')
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
+	@HttpCode(HttpStatus.OK)
+	actionUpdateSizechartImage(
+		@Param('uuid') uuid: string,
+		@UploadedFile() file: Express.Multer.File,
+	): Promise<Product> {
+		return this.productsService.updateProductSizechart(uuid, file);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Delete(':uuid/sizechart')
+	@HttpCode(HttpStatus.OK)
+	actionDeleteSizechartImage(
+		@Param('uuid') uuid: string
+	): Promise<void> {
+		return this.productsService.deleteProductSizechart(uuid);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
