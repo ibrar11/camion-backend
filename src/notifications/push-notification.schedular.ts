@@ -1,12 +1,13 @@
 import { NotificationReceiver } from './enums/notification-receiver.enum';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { LessThanOrEqual, Repository } from 'typeorm';
+import { LessThan, LessThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { PushNotification } from './entities/push-notification';
 import { PushNotificationService } from './push-notification.service';
 import { NotificationScheduler } from './enums/notification-scheduler.enum';
+import { NotificationStatus } from './enums/notification-status.enum';
 
 
 @Injectable()
@@ -19,7 +20,7 @@ export class PushNotificationScheduler {
     ) { }
 
     /**
-     * Look for the scheduled notification and broadcast.
+     * Look for the scheduled notification and marked them processing.
      */
     @Cron(CronExpression.EVERY_HOUR)
     async broadCastNotification() {
@@ -33,6 +34,7 @@ export class PushNotificationScheduler {
         const notifications = await this.pushNotificationRepository.find({
             where: {
                 scheduledFor: LessThanOrEqual(now),
+                status: NotificationStatus.PENDING,
             },
             relations: {
                 images: true,
@@ -54,6 +56,41 @@ export class PushNotificationScheduler {
 
         for (const notification of notifications) {
 
+            notification.status = NotificationStatus.PROCESSING;
+
+            notification.processingStartedAt = new Date();
+
+            await this.pushNotificationRepository.save(notification);
+        }
+    }
+
+    /**
+     * Look for the processing scheduled notification and broadcast.
+     */
+    @Cron(CronExpression.EVERY_MINUTE)
+    async processNotifications() {
+        this.logger.log("Processing the broadcast scheduled notifications......");
+
+        const notifications = await this.pushNotificationRepository.find({
+            where: {
+                status: NotificationStatus.PROCESSING
+            },
+            relations: {
+                images: true
+            }
+        });
+
+        for (const notification of notifications) {
+            try {
+                await this.pushNotificationService.push({
+                    notificationUUID: [notification.uuid],
+                    receiverType: NotificationReceiver.ALLCUSTOMER
+                });
+            } catch (error: any) {
+                this.logger.error(`Error broadcasting scheduled notification: ${notification.uuid}`, error?.stack);
+                notification.status = NotificationStatus.PENDING;
+                await this.pushNotificationRepository.save(notification);
+            }
             if (notification.repeatInterval && notification.scheduledFor) {
                 const nextRun = new Date(notification.scheduledFor);
                 if (notification.repeatInterval === NotificationScheduler.EVERY_3) {
@@ -85,5 +122,30 @@ export class PushNotificationScheduler {
         }
     }
 
+    /**
+     * Look for the stuck processing scheduled notification and mark them pending.
+     */
+    @Cron(CronExpression.EVERY_10_MINUTES)
+    async recoverStuckNotifications() {
+        this.logger.log("Recovering the stuck notifications......");
+
+        const timeout = new Date();
+        timeout.setMinutes(timeout.getMinutes() - 10);
+
+        const notifications =
+            await this.pushNotificationRepository.find({
+                where: {
+                    status: NotificationStatus.PROCESSING,
+                    processingStartedAt: LessThan(timeout)
+                }
+            });
+
+        for (const notification of notifications) {
+            notification.status = NotificationStatus.PENDING;
+            notification.processingStartedAt = null;
+            await this.pushNotificationRepository.save(notification);
+
+        }
+    }
 
 }

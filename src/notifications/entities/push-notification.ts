@@ -11,6 +11,7 @@ import { Exclude } from "class-transformer";
 import { NotificationPriority } from "../enums/notification-priority.enum";
 import { PushNotificationImage } from "./push-notification-image";
 import { NotificationScheduler } from "../enums/notification-scheduler.enum";
+import { NotificationStatus } from "../enums/notification-status.enum";
 
 @Entity({ name: "push_notification" })
 export class PushNotification {
@@ -44,7 +45,7 @@ export class PushNotification {
     images: Array<PushNotificationImage>;
 
     @Column({ type: "timestamptz", default: null, nullable: true, })
-    scheduledFor: Date| null;
+    scheduledFor: Date | null;
 
     @Column({
         type: "enum",
@@ -53,6 +54,19 @@ export class PushNotification {
         default: null,
     })
     repeatInterval: NotificationScheduler | null
+
+    @Column({
+        type: "enum",
+        enum: NotificationStatus,
+        default: NotificationStatus.PENDING,
+    })
+    status: NotificationStatus;
+
+    @Column({
+        type: "timestamptz",
+        nullable: true,
+    })
+    processingStartedAt?: Date | null;
 
     @Column({ default: false })
     isRead: boolean;
