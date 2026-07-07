@@ -1,13 +1,19 @@
 import crypto from "node:crypto";
 
 import {
+	Inject,
 	Injectable,
+	InternalServerErrorException,
 	Logger,
 	NotFoundException,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+
+import { S3Service } from "../common/s3.service";
+import { FileService } from "../common/file.service";
+import { ImageThumbnailService } from "../common/image-thumbnail.service";
 
 import { getSkipAndTake } from "../common/pagination";
 
@@ -24,6 +30,7 @@ import { OrderStatus } from "../order/enums/OrderStatus";
 import { OrderTrackingEvent } from "../order/entities/order-tracking-event.entity";
 import { OrderTrackingStage } from "../order/enums/OrderTrackingStage";
 import { CreateGenuineReviewDto } from "./dtos/CreateGenuineReviewDto";
+import { ProductReviewImage } from "./entities/product-review-image.entity";
 
 @Injectable()
 export class ProductReviewService {
@@ -32,9 +39,14 @@ export class ProductReviewService {
 	constructor(
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
 		@InjectRepository(ProductReview) private readonly reviewRepository: Repository<ProductReview>,
+		@InjectRepository(ProductReviewImage) private readonly productReviewImageRepository: Repository<ProductReviewImage>,
 		@InjectRepository(Order) private readonly orderRepository: Repository<Order>,
 		@InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
-		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>
+		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+
+		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
+		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(FileService) private readonly fileService: FileService,
 	) { }
 
 	/**
@@ -56,8 +68,8 @@ export class ProductReviewService {
 			});
 		}
 
-		// Clamp the rating between 0 and 5
-		const rating = Math.floor(Math.min(Math.max(0, body.rating), 5));
+		// Clamp the rating between 1 and 5
+		const rating = Math.floor(Math.min(Math.max(1, body.rating), 5));
 		switch (rating) {
 			case 1:
 				product.ratingOneStarCount += 1;
@@ -145,6 +157,72 @@ export class ProductReviewService {
 		}
 
 		return saved;
+	}
+
+	/**
+	 * Creates a review for a product using the v2 implementation
+	 *
+	 * @param customer
+	 * @param productUUID
+	 * @param body
+	 * @param files
+	 * @returns
+	 */
+	async createProductReviewV2(customer: Customer, productUUID: string, body: CreateReviewDto, files: Express.Multer.File[]): Promise<ProductReview> {
+		this.logger.log(`Attempting to create product review for product: ${productUUID} using api v2`);
+
+		// Create the new api
+		const review = await this.createProductReview(customer, productUUID, body);
+
+		// Process each review image
+		if (Array.isArray(files) && files.length !== 0) {
+			await Promise.all(
+				files.map(async file => {
+					// Generate a small image for the image
+					const imagePath = await this.imageThumbnailService.generateImage(file.path);
+
+					// Generate a thumbnail for the image
+					const thumbnailPath = await this.imageThumbnailService.generateThumbnail(file.path);
+
+					// Upload the image to s3
+					let imageParams: { key: string, url: string, } | null = null;
+					try {
+						imageParams = await this.s3Service.uploadPath("reviews", imagePath, "image/webp");
+					} catch (err) {
+						this.logger.error(err);
+						throw new InternalServerErrorException({
+							error: "Failed to upload the product review image image. Please try again.",
+						});
+					}
+
+					// Upload the thumbnail to s3
+					let thumbnailParams: { key: string, url: string, } | null = null;
+					try {
+						thumbnailParams = await this.s3Service.uploadPath("reviews", thumbnailPath, "image/webp");
+					} catch (err) {
+						this.logger.error(err);
+						throw new InternalServerErrorException({
+							error: "Failed to upload the product review thumbnail. Please try again.",
+						});
+					}
+
+					// Delete the temporary files from the disk
+					await this.fileService.deletePath(imagePath);
+					await this.fileService.deletePath(thumbnailPath);
+					await this.fileService.deleteFile(file);
+
+					// Create a review image
+					const image = new ProductReviewImage();
+					image.uuid = crypto.randomUUID();
+					image.review = review;
+					image.imageUrl = imageParams.url;
+					image.thumbnailUrl = thumbnailParams.url;
+					await this.productReviewImageRepository.save(image);
+				})
+			);
+		}
+
+		return review;
 	}
 
 	/**
@@ -254,6 +332,48 @@ export class ProductReviewService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.reviewRepository.find({
+			cache: true,
+			relationLoadStrategy: "query",
+			where: {
+				product: {
+					id: product.id,
+				},
+			},
+			relations: {
+				customer: true,
+				images: true,
+			},
+			skip: skip,
+			take: take,
+		});
+	}
+
+	/**
+	 * Finds the uncached reviews of a product
+	 *
+	 * @param productUUID
+	 * @param filters
+	 * @param sort
+	 * @param pageNumber
+	 * @param itemsPerPage
+	 * @returns
+	 */
+	async findAllUncached(productUUID: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<ProductReview>> {
+		this.logger.log(`Retrieving uncached reviews of product: ${productUUID}`);
+
+		// Find the product
+		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Get pagination params
+		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+		return this.reviewRepository.find({
+			relationLoadStrategy: "query",
 			where: {
 				product: {
 					id: product.id,
