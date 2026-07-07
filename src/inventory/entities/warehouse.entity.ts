@@ -55,6 +55,9 @@ export class Warehouse {
 	phone: string | null;
 
 	@Column({ type: 'varchar', nullable: true })
+	district: string | null;
+
+	@Column({ type: 'varchar', nullable: true })
 	gulltransWarehouseId: string | null;
 
 	@Column({ type: 'varchar', nullable: true })

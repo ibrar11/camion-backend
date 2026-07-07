@@ -33,6 +33,12 @@ export const JopWmsReturnStatus = {
     SHELVED: '40',          // Return goods shelved
 } as const;
 
+// Hiobuy flow only: placeholder inbound created before the real WMS inbound order
+// exists — waiting on /logistics/trace to return a real freight tracking number.
+// Deliberately excluded from JOP_WMS_TERMINAL_STATUSES so createOutboundsForInbound's
+// "hold until all inbounds terminal" check naturally waits for it.
+export const JOP_WMS_AWAITING_TRACKING_STATUS = 'awaiting_tracking';
+
 export const JOP_WMS_TERMINAL_STATUSES = [
     JopWmsInboundStatus.STORED,
     JopWmsInboundStatus.WAREHOUSE_CLOSED,
@@ -61,9 +67,20 @@ export class JopWmsOrder {
     @Column({ type: 'varchar', length: 64, nullable: true, default: null })
     wmsAssignedId: string | null;
 
-    // Populated once WMS provides a waybill (outbound only)
+    // Outbound: WMS-assigned waybill. Inbound (Hiobuy flow): the real 1688 courier
+    // freight tracking number from Hiobuy's logistics/trace, mirrored here for
+    // admin visibility (never pushed back to WMS beyond the initial create call).
     @Column({ type: 'varchar', length: 128, nullable: true })
     waybillNo: string | null;
+
+    // Hiobuy flow only: admin-supplied dispatch params, persisted here because they
+    // must survive until the trace poller actually creates the WMS inbound order,
+    // which may happen days after the placeholder row is created.
+    @Column({ type: 'integer', nullable: true })
+    hiobuyShipperMethod: number | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    hiobuyShipperCompany: string | null;
 
     @Column({ type: 'timestamptz', nullable: true })
     lastPolledAt: Date | null;

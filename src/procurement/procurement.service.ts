@@ -19,6 +19,7 @@ import { WeightUnit } from 'src/inventory/enums/WeightUnit.enum';
 import { DimensionsUnit } from 'src/inventory/enums/DimensionsUnit.enum';
 
 import { ImportProductDto } from './dtos/ImportProductDto';
+import { CreateHiobuyOrderDto } from './dtos/CreateHiobuyOrderDto';
 
 import { CreateProductVariantDto } from '../inventory/dtos/CreateProductVariantDto';
 import { SaveProcurementToStoreDto, SaveProcurementToStoreItemDto } from './dtos/SaveProcurementToStoreDto';
@@ -1943,6 +1944,98 @@ export class ProcurementService {
             this.logger.error(`Gulltrans: single order creation threw — ${error?.message}`);
             throw new InternalServerErrorException({
                 error: 'Failed to create order',
+                details: error.response?.error || error.message,
+            });
+        }
+    }
+
+    /**
+     * Creates a Hiobuy order (new provider — used only by the flag-gated per-order dispatch path).
+     * Does not touch Gulltrans's bulkCreateOrder/createOrder above.
+     *
+     * @param dto
+     * @returns
+     */
+    async createHiobuyOrder(dto: CreateHiobuyOrderDto): Promise<{ orderId: string; raw: any }> {
+        try {
+            this.logger.log(`Hiobuy: creating order (${dto.lines.length} line(s))`);
+            const response = await fetch(
+                `${process.env.HIOBUY_BASE_URL}/v1/orders/create`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${process.env.HIOBUY_API_KEY || ''}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        channel: '1688',
+                        lines: dto.lines,
+                        receiver: dto.receiver,
+                    }),
+                },
+            );
+
+            const data = await response.json();
+
+            if (!data.success) {
+                this.logger.error(`Hiobuy: order creation failed — ${data.message ?? data.failed_offers?.[0]?.reason ?? 'unknown error'}`);
+                throw new BadRequestException({
+                    error: data.message ?? data.failed_offers?.[0]?.reason ?? 'Hiobuy order creation failed',
+                });
+            }
+
+            const orderId: string = data.order_id;
+            this.logger.log(`Hiobuy: order created — order_id ${orderId}`);
+
+            return { orderId, raw: data };
+        } catch (error: any) {
+            if (error instanceof BadRequestException) throw error;
+            this.logger.error(`Hiobuy: order creation threw — ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to create Hiobuy order',
+                details: error.response?.error || error.message,
+            });
+        }
+    }
+
+    /**
+     * Queries Hiobuy's logistics trace endpoint for the real 1688 courier freight tracking
+     * number, once the seller has actually shipped. Returns null (not an error) if the goods
+     * haven't shipped yet.
+     *
+     * @param orderId
+     * @returns
+     */
+    async getHiobuyLogisticsTrace(orderId: string): Promise<{ trackingNumber: string | null; raw: any }> {
+        try {
+            const response = await fetch(
+                `${process.env.HIOBUY_BASE_URL}/v1/orders/logistics/trace`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${process.env.HIOBUY_API_KEY || ''}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        channel: '1688',
+                        order_id: orderId,
+                    }),
+                },
+            );
+
+            const data = await response.json();
+            const packages: any[] = data?.tracking?.packages ?? [];
+
+            if (packages.length > 1) {
+                this.logger.warn(`Hiobuy: order ${orderId} has ${packages.length} packages — using the first`);
+            }
+
+            const trackingNumber: string | null = packages[0]?.tracking_number ?? null;
+            return { trackingNumber, raw: data };
+        } catch (error: any) {
+            this.logger.error(`Hiobuy: logistics trace threw for order ${orderId} — ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to fetch Hiobuy logistics trace',
                 details: error.response?.error || error.message,
             });
         }
