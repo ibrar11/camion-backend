@@ -265,6 +265,7 @@ title | Yes | String (max 100) | Short title shown in the notification header
 brief | Yes | String (max 160) | One-line summary shown in the notification list
 message | Yes | String | Full notification body text
 priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
+scheduledFor | No | Enum | `every_3`, `every_6` , `every_12` , or `every_24`. Defaults to `null`
 
 ### Request Body
 
@@ -273,7 +274,8 @@ priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
     "title": "Your order has been shipped",
     "brief": "Order #1042 is on its way",
     "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
-    "priority": "HIGH"
+    "priority": "HIGH",
+    "scheduledFor": "every_3",
 }
 ```
 
@@ -307,6 +309,7 @@ POST /v1/push-notifications/push HTTP/1.1
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
 pushNotificationUUID | Yes | Array<String> | array of push notification uuids
+receiverType | Yes | String | guest | customer | affiliate | influencer | allCustomer
 
 ### Request Body
 
@@ -314,7 +317,8 @@ pushNotificationUUID | Yes | Array<String> | array of push notification uuids
 {
     "pushNotificationUUID": [
         "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c"
-    ]
+    ],
+    "receiverType": "allCustomer", 
 }
 ```
 ---
@@ -395,6 +399,7 @@ title | Yes | String (max 100) | Short title shown in the notification header
 brief | Yes | String (max 160) | One-line summary shown in the notification list
 message | Yes | String | Full notification body text
 priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
+scheduledFor | No | Enum | `every_3`, `every_6` , `every_12` , or `every_24`. Defaults to `null`
 
 ### Request Body
 
@@ -403,7 +408,8 @@ priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
     "title": "Your order has been shipped",
     "brief": "Order #1042 is on its way",
     "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
-    "priority": "HIGH"
+    "priority": "HIGH",
+    "scheduledFor": "every_3"
 }
 ```
 
@@ -422,6 +428,14 @@ priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
     "updatedAt": "2026-04-15T10:30:00.000Z"
 }
 ```
+
+Stop Scheduled Push Notification
+----------------------------------
+
+Stops a Scheduled push notification for announcement. Intended for system or admin use.
+
+```http
+PUT /v1/push-notifications/stop/uuid HTTP/1.1
 
 ---
 

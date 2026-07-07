@@ -89,7 +89,7 @@ export class PushNotificationController {
     }
 
     @Roles(UserRole.Manager, UserRole.SuperAdmin, UserRole.Admin)
-    @Put(':uuid')
+    @Put('stop/:uuid')
     @HttpCode(HttpStatus.OK)
     actionStopPushNotificationSchedule(@Param('uuid') pushNotificationUUID: string): Promise<void> {
         return this.pushNotificationService.stopPushNotificationSchedule(pushNotificationUUID);
