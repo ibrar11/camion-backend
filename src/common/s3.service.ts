@@ -140,4 +140,17 @@ export class S3Service {
 			url: `s3://${prefix}/${destKey}`,
 		};
 	}
+
+	/**
+	 * Deletes a file
+	 *
+	 * @param key
+	 */
+	async deleteFile(key: string): Promise<void> {
+		this.logger.log(`Deleting file: ${key}`);
+		await this.s3.send(new DeleteObjectCommand({
+			Bucket: this.configService.get<string>('AWS_S3_BUCKET'),
+			Key: key,
+		}));
+	}
 }
