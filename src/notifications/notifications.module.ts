@@ -17,6 +17,7 @@ import { ClientsModule } from "../clients/clients.module";
 import { PushNotification } from "./entities/push-notification";
 import { PushNotificationImage } from "./entities/push-notification-image";
 import { PushNotificationService } from "./push-notification.service";
+import { PushNotificationScheduler } from "./push-notification.schedular";
 import { PushNotificationController } from "./push-notification.controller";
 
 import { FirebaseAdminProvider } from "../firebase/provider/firebase.provider";
@@ -31,7 +32,7 @@ import { FileService } from "../common/file.service";
 			Notification,
 			PushNotification,
 			PushNotificationImage,
-			User, 
+			User,
 			Customer
 		]),
 		ClientsModule,
@@ -42,6 +43,7 @@ import { FileService } from "../common/file.service";
 		UsersService,
 		CustomersService,
 		PushNotificationService,
+		PushNotificationScheduler,
 		PushNotificationImageService,
 		FirebaseAdminProvider,
 		S3Service,

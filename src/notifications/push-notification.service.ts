@@ -26,6 +26,8 @@ import { FIREBASE_ADMIN } from '../firebase/provider/firebase.provider';
 import { Customer } from '../customers/entities/customer.entity';
 
 import { ConfigService } from '@nestjs/config';
+import { NotificationReceiver } from './enums/notification-receiver.enum';
+import { NotificationScheduler } from './enums/notification-scheduler.enum';
 
 @Injectable()
 export class PushNotificationService {
@@ -155,15 +157,25 @@ export class PushNotificationService {
             const customers = await this.customerRepository.find({
                 where: {
                     uuid: In([
-                        "6174c251-dafe-4ed7-bd19-5db02d7e3e09", 
-                        "3bc7d83d-1e41-4e7c-8e8a-322bc0005661", 
-                        "2e7d7557-b950-4946-b1b5-d1cf56bf51d0", 
+                        "6174c251-dafe-4ed7-bd19-5db02d7e3e09",
+                        "3bc7d83d-1e41-4e7c-8e8a-322bc0005661",
+                        "2e7d7557-b950-4946-b1b5-d1cf56bf51d0",
                         "5ca759cd-1d33-4b92-9005-0f921238964f",
                         "7266b8a7-714c-4fa6-b625-0b3ddc9e49cc",
                         "2cb38bf2-3b98-4780-901c-880571abbb14", // hafiz bilal dev customer uuid
                     ])
                 }
             });
+
+            // if (body.receiverType === NotificationReceiver.ALLCUSTOMER) {
+            //     customers = await this.customerRepository.find();
+            // } else {
+            //     customers = await this.customerRepository.find({
+            //         where: {
+            //             role: body.receiverType
+            //         }
+            //     });
+            // }
 
             if (!customers.length) {
                 throw new BadRequestException(
@@ -284,6 +296,31 @@ export class PushNotificationService {
         customizeNotification.title = body.title.trim();
         customizeNotification.brief = body.brief.trim();
         customizeNotification.message = body.message.trim();
+        if (body.scheduledFor) {
+            const now = new Date();
+
+            if (body.scheduledFor === NotificationScheduler.EVERY_3) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 3, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            if (body.scheduledFor === NotificationScheduler.EVERY_6) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 6, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            if (body.scheduledFor === NotificationScheduler.EVERY_12) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 12, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            if (body.scheduledFor === NotificationScheduler.EVERY_24) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 24, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            customizeNotification.repeatInterval = body.scheduledFor;
+        }
         customizeNotification.priority = body.priority ?? NotificationPriority.MEDIUM;
 
         const saved = await this.pushNotificationRepository.save(customizeNotification);
@@ -353,8 +390,52 @@ export class PushNotificationService {
         customizeNotification.title = body.title.trim();
         customizeNotification.brief = body.brief.trim();
         customizeNotification.message = body.message.trim();
+        if (body.scheduledFor) {
+            const now = new Date();
+
+            if (body.scheduledFor === NotificationScheduler.EVERY_3) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 3, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            if (body.scheduledFor === NotificationScheduler.EVERY_6) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 6, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            if (body.scheduledFor === NotificationScheduler.EVERY_12) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 12, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            if (body.scheduledFor === NotificationScheduler.EVERY_24) {
+                const scheduledTime = new Date();
+                scheduledTime.setHours(now.getHours() + 24, 0, 0, 0);
+                customizeNotification.scheduledFor = scheduledTime;
+            }
+            customizeNotification.repeatInterval = body.scheduledFor;
+        }
         customizeNotification.priority = body.priority ?? NotificationPriority.MEDIUM;
         return this.pushNotificationRepository.save(customizeNotification);
+    }
+
+    async stopPushNotificationSchedule(uuid: string): Promise<void> {
+        this.logger.log(`Updating customize push notification: ${uuid}`);
+
+        // Find the customize push notification
+        const customizeNotification = await this.pushNotificationRepository.findOneBy({ uuid: uuid, });
+        if (customizeNotification === null) {
+            throw new NotFoundException({
+                error: "Failed to find the customize push notification. Please check and try again.",
+            });
+        }
+
+        // Update the customize push notification
+        customizeNotification.scheduledFor = null;
+        customizeNotification.repeatInterval = null;
+
+        await this.pushNotificationRepository.save(customizeNotification);
+        return;
     }
 
     /**
