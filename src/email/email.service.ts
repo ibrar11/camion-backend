@@ -58,6 +58,7 @@ export class EmailService {
 	private readonly logger = new Logger(EmailService.name);
 	private readonly emailEnabled: boolean;
 	private readonly isLocal: boolean;
+	private readonly isProduction: boolean;
 	private readonly from: string;
 
 	// SendGrid dynamic template IDs — set these in your .env
@@ -68,6 +69,7 @@ export class EmailService {
 			this.configService.get<string>("EMAIL_ENABLED") === "true";
 
 		this.isLocal = this.configService.get<string>("NODE_ENV") === "local";
+		this.isProduction = this.configService.get<string>("NODE_ENV") === "prod";
 		this.from = this.configService.get<string>("EMAIL_FROM") as string;
 
 		this.templateIds = {
@@ -147,6 +149,10 @@ export class EmailService {
 	}
 
 	async sendAdminNewOrderEmail(data: AdminNewOrderData): Promise<void> {
+		if (!this.isProduction) {
+			this.logger.debug(`[NON-PROD] Skipping admin new-order email`);
+			return;
+		}
 		await Promise.all(
 			ADMIN_NOTIFICATION_EMAILS.map(to =>
 				this.send(to, this.templateIds.adminNewOrder, data),
