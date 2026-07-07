@@ -1988,6 +1988,20 @@ curl --location --request POST 'http://localhost:8000/v1/products/<product-uuid>
 }
 ```
 
+Delete Product Review Image
+---------------------------
+
+```http
+DELETE /v1/products/<product-uuid>/reviews/<product-review-uuid>/images/<product-review-image-uuid> HTTP/1.1
+```
+
+### Request Body
+
+```bash
+curl --location --request DELETE 'http://localhost:8000/v1/products/<product-uuid>/reviews/<product-review-uuid>/images/<product-review-image-uuid>' \
+--header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>'
+```
+
 Get Product Reviews
 -------------------
 

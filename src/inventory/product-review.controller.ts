@@ -85,6 +85,17 @@ export class ProductReviewController {
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Delete(':uuid/images/:image_uuid')
+	@HttpCode(HttpStatus.OK)
+	actionDeleteProductReviewImage(
+		@Param('uuid') reviewUUID: string,
+		@Param('image_uuid') reviewImageUUID: string,
+	): Promise<void> {
+		console.log({reviewUUID, reviewImageUUID});
+		return this.productReviewImageService.deleteProductReviewImage(reviewUUID, reviewImageUUID);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProductReviews(

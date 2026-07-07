@@ -89,4 +89,58 @@ export class ProductReviewImageService {
 		image.thumbnailUrl = thumbnailParams.url;
 		return this.productReviewImageRepository.save(image);
 	}
+
+	/**
+	 * Deletes images of a review
+	 *
+	 * @param reviewUUID
+	 * @param reviewImageUUID
+	 */
+	async deleteProductReviewImage(reviewUUID: string, reviewImageUUID: string): Promise<void> {
+		this.logger.log(`Deleting images of review`);
+
+		// Make sure the review exists
+		const review = await this.productReview.findOneBy({ uuid: reviewUUID, });
+		if (review === null) {
+			throw new BadRequestException({
+				error: "Failed to find the review. Please check and try again.",
+			});
+		}
+
+		// Make sure the review image exists
+		const reviewImage = await this.productReviewImageRepository.findOneBy({ uuid: reviewImageUUID, });
+		if (reviewImage == null) {
+			throw new BadRequestException({
+				error: "Failed to find the review image. Please check and try again.",
+			});
+		}
+
+		// Delete the thumbnail
+		try {
+			// Format the key using the thumbnail url
+			let key = reviewImage.thumbnailUrl;
+			if (key !== undefined && key !== null && key.startsWith('s3://')) {
+				key = key.substring(5);
+			}
+			await this.s3Service.deleteFile(key);
+		} catch (err) {
+			this.logger.error(err);
+		}
+
+		// Delete the image
+		try {
+			let key = reviewImage.imageUrl;
+			if (key !== undefined && key !== null && key.startsWith('s3://')) {
+				key = key.substring(5);
+			}
+			await this.s3Service.deleteFile(key);
+		} catch (err) {
+			this.logger.error(err);
+		}
+
+		// Delete the image from the database
+		await this.productReviewImageRepository.delete({
+			uuid: reviewImageUUID,
+		});
+	}
 }
