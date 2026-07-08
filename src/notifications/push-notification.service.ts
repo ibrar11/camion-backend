@@ -297,28 +297,7 @@ export class PushNotificationService {
         customizeNotification.brief = body.brief.trim();
         customizeNotification.message = body.message.trim();
         if (body.scheduledFor) {
-            const now = new Date();
-
-            if (body.scheduledFor === NotificationScheduler.EVERY_3) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 3, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
-            if (body.scheduledFor === NotificationScheduler.EVERY_6) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 6, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
-            if (body.scheduledFor === NotificationScheduler.EVERY_12) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 12, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
-            if (body.scheduledFor === NotificationScheduler.EVERY_24) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 24, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
+            customizeNotification.scheduledFor = this.calculateNextRun(body.scheduledFor);
             customizeNotification.repeatInterval = body.scheduledFor;
         }
         customizeNotification.priority = body.priority ?? NotificationPriority.MEDIUM;
@@ -391,28 +370,7 @@ export class PushNotificationService {
         customizeNotification.brief = body.brief.trim();
         customizeNotification.message = body.message.trim();
         if (body.scheduledFor) {
-            const now = new Date();
-
-            if (body.scheduledFor === NotificationScheduler.EVERY_3) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 3, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
-            if (body.scheduledFor === NotificationScheduler.EVERY_6) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 6, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
-            if (body.scheduledFor === NotificationScheduler.EVERY_12) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 12, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
-            if (body.scheduledFor === NotificationScheduler.EVERY_24) {
-                const scheduledTime = new Date();
-                scheduledTime.setHours(now.getHours() + 24, 0, 0, 0);
-                customizeNotification.scheduledFor = scheduledTime;
-            }
+            customizeNotification.scheduledFor = this.calculateNextRun(body.scheduledFor);
             customizeNotification.repeatInterval = body.scheduledFor;
         }
         customizeNotification.priority = body.priority ?? NotificationPriority.MEDIUM;
@@ -447,6 +405,19 @@ export class PushNotificationService {
         await this.pushNotificationRepository.delete({
             uuid: uuid,
         });
+    }
+
+    private calculateNextRun(interval: NotificationScheduler, from: Date = new Date()): Date {
+        const hoursMap: Record<NotificationScheduler, number> = {
+            [NotificationScheduler.EVERY_3]: 3,
+            [NotificationScheduler.EVERY_6]: 6,
+            [NotificationScheduler.EVERY_12]: 12,
+            [NotificationScheduler.EVERY_24]: 24,
+        };
+
+        return new Date(
+            from.getTime() + hoursMap[interval] * 60 * 60 * 1000,
+        );
     }
 
 }
