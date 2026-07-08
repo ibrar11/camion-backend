@@ -82,7 +82,7 @@ export interface DispatchOrderJobData extends BaseJobData {
     hiobuyLines: Array<{
         offer_id: string;
         spec_id: string;
-        quantity: string;
+        quantity: number;
     }>;
     variantSyncData: DispatchShopJobData['variantSyncData'];
 }

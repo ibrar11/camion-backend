@@ -1,11 +1,13 @@
 import {
     IsArray,
     IsDefined,
+    IsInt,
     IsNotEmpty,
     IsNotEmptyObject,
     IsObject,
     IsOptional,
     IsString,
+    Min,
     ValidateNested,
     ArrayMinSize,
 } from 'class-validator';
@@ -46,9 +48,9 @@ export class HiobuyOrderLineDto {
     @IsNotEmpty()
     spec_id: string;
 
-    @IsString()
-    @IsNotEmpty()
-    quantity: string;
+    @IsInt()
+    @Min(1)
+    quantity: number;
 }
 
 export class CreateHiobuyOrderDto {
