@@ -1983,10 +1983,9 @@ export class ProcurementService {
             const data = await response.json();
 
             if (!data.success) {
-                this.logger.error(`Hiobuy: order creation failed — ${data.message ?? data.failed_offers?.[0]?.reason ?? 'unknown error'}`);
-                throw new BadRequestException({
-                    error: data.message ?? data.failed_offers?.[0]?.reason ?? 'Hiobuy order creation failed',
-                });
+                const reason = data.message ?? data.failed_offers?.[0]?.reason ?? 'Hiobuy order creation failed';
+                this.logger.error(`Hiobuy: order creation failed — ${reason}`);
+                throw new BadRequestException(reason);
             }
 
             const orderId: string = data.order_id;
