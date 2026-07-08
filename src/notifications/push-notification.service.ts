@@ -154,28 +154,17 @@ export class PushNotificationService {
                 );
             }
 
-            const customers = await this.customerRepository.find({
-                where: {
-                    uuid: In([
-                        "6174c251-dafe-4ed7-bd19-5db02d7e3e09",
-                        "3bc7d83d-1e41-4e7c-8e8a-322bc0005661",
-                        "2e7d7557-b950-4946-b1b5-d1cf56bf51d0",
-                        "5ca759cd-1d33-4b92-9005-0f921238964f",
-                        "7266b8a7-714c-4fa6-b625-0b3ddc9e49cc",
-                        "2cb38bf2-3b98-4780-901c-880571abbb14", // hafiz bilal dev customer uuid
-                    ])
-                }
-            });
+            let customers: Customer[] | [] = [];
 
-            // if (body.receiverType === NotificationReceiver.ALLCUSTOMER) {
-            //     customers = await this.customerRepository.find();
-            // } else {
-            //     customers = await this.customerRepository.find({
-            //         where: {
-            //             role: body.receiverType
-            //         }
-            //     });
-            // }
+            if (body.receiverType === NotificationReceiver.ALLCUSTOMER) {
+                customers = await this.customerRepository.find();
+            } else {
+                customers = await this.customerRepository.find({
+                    where: {
+                        role: body.receiverType
+                    }
+                });
+            }
 
             if (!customers.length) {
                 throw new BadRequestException(
