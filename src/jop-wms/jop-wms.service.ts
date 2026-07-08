@@ -620,7 +620,7 @@ export class JopWmsService {
             const hiobuyLines = order.orderItems.map(item => ({
                 offer_id: String(item.variant.product.procurementId),
                 spec_id: item.variant.skuMeta?.spec_id ?? '',
-                quantity: String(item.quantity),
+                quantity: item.quantity,
             }));
 
             const seenSkus = new Set<string>();
