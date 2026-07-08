@@ -46,14 +46,6 @@ export class PushNotificationScheduler {
             return;
         }
 
-        const notificationUUIDs = notifications.map(notification => notification.uuid);
-        const payload = {
-            notificationUUID: notificationUUIDs,
-            receiverType: NotificationReceiver.ALLCUSTOMER
-        }
-
-        await this.pushNotificationService.push(payload)
-
         for (const notification of notifications) {
 
             notification.status = NotificationStatus.PROCESSING;
@@ -62,6 +54,10 @@ export class PushNotificationScheduler {
 
             await this.pushNotificationRepository.save(notification);
         }
+
+        this.logger.log(
+            `${notifications.length} notification(s) marked as PROCESSING`,
+        );
     }
 
     /**
@@ -69,7 +65,6 @@ export class PushNotificationScheduler {
      */
     @Cron(CronExpression.EVERY_MINUTE)
     async processNotifications() {
-        this.logger.log("Processing the broadcast scheduled notifications......");
 
         const notifications = await this.pushNotificationRepository.find({
             where: {
@@ -79,46 +74,58 @@ export class PushNotificationScheduler {
                 images: true
             }
         });
+        if (notifications.length > 0) {
+            this.logger.log(`Found ${notifications.length} notifications with processing status`);
+        } else {
+            return;
+        }
 
         for (const notification of notifications) {
             try {
                 await this.pushNotificationService.push({
                     notificationUUID: [notification.uuid],
-                    receiverType: NotificationReceiver.ALLCUSTOMER
+                    receiverType: NotificationReceiver.ALLCUSTOMER,
                 });
-            } catch (error: any) {
-                this.logger.error(`Error broadcasting scheduled notification: ${notification.uuid}`, error?.stack);
-                notification.status = NotificationStatus.PENDING;
-                await this.pushNotificationRepository.save(notification);
-            }
-            if (notification.repeatInterval && notification.scheduledFor) {
-                const nextRun = new Date(notification.scheduledFor);
-                if (notification.repeatInterval === NotificationScheduler.EVERY_3) {
-                    nextRun.setHours(
-                        nextRun.getHours() + 3, 0, 0, 0,
+
+                if (notification.repeatInterval && notification.scheduledFor) {
+                    const hoursMap: Record<NotificationScheduler, number> = {
+                        [NotificationScheduler.EVERY_3]: 3,
+                        [NotificationScheduler.EVERY_6]: 6,
+                        [NotificationScheduler.EVERY_12]: 12,
+                        [NotificationScheduler.EVERY_24]: 24,
+                    };
+
+                    const hours = hoursMap[notification.repeatInterval];
+
+                    notification.scheduledFor = new Date(
+                        notification.scheduledFor.getTime() +
+                        hours * 60 * 60 * 1000,
                     );
-                }
-                if (notification.repeatInterval === NotificationScheduler.EVERY_6) {
-                    nextRun.setHours(
-                        nextRun.getHours() + 6, 0, 0, 0,
-                    );
-                }
-                if (notification.repeatInterval === NotificationScheduler.EVERY_12) {
-                    nextRun.setHours(
-                        nextRun.getHours() + 12, 0, 0, 0,
-                    );
-                }
-                if (notification.repeatInterval === NotificationScheduler.EVERY_24) {
-                    nextRun.setHours(
-                        nextRun.getHours() + 24, 0, 0, 0,
-                    );
+
+                    notification.status = NotificationStatus.PENDING;
+                } else {
+                    notification.scheduledFor = null;
+                    notification.status = NotificationStatus.SENT;
                 }
 
-                notification.scheduledFor = nextRun;
-            } else {
-                notification.scheduledFor = null;
+                notification.processingStartedAt = null;
+
+                await this.pushNotificationRepository.save(notification);
+
+                this.logger.log(
+                    `Notification ${notification.uuid} processed successfully.`,
+                );
+            } catch (error: any) {
+                this.logger.error(
+                    `Failed to process notification ${notification.uuid}`,
+                    error?.stack,
+                );
+
+                notification.status = NotificationStatus.PENDING;
+                notification.processingStartedAt = null;
+
+                await this.pushNotificationRepository.save(notification);
             }
-            await this.pushNotificationRepository.save(notification);
         }
     }
 
@@ -127,7 +134,6 @@ export class PushNotificationScheduler {
      */
     @Cron(CronExpression.EVERY_10_MINUTES)
     async recoverStuckNotifications() {
-        this.logger.log("Recovering the stuck notifications......");
 
         const timeout = new Date();
         timeout.setMinutes(timeout.getMinutes() - 10);
@@ -139,6 +145,12 @@ export class PushNotificationScheduler {
                     processingStartedAt: LessThan(timeout)
                 }
             });
+
+        if (notifications.length > 0) {
+            this.logger.log(`Recovering ${notifications.length} stuck notifications......`);
+        } else {
+            return;
+        }
 
         for (const notification of notifications) {
             notification.status = NotificationStatus.PENDING;
