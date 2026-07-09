@@ -123,7 +123,8 @@ export class Order {
     orderReview: { rating: number; text: string } | null;
 
     @Column({ type: 'boolean', default: false })
-    inValidOrder: boolean;
+    @Index()
+    invalidOrder: boolean;
 
     @Exclude()
     @UpdateDateColumn({

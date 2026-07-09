@@ -71,7 +71,7 @@ export class OrderItem {
     total: Money;
 
     @Column({ type: 'boolean', default: false })
-    inValidOrderItem: boolean;
+    invalidOrderItem: boolean;
 
     @Exclude()
     @UpdateDateColumn({

@@ -47,13 +47,13 @@ export class OrderSkuMetaProcessor extends WorkerHost {
 
         const orderItems = order.orderItems.map((item) => {
             if (!item?.product?.procurementId || !item?.variant?.skuMeta) {
-                item.inValidOrderItem = true;
+                item.invalidOrderItem = true;
             }
             return item;
         });
 
-        const invalid = orderItems.find(item => item.inValidOrderItem === true);
-        order.inValidOrder = invalid ? true : false;
+        const invalid = orderItems.find(item => item.invalidOrderItem === true);
+        order.invalidOrder = invalid ? true : false;
 
         await this.orderItemRepository.save(orderItems);
         await this.orderRepository.save(order);

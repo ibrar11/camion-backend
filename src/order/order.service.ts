@@ -671,6 +671,7 @@ export class OrderService {
 
             let filtersObject: {
                 customerUUID?: string,
+                invalidOrder?: boolean,
             } = {};
             try {
                 filtersObject = JSON.parse(filters);
@@ -682,6 +683,7 @@ export class OrderService {
             if (status || filtersObject) {
                 filter.status = status;
                 filter.customer = { uuid: filtersObject?.customerUUID };
+                filter.invalidOrder = filtersObject?.invalidOrder;
             }
 
             const orders = await this.orderRepository.find({
