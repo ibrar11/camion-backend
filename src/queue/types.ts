@@ -103,3 +103,6 @@ export interface SkuMetaImportJobData extends BaseJobData {
 export interface PaymentTimeoutJobData {
     orderUuid: string;
 }
+export interface OrderSkuMetaJobData {
+    orderUuid: string;
+}

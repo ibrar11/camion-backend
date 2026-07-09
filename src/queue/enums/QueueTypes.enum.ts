@@ -7,6 +7,7 @@ export enum QueueName {
     PRODUCT_CATEGORY_RESYNC = "product_category_resync",
     SKU_META_IMPORT = "sku_meta_import",
     ORDER_PAYMENT_TIMEOUT = 'order-payment-timeout',
+    ORDER_SKUMETA_VALIDATION = 'order-skumeta-validation',
 }
 
 export enum JobPriority {

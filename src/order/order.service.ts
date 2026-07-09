@@ -24,7 +24,7 @@ import { Queue } from 'bullmq';
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
 import { PaymentStatus } from "../payments/enums/PaymentStatus";
 import { QueueName } from '../queue/enums/QueueTypes.enum';
-import { PaymentTimeoutJobData } from '../queue/types';
+import { OrderSkuMetaJobData, PaymentTimeoutJobData } from '../queue/types';
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
@@ -135,6 +135,7 @@ export class OrderService {
         private readonly emailService: EmailService,
         @InjectQueue(QueueName.ORDER_PAYMENT_TIMEOUT)
         private readonly paymentTimeoutQueue: Queue<PaymentTimeoutJobData>,
+        @InjectQueue(QueueName.ORDER_SKUMETA_VALIDATION) private readonly orderSkuMetaQueue: Queue<OrderSkuMetaJobData>,
     ) { }
 
     private static readonly INBOUND_TRACKING_STATUS: Record<string, string> = {
@@ -634,6 +635,12 @@ export class OrderService {
                 { orderUuid: order.uuid },
                 { delay: 30 * 60 * 1000, jobId: `payment-timeout-${order.uuid}` },
             ).catch(err => this.logger.error(`[Queue] Failed to enqueue payment timeout for order ${order.uuid}: ${err?.message}`));
+
+            await this.orderSkuMetaQueue.add(
+                'order-skumeta-check',
+                { orderUuid: order.uuid },
+                { jobId: `order-skumeta-check-${order.uuid}` },
+            ).catch(err => this.logger.error(`[Queue] Failed to enqueue order sku meta sync check for order ${order.uuid}: ${err?.message}`));
 
             return order;
         } catch (error: any) {

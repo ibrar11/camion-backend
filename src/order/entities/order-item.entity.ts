@@ -70,6 +70,9 @@ export class OrderItem {
     @Column(() => Money)
     total: Money;
 
+    @Column({ type: 'boolean', default: false })
+    inValidOrderItem: boolean;
+
     @Exclude()
     @UpdateDateColumn({
         name: "updated_at",
