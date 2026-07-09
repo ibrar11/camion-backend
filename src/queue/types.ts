@@ -72,11 +72,13 @@ export interface DispatchShopJobData extends BaseJobData {
 
 export interface DispatchOrderJobData extends BaseJobData {
     dispatchJobId: string;
-    orderUuid: string;                 // singular — one Hiobuy order call per Camion order
+    shopId: string;
+    shopName: string;
+    orderUuids: string[];              // shop batch — 1688 rejects mixed-seller orders
     inboundVoucherNo: string;
     shipperMethod: number;
     shipperCompany?: string;
-    hiobuyOrderId?: string;            // checkpoint, analogous to gulltransOrderSns but singular
+    hiobuyOrderId?: string;            // checkpoint — one Hiobuy order per shop batch
     hiobuyResponse?: Record<string, any>;
     warehouseAddress: Record<string, any>;
     hiobuyLines: Array<{

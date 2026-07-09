@@ -82,6 +82,19 @@ export class JopWmsOrder {
     @Column({ type: 'varchar', nullable: true })
     hiobuyShipperCompany: string | null;
 
+    // Hiobuy flow only: the 1688 shop this inbound's items were sourced from (dispatch
+    // is shop-batched — 1688 rejects orders mixing sellers). Lets the trace poller
+    // rebuild the box list scoped to only this shop's items when a linked order has
+    // items from multiple shops (and therefore multiple inbounds).
+    @Column({ type: 'varchar', nullable: true })
+    hiobuyShopId: string | null;
+
+    // Hiobuy flow only: the order id returned by POST /v1/orders/create for this
+    // shop batch. Stored directly here (not derived from orders.gulltrans_order_sns)
+    // because an order can belong to multiple shop batches, each with its own id.
+    @Column({ type: 'varchar', nullable: true })
+    hiobuyOrderId: string | null;
+
     @Column({ type: 'timestamptz', nullable: true })
     lastPolledAt: Date | null;
 
