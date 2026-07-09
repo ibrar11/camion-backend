@@ -63,6 +63,7 @@ import { Product } from '../inventory/entities/product.entity';
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 
 import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
+import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
 
 @Module({
     imports: [
@@ -90,7 +91,10 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
             PushNotification,
             Product,
         ]),
-        BullModule.registerQueue({ name: QueueName.ORDER_PAYMENT_TIMEOUT }),
+        BullModule.registerQueue(
+            { name: QueueName.ORDER_PAYMENT_TIMEOUT },
+            { name: QueueName.ORDER_SKUMETA_VALIDATION },
+        ),
         ClientsModule,
         NotificationsModule,
         EmailModule,
@@ -112,6 +116,7 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
         PushNotificationService,
         FirebaseAdminProvider,
         PaymentTimeoutProcessor,
+        OrderSkuMetaProcessor,
     ],
     controllers: [
         OrderController
