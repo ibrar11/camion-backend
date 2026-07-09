@@ -7,7 +7,9 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
 import { OrderService } from './order.service';
+import { OrderServiceV2 } from './order-v2.service';
 import { OrderController } from './order.controller';
+import { OrderV2Controller } from './order-v2.controller';
 import {
     OrderItemResolver,
     OrderResolver
@@ -100,6 +102,7 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
     ],
     providers: [
         OrderService,
+        OrderServiceV2,
         UsersService,
         CustomersService,
         OrderResolver,
@@ -114,7 +117,8 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
         PaymentTimeoutProcessor,
     ],
     controllers: [
-        OrderController
+        OrderController,
+        OrderV2Controller
     ]
 })
 export class OrderModule { }
