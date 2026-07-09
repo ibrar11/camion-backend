@@ -63,9 +63,10 @@ Admin approves (status → CONFIRMED)
        ↓
 POST /v1/wms/orders/dispatch  →  returns { jobId } immediately (202)
        ↓ (background)
-All confirmed orders collected — NO shop grouping this time
+All confirmed orders collected → items grouped by 1688 shop (same grouping as legacy)
        ↓
-One Hiobuy order per customer order (all items merged, regardless of 1688 shop)
+One Hiobuy order per shop batch — single lines[] call merges every order's items
+  for that shop (Gulltrans instead created one order per variant, no merging)
        ↓
 Variants synced to WMS → placeholder inbound created locally, status = "awaiting_tracking"
   (the real JOP WMS inbound is NOT created yet — no tracking number exists)
@@ -83,8 +84,10 @@ Scheduler polls inbound every 3 hours → STORED → outbound auto-created → p
 
 **Why this exists:** Gulltrans never returned a usable 1688 order id, so JOP WMS's inbound `waybillNo` (freight tracking number) was always sent empty. Hiobuy's `POST /v1/orders/create` returns a `order_id` immediately, and `POST /v1/orders/logistics/trace` returns the real courier tracking number once the seller ships — but only asynchronously, which is why inbound creation is deferred to a poller instead of happening synchronously at dispatch time.
 
+**Why dispatch is still shop-batched:** an earlier version of this flow dispatched per-Camion-order instead (no shop grouping), since Hiobuy's `lines[]` has no shop field. In practice, 1688 itself (which Hiobuy proxies to) still rejects an order whose lines span more than one seller — `CHANNEL_UPSTREAM_ERROR: "购买的商品不属于同一个卖家，请检查后重新提交！"` ("items don't belong to the same seller"). So dispatch reverted to shop-batching, same grouping as the legacy Gulltrans flow.
+
 **Key differences from the legacy flow:**
-- Dispatch granularity is **per customer order**, not per 1688 shop — Hiobuy has no shop-scoping requirement
+- One Hiobuy order per shop batch, created via a **single `lines[]` API call** — Gulltrans instead required one order per variant with no merging
 - Inbound creation is **deferred** until a real tracking number exists (placeholder row with `status: awaiting_tracking` in the meantime)
 - Runs on a separate BullMQ queue (`wms-dispatch-hiobuy`) and processor — the legacy queue/processor is untouched
 - Product search/detail/import (`POST /v1/procurement/import`, catalogue browsing) stay on Gulltrans regardless of this flag
@@ -118,12 +121,12 @@ JopWmsService     (business logic — syncs with local DB, tracks orders)
 JopWmsController  (v1/wms/orders/dispatch, same endpoint)
        │
        ▼
-JopWmsService.dispatchApprovedOrdersViaHiobuy  (per-order, no shop grouping)
+JopWmsService.dispatchApprovedOrdersViaHiobuy  (shop-batched, same grouping as legacy)
        │
        ▼
 DispatchOrderProcessor  (wms-dispatch-hiobuy queue — separate from the legacy wms-dispatch queue)
        │
-       ├──► ProcurementService.createHiobuyOrder      (POST /v1/orders/create)
+       ├──► ProcurementService.createHiobuyOrder      (POST /v1/orders/create, one call per shop batch)
        └──► creates a placeholder jop_wms_orders row (status: awaiting_tracking)
                     │
                     ▼
@@ -132,7 +135,7 @@ DispatchOrderProcessor  (wms-dispatch-hiobuy queue — separate from the legacy 
        └──► once a tracking number exists: JopWmsClient → inboundorder/create (real WMS inbound)
 ```
 
-The legacy `DispatchProcessor`/`wms-dispatch` queue is never touched by this path — the two pipelines are fully independent, selected only by the env var at the top of `dispatchApprovedOrders`.
+The legacy `DispatchProcessor`/`wms-dispatch` queue is never touched by this path — the two pipelines are fully independent, selected only by the hardcoded `HIOBUY_DISPATCH_ENABLED` constant at the top of `dispatchApprovedOrders`.
 
 ---
 
@@ -263,13 +266,15 @@ Each order has an `errorCount` field. If the JOP WMS call fails, `errorCount` is
 
 | Column | Description |
 |---|---|
-| `orderNo` | The `customerVoucherNo` sent to JOP WMS (unique, max 64 chars). Dispatch-created inbounds use a 32-character hex string (UUID with dashes stripped) per shop group (legacy) or per order (Hiobuy); outbound orders use the first 29 characters of the UUID (dashes stripped) suffixed with `out` — e.g. `a6e2cc0a471247614761810out` |
+| `orderNo` | The `customerVoucherNo` sent to JOP WMS (unique, max 64 chars). Dispatch-created inbounds use a 32-character hex string (UUID with dashes stripped) per shop group (legacy and Hiobuy both batch by shop); outbound orders use the first 29 characters of the UUID (dashes stripped) suffixed with `out` — e.g. `a6e2cc0a471247614761810out` |
 | `type` | `inbound`, `outbound`, or `return` |
 | `status` | Last known status from WMS, or `awaiting_tracking` (Hiobuy flow only — placeholder row, not yet a real WMS order) |
 | `wmsAssignedId` | The internal order ID assigned by JOP WMS on creation (`inboundOrderId` / `outboundOrderId`). `null` while a Hiobuy placeholder is `awaiting_tracking`. Stored for reference; not required for subsequent API calls |
 | `waybillNo` | Outbound: carrier tracking number. **Not returned by `outboundorder/status`** — populated via a separate `waybillNo/query` call once the order reaches SHIPPED status. Inbound (Hiobuy flow only): the real 1688 courier freight tracking number from `/logistics/trace`, mirrored here for admin visibility |
 | `gulltransResponse` | Full Gulltrans (legacy) or Hiobuy (feature-flagged) API response payload stored as JSONB on inbound order creation (for audit and debugging) — field name kept as-is under the Hiobuy flow to minimize schema churn |
 | `hiobuyShipperMethod` / `hiobuyShipperCompany` | Hiobuy flow only — admin-supplied `shipperMethod`/`shipperCompany` from the original dispatch request, persisted here because the real WMS inbound isn't created until the trace poller runs, possibly days later |
+| `hiobuyShopId` | Hiobuy flow only — the 1688 shop this inbound's items were sourced from. Dispatch is shop-batched (1688 rejects orders mixing sellers), so this scopes the trace poller's box-list rebuild to only this shop's items when a linked order also has items from other shops (and therefore other inbounds) |
+| `hiobuyOrderId` | Hiobuy flow only — the `order_id` returned by `POST /v1/orders/create` for this shop batch, stored directly on the row (not derived from `orders.gulltrans_order_sns`) since one order can belong to multiple shop batches, each with its own Hiobuy order id |
 | `lastPolledAt` | Timestamp of last successful poll attempt |
 | `errorCount` | Consecutive poll failures; order is skipped after 5 |
 
@@ -371,7 +376,7 @@ Use the server logs (tagged with `jobId`) to track progress and results.
 - Dispatch is blocked (400) if any provided UUID already has a row in `jop_wms_order_links`; omitting `orderUuids` bypasses this check (dispatch-all mode)
 
 > [!NOTE]
-> **Hiobuy flow** — if the `HIOBUY_DISPATCH_ENABLED` constant is `true`, this same endpoint runs a different pipeline instead of steps 1-5 above: one Hiobuy order per customer order (no shop grouping), variants synced to WMS, then a **placeholder** inbound row (`status: awaiting_tracking`) instead of a real WMS inbound. The eligibility query, the already-dispatched pre-flight check, and the `skuMeta`/min-order-quantity guards are identical either way — only what happens after guards pass differs. The response shape (`{ jobId }`, `400` bodies) is unchanged. See "End-to-end order dispatch flow (Hiobuy, feature-flagged)" above, and `GET orders/dispatch-hiobuy/*` below for status polling under this flow.
+> **Hiobuy flow** — if the `HIOBUY_DISPATCH_ENABLED` constant is `true`, this same endpoint runs a different pipeline instead of steps 1-5 above: items are still grouped by 1688 shop (same grouping as legacy — 1688 rejects orders mixing sellers), one Hiobuy order is created per shop batch via a single `lines[]` call, variants synced to WMS, then a **placeholder** inbound row (`status: awaiting_tracking`) is created per shop batch instead of a real WMS inbound. The eligibility query, the already-dispatched pre-flight check, and the `skuMeta`/min-order-quantity guards are identical either way — only what happens after guards pass differs. The response shape (`{ jobId }`, `400` bodies) is unchanged. See "End-to-end order dispatch flow (Hiobuy, feature-flagged)" above, and `GET orders/dispatch-hiobuy/*` below for status polling under this flow.
 
 ---
 
@@ -657,7 +662,7 @@ GET /v1/wms/orders/dispatch/jobs/:jobId HTTP/1.1
 
 ### Get Dispatch Batch Status (Hiobuy)
 
-Hiobuy-flow equivalent of "Get Dispatch Batch Status" above — reads the separate `wms-dispatch-hiobuy` queue instead of `wms-dispatch`. One entry per **order**, not per shop (there's no shop dimension in this flow).
+Hiobuy-flow equivalent of "Get Dispatch Batch Status" above — reads the separate `wms-dispatch-hiobuy` queue instead of `wms-dispatch`. Same shop-batched shape as the legacy endpoint (one entry per **shop**, covering all orders in that shop batch), just with `hiobuyOrderId` (singular) instead of `gulltransOrderSns` (array — Gulltrans created one order per variant, Hiobuy creates one per shop batch).
 
 ```http
 GET /v1/wms/orders/dispatch-hiobuy/:dispatchJobId/status HTTP/1.1
@@ -671,8 +676,10 @@ GET /v1/wms/orders/dispatch-hiobuy/:dispatchJobId/status HTTP/1.1
     "overallStatus": "completed",
     "jobs": [
         {
-            "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890-550e8400-...",
-            "orderUuid": "550e8400-e29b-41d4-a716-446655440000",
+            "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890-12345",
+            "shopId": "12345",
+            "shopName": "Example 1688 Shop",
+            "orderUuids": ["550e8400-e29b-41d4-a716-446655440000"],
             "state": "completed",
             "attemptsMade": 1,
             "maxAttempts": 5,
@@ -690,8 +697,9 @@ GET /v1/wms/orders/dispatch-hiobuy/:dispatchJobId/status HTTP/1.1
 
 | Field | Description |
 |---|---|
-| `jobs[].orderUuid` | Camion order UUID this job dispatched (singular — no shop grouping) |
-| `jobs[].hiobuyOrderId` | Hiobuy `order_id` (populated once Step 4 completes; `null` before that) — also mirrored onto `orders.gulltrans_order_sns` |
+| `jobs[].shopId` / `jobs[].shopName` | The 1688 shop this batch was created for — all lines in the Hiobuy order came from this shop |
+| `jobs[].orderUuids` | Camion order UUIDs merged into this shop batch |
+| `jobs[].hiobuyOrderId` | Hiobuy `order_id` for this shop batch (populated once Step 4 completes; `null` before that) — also mirrored onto every linked order's `orders.gulltrans_order_sns` |
 | `jobs[].inbound.status` | `awaiting_tracking` until `pollHiobuyPendingInbounds` finds a real tracking number and creates the actual WMS inbound; a normal WMS status code afterward |
 | `jobs[].inbound.wmsAssignedId` | `null` while the inbound is still a placeholder |
 
@@ -711,9 +719,11 @@ GET /v1/wms/orders/dispatch-hiobuy/jobs/:jobId HTTP/1.1
 
 ```json
 {
-    "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890-550e8400-...",
+    "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890-12345",
     "dispatchJobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "orderUuid": "550e8400-e29b-41d4-a716-446655440000",
+    "shopId": "12345",
+    "shopName": "Example 1688 Shop",
+    "orderUuids": ["550e8400-e29b-41d4-a716-446655440000"],
     "state": "completed",
     "attemptsMade": 1,
     "failedReason": null,
@@ -726,7 +736,7 @@ GET /v1/wms/orders/dispatch-hiobuy/jobs/:jobId HTTP/1.1
 }
 ```
 
-Same fields and semantics as the legacy sub-job endpoint, with `orderUuid`/`hiobuyOrderId` replacing `shopId`/`shopName`/`orderUuids`/`gulltransOrderSns` (one order per job, not multiple).
+Same fields and semantics as the legacy sub-job endpoint — `shopId`/`shopName`/`orderUuids`/`hiobuyOrderId` in place of `gulltransOrderSns` (single Hiobuy order id per shop batch instead of an array).
 
 ---
 

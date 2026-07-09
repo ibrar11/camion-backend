@@ -58,7 +58,7 @@ export class JopWmsScheduler {
     async pollHiobuyPendingInbounds() {
         const pending = await this.wmsOrderRepository.find({
             where: { type: JopWmsOrderType.INBOUND, status: JOP_WMS_AWAITING_TRACKING_STATUS },
-            relations: ['sourceOrders', 'sourceOrders.order'],
+            relations: ['sourceOrders'],
         });
 
         if (!pending.length) return;
@@ -86,11 +86,11 @@ export class JopWmsScheduler {
                 continue;
             }
 
-            const orderUuid = inbound.sourceOrders?.[0]?.orderUuid;
-            const hiobuyOrderId = inbound.sourceOrders?.[0]?.order?.gulltransOrderSns?.[0];
+            const orderUuids = inbound.sourceOrders?.map(l => l.orderUuid) ?? [];
+            const hiobuyOrderId = inbound.hiobuyOrderId;
 
-            if (!orderUuid || !hiobuyOrderId) {
-                this.logger.warn(`${inbound.orderNo}: missing linked order or Hiobuy order id — skipping`);
+            if (!orderUuids.length || !hiobuyOrderId) {
+                this.logger.warn(`${inbound.orderNo}: missing linked order(s) or Hiobuy order id — skipping`);
                 continue;
             }
 
@@ -102,16 +102,26 @@ export class JopWmsScheduler {
                     continue;
                 }
 
-                const order = await this.orderRepository.findOne({
-                    where: { uuid: orderUuid },
-                    relations: ['orderItems', 'orderItems.variant'],
+                const orders = await this.orderRepository.find({
+                    where: { uuid: In(orderUuids) },
+                    relations: ['orderItems', 'orderItems.variant', 'orderItems.variant.product'],
                 });
-                if (!order) {
-                    this.logger.warn(`${inbound.orderNo}: linked order ${orderUuid} not found — skipping`);
+                if (!orders.length) {
+                    this.logger.warn(`${inbound.orderNo}: linked order(s) ${orderUuids.join(', ')} not found — skipping`);
                     continue;
                 }
 
-                const wmsBoxList = this.buildWmsBoxList(inbound.orderNo, order.orderItems);
+                // Scope to this inbound's shop only — a linked order can have items from
+                // other shops too, which belong to a different inbound batch.
+                const shopItems = orders.flatMap(o =>
+                    o.orderItems.filter(item => item.variant?.product?.shopId === inbound.hiobuyShopId),
+                );
+                if (!shopItems.length) {
+                    this.logger.warn(`${inbound.orderNo}: no items found for shop ${inbound.hiobuyShopId} — skipping`);
+                    continue;
+                }
+
+                const wmsBoxList = this.buildWmsBoxList(inbound.orderNo, shopItems);
 
                 const result: any = await this.client.post('inboundorder/create', {
                     warehouseCode: process.env.JOP_WMS_WAREHOUSE_CODE ?? '',
