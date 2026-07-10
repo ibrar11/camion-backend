@@ -43,6 +43,7 @@ import { ClientsModule } from "./clients/clients.module";
 import { Category } from "./inventory/entities/category.entity";
 
 import { Product } from "./inventory/entities/product.entity";
+import { ProductAttachment } from "./inventory/entities/product-attachment.entity"
 import { ProductCategory } from "./inventory/entities/product-category.entity";
 import { ProductOption } from "./inventory/entities/product-option.entity";
 import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
@@ -146,7 +147,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 
 import { Campaign } from "./campaigns/entities/campaign.entity";
-import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";
+import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";;
 
 @Module({
 	imports: [
@@ -215,6 +216,7 @@ import { CampaignCategory } from "./campaigns/entities/campaign-category.entity"
 					Category,
 
 					Product,
+					ProductAttachment,
 					ProductCategory,
 					ProductOption,
 					ProductOptionValue,

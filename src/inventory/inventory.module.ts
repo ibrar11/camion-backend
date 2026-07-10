@@ -60,6 +60,8 @@ import { ProductView } from './entities/product-view.entity';
 import { ProductVariantInventoryItem } from './entities/product-variant-inventory-item.entity';
 import { ProductVariantOptionValue } from './entities/product-variant-option-value.entity';
 
+import { ProductAttachment } from './entities/product-attachment.entity';
+
 import { InventoryItem } from './entities/inventory-item.entity';
 import { InventoryLevel } from './entities/inventory-level.entity';
 
@@ -90,12 +92,13 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 			Campaign,
 			CartItem,
 			Category,
-			Order,
-			OrderTrackingEvent,
 			Customer,
 			InventoryItem,
 			InventoryLevel,
+			Order,
+			OrderTrackingEvent,
 			Product,
+			ProductAttachment,
 			ProductCategory,
 			ProductOption,
 			ProductOptionValue,
