@@ -7,7 +7,9 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
 import { OrderService } from './order.service';
+import { OrderServiceV2 } from './order-v2.service';
 import { OrderController } from './order.controller';
+import { OrderV2Controller } from './order-v2.controller';
 import {
     OrderItemResolver,
     OrderResolver
@@ -104,6 +106,7 @@ import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
     ],
     providers: [
         OrderService,
+        OrderServiceV2,
         UsersService,
         CustomersService,
         OrderResolver,
@@ -119,7 +122,8 @@ import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
         OrderSkuMetaProcessor,
     ],
     controllers: [
-        OrderController
+        OrderController,
+        OrderV2Controller
     ]
 })
 export class OrderModule { }

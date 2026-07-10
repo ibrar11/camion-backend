@@ -21,6 +21,7 @@ import {
 import { Order } from "./entities/order.entity";
 import { OrderItem } from "./entities/order-item.entity";
 import { OrderService } from "./order.service";
+import { OrderServiceV2 } from "./order-v2.service";
 
 import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
@@ -88,10 +89,29 @@ export class GetCustomerOrderPreviewArgs {
     couponCode?: string;
 }
 
+@ArgsType()
+export class GetCustomerOrderPreviewV2Args {
+    @Field({ defaultValue: "en", })
+    language: string;
+
+    @Field({ defaultValue: "usd", })
+    currency: CurrencyCode;
+
+    @Field(() => String, { nullable: true })
+    @IsOptional()
+    couponCode?: string;
+
+    @Field(() => [String], { defaultValue: [], })
+    cartItemUuids: string[];
+}
+
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Order)
 export class OrderResolver {
-    constructor(@Inject(OrderService) private readonly orderService: OrderService) { }
+    constructor(
+        @Inject(OrderService) private readonly orderService: OrderService,
+        @Inject(OrderServiceV2) private readonly orderServiceV2: OrderServiceV2,
+    ) { }
 
     @Query(() => [Order])
     getCurrentCustomerOrders(@Context() context, @Args() args: GetCustomerOrdersArgs): Promise<Array<Order>> {
@@ -131,6 +151,16 @@ export class OrderResolver {
             });
         }
         return this.orderService.orderPreview(context.req.customer, args.currency, args.couponCode);
+    }
+
+    @Query(() => OrderPreviewResponse)
+    getCurrentCustomerOrderPreviewV2(@Context() context, @Args() args: GetCustomerOrderPreviewV2Args): Promise<OrderPreviewResponse> {
+        if (!context.req || !context.req.customer || !context.req.customer.uuid) {
+            throw new ForbiddenException({
+                error: "You're not allowed to retrieve customer order. Please check and try again.",
+            });
+        }
+        return this.orderServiceV2.orderPreviewV2(context.req.customer, args);
     }
 }
 
