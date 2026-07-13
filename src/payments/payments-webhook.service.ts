@@ -143,16 +143,6 @@ export class PaymentsWebhookService {
             if (newStatus === PaymentStatus.PAID) {
                 this.logger.log(`Payment SUCCESS for transaction: ${TransactionId}`);
 
-                const wasReopened = order.status === OrderStatus.CANCELLED;
-                if (wasReopened) {
-                    this.logger.log(`Order ${order.uuid} was cancelled — reopening after successful payment`);
-                    order.cancellationReason = null;
-                    await this.trackingEventRepository.update(
-                        { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED, active: true },
-                        { active: false },
-                    );
-                }
-
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
 
@@ -204,9 +194,7 @@ export class PaymentsWebhookService {
                         type: NotificationType.PAYMENT_SUCCESSFUL,
                         title: 'Payment Successful',
                         brief: 'Your payment was processed successfully.',
-                        message: wasReopened
-                            ? `Payment for order #${order.uuid} was received. Your order has been reopened and is now being processed.`
-                            : `Payment for order #${order.uuid} was successful. Your order is now being processed.`,
+                        message:`Payment for order #${order.uuid} was successful. Your order is now being processed.`,
                         priority: NotificationPriority.HIGH,
                     }).catch(err => this.logger.warn(`Failed to send PAYMENT_SUCCESSFUL notification: ${err?.message}`));
 
