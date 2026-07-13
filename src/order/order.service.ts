@@ -24,7 +24,7 @@ import { Queue } from 'bullmq';
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
 import { PaymentStatus } from "../payments/enums/PaymentStatus";
 import { QueueName } from '../queue/enums/QueueTypes.enum';
-import { OrderSkuMetaJobData, PaymentTimeoutJobData } from '../queue/types';
+import { OrderSkuMetaJobData } from '../queue/types';
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
@@ -133,8 +133,6 @@ export class OrderService {
         @InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
-        @InjectQueue(QueueName.ORDER_PAYMENT_TIMEOUT)
-        private readonly paymentTimeoutQueue: Queue<PaymentTimeoutJobData>,
         @InjectQueue(QueueName.ORDER_SKUMETA_VALIDATION) private readonly orderSkuMetaQueue: Queue<OrderSkuMetaJobData>,
     ) { }
 
@@ -629,12 +627,6 @@ export class OrderService {
                 customerEmail: customer.emailAddress ?? '',
                 orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
             }).catch(err => this.logger.error(`[Email] Failed to send admin new-order notification for order ${order.uuid}: ${err?.message}`));
-
-            await this.paymentTimeoutQueue.add(
-                'payment-timeout',
-                { orderUuid: order.uuid },
-                { delay: 30 * 60 * 1000, jobId: `payment-timeout-${order.uuid}` },
-            ).catch(err => this.logger.error(`[Queue] Failed to enqueue payment timeout for order ${order.uuid}: ${err?.message}`));
 
             await this.orderSkuMetaQueue.add(
                 'order-skumeta-check',
