@@ -69,11 +69,6 @@ import { ConfigService } from '@nestjs/config';
 import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
 
 
-// TODO: move back to process.env.HIOBUY_API_KEY once a real key is provisioned for this env
-const HIOBUY_API_KEY = 'hio_live_6p4q672c2o315x011o2b2t733w5h2b5q2z5q0p002j281d4o';
-// TODO: move back to process.env.HIOBUY_BASE_URL once env is wired up for this env
-const HIOBUY_BASE_URL = 'https://api.hiobuy.com';
-
 @Injectable()
 export class ProcurementService {
     private readonly logger = new Logger(ProcurementService.name);
@@ -1965,11 +1960,11 @@ export class ProcurementService {
         try {
             this.logger.log(`Hiobuy: creating order (${dto.lines.length} line(s))`);
             const response = await fetch(
-                `${HIOBUY_BASE_URL}/v1/orders/create`,
+                `${process.env.HIOBUY_BASE_URL}/v1/orders/create`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${HIOBUY_API_KEY}`,
+                        Authorization: `Bearer ${process.env.HIOBUY_API_KEY}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
@@ -2014,11 +2009,11 @@ export class ProcurementService {
     async getHiobuyLogisticsTrace(orderId: string): Promise<{ trackingNumber: string | null; raw: any }> {
         try {
             const response = await fetch(
-                `${HIOBUY_BASE_URL}/v1/orders/logistics/trace`,
+                `${process.env.HIOBUY_BASE_URL}/v1/orders/logistics/trace`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${HIOBUY_API_KEY}`,
+                        Authorization: `Bearer ${process.env.HIOBUY_API_KEY}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
