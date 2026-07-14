@@ -601,24 +601,11 @@ export class OrderService {
             customer.cartItemsCount = 0;
             await this.customerRepository.save(customer);
 
-            const notification = await this.notificationsService.create({
-                customerUUID: customer.uuid,
-                type: NotificationType.ORDER_PLACED,
-                title: 'Order Placed',
-                brief: 'Your order has been placed successfully.',
-                message: `Your order #${order.uuid} has been placed. We'll notify you once it's confirmed.`,
-                priority: NotificationPriority.HIGH,
-                payload: {
-                    type: NotificationType.ORDER_PLACED,
-                    priority: NotificationPriority.HIGH,
-                    isRead: String(false),
-                },
-            }).catch(err => this.logger.warn(`Failed to send ORDER_PLACED notification: ${err?.message}`));
-
-
-            if (notification?.uuid) {
-                this.logger.log(`Attempting to create push notification for order placement: ${JSON.stringify(order.uuid)}`);
-                await this.pushNotificationService.sendToToken(notification?.uuid)
+            if (order.status === OrderStatus.PAYMENT_SUCCESSFUL) {
+                // Zero-cost orders (e.g. fully covered by a coupon) never hit the
+                // payment gateway webhook, so send the order-confirmed notification
+                // and email here instead of waiting for a webhook that won't come.
+                await this.sendOrderConfirmation(order, customer);
             }
 
             this.emailService.sendAdminNewOrderEmail({
@@ -649,6 +636,79 @@ export class OrderService {
         } finally {
             await queryRunner.release();
         }
+    }
+
+    /**
+     * Sends the combined "payment successful / order placed" push notification
+     * and email once payment is confirmed successful. Order status at this
+     * point is PAYMENT_SUCCESSFUL, not admin-CONFIRMED, so this deliberately
+     * does not reuse the ORDER_CONFIRMED notification/sendOrderConfirmedEmail
+     * used by the separate admin manual-confirm flow in updateStatus(). Called
+     * from the zero-total path in create() (no gateway webhook fires for those)
+     * and mirrored in PaymentsWebhookService for the normal paid-order path.
+     */
+    private async sendOrderConfirmation(order: Order, customer: Customer): Promise<void> {
+        const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
+
+        const notification = await this.notificationsService.create({
+            customerUUID: customer.uuid,
+            type: NotificationType.PAYMENT_SUCCESSFUL,
+            title: 'Payment Successful',
+            brief: 'Your order has been placed and payment confirmed.',
+            message: `Your order #${order.uuid} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
+            priority: NotificationPriority.HIGH,
+            payload: {
+                type: NotificationType.PAYMENT_SUCCESSFUL,
+                priority: NotificationPriority.HIGH,
+                isRead: String(false),
+            },
+        }).catch(err => this.logger.warn(`Failed to send payment-success notification: ${err?.message}`));
+
+        if (notification?.uuid) {
+            this.logger.log(`Attempting to create push notification for payment success: ${JSON.stringify(order.uuid)}`);
+            await this.pushNotificationService.sendToToken(notification.uuid);
+        }
+
+        if (!customer.emailAddress) {
+            this.logger.warn(`[Email] Skipping payment-success email for order ${order.uuid} — customer has no email address`);
+            return;
+        }
+
+        this.emailService.sendPaymentSuccessEmail(customer.emailAddress, {
+            customerName: customer.fullName,
+            orderId: order.uuid,
+            orderTotal,
+            paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
+            ...this.buildPaymentSuccessEmailExtras(order),
+            nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
+        }).catch(err => this.logger.error(`[Email] Failed to send payment-success email for order ${order.uuid}: ${err?.message}`));
+    }
+
+    /**
+     * Builds the line-items and delivery-details portions of the
+     * payment-success email payload — shared with PaymentsWebhookService's
+     * mirrored logic for the normal (non-zero-total) paid-order path.
+     */
+    private buildPaymentSuccessEmailExtras(order: Order): { items: Array<{ name: string; quantity: number; unitPrice: string; lineTotal: string }>; deliveryDetails: { fullName: string; streetAddress: string; apartment?: string; city: string; state: string; country: string; zipCode: string; phoneNumber: string } } {
+        const items = order.orderItems.map(item => ({
+            name: item.variant?.titleEn || item.product?.titleEn,
+            quantity: item.quantity,
+            unitPrice: `${item.price.amount} ${item.price.currencyCode}`,
+            lineTotal: `${item.total.amount} ${item.total.currencyCode}`,
+        }));
+
+        const deliveryDetails = {
+            fullName: order.shippingAddress.fullName,
+            streetAddress: order.shippingAddress.streetAddress,
+            apartment: order.shippingAddress.apartment,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            country: order.shippingAddress.country,
+            zipCode: order.shippingAddress.zipCode,
+            phoneNumber: order.shippingAddress.phoneNumber,
+        };
+
+        return { items, deliveryDetails };
     }
 
     /**

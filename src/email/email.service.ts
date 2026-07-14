@@ -16,6 +16,37 @@ interface OrderConfirmedTemplateData {
 	orderTotal: string;
 }
 
+// Sent when the payment gateway confirms a successful charge — order is at
+// PAYMENT_SUCCESSFUL, not yet admin-CONFIRMED, so this is deliberately a
+// separate template/method from sendOrderConfirmedEmail (see order.service.ts).
+interface PaymentSuccessItem {
+	name: string;
+	quantity: number;
+	unitPrice: string;
+	lineTotal: string;
+}
+
+interface PaymentSuccessDeliveryDetails {
+	fullName: string;
+	streetAddress: string;
+	apartment?: string;
+	city: string;
+	state: string;
+	country: string;
+	zipCode: string;
+	phoneNumber: string;
+}
+
+interface PaymentSuccessTemplateData {
+	customerName: string;
+	orderId: string;
+	orderTotal: string;
+	paymentConfirmation: string;
+	items: PaymentSuccessItem[];
+	deliveryDetails: PaymentSuccessDeliveryDetails;
+	nextSteps: string;
+}
+
 interface OrderShippedTemplateData {
 	customerName: string;
 	orderId: string;
@@ -92,6 +123,8 @@ export class EmailService {
 			adminNewOrder: this.configService.get<string>(
 				"SENDGRID_TEMPLATE_ADMIN_NEW_ORDER",
 			) as string,
+			// TODO: move to SENDGRID_TEMPLATE_PAYMENT_SUCCESS env var once it's provisioned in deployment config
+			paymentSuccess: "d-5e8807f9a145460c940574c82e73d009",
 		};
 
 		if (this.emailEnabled) {
@@ -118,6 +151,13 @@ export class EmailService {
 		data: OrderConfirmedTemplateData,
 	): Promise<void> {
 		await this.send(to, this.templateIds.orderConfirmed, data);
+	}
+
+	async sendPaymentSuccessEmail(
+		to: string,
+		data: PaymentSuccessTemplateData,
+	): Promise<void> {
+		await this.send(to, this.templateIds.paymentSuccess, data);
 	}
 
 	async sendOrderShippedEmail(

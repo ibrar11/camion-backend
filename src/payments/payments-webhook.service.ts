@@ -76,6 +76,7 @@ export class PaymentsWebhookService {
                 where: { uuid: TransactionId },
                 relations: {
                     customer: true,
+                    shippingAddress: true,
                     orderItems: {
                         product: true,
                         variant: true,
@@ -189,24 +190,48 @@ export class PaymentsWebhookService {
                 // }
 
                 if (order.customer) {
+                    const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
+
                     notification = await this.notificationsService.create({
                         customerUUID: order.customer.uuid,
                         type: NotificationType.PAYMENT_SUCCESSFUL,
                         title: 'Payment Successful',
-                        brief: 'Your payment was processed successfully.',
-                        message:`Payment for order #${order.uuid} was successful. Your order is now being processed.`,
+                        brief: 'Your order has been placed and payment confirmed.',
+                        message: `Your order #${order.uuid} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
                         priority: NotificationPriority.HIGH,
                     }).catch(err => this.logger.warn(`Failed to send PAYMENT_SUCCESSFUL notification: ${err?.message}`));
 
                     if (order.customer.emailAddress) {
-                        this.emailService.sendOrderConfirmedEmail(
+                        const items = order.orderItems.map(item => ({
+                            name: item.variant?.titleEn || item.product?.titleEn,
+                            quantity: item.quantity,
+                            unitPrice: `${item.price.amount} ${item.price.currencyCode}`,
+                            lineTotal: `${item.total.amount} ${item.total.currencyCode}`,
+                        }));
+
+                        const deliveryDetails = {
+                            fullName: order.shippingAddress.fullName,
+                            streetAddress: order.shippingAddress.streetAddress,
+                            apartment: order.shippingAddress.apartment,
+                            city: order.shippingAddress.city,
+                            state: order.shippingAddress.state,
+                            country: order.shippingAddress.country,
+                            zipCode: order.shippingAddress.zipCode,
+                            phoneNumber: order.shippingAddress.phoneNumber,
+                        };
+
+                        this.emailService.sendPaymentSuccessEmail(
                             order.customer.emailAddress,
                             {
                                 customerName: order.customer.fullName,
                                 orderId: order.uuid,
-                                orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
+                                orderTotal,
+                                paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
+                                items,
+                                deliveryDetails,
+                                nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
                             },
-                        ).catch(err => this.logger.error(`[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`));
+                        ).catch(err => this.logger.error(`[Email] Failed to send payment-success email for order ${order.uuid}: ${err?.message}`));
                     }
                 }
 
