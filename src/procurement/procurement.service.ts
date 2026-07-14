@@ -1051,23 +1051,31 @@ export class ProcurementService {
                     // Single translation for description
                     try {
                         const translationResponse = await fetch(
-                            `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate`,
+                            `${this.configService.get<string>("PRODUCT_TRANSLATION_BASE_URL")}/api/translate/batch`,
                             {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
                                 body: JSON.stringify({
-                                    text: description,
+                                    texts: [description],
                                     sourceLanguage: 'ch',
                                     targetLanguage: 'en',
                                 }),
                             },
                         );
-                        const data: { translated: string } = await translationResponse.json();
-                        descriptionTrans = data?.translated || "";
+                        
+                        const data = await translationResponse.json();
+                        if (!translationResponse.ok) {
+                            
+                            throw new BadRequestException({
+                                error: data.message,
+                            });
+                        }
+                        
+                        descriptionTrans = data[0] || "";
                     } catch (error: any) {
-                        this.logger.error(`Description translation failed: ${error.message}`);
+                        this.logger.error(`Description translation failed: ${error}`);
                         descriptionTrans = description;
                     }
                 } else {
