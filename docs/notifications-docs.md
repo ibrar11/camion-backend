@@ -66,18 +66,19 @@ The following notifications are sent automatically by the system. The customer d
 
 | Trigger | Type | Notes |
 |---|---|---|
-| Customer places an order | `ORDER_PLACED` | Fired immediately after the order is created |
 | Admin sets order status → `confirmed` | `ORDER_CONFIRMED` | Via `PATCH /v1/orders/:uuid/status` |
 | Admin sets order status → `delivered` | `ORDER_DELIVERED` | Via `PATCH /v1/orders/:uuid/status` |
 | Admin cancels order | `ORDER_CANCELLED` | Via `DELETE /v1/orders/:uuid` or status update |
 | Admin sets order status → `payment_successful` | `PAYMENT_SUCCESSFUL` | Manual override only; see payment events for automatic |
 | Admin sets order status → `payment_rejected` | `PAYMENT_FAILED` | Manual override only |
 
+> **No notification is sent at order creation.** The order stays `payment_pending` with no customer-facing push until the payment gateway confirms the charge — see Payment Events below. (Zero-cost orders, e.g. fully covered by a coupon, are the one exception: they skip the gateway entirely and get their confirmation notification/email synchronously at creation, since no webhook will ever arrive for them.)
+
 ### Payment Events
 
 | Trigger | Type | Notes |
 |---|---|---|
-| SkipCash webhook — payment paid | `PAYMENT_SUCCESSFUL` | Sent when SkipCash confirms payment |
+| SkipCash webhook — payment paid | `PAYMENT_SUCCESSFUL` | Combined "order placed + payment confirmed" copy. Guarded against duplicate webhook deliveries by the payment transaction's status (skipped if already `PAID`) |
 | SkipCash webhook — payment failed or cancelled | `PAYMENT_FAILED` | Sent on failed or cancelled SkipCash transactions |
 
 ### Return & Refund Events
