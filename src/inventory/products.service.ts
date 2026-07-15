@@ -538,7 +538,7 @@ export class ProductsService {
 		this.logger.log(`Registering a product view`);
 
 		// Check if an existing view exists
-		const existingView = await this.productViewRepository.findOne({
+		const existingProductView = await this.productViewRepository.findOne({
 			where: {
 				customer: { id: customer.id, },
 				product: { id: product.id, },
@@ -546,18 +546,18 @@ export class ProductsService {
 		});
 
 		// Update the existing view
-		if (existingView) {
-			existingView.viewsCount += 1;
-			return this.productViewRepository.save(existingView);
+		if (existingProductView) {
+			existingProductView.viewsCount += 1;
+			return this.productViewRepository.save(existingProductView);
 		}
 
 		// Create a new view
-		const view = new ProductView();
-		view.uuid = crypto.randomUUID();
-		view.customer = customer;
-		view.product = product;
-		view.viewsCount = 1;
-		return this.productViewRepository.save(view);
+		const productView = new ProductView();
+		productView.uuid = crypto.randomUUID();
+		productView.customer = customer;
+		productView.product = product;
+		productView.viewsCount = 1;
+		return this.productViewRepository.save(productView);
 	}
 
 	/**
