@@ -203,6 +203,7 @@ export class Product {
 	@Column({ type: "integer", nullable: false, default: 0, })
 	ratingFiveStarCount: number;
 
+	@Field(() => [ProductAttachment])
 	@OneToMany(() => ProductAttachment, (attachment) => attachment.product, { cascade: true, })
 	attachments: Array<ProductAttachment>;
 

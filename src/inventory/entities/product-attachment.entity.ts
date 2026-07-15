@@ -1,3 +1,5 @@
+import { Field, ObjectType } from "@nestjs/graphql";
+
 import {
 	Column,
 	CreateDateColumn,
@@ -14,12 +16,14 @@ import { Exclude } from "class-transformer";
 import { Product } from "./product.entity";
 import { AttachmentMediaType } from "../enums/AttachmentMediaType.enum";
 
+@ObjectType()
 @Entity({ name: "product_attachments" })
 export class ProductAttachment {
 	@Exclude()
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Field()
 	@Column({ type: "uuid", nullable: false, unique: true, })
 	uuid: string;
 
@@ -28,9 +32,11 @@ export class ProductAttachment {
 	@Index()
 	product: Product;
 
+	@Field()
 	@Column({ type: "varchar", length: 256, nullable: false, default: "", })
 	mediaUrl: string;
 
+	@Field()
 	@Column({
 		type: "enum",
 		enum: AttachmentMediaType,

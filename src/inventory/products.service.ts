@@ -3458,6 +3458,7 @@ export class ProductsService {
 				status: ProductStatus.ACTIVE,
 			},
 			relations: {
+				attachments: true,
 				options: {
 					values: true,
 				},
