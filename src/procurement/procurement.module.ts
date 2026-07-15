@@ -36,6 +36,8 @@ import { ProductView } from '../inventory/entities/product-view.entity';
 
 import { ProductVariantOptionValue } from '../inventory/entities/product-variant-option-value.entity';
 
+import { ProductAttachment } from 'src/inventory/entities/product-attachment.entity';
+
 import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 
 import { InventoryLevel } from '../inventory/entities/inventory-level.entity';
@@ -66,6 +68,7 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 			InventoryLevel,
 			Order,
 			Product,
+			ProductAttachment,
 			ProductCategory,
 			ProductOption,
 			ProductOptionValue,

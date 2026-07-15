@@ -35,6 +35,8 @@ import { ProductStatus } from './enums/ProductStatus.enum';
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
 
+import { ProductAttachment } from "./entities/product-attachment.entity";
+
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
@@ -161,6 +163,31 @@ export class ProductsController {
 		@Param('uuid') uuid: string
 	): Promise<void> {
 		return this.productsService.deleteProductSizechart(uuid);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Post(':uuid/attachments')
+	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
+	@HttpCode(HttpStatus.OK)
+	actionCreateAttachment(
+		@Param('uuid') uuid: string,
+		@UploadedFile() file: Express.Multer.File,
+	): Promise<ProductAttachment> {
+		return this.productsService.createProductAttachment(uuid, file);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Get(':uuid/attachments')
+	@HttpCode(HttpStatus.OK)
+	actionGetProductAttachments(@Param('uuid') uuid: string): Promise<Array<ProductAttachment>> {
+		return this.productsService.getProductAttachments(uuid);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Delete(':uuid/attachments/:attachment_uuid')
+	@HttpCode(HttpStatus.OK)
+	actionDeleteAttachment(@Param('attachment_uuid') uuid: string): Promise<void> {
+		return this.productsService.deleteProductAttachment(uuid);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
