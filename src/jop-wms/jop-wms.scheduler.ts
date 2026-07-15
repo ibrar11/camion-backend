@@ -14,6 +14,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/enums/notification-type.enum';
 import { NotificationPriority } from '../notifications/enums/notification-priority.enum';
 import { ProcurementService } from '../procurement/procurement.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class JopWmsScheduler {
@@ -37,6 +38,7 @@ export class JopWmsScheduler {
         private readonly wmsService: JopWmsService,
         private readonly notificationsService: NotificationsService,
         private readonly procurementService: ProcurementService,
+        private readonly emailService: EmailService,
     ) { }
 
     /**
@@ -378,7 +380,7 @@ export class JopWmsScheduler {
                         title: 'Order Shipped',
                         brief: 'Your order is on its way.',
                         message: `Your order has been shipped. Tracking number: ${order.waybillNo}.`,
-                    });
+                    }, order.waybillNo);
 
                     for (const orderUuid of linkedUuids) {
                         const existing = await this.trackingEventRepository.findOne({
@@ -410,6 +412,7 @@ export class JopWmsScheduler {
         orderUuids: string[],
         type: NotificationType,
         content: { title: string; brief: string; message: string },
+        trackingNumber?: string,
     ) {
         for (const uuid of orderUuids) {
             try {
@@ -425,6 +428,20 @@ export class JopWmsScheduler {
                     ...content,
                     priority: NotificationPriority.HIGH,
                 });
+
+                const customerEmail = order.customer.emailAddress;
+                if (customerEmail) {
+                    const customerName = order.customer.fullName;
+                    if (type === NotificationType.ORDER_PROCESSING) {
+                        this.logger.log(`[Email] Sending order-processing email to ${customerEmail} for order ${uuid}`);
+                        this.emailService.sendOrderProcessingEmail(customerEmail, { customerName, orderId: uuid })
+                            .catch(err => this.logger.error(`[Email] Failed to send order-processing email for order ${uuid}: ${err?.message}`));
+                    } else if (type === NotificationType.ORDER_SHIPPED) {
+                        this.logger.log(`[Email] Sending order-shipped email to ${customerEmail} for order ${uuid}`);
+                        this.emailService.sendOrderShippedEmail(customerEmail, { customerName, orderId: uuid, trackingNumber })
+                            .catch(err => this.logger.error(`[Email] Failed to send order-shipped email for order ${uuid}: ${err?.message}`));
+                    }
+                }
             } catch (err: any) {
                 this.logger.warn(`Failed to send ${type} notification for order ${uuid}: ${err?.message}`);
             }
