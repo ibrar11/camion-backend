@@ -70,6 +70,25 @@ export interface DispatchShopJobData extends BaseJobData {
     }>;
 }
 
+export interface DispatchOrderJobData extends BaseJobData {
+    dispatchJobId: string;
+    shopId: string;
+    shopName: string;
+    orderUuids: string[];              // shop batch — 1688 rejects mixed-seller orders
+    inboundVoucherNo: string;
+    shipperMethod: number;
+    shipperCompany?: string;
+    hiobuyOrderId?: string;            // checkpoint — one Hiobuy order per shop batch
+    hiobuyResponse?: Record<string, any>;
+    warehouseAddress: Record<string, any>;
+    hiobuyLines: Array<{
+        offer_id: string;
+        spec_id: string;
+        quantity: number;
+    }>;
+    variantSyncData: DispatchShopJobData['variantSyncData'];
+}
+
 export interface InventoryResyncJobData extends BaseJobData {
     productUuids: string[];
 }
@@ -82,7 +101,6 @@ export interface SkuMetaImportJobData extends BaseJobData {
     productUuids: string[];
 }
 
-
-export interface PaymentTimeoutJobData {
+export interface OrderSkuMetaJobData {
     orderUuid: string;
 }

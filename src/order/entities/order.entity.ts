@@ -122,6 +122,10 @@ export class Order {
     @Column({ type: 'jsonb', nullable: true, default: null, name: 'order_review' })
     orderReview: { rating: number; text: string } | null;
 
+    @Column({ type: 'boolean', default: false })
+    @Index()
+    invalidOrder: boolean;
+
     @Exclude()
     @UpdateDateColumn({
         name: "updated_at",

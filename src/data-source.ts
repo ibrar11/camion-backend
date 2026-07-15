@@ -28,6 +28,7 @@ import { Category } from "./inventory/entities/category.entity";
 import { InventoryItem } from "./inventory/entities/inventory-item.entity";
 import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
 import { Product } from "./inventory/entities/product.entity";
+import { ProductAttachment } from "./inventory/entities/product-attachment.entity";
 import { ProductCategory } from "./inventory/entities/product-category.entity";
 import { ProductOption } from "./inventory/entities/product-option.entity";
 import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
@@ -37,8 +38,8 @@ import { ProductVariant } from "./inventory/entities/product-variant.entity";
 import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
 import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
 import { ProductVariantOptionValue } from "./inventory/entities/product-variant-option-value.entity";
-import { Warehouse } from "./inventory/entities/warehouse.entity";
 import { ProductView } from "./inventory/entities/product-view.entity";
+import { Warehouse } from "./inventory/entities/warehouse.entity";
 
 // languages
 import { Language } from "./languages/entities/language.entity";
@@ -136,6 +137,7 @@ export const CamionDataSource = new DataSource({
 		PaymentTransaction,
 		Post,
 		Product,
+		ProductAttachment,
 		ProductCategory,
 		ProductOption,
 		ProductOptionValue,

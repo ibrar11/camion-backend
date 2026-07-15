@@ -196,6 +196,20 @@ export class JopWmsController {
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get('orders/dispatch-hiobuy/:dispatchJobId/status')
+    @HttpCode(HttpStatus.OK)
+    getHiobuyDispatchJobStatus(@Param('dispatchJobId') dispatchJobId: string) {
+        return this.wmsService.getHiobuyDispatchJobStatus(dispatchJobId);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get('orders/dispatch-hiobuy/jobs/:jobId')
+    @HttpCode(HttpStatus.OK)
+    getHiobuyDispatchSubJob(@Param('jobId') jobId: string) {
+        return this.wmsService.getHiobuyDispatchSubJob(jobId);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Post('orders/:uuid/retry-outbound')
     @HttpCode(HttpStatus.OK)
     retryOutboundForOrder(@Param('uuid') uuid: string) {

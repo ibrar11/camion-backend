@@ -43,6 +43,7 @@ export class OrderPreviewResponse {
 export interface OrderFilters {
     status?: OrderStatus
     customer?: {uuid?: string}
+    invalidOrder?: boolean
 }
 
 export interface NotificationPayload {

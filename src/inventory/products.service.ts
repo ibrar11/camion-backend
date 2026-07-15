@@ -30,6 +30,7 @@ import { UpdateProductFeaturedImageDto } from "./dtos/UpdateProductFeaturedImage
 
 import { ProductStatus } from './enums/ProductStatus.enum';
 import { ProductSort } from "./enums/ProductSort.enum";
+import { AttachmentMediaType } from "./enums/AttachmentMediaType.enum";
 
 import { Category } from "./entities/category.entity";
 import { Product } from './entities/product.entity';
@@ -45,7 +46,7 @@ import { QueueService } from "src/queue/queue.service";
 import { QueueName } from "src/queue/enums/QueueTypes.enum";
 import { ProductCategoryResyncJobData } from "src/queue/types";
 import { Campaign } from "src/campaigns/entities/campaign.entity";
-import { ProductsResolver } from "./products.resolver";
+import { ProductAttachment } from "./entities/product-attachment.entity";
 
 @Injectable()
 export class ProductsService {
@@ -72,6 +73,7 @@ export class ProductsService {
 		@InjectRepository(ProductVariantImage) private readonly productImageVariantImageRepository: Repository<ProductVariantImage>,
 		@InjectRepository(ProductView) private readonly productViewRepository: Repository<ProductView>,
 		@InjectRepository(Campaign) private readonly campaignRepository: Repository<Campaign>,
+		@InjectRepository(ProductAttachment) private readonly productAttachmentRepository: Repository<ProductAttachment>,
 		@Inject(QueueService) private readonly queueService: QueueService,
 		@Inject(S3Service) private readonly s3Service: S3Service,
 		@Inject(FileService) private readonly fileService: FileService,
@@ -3408,6 +3410,7 @@ export class ProductsService {
 			relationLoadStrategy: "query",
 			where: { uuid: uuid, },
 			relations: {
+				attachments: true,
 				options: {
 					values: true,
 				},
@@ -3455,6 +3458,7 @@ export class ProductsService {
 				status: ProductStatus.ACTIVE,
 			},
 			relations: {
+				attachments: true,
 				options: {
 					values: true,
 				},
@@ -3783,6 +3787,136 @@ export class ProductsService {
 
 		product.sizechartUrl = "";
 		await this.productRepository.save(product);
+	}
+
+	/**
+	 * Creates a product attachment
+	 *
+	 * @param uuid
+	 * @param files
+	 * @returns
+	 */
+	async createProductAttachments(uuid: string, files: Array<Express.Multer.File>): Promise<Array<ProductAttachment>> {
+		this.logger.log(`Attaching images to product: ${uuid}`);
+
+		// Make sure we have enough attachments
+		if (!Array.isArray(files) || files.length === 0) {
+			throw new BadRequestException({
+				errors: {
+					files: "Please upload valid images.",
+				},
+			});
+		}
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Upload each file and create an attachment
+		return Promise.all(
+			files.map(async file => {
+				// Generate a small image for the attachment
+				const imagePath = await this.imageThumbnailService.generateImageWithoutCrop(file.path);
+
+				// Upload the image to s3
+				let imageParams: { key: string, url: string, } | null = null;
+				try {
+					imageParams = await this.s3Service.uploadPath("attachments", imagePath, "image/webp");
+				} catch (err) {
+					this.logger.error(err);
+					throw new InternalServerErrorException({
+						error: "Failed to upload the product attachment. Please try again.",
+					});
+				}
+
+				// Delete the temporary files from the disk
+				await this.fileService.deletePath(imagePath);
+				await this.fileService.deleteFile(file);
+
+				// Create an attachment entry
+				const attachment = new ProductAttachment();
+				attachment.uuid = crypto.randomUUID();
+				attachment.product = product;
+				attachment.mediaUrl = imageParams.url;
+				attachment.mediaType = AttachmentMediaType.Image;
+				return this.productAttachmentRepository.save(attachment);
+			})
+		);
+	}
+
+	/**
+	 * Retrieves a list of product attachments
+	 *
+	 * @param uuid
+	 * @returns
+	 */
+	async getProductAttachments(uuid: string): Promise<Array<ProductAttachment>> {
+		this.logger.log(`Retrieving product attachments for product: ${uuid}`);
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		return this.productAttachmentRepository.findBy({
+			product: {
+				id: product.id,
+			},
+		});
+	}
+
+	/**
+	 * Deletes a product attachment
+	 *
+	 * @param uuid
+	 */
+	async deleteProductAttachment(uuid: string): Promise<void> {
+		this.logger.log(`Deleting product attachment: ${uuid}`);
+
+		// Find the attachment
+		const attachment = await this.productAttachmentRepository.findOne({
+			where: {
+				uuid: uuid,
+			},
+		});
+
+		if (attachment === null) {
+			throw new NotFoundException({
+				error: "Failed to find the attachment. Please check and try again.",
+			});
+		}
+
+		// Delete the attachment on s3
+		try {
+			// Format the key using the media url
+			let key = attachment.mediaUrl;
+			if (key !== undefined && key !== null && key.startsWith('s3://')) {
+				key = key.substring(5);
+			}
+			await this.s3Service.deleteFile(key);
+		} catch (err) {
+			this.logger.error(err);
+		}
+
+		// Delete the attachment
+		await this.productAttachmentRepository.delete({
+			uuid: uuid,
+		});
 	}
 
 	/**

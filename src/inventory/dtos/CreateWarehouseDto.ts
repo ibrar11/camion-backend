@@ -60,6 +60,11 @@ export class CreateWarehouseDto {
 
 	@IsOptional()
 	@IsString()
+	@MaxLength(32)
+	district?: string;
+
+	@IsOptional()
+	@IsString()
 	@MaxLength(64)
 	gulltransWarehouseId?: string;
 

@@ -18,6 +18,7 @@ import { CustomersService } from '../customers/customers.service';
 import { ClientsModule } from '../clients/clients.module';
 import { ProcurementModule } from '../procurement/procurement.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailModule } from '../email/email.module';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 
@@ -29,6 +30,7 @@ import { JopWmsService } from './jop-wms.service';
 import { JopWmsController } from './jop-wms.controller';
 import { JopWmsScheduler } from './jop-wms.scheduler';
 import { DispatchProcessor } from './workers/dispatch.processor';
+import { DispatchOrderProcessor } from './workers/dispatch-order.processor';
 
 @Module({
     imports: [
@@ -45,9 +47,11 @@ import { DispatchProcessor } from './workers/dispatch.processor';
             Customer,
         ]),
         BullModule.registerQueue({ name: QueueName.WMS_DISPATCH }),
+        BullModule.registerQueue({ name: QueueName.WMS_DISPATCH_HIOBUY }),
         ClientsModule,
         ProcurementModule,
         NotificationsModule,
+        EmailModule,
     ],
     providers: [
         UsersService,
@@ -56,6 +60,7 @@ import { DispatchProcessor } from './workers/dispatch.processor';
         JopWmsService,
         JopWmsScheduler,
         DispatchProcessor,
+        DispatchOrderProcessor,
     ],
     controllers: [JopWmsController],
     exports: [JopWmsService],

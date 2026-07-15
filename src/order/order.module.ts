@@ -7,7 +7,9 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
 import { OrderService } from './order.service';
+import { OrderServiceV2 } from './order-v2.service';
 import { OrderController } from './order.controller';
+import { OrderV2Controller } from './order-v2.controller';
 import {
     OrderItemResolver,
     OrderResolver
@@ -62,7 +64,8 @@ import { Product } from '../inventory/entities/product.entity';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 
-import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
+import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
+import { OrderScheduler } from './order.scheduler';
 
 @Module({
     imports: [
@@ -90,7 +93,9 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
             PushNotification,
             Product,
         ]),
-        BullModule.registerQueue({ name: QueueName.ORDER_PAYMENT_TIMEOUT }),
+        BullModule.registerQueue(
+            { name: QueueName.ORDER_SKUMETA_VALIDATION },
+        ),
         ClientsModule,
         NotificationsModule,
         EmailModule,
@@ -100,6 +105,7 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
     ],
     providers: [
         OrderService,
+        OrderServiceV2,
         UsersService,
         CustomersService,
         OrderResolver,
@@ -111,10 +117,12 @@ import { PaymentTimeoutProcessor } from './workers/payment-timeout.processor';
         PricingService,
         PushNotificationService,
         FirebaseAdminProvider,
-        PaymentTimeoutProcessor,
+        OrderSkuMetaProcessor,
+        OrderScheduler,
     ],
     controllers: [
-        OrderController
+        OrderController,
+        OrderV2Controller
     ]
 })
 export class OrderModule { }

@@ -298,6 +298,7 @@ type PostAuthor {
 }
 
 type Product {
+  attachments: [ProductAttachment!]!
   brief(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   briefAr: String!
   briefEn: String!
@@ -334,6 +335,12 @@ type Product {
   uuid: String!
   variants(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
   viewsCount: Float!
+}
+
+type ProductAttachment {
+  mediaType: String!
+  mediaUrl: String!
+  uuid: String!
 }
 
 type ProductCategory {
@@ -433,6 +440,7 @@ type Query {
   getCurrentCustomer: Customer!
   getCurrentCustomerOrder(currency: String! = "usd", language: String! = "en", uuid: String!): Order!
   getCurrentCustomerOrderPreview(couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
+  getCurrentCustomerOrderPreviewV2(cartItemUuids: [String!]! = [], couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
   getCurrentCustomerOrders(itemsPerPage: Int! = 24, pageNumber: Int! = 1, status: String): [Order!]!
   getCurrentCustomerReturnRequest(uuid: String!): ReturnRequest!
   getCurrentCustomerReturnRequests(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!

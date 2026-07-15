@@ -41,6 +41,7 @@ export class WarehouseService {
 		warehouse.contactName = body.contactName?.trim() ?? null;
 		warehouse.phone = body.phone?.trim() ?? null;
 		warehouse.postcode = body.postcode?.trim() ?? null;
+		warehouse.district = body.district?.trim() ?? null;
 		warehouse.gulltransWarehouseId = body.gulltransWarehouseId?.trim() ?? null;
 		warehouse.gulltransUserId = body.gulltransUserId?.trim() ?? null;
 		warehouse.isActive = true;
@@ -115,6 +116,7 @@ export class WarehouseService {
 		warehouse.contactName = body.contactName?.trim() ?? warehouse.contactName;
 		warehouse.phone = body.phone?.trim() ?? warehouse.phone;
 		warehouse.postcode = body.postcode?.trim() ?? warehouse.postcode;
+		warehouse.district = body.district?.trim() ?? warehouse.district;
 		warehouse.gulltransWarehouseId = body.gulltransWarehouseId?.trim() ?? warehouse.gulltransWarehouseId;
 		warehouse.gulltransUserId = body.gulltransUserId?.trim() ?? warehouse.gulltransUserId;
 		return this.warehouseRepository.save(warehouse);

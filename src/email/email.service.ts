@@ -16,6 +16,37 @@ interface OrderConfirmedTemplateData {
 	orderTotal: string;
 }
 
+// Sent when the payment gateway confirms a successful charge — order is at
+// PAYMENT_SUCCESSFUL, not yet admin-CONFIRMED, so this is deliberately a
+// separate template/method from sendOrderConfirmedEmail (see order.service.ts).
+interface PaymentSuccessItem {
+	name: string;
+	quantity: number;
+	unitPrice: string;
+	lineTotal: string;
+}
+
+interface PaymentSuccessDeliveryDetails {
+	fullName: string;
+	streetAddress: string;
+	apartment?: string;
+	city: string;
+	state: string;
+	country: string;
+	zipCode: string;
+	phoneNumber: string;
+}
+
+interface PaymentSuccessTemplateData {
+	customerName: string;
+	orderId: string;
+	orderTotal: string;
+	paymentConfirmation: string;
+	items: PaymentSuccessItem[];
+	deliveryDetails: PaymentSuccessDeliveryDetails;
+	nextSteps: string;
+}
+
 interface OrderShippedTemplateData {
 	customerName: string;
 	orderId: string;
@@ -38,6 +69,14 @@ interface OrderCancelledTemplateData {
 	reason?: string;
 }
 
+// Sent when the payment gateway confirms a declined/rejected charge. Retry
+// happens via POST /v1/orders/:uuid/retry-payment, not a link in this email.
+interface PaymentFailedTemplateData {
+	customerName: string;
+	orderId: string;
+	failureReason: string;
+}
+
 interface AdminNewOrderData {
 	orderId: string;
 	customerName: string;
@@ -58,6 +97,7 @@ export class EmailService {
 	private readonly logger = new Logger(EmailService.name);
 	private readonly emailEnabled: boolean;
 	private readonly isLocal: boolean;
+	private readonly isProduction: boolean;
 	private readonly from: string;
 
 	// SendGrid dynamic template IDs — set these in your .env
@@ -68,6 +108,7 @@ export class EmailService {
 			this.configService.get<string>("EMAIL_ENABLED") === "true";
 
 		this.isLocal = this.configService.get<string>("NODE_ENV") === "local";
+		this.isProduction = this.configService.get<string>("NODE_ENV") === "prod";
 		this.from = this.configService.get<string>("EMAIL_FROM") as string;
 
 		this.templateIds = {
@@ -90,6 +131,10 @@ export class EmailService {
 			adminNewOrder: this.configService.get<string>(
 				"SENDGRID_TEMPLATE_ADMIN_NEW_ORDER",
 			) as string,
+			// TODO: move to SENDGRID_TEMPLATE_PAYMENT_FAILED env var once it's provisioned in deployment config
+			paymentFailed: "d-3a2f9e56d7614d82b778d14049ba9ea0",
+			// TODO: move to SENDGRID_TEMPLATE_PAYMENT_SUCCESS env var once it's provisioned in deployment config
+			paymentSuccess: "d-5e8807f9a145460c940574c82e73d009",
 		};
 
 		if (this.emailEnabled) {
@@ -116,6 +161,13 @@ export class EmailService {
 		data: OrderConfirmedTemplateData,
 	): Promise<void> {
 		await this.send(to, this.templateIds.orderConfirmed, data);
+	}
+
+	async sendPaymentSuccessEmail(
+		to: string,
+		data: PaymentSuccessTemplateData,
+	): Promise<void> {
+		await this.send(to, this.templateIds.paymentSuccess, data);
 	}
 
 	async sendOrderShippedEmail(
@@ -146,7 +198,18 @@ export class EmailService {
 		await this.send(to, this.templateIds.orderCancelled, data);
 	}
 
+	async sendPaymentFailedEmail(
+		to: string,
+		data: PaymentFailedTemplateData,
+	): Promise<void> {
+		await this.send(to, this.templateIds.paymentFailed, data);
+	}
+
 	async sendAdminNewOrderEmail(data: AdminNewOrderData): Promise<void> {
+		if (!this.isProduction) {
+			this.logger.debug(`[NON-PROD] Skipping admin new-order email`);
+			return;
+		}
 		await Promise.all(
 			ADMIN_NOTIFICATION_EMAILS.map(to =>
 				this.send(to, this.templateIds.adminNewOrder, data),

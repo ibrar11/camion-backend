@@ -76,6 +76,7 @@ export class PaymentsWebhookService {
                 where: { uuid: TransactionId },
                 relations: {
                     customer: true,
+                    shippingAddress: true,
                     orderItems: {
                         product: true,
                         variant: true,
@@ -118,6 +119,18 @@ export class PaymentsWebhookService {
                 8: PaymentStatus.REFUND_FAILED,
             };
 
+            const statusLabels: Record<number, string> = {
+                0: 'New',
+                1: 'Pending',
+                2: 'Paid',
+                3: 'Cancelled by customer',
+                4: 'Payment declined by gateway',
+                5: 'Payment rejected by gateway',
+                6: 'Refunded',
+                7: 'Refund pending',
+                8: 'Refund failed',
+            };
+
             const newStatus =
                 statusMap[StatusId] || PaymentStatus.FAILED;
 
@@ -131,6 +144,13 @@ export class PaymentsWebhookService {
             transaction.status = newStatus;
             transaction.transactionId = PaymentId;
             transaction.webhookData = payload;
+            transaction.lastAttemptAt = new Date();
+
+            if (newStatus !== PaymentStatus.PAID) {
+                transaction.errorCode = String(StatusId);
+                transaction.failureReason = statusLabels[StatusId] ?? `Gateway status ${StatusId}`;
+                transaction.paymentMethod = transaction.paymentMethod ?? transaction.provider;
+            }
 
             await this.paymentRepository.save(transaction);
 
@@ -142,16 +162,6 @@ export class PaymentsWebhookService {
 
             if (newStatus === PaymentStatus.PAID) {
                 this.logger.log(`Payment SUCCESS for transaction: ${TransactionId}`);
-
-                const wasReopened = order.status === OrderStatus.CANCELLED;
-                if (wasReopened) {
-                    this.logger.log(`Order ${order.uuid} was cancelled — reopening after successful payment`);
-                    order.cancellationReason = null;
-                    await this.trackingEventRepository.update(
-                        { orderUuid: order.uuid, stage: OrderTrackingStage.ORDER_CANCELLED, active: true },
-                        { active: false },
-                    );
-                }
 
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
@@ -199,49 +209,107 @@ export class PaymentsWebhookService {
                 // }
 
                 if (order.customer) {
+                    const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
+
                     notification = await this.notificationsService.create({
                         customerUUID: order.customer.uuid,
                         type: NotificationType.PAYMENT_SUCCESSFUL,
                         title: 'Payment Successful',
-                        brief: 'Your payment was processed successfully.',
-                        message: wasReopened
-                            ? `Payment for order #${order.uuid} was received. Your order has been reopened and is now being processed.`
-                            : `Payment for order #${order.uuid} was successful. Your order is now being processed.`,
+                        brief: 'Your order has been placed and payment confirmed.',
+                        message: `Your order #${order.uuid} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
                         priority: NotificationPriority.HIGH,
                     }).catch(err => this.logger.warn(`Failed to send PAYMENT_SUCCESSFUL notification: ${err?.message}`));
 
                     if (order.customer.emailAddress) {
-                        this.emailService.sendOrderConfirmedEmail(
+                        const items = order.orderItems.map(item => ({
+                            name: item.variant?.titleEn || item.product?.titleEn,
+                            quantity: item.quantity,
+                            unitPrice: `${item.price.amount} ${item.price.currencyCode}`,
+                            lineTotal: `${item.total.amount} ${item.total.currencyCode}`,
+                        }));
+
+                        const deliveryDetails = {
+                            fullName: order.shippingAddress.fullName,
+                            streetAddress: order.shippingAddress.streetAddress,
+                            apartment: order.shippingAddress.apartment,
+                            city: order.shippingAddress.city,
+                            state: order.shippingAddress.state,
+                            country: order.shippingAddress.country,
+                            zipCode: order.shippingAddress.zipCode,
+                            phoneNumber: order.shippingAddress.phoneNumber,
+                        };
+
+                        this.emailService.sendPaymentSuccessEmail(
                             order.customer.emailAddress,
                             {
                                 customerName: order.customer.fullName,
                                 orderId: order.uuid,
-                                orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
+                                orderTotal,
+                                paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
+                                items,
+                                deliveryDetails,
+                                nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
                             },
-                        ).catch(err => this.logger.error(`[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`));
+                        ).catch(err => this.logger.error(`[Email] Failed to send payment-success email for order ${order.uuid}: ${err?.message}`));
                     }
                 }
 
             } else if (
                 newStatus === PaymentStatus.FAILED ||
-                newStatus === PaymentStatus.CANCELLED ||
                 newStatus === PaymentStatus.REJECTED
             ) {
-                this.logger.log(`Payment FAILED/CANCELLED/REJECTED for transaction: ${TransactionId}`);
+                this.logger.log(`Payment FAILED/REJECTED for transaction: ${TransactionId}`);
 
-                if (order.status !== OrderStatus.CANCELLED) {
-                    order.status = OrderStatus.PAYMENT_REJECTED;
+                const alreadyHandled = order.status === OrderStatus.PAYMENT_FAILED
+                    || order.status === OrderStatus.CANCELLED;
+
+                if (!alreadyHandled) {
+                    order.status = OrderStatus.PAYMENT_FAILED;
                     await this.orderRepository.save(order);
 
                     if (order.customer) {
-                        // notification = await this.notificationsService.create({
-                        //     customerUUID: order.customer.uuid,
-                        //     type: NotificationType.PAYMENT_FAILED,
-                        //     title: 'Payment Failed',
-                        //     brief: 'Your payment could not be processed.',
-                        //     message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
-                        //     priority: NotificationPriority.HIGH,
-                        // }).catch(err => this.logger.warn(`Failed to send PAYMENT_FAILED notification: ${err?.message}`));
+                        notification = await this.notificationsService.create({
+                            customerUUID: order.customer.uuid,
+                            type: NotificationType.PAYMENT_FAILED,
+                            title: 'Payment Failed',
+                            brief: 'Your payment could not be processed.',
+                            message: `Payment for order #${order.uuid} failed. You can retry payment from your order details.`,
+                            priority: NotificationPriority.HIGH,
+                        }).catch(err => this.logger.warn(`Failed to send PAYMENT_FAILED notification: ${err?.message}`));
+
+                        if (order.customer.emailAddress) {
+                            this.emailService.sendPaymentFailedEmail(
+                                order.customer.emailAddress,
+                                {
+                                    customerName: order.customer.fullName,
+                                    orderId: order.uuid,
+                                    failureReason: transaction.failureReason ?? 'Your payment could not be processed.',
+                                },
+                            ).catch(err => this.logger.error(`[Email] Failed to send payment-failed email for order ${order.uuid}: ${err?.message}`));
+                        }
+                    }
+                } else {
+                    this.logger.log(`Order ${order.uuid} already ${order.status} — payment failure acknowledged, no status change`);
+                }
+            } else if (newStatus === PaymentStatus.CANCELLED) {
+                this.logger.log(`Payment CANCELLED for transaction: ${TransactionId}`);
+
+                const alreadyHandled = order.status === OrderStatus.PAYMENT_CANCELLED
+                    || order.status === OrderStatus.CANCELLED;
+
+                if (!alreadyHandled) {
+                    order.status = OrderStatus.PAYMENT_CANCELLED;
+                    await this.orderRepository.save(order);
+
+                    if (order.customer) {
+                        notification = await this.notificationsService.create({
+                            customerUUID: order.customer.uuid,
+                            type: NotificationType.PAYMENT_FAILED,
+                            title: 'Payment Cancelled',
+                            brief: 'Your payment was cancelled.',
+                            message: `Payment for order #${order.uuid} was cancelled. You can return to checkout to try again.`,
+                            priority: NotificationPriority.HIGH,
+                        }).catch(err => this.logger.warn(`Failed to send payment-cancelled notification: ${err?.message}`));
 
                         if (order.customer.emailAddress) {
                             this.emailService.sendOrderCancelledEmail(
@@ -249,13 +317,13 @@ export class PaymentsWebhookService {
                                 {
                                     customerName: order.customer.fullName,
                                     orderId: order.uuid,
-                                    reason: 'Your payment could not be processed. Please place a new order to try again.',
+                                    reason: 'Your payment was cancelled. You can return to checkout to try again.',
                                 },
-                            ).catch(err => this.logger.error(`[Email] Failed to send payment-failed email for order ${order.uuid}: ${err?.message}`));
+                            ).catch(err => this.logger.error(`[Email] Failed to send payment-cancelled email for order ${order.uuid}: ${err?.message}`));
                         }
                     }
                 } else {
-                    this.logger.log(`Order ${order.uuid} already cancelled — payment failure acknowledged, no status change`);
+                    this.logger.log(`Order ${order.uuid} already ${order.status} — payment cancellation acknowledged, no status change`);
                 }
             }
 

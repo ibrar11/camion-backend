@@ -24,7 +24,7 @@ import { Queue } from 'bullmq';
 import { PaymentProvider } from "../payments/enums/PaymentProvider";
 import { PaymentStatus } from "../payments/enums/PaymentStatus";
 import { QueueName } from '../queue/enums/QueueTypes.enum';
-import { PaymentTimeoutJobData } from '../queue/types';
+import { OrderSkuMetaJobData } from '../queue/types';
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { CreateOrderDto } from './dtos/CreateOrderDto';
@@ -52,6 +52,8 @@ import { Coupon } from "../referral/entities/coupon.entity";
 import { GlobalCoupon } from "../referral/entities/global-coupon.entity";
 
 import { Wallet } from "../referral/entities/wallet.entity";
+
+import { Affiliate } from "../referral/entities/affiliate.entity";
 
 import { Transaction, TransactionMoney } from "../referral/entities/transaction.entity";
 
@@ -122,6 +124,8 @@ export class OrderService {
         @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
         @InjectRepository(Coupon) private readonly couponRepository: Repository<Coupon>,
         @InjectRepository(GlobalCoupon) private readonly globalCouponRepository: Repository<GlobalCoupon>,
+        @InjectRepository(Wallet) private readonly walletRepository: Repository<Wallet>,
+        @InjectRepository(Affiliate) private readonly affiliateRepository: Repository<Affiliate>,
         @InjectRepository(KeyValuePair) private readonly keyValuePairRepository: Repository<KeyValuePair>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
@@ -133,8 +137,7 @@ export class OrderService {
         @InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
-        @InjectQueue(QueueName.ORDER_PAYMENT_TIMEOUT)
-        private readonly paymentTimeoutQueue: Queue<PaymentTimeoutJobData>,
+        @InjectQueue(QueueName.ORDER_SKUMETA_VALIDATION) private readonly orderSkuMetaQueue: Queue<OrderSkuMetaJobData>,
     ) { }
 
     private static readonly INBOUND_TRACKING_STATUS: Record<string, string> = {
@@ -602,24 +605,11 @@ export class OrderService {
             customer.cartItemsCount = 0;
             await this.customerRepository.save(customer);
 
-            const notification = await this.notificationsService.create({
-                customerUUID: customer.uuid,
-                type: NotificationType.ORDER_PLACED,
-                title: 'Order Placed',
-                brief: 'Your order has been placed successfully.',
-                message: `Your order #${order.uuid} has been placed. We'll notify you once it's confirmed.`,
-                priority: NotificationPriority.HIGH,
-                payload: {
-                    type: NotificationType.ORDER_PLACED,
-                    priority: NotificationPriority.HIGH,
-                    isRead: String(false),
-                },
-            }).catch(err => this.logger.warn(`Failed to send ORDER_PLACED notification: ${err?.message}`));
-
-
-            if (notification?.uuid) {
-                this.logger.log(`Attempting to create push notification for order placement: ${JSON.stringify(order.uuid)}`);
-                await this.pushNotificationService.sendToToken(notification?.uuid)
+            if (order.status === OrderStatus.PAYMENT_SUCCESSFUL) {
+                // Zero-cost orders (e.g. fully covered by a coupon) never hit the
+                // payment gateway webhook, so send the order-confirmed notification
+                // and email here instead of waiting for a webhook that won't come.
+                await this.sendOrderConfirmation(order, customer);
             }
 
             this.emailService.sendAdminNewOrderEmail({
@@ -629,11 +619,11 @@ export class OrderService {
                 orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
             }).catch(err => this.logger.error(`[Email] Failed to send admin new-order notification for order ${order.uuid}: ${err?.message}`));
 
-            await this.paymentTimeoutQueue.add(
-                'payment-timeout',
+            await this.orderSkuMetaQueue.add(
+                'order-skumeta-check',
                 { orderUuid: order.uuid },
-                { delay: 30 * 60 * 1000, jobId: `payment-timeout-${order.uuid}` },
-            ).catch(err => this.logger.error(`[Queue] Failed to enqueue payment timeout for order ${order.uuid}: ${err?.message}`));
+                { jobId: `order-skumeta-check-${order.uuid}` },
+            ).catch(err => this.logger.error(`[Queue] Failed to enqueue order sku meta sync check for order ${order.uuid}: ${err?.message}`));
 
             return order;
         } catch (error: any) {
@@ -653,6 +643,79 @@ export class OrderService {
     }
 
     /**
+     * Sends the combined "payment successful / order placed" push notification
+     * and email once payment is confirmed successful. Order status at this
+     * point is PAYMENT_SUCCESSFUL, not admin-CONFIRMED, so this deliberately
+     * does not reuse the ORDER_CONFIRMED notification/sendOrderConfirmedEmail
+     * used by the separate admin manual-confirm flow in updateStatus(). Called
+     * from the zero-total path in create() (no gateway webhook fires for those)
+     * and mirrored in PaymentsWebhookService for the normal paid-order path.
+     */
+    private async sendOrderConfirmation(order: Order, customer: Customer): Promise<void> {
+        const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
+
+        const notification = await this.notificationsService.create({
+            customerUUID: customer.uuid,
+            type: NotificationType.PAYMENT_SUCCESSFUL,
+            title: 'Payment Successful',
+            brief: 'Your order has been placed and payment confirmed.',
+            message: `Your order #${order.uuid} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
+            priority: NotificationPriority.HIGH,
+            payload: {
+                type: NotificationType.PAYMENT_SUCCESSFUL,
+                priority: NotificationPriority.HIGH,
+                isRead: String(false),
+            },
+        }).catch(err => this.logger.warn(`Failed to send payment-success notification: ${err?.message}`));
+
+        if (notification?.uuid) {
+            this.logger.log(`Attempting to create push notification for payment success: ${JSON.stringify(order.uuid)}`);
+            await this.pushNotificationService.sendToToken(notification.uuid);
+        }
+
+        if (!customer.emailAddress) {
+            this.logger.warn(`[Email] Skipping payment-success email for order ${order.uuid} — customer has no email address`);
+            return;
+        }
+
+        this.emailService.sendPaymentSuccessEmail(customer.emailAddress, {
+            customerName: customer.fullName,
+            orderId: order.uuid,
+            orderTotal,
+            paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
+            ...this.buildPaymentSuccessEmailExtras(order),
+            nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
+        }).catch(err => this.logger.error(`[Email] Failed to send payment-success email for order ${order.uuid}: ${err?.message}`));
+    }
+
+    /**
+     * Builds the line-items and delivery-details portions of the
+     * payment-success email payload — shared with PaymentsWebhookService's
+     * mirrored logic for the normal (non-zero-total) paid-order path.
+     */
+    private buildPaymentSuccessEmailExtras(order: Order): { items: Array<{ name: string; quantity: number; unitPrice: string; lineTotal: string }>; deliveryDetails: { fullName: string; streetAddress: string; apartment?: string; city: string; state: string; country: string; zipCode: string; phoneNumber: string } } {
+        const items = order.orderItems.map(item => ({
+            name: item.variant?.titleEn || item.product?.titleEn,
+            quantity: item.quantity,
+            unitPrice: `${item.price.amount} ${item.price.currencyCode}`,
+            lineTotal: `${item.total.amount} ${item.total.currencyCode}`,
+        }));
+
+        const deliveryDetails = {
+            fullName: order.shippingAddress.fullName,
+            streetAddress: order.shippingAddress.streetAddress,
+            apartment: order.shippingAddress.apartment,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            country: order.shippingAddress.country,
+            zipCode: order.shippingAddress.zipCode,
+            phoneNumber: order.shippingAddress.phoneNumber,
+        };
+
+        return { items, deliveryDetails };
+    }
+
+    /**
      * fetch all orders
      *
      * @returns
@@ -664,6 +727,7 @@ export class OrderService {
 
             let filtersObject: {
                 customerUUID?: string,
+                invalidOrder?: boolean,
             } = {};
             try {
                 filtersObject = JSON.parse(filters);
@@ -675,6 +739,7 @@ export class OrderService {
             if (status || filtersObject) {
                 filter.status = status;
                 filter.customer = { uuid: filtersObject?.customerUUID };
+                filter.invalidOrder = filtersObject?.invalidOrder;
             }
 
             const orders = await this.orderRepository.find({
@@ -1019,6 +1084,12 @@ export class OrderService {
         try {
             const order = await this.findOne(uuid);
 
+            if (status === OrderStatus.CONFIRMED && order.status !== OrderStatus.PAYMENT_SUCCESSFUL) {
+                throw new BadRequestException({
+                    error: `Cannot confirm order — payment has not succeeded yet (current status: ${order.status})`,
+                });
+            }
+
             order.status = status;
             if (status === OrderStatus.CANCELLED) {
                 order.cancellationReason = cancellationReason ?? null;
@@ -1137,11 +1208,33 @@ export class OrderService {
                         isRead: String(false),
                     },
                 },
-                [OrderStatus.PAYMENT_REJECTED]: {
+                [OrderStatus.PAYMENT_FAILED]: {
                     type: NotificationType.PAYMENT_FAILED,
                     title: 'Payment Failed',
                     brief: 'Your payment could not be processed.',
                     message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
+                    payload: {
+                        type: NotificationType.ORDER_PLACED,
+                        priority: NotificationPriority.HIGH,
+                        isRead: String(false),
+                    },
+                },
+                [OrderStatus.PAYMENT_CANCELLED]: {
+                    type: NotificationType.PAYMENT_FAILED,
+                    title: 'Payment Cancelled',
+                    brief: 'Your payment was cancelled.',
+                    message: `Payment for order #${order.uuid} was cancelled. You can return to checkout to try again.`,
+                    payload: {
+                        type: NotificationType.ORDER_PLACED,
+                        priority: NotificationPriority.HIGH,
+                        isRead: String(false),
+                    },
+                },
+                [OrderStatus.PAYMENT_EXPIRED]: {
+                    type: NotificationType.PAYMENT_FAILED,
+                    title: 'Payment Expired',
+                    brief: 'Your payment window has expired.',
+                    message: `Payment for order #${order.uuid} expired before it was completed. Please place a new order to try again.`,
                     payload: {
                         type: NotificationType.ORDER_PLACED,
                         priority: NotificationPriority.HIGH,
@@ -1191,10 +1284,220 @@ export class OrderService {
             return saved;
         } catch (error: any) {
             this.logger.error(`Error updating order status: ${error}`);
+            if (error instanceof HttpException) {
+                throw error;
+            }
             throw new InternalServerErrorException({
                 error: 'Failed to update order status',
                 details: error,
             });
+        }
+    }
+
+    /**
+     * Restores stock levels for every item on an order. Shared by cancel()
+     * and the payment-expiry scheduler. Expects orderItems.variant and
+     * orderItems.warehouse relations to already be loaded on `order`.
+     */
+    private async restoreInventory(order: Order): Promise<void> {
+        for (const item of order.orderItems) {
+            const inventoryItem = await this.inventoryRepository.findOne({
+                where: {
+                    variant: { id: item.variant.id }
+                }
+            });
+
+            if (!inventoryItem) continue;
+
+            const level = await this.inventoryLevelRepository.findOne({
+                where: {
+                    inventoryItem: { id: inventoryItem.id },
+                    warehouse: { id: item.warehouse.id },
+                },
+                relations: {
+                    inventoryItem: true,
+                    warehouse: true
+                },
+            });
+
+            if (!level) continue;
+
+            level.quantity += item.quantity;
+
+            await this.inventoryLevelRepository.save(level);
+        }
+    }
+
+    /**
+     * Reverses the coupon-usage bookkeeping applied at order creation
+     * (create(), lines ~512-569) — usage counters, sales/commission
+     * totals, and affiliate wallet credit. Used only when a payment
+     * permanently expires, so a failed/cancelled-but-retryable order
+     * keeps its coupon held for the retry attempt.
+     */
+    private async releaseCouponUsage(order: Order): Promise<void> {
+        const commissionAmount = order.discount?.amount ?? 0;
+
+        if (order.coupon) {
+            const coupon = await this.couponRepository.findOne({
+                where: { id: order.coupon.id },
+                relations: { affiliate: { wallet: true } },
+            });
+
+            if (coupon) {
+                coupon.ordersCount = Math.max(0, coupon.ordersCount - 1);
+                coupon.totalSales.amount = Math.max(0, coupon.totalSales.amount - (order.subTotal?.amount ?? 0));
+                coupon.totalCommission.amount = Math.max(0, coupon.totalCommission.amount - commissionAmount);
+                await this.couponRepository.save(coupon);
+
+                if (coupon.affiliate?.wallet && commissionAmount > 0) {
+                    const wallet = coupon.affiliate.wallet;
+                    wallet.amount.amount = Math.max(0, wallet.amount.amount - commissionAmount);
+                    wallet.amountAvailable.amount = Math.max(0, wallet.amountAvailable.amount - commissionAmount);
+                    await this.walletRepository.save(wallet);
+
+                    const affiliate = coupon.affiliate;
+                    affiliate.totalCommission.amount = Math.max(0, affiliate.totalCommission.amount - commissionAmount);
+                    affiliate.remainingBalance.amount = Math.max(0, affiliate.remainingBalance.amount - commissionAmount);
+                    affiliate.couponsUsed = Math.max(0, affiliate.couponsUsed - 1);
+                    await this.affiliateRepository.save(affiliate);
+                }
+            }
+        } else if (order.globalCoupon) {
+            const globalCoupon = await this.globalCouponRepository.findOne({
+                where: { id: order.globalCoupon.id },
+            });
+
+            if (globalCoupon) {
+                globalCoupon.ordersCount = Math.max(0, globalCoupon.ordersCount - 1);
+                globalCoupon.totalSales.amount = Math.max(0, globalCoupon.totalSales.amount - (order.subTotal?.amount ?? 0));
+                globalCoupon.totalCommission.amount = Math.max(0, globalCoupon.totalCommission.amount - commissionAmount);
+                globalCoupon.timesUsed = Math.max(0, globalCoupon.timesUsed - 1);
+                await this.globalCouponRepository.save(globalCoupon);
+            }
+        }
+    }
+
+    /**
+     * Creates a fresh SkipCash checkout session for an order stuck in
+     * PAYMENT_PENDING/PAYMENT_FAILED/PAYMENT_CANCELLED, reusing the same
+     * order (no duplicate order is created) so the customer can retry
+     * payment. PAYMENT_PENDING is included so a customer who simply closed
+     * the checkout tab mid-session (no webhook ever arrives in that case)
+     * isn't stuck waiting out the payment-expiry window to try again.
+     */
+    async retryPayment(uuid: string, customerUuid?: string): Promise<Order> {
+        const order = await this.orderRepository.findOne({
+            where: { uuid },
+            relations: {
+                customer: true,
+                shippingAddress: true,
+                paymentTransaction: true,
+            },
+        });
+
+        if (!order) {
+            throw new NotFoundException({
+                error: 'Order not found',
+            });
+        }
+
+        if (customerUuid && order.customer?.uuid !== customerUuid) {
+            throw new NotFoundException({
+                error: 'Order not found',
+            });
+        }
+
+        const retryableStatuses = [
+            OrderStatus.PAYMENT_PENDING,
+            OrderStatus.PAYMENT_FAILED,
+            OrderStatus.PAYMENT_CANCELLED,
+        ];
+        if (!retryableStatuses.includes(order.status)) {
+            throw new BadRequestException({
+                error: `Cannot retry payment for an order in status ${order.status}`,
+            });
+        }
+
+        const customerName: Array<string> = order.customer.fullName.split(" ");
+        const provider = order.paymentTransaction?.provider ?? PaymentProvider.SKIPCASH;
+
+        const paymentPayload = {
+            provider,
+            amount: order.total.amount,
+            currency: order.total.currencyCode,
+            orderUUID: order.uuid,
+            firstName: customerName[0],
+            lastName: customerName[1] ?? customerName[0],
+            emailAddress: order.customer.emailAddress,
+            phoneNumber: order.shippingAddress.phoneNumber.replace(/\s+/g, ""),
+            street: order.shippingAddress.streetAddress,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            country: order.shippingAddress.country,
+            postalCode: order.shippingAddress.zipCode,
+        };
+
+        const payment = await this.paymentService.createPayment(paymentPayload);
+
+        order.paymentTransaction = payment;
+        order.status = OrderStatus.PAYMENT_PENDING;
+
+        return this.orderRepository.save(order);
+    }
+
+    /**
+     * Force-expires a single stale, never-completed payment order — called
+     * per-order by the payment-expiry scheduler (order.scheduler.ts). Releases
+     * the stock and coupon usage held since order creation, since a customer
+     * who never retries has no further claim on either.
+     */
+    async expireStalePayment(uuid: string): Promise<void> {
+        const order = await this.orderRepository.findOne({
+            where: { uuid },
+            relations: {
+                customer: true,
+                coupon: true,
+                globalCoupon: true,
+                orderItems: {
+                    variant: true,
+                    warehouse: true,
+                },
+            },
+        });
+
+        if (!order) return;
+
+        const expirable = [
+            OrderStatus.PAYMENT_PENDING,
+            OrderStatus.PAYMENT_FAILED,
+            OrderStatus.PAYMENT_CANCELLED,
+        ];
+        if (!expirable.includes(order.status)) return;
+
+        await this.restoreInventory(order);
+        await this.releaseCouponUsage(order);
+
+        order.status = OrderStatus.PAYMENT_EXPIRED;
+        await this.orderRepository.save(order);
+
+        if (order.customer) {
+            this.notificationsService.create({
+                customerUUID: order.customer.uuid,
+                type: NotificationType.PAYMENT_FAILED,
+                title: 'Payment Expired',
+                brief: 'Your payment window has expired.',
+                message: `Payment for order #${order.uuid} expired before it was completed. Please place a new order to try again.`,
+                priority: NotificationPriority.HIGH,
+            }).catch(err => this.logger.warn(`Failed to send PAYMENT_EXPIRED notification: ${err?.message}`));
+
+            if (order.customer.emailAddress) {
+                this.emailService.sendOrderCancelledEmail(order.customer.emailAddress, {
+                    customerName: order.customer.fullName,
+                    orderId: order.uuid,
+                    reason: 'Your payment window expired before it was completed. Please place a new order to try again.',
+                }).catch(err => this.logger.error(`[Email] Failed to send payment-expired email for order ${order.uuid}: ${err?.message}`));
+            }
         }
     }
 
@@ -1229,34 +1532,7 @@ export class OrderService {
                 });
             }
 
-            // Restore inventory
-            for (const item of order.orderItems) {
-                const inventoryItem = await this.inventoryRepository.findOne({
-                    where: {
-                        variant: { id: item.variant.id }
-                    }
-                });
-
-                if (!inventoryItem) continue;
-
-                const level = await this.inventoryLevelRepository.findOne({
-                    where: {
-                        inventoryItem: { id: inventoryItem.id },
-                        warehouse: { id: item.warehouse.id },
-                    },
-                    relations: {
-                        inventoryItem: true,
-                        warehouse: true
-                    },
-                });
-
-                if (!level) continue;
-
-                // Restore stock
-                level.quantity += item.quantity;
-
-                await this.inventoryLevelRepository.save(level);
-            }
+            await this.restoreInventory(order);
 
             order.status = OrderStatus.CANCELLED;
 

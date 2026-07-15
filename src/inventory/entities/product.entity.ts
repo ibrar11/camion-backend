@@ -34,6 +34,7 @@ import { OrderItem } from "../../order/entities/order-item.entity";
 import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
 
 import { Translation } from "../../translation/entities/translation.entity";
+import { ProductAttachment } from "./product-attachment.entity";
 
 @ObjectType()
 @Entity({ name: "products", })
@@ -201,6 +202,10 @@ export class Product {
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
 	ratingFiveStarCount: number;
+
+	@Field(() => [ProductAttachment])
+	@OneToMany(() => ProductAttachment, (attachment) => attachment.product, { cascade: true, })
+	attachments: Array<ProductAttachment>;
 
 	@Field(() => [ProductOption])
 	@OneToMany(() => ProductOption, (option) => option.product, { cascade: true, })

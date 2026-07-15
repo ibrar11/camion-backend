@@ -21,12 +21,13 @@ import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import {
-	ProductsResolver,
+	ProductAttachmentResolver,
 	ProductOptionResolver,
 	ProductOptionValueResolver,
-	ProductVariantResolver,
-	ProductVariantImageResolver,
 	ProductReviewImageResolver,
+	ProductsResolver,
+	ProductVariantImageResolver,
+	ProductVariantResolver,
 } from './products.resolver';
 
 import { ProductCategory } from './entities/product-category.entity';
@@ -60,6 +61,8 @@ import { ProductView } from './entities/product-view.entity';
 import { ProductVariantInventoryItem } from './entities/product-variant-inventory-item.entity';
 import { ProductVariantOptionValue } from './entities/product-variant-option-value.entity';
 
+import { ProductAttachment } from './entities/product-attachment.entity';
+
 import { InventoryItem } from './entities/inventory-item.entity';
 import { InventoryLevel } from './entities/inventory-level.entity';
 
@@ -90,12 +93,13 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 			Campaign,
 			CartItem,
 			Category,
-			Order,
-			OrderTrackingEvent,
 			Customer,
 			InventoryItem,
 			InventoryLevel,
+			Order,
+			OrderTrackingEvent,
 			Product,
+			ProductAttachment,
 			ProductCategory,
 			ProductOption,
 			ProductOptionValue,
@@ -125,6 +129,7 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 		CustomersService,
 		FileService,
 		ImageThumbnailService,
+		ProductAttachmentResolver,
 		ProductCategoryResyncProcessor,
 		ProductOptionResolver,
 		ProductOptionService,

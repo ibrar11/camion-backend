@@ -1910,6 +1910,11 @@ query GetProduct($slug: String, $language: String, $currency: String) {
         startsAt
         finishesAt
     }
+    attachments {
+        uuid
+        mediaUrl
+        mediaType
+    }
     reviews {
         uuid
         rating
@@ -2081,6 +2086,28 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                 "startsAt": "2026-01-01T00:00:00.000Z",
                 "finishesAt": "2026-12-31T00:00:00.000Z"
             },
+            "attachments": [
+                {
+                    "uuid": "c3390237-08e1-4d21-8992-a4a722501d87",
+                    "mediaUrl": "https://assets.dev.camiontrading.com/attachments/1dd28f63-23e1-4b64-b6d5-7f9a26f894fd.webp",
+                    "mediaType": "image"
+                },
+                {
+                    "uuid": "bcd9ba92-2af6-46c0-945c-ba61ce8fdab1",
+                    "mediaUrl": "https://assets.dev.camiontrading.com/attachments/b5bbcb49-1534-462f-9110-71730cf82ee7.webp",
+                    "mediaType": "image"
+                },
+                {
+                    "uuid": "661b6835-d338-41a7-97f5-96a4d4ab2543",
+                    "mediaUrl": "https://assets.dev.camiontrading.com/attachments/81016090-46e2-45ba-9e80-6b76194d0377.webp",
+                    "mediaType": "image"
+                },
+                {
+                    "uuid": "d5524b7e-e72a-405f-868d-c8bf8be96404",
+                    "mediaUrl": "https://assets.dev.camiontrading.com/attachments/2487ab0d-945e-459b-bccf-903feb9200a4.webp",
+                    "mediaType": "image"
+                }
+            ],
             "reviews": [
                 {
                     "uuid": "337579b9-bf12-456a-89f4-d8c1e85507e7",
@@ -3021,7 +3048,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
 
 ```json
 {
-    "status": "pending" | "confirmed" | "cancelled" | "delivered" | "payment_pending" | "payment_successful"|  "payment_rejected" ,
+    "status": "pending" | "confirmed" | "cancelled" | "delivered" | "payment_pending" | "payment_successful" | "payment_failed" | "payment_cancelled" | "payment_expired" ,
     "language":"en",
     "currency": "qar",
     "pageNumber":1,
@@ -3486,7 +3513,7 @@ Get Current Customer Order Preview
 ### GraphQL Query
 
 ```graphql
-query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $couponCode: String)  {
+query GetCurrentCustomerOrderPreview($language: String, $currency: String, $couponCode: String)  {
     getCurrentCustomerOrderPreview(language: $language, currency: $currency, couponCode: $couponCode) {
         items{
             uuid
@@ -3606,6 +3633,254 @@ query GetCurrentCustomerOrderPrevie($language: String, $currency: String, $coupo
 {
     "data": {
         "getCurrentCustomerOrderPreview": {
+            "items": [
+                {
+                    "uuid": "628ae1a7-0509-4dd3-ac71-b2ae1ab375fe",
+                    "product": {
+                        "uuid": "6ffa8d28-eaa1-40c9-9978-cfad977a3317",
+                        "slug": "156inch-laptop-i7-quad-core-independent-graphics-gaming-office",
+                        "title": "15.6inch Laptop I7 Quad-Core Independent Graphics Gaming Office Business Learning Online Class Live Broadcast I5 Ultra-Thin Satc",
+                        "brief": "",
+                        "description": "",
+                        "descriptionHtml": "",
+                        "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                        "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                        "status": "active",
+                        "salesCount": 0,
+                        "likesCount": 0,
+                        "reviewsCount": 0,
+                        "ratingAvg": 0,
+                        "ratingOneStarCount": 0,
+                        "ratingTwoStarCount": 0,
+                        "ratingThreeStarCount": 0,
+                        "ratingFourStarCount": 0,
+                        "ratingFiveStarCount": 0
+                    },
+                    "variant": {
+                        "uuid": "1c2d2fe9-035f-491b-bb69-9a5a2601f18c",
+                        "title": "Configuration 2 recommended for entry-level office",
+                        "sku": "6044512586268",
+                        "barcode": "6044512586268",
+                        "price": {
+                            "amount": 525,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 525,
+                            "currencyCode": "qar"
+                        },
+                        "weight": {
+                            "amount": 1,
+                            "unit": "kg"
+                        },
+                        "dimensions": {
+                            "width": 1,
+                            "height": 1,
+                            "length": 1,
+                            "unit": "cm"
+                        }
+                        "images": [
+                            {
+                                "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
+                                "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                                "alt": "",
+                                "isFeatured": false,
+                                "position": 0
+                            }
+                        ]
+                        "optionValues": [
+                            {
+                                "optionValue": {
+                                    "uuid": "9106ada0-6e4c-4310-b4ed-a2350494a8cd",
+                                    "value": "White 2151 short sleeves-100% cotton",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "8d37acb5-3cf0-4854-846a-ee35ff57916a",
+                                        "name": "Color",
+                                        "position": 1
+                                    }
+                                }
+                            },
+                            {
+                                "optionValue": {
+                                    "uuid": "767b2e2a-4ab2-4ca9-85e3-d0845a2b503c",
+                                    "value": "S [recommendation 45-57.5kg ]",
+                                    "position": 1,
+                                    "option": {
+                                        "uuid": "5a4ea9b6-4e15-4fad-8205-e02a11af355b",
+                                        "name": "Size",
+                                        "position": 2
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "availableStock": 100,
+                    "subTotal": {
+                        "amount": 15000,
+                        "currencyCode": "qar"
+                    },
+                    "discountPrice": {
+                        "amount": 2000,
+                        "currencyCode": "qar"
+                    },
+                    "subTotal": {
+                        "amount": 13000,
+                        "currencyCode": "qar"
+                    },
+                }
+            ],
+            "shippingAddress": {
+                "uuid": "79a96a53-8f78-485c-8424-df092b5d0697",
+                "fullName": "Fahad Al-Saud",
+                "phoneNumber": "+966 51 234 5678",
+                "streetAddress": "King Fahd Road",
+                "apartment": "Apartment 12B, Al Noor Building",
+                "zipCode": "12271",
+                "city": "Riyadh",
+                "state": "RI",
+                "country": "SA",
+                "isDefault": true
+            },
+            "cart_total": 990,
+            "discount": 0,
+            "shippingTotal": 231,
+            "grand_total": 1221,
+            "eta": "6-10 working days",
+            "orderTotalWarning": "Order value should not be less than 250 QAR",
+        }
+    }
+}
+```
+
+Get Current Customer Order Preview
+-----------------------------------
+
+### GraphQL Query
+
+```graphql
+query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $couponCode: String, $cartItemUuids: [String!])  {
+    getCurrentCustomerOrderPreviewV2(language: $language, currency: $currency, couponCode: $couponCode, cartItemUuids: $cartItemUuids) {
+        items{
+            uuid
+            product {
+                uuid
+                slug
+                title(language: $language)
+                brief(language: $language)
+                description(language: $language)
+                descriptionHtml(language: $language)
+                featuredImageUrl
+                featuredThumbnailUrl
+                status
+                salesCount
+                likesCount
+                reviewsCount
+                ratingAvg
+                ratingOneStarCount
+                ratingTwoStarCount
+                ratingThreeStarCount
+                ratingFourStarCount
+                ratingFiveStarCount
+            }
+            variant {
+                uuid
+                title
+                sku
+                barcode
+                price(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                discountedPrice(currency: $currency) {
+                    amount
+                    currencyCode
+                }
+                weight {
+                    amount
+                    unit
+                }
+                dimensions {
+                    width
+                    height
+                    length
+                    unit
+                }
+                images {
+                    uuid
+                    imageUrl
+                    thumbnailUrl
+                    alt
+                    isFeatured
+                    position
+                }
+                optionValues{
+                    optionValue{
+                        uuid
+                        value(language: $language)
+                        position
+                        option {
+                            uuid
+                            name(language: $language)
+                            position
+                        }
+                    }
+                }
+            }
+            availableStock
+            subTotal {
+                amount
+                currencyCode
+            }
+            discountPrice {
+                amount
+                currencyCode
+            }
+            total {
+                amount
+                currencyCode
+            }
+        }
+        shippingAddress {
+            uuid
+            fullName
+            phoneNumber
+            streetAddress
+            apartment
+            zipCode
+            city
+            state
+            country
+            isDefault
+        }
+        cart_total
+        discount
+        shippingTotal
+        grand_total
+        eta
+        orderTotalWarning
+    }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "language":"en",
+    "currency": "qar",
+    "couponCode"?: "4422",
+    "cartItemUuids": ["9f620988-950f-4dd6-8559-aa38cbebe763"]
+}
+```
+
+### Response
+
+```json
+{
+    "data": {
+        "getCurrentCustomerOrderPreviewV2": {
             "items": [
                 {
                     "uuid": "628ae1a7-0509-4dd3-ac71-b2ae1ab375fe",

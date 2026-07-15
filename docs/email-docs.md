@@ -17,7 +17,8 @@ Add the following to your `.env` file (see `.env.example` for a template):
 | `EMAIL_FROM` | Sender address shown to recipients. Must be a verified sender in SendGrid. |
 | `SENDGRID_API_KEY` | Your SendGrid API key (starts with `SG.`). |
 | `SENDGRID_TEMPLATE_OTP` | Dynamic template ID for OTP / verification emails. |
-| `SENDGRID_TEMPLATE_ORDER_CONFIRMED` | Dynamic template ID for order confirmed emails. |
+| `SENDGRID_TEMPLATE_ORDER_CONFIRMED` | Dynamic template ID for the order confirmed email (admin manually confirms an order). |
+| `SENDGRID_TEMPLATE_PAYMENT_SUCCESS` | Dynamic template ID for the payment-success / order-placed email (sent automatically once the payment gateway confirms the charge). |
 | `SENDGRID_TEMPLATE_ORDER_SHIPPED` | Dynamic template ID for order shipped emails. |
 | `SENDGRID_TEMPLATE_ORDER_PROCESSING` | Dynamic template ID for order processing emails. |
 | `SENDGRID_TEMPLATE_ORDER_DELIVERED` | Dynamic template ID for order delivered emails. |
@@ -39,6 +40,7 @@ EMAIL_FROM=no-reply@yourdomain.com
 SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 SENDGRID_TEMPLATE_OTP=d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 SENDGRID_TEMPLATE_ORDER_CONFIRMED=d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+SENDGRID_TEMPLATE_PAYMENT_SUCCESS=d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 SENDGRID_TEMPLATE_ORDER_SHIPPED=d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 SENDGRID_TEMPLATE_ORDER_PROCESSING=d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 SENDGRID_TEMPLATE_ORDER_DELIVERED=d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -67,6 +69,28 @@ sendOtpEmail(to: string, data: { otp: string }): Promise<void>
 
 sendOrderConfirmedEmail(to: string, data: { customerName: string; orderId: string; orderTotal: string }): Promise<void>
 
+// Sent automatically once the payment gateway confirms a successful charge.
+// Deliberately separate from sendOrderConfirmedEmail above — order status at
+// that point is PAYMENT_SUCCESSFUL, not admin-CONFIRMED.
+sendPaymentSuccessEmail(to: string, data: {
+    customerName: string;
+    orderId: string;
+    orderTotal: string;
+    paymentConfirmation: string;
+    items: Array<{ name: string; quantity: number; unitPrice: string; lineTotal: string }>;
+    deliveryDetails: {
+        fullName: string;
+        streetAddress: string;
+        apartment?: string;
+        city: string;
+        state: string;
+        country: string;
+        zipCode: string;
+        phoneNumber: string;
+    };
+    nextSteps: string;
+}): Promise<void>
+
 sendOrderShippedEmail(to: string, data: { customerName: string; orderId: string; trackingNumber?: string }): Promise<void>
 
 sendOrderProcessingEmail(to: string, data: { customerName: string; orderId: string }): Promise<void>
@@ -85,11 +109,30 @@ await this.emailService.sendOtpEmail(user.email, {
     expiresInMinutes: 10,
 });
 
-// Sending an order confirmation from the orders service
+// Sending an order confirmation from the orders service (admin manually confirmed)
 await this.emailService.sendOrderConfirmedEmail(customer.email, {
     customerName: customer.name,
     orderId: order.id,
     orderTotal: order.totalFormatted,
+});
+
+// Sending the payment-success / order-placed email from the payment webhook
+await this.emailService.sendPaymentSuccessEmail(customer.email, {
+    customerName: customer.name,
+    orderId: order.id,
+    orderTotal: order.totalFormatted,
+    paymentConfirmation: `Payment of ${order.totalFormatted} received successfully.`,
+    items: [{ name: 'Product A', quantity: 2, unitPrice: '50 QAR', lineTotal: '100 QAR' }],
+    deliveryDetails: {
+        fullName: address.fullName,
+        streetAddress: address.streetAddress,
+        city: address.city,
+        state: address.state,
+        country: address.country,
+        zipCode: address.zipCode,
+        phoneNumber: address.phoneNumber,
+    },
+    nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
 });
 ```
 
@@ -110,6 +153,7 @@ Creating and Configuring Templates in SendGrid
 |---|---|
 | `SENDGRID_TEMPLATE_OTP` | `{{otp}}` |
 | `SENDGRID_TEMPLATE_ORDER_CONFIRMED` | `{{customerName}}`, `{{orderId}}`, `{{orderTotal}}` |
+| `SENDGRID_TEMPLATE_PAYMENT_SUCCESS` | `{{customerName}}`, `{{orderId}}`, `{{orderTotal}}`, `{{paymentConfirmation}}`, `{{#each items}}...{{/each}}` (`name`, `quantity`, `unitPrice`, `lineTotal`), `{{deliveryDetails.fullName}}`, `{{deliveryDetails.streetAddress}}`, `{{deliveryDetails.apartment}}`, `{{deliveryDetails.city}}`, `{{deliveryDetails.state}}`, `{{deliveryDetails.country}}`, `{{deliveryDetails.zipCode}}`, `{{deliveryDetails.phoneNumber}}`, `{{nextSteps}}` |
 | `SENDGRID_TEMPLATE_ORDER_SHIPPED` | `{{customerName}}`, `{{orderId}}`, `{{trackingNumber}}` |
 | `SENDGRID_TEMPLATE_ORDER_PROCESSING` | `{{customerName}}`, `{{orderId}}` |
 | `SENDGRID_TEMPLATE_ORDER_DELIVERED` | `{{customerName}}`, `{{orderId}}` |
@@ -120,7 +164,8 @@ When Emails Are Sent
 
 | Email method | Trigger |
 |---|---|
-| `sendOrderConfirmedEmail` | Payment webhook receives `PAID` status (including when a previously-cancelled order is reopened by a late payment) |
+| `sendOrderConfirmedEmail` | Sent by the order service only when an admin manually sets order status to `confirmed` |
+| `sendPaymentSuccessEmail` | Payment webhook receives `PAID` status (including when a previously-cancelled order is reopened by a late payment); also sent synchronously at order creation for zero-cost orders (fully covered by a coupon), which never hit the payment gateway |
 | `sendOrderCancelledEmail` | Payment webhook receives `FAILED`, `CANCELLED`, or `REJECTED` status (only if the order is not already cancelled); also sent by the order service when an admin sets order status to `cancelled` |
 | `sendOrderShippedEmail` | Called manually / via admin action when tracking number is available |
 | `sendOrderProcessingEmail` | Called when order status is set to a processing stage |
