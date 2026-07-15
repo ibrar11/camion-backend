@@ -9,6 +9,7 @@ import {
 	HttpStatus,
 	Inject,
 	Param,
+	Patch,
 	Post,
 	Put,
 	Query,
@@ -84,6 +85,13 @@ export class ProductReviewController {
 		return this.productReviewImageService.createProductReviewImage(reviewUUID, file);
 	}
 
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Patch()
+	@HttpCode(HttpStatus.OK)
+	actionPatchProductReviews(@Param('productUUID') productUUID: string): Promise<void> {
+		return this.reviewService.patchProductReviews(productUUID);
+	}
+
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
 	@Delete(':uuid/images/:image_uuid')
 	@HttpCode(HttpStatus.OK)
@@ -91,7 +99,6 @@ export class ProductReviewController {
 		@Param('uuid') reviewUUID: string,
 		@Param('image_uuid') reviewImageUUID: string,
 	): Promise<void> {
-		console.log({reviewUUID, reviewImageUUID});
 		return this.productReviewImageService.deleteProductReviewImage(reviewUUID, reviewImageUUID);
 	}
 

@@ -69,37 +69,43 @@ export class ProductReviewService {
 		}
 
 		// Clamp the rating between 1 and 5
-		const rating = Math.floor(Math.min(Math.max(1, body.rating), 5));
+		const rating = Math.trunc(Math.min(Math.max(1, body.rating), 5));
+
+		// Create the product review
+		const productReview = new ProductReview();
+		productReview.uuid = crypto.randomUUID();
+		productReview.customer = customer;
+		productReview.product = product;
+		productReview.rating = rating;
+		productReview.comment = body.comment.trim();
+		productReview.orderUuid = body.orderUuid ?? null;
+		await this.reviewRepository.save(productReview);
+
+		// Update the reviews and rating count
+		product.reviewsCount = Math.max(1, product.reviewsCount + 1);
+		product.ratingCount = Math.max(1, product.ratingCount + 1);
+
+		// Update the rating per star base
 		switch (rating) {
 			case 1:
 				product.ratingOneStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 1;
-				product.ratingCount += 1;
 				break;
 			case 2:
 				product.ratingTwoStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 2;
-				product.ratingCount += 1;
 				break;
 			case 3:
 				product.ratingThreeStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 3;
-				product.ratingCount += 1;
 				break;
 			case 4:
 				product.ratingFourStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 4;
-				product.ratingCount += 1;
 				break;
 			case 5:
 				product.ratingFiveStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 5;
-				product.ratingCount += 1;
 				break;
 			default: // do nothing
 				break;
@@ -112,16 +118,6 @@ export class ProductReviewService {
 
 		// Save the product after updating the rating.
 		await this.productRepository.save(product);
-
-		// Create the product review
-		const productReview = new ProductReview();
-		productReview.uuid = crypto.randomUUID();
-		productReview.customer = customer;
-		productReview.product = product;
-		productReview.rating = rating;
-		productReview.comment = body.comment.trim();
-		productReview.orderUuid = body.orderUuid ?? null;
-		const saved = await this.reviewRepository.save(productReview);
 
 		if (body.orderUuid) {
 			try {
@@ -156,7 +152,7 @@ export class ProductReviewService {
 			}
 		}
 
-		return saved;
+		return productReview;
 	}
 
 	/**
@@ -172,7 +168,7 @@ export class ProductReviewService {
 		this.logger.log(`Attempting to create product review for product: ${productUUID} using api v2`);
 
 		// Create the new api
-		const review = await this.createProductReview(customer, productUUID, body);
+		const productReview = await this.createProductReview(customer, productUUID, body);
 
 		// Process each review image
 		if (Array.isArray(files) && files.length !== 0) {
@@ -212,17 +208,17 @@ export class ProductReviewService {
 					await this.fileService.deleteFile(file);
 
 					// Create a review image
-					const image = new ProductReviewImage();
-					image.uuid = crypto.randomUUID();
-					image.review = review;
-					image.imageUrl = imageParams.url;
-					image.thumbnailUrl = thumbnailParams.url;
-					await this.productReviewImageRepository.save(image);
+					const reviewImage = new ProductReviewImage();
+					reviewImage.uuid = crypto.randomUUID();
+					reviewImage.review = productReview;
+					reviewImage.imageUrl = imageParams.url;
+					reviewImage.thumbnailUrl = thumbnailParams.url;
+					await this.productReviewImageRepository.save(reviewImage);
 				})
 			);
 		}
 
-		return review;
+		return productReview;
 	}
 
 	/**
@@ -251,38 +247,44 @@ export class ProductReviewService {
 			});
 		}
 
-		// Clamp the rating between 0 and 5
-		const rating = Math.floor(Math.min(Math.max(0, body.rating), 5));
+		// Clamp the rating between 1 and 5
+		const rating = Math.trunc(Math.min(Math.max(1, body.rating), 5));
+
+		// Create the product review
+		const productReview = new ProductReview();
+		productReview.uuid = crypto.randomUUID();
+		productReview.customer = customer;
+		productReview.product = product;
+		productReview.rating = rating;
+		productReview.comment = body.comment.trim();
+		productReview.orderUuid = "c2eb7cc0-653d-42bf-98dd-f80aa289e1d4";
+		await this.reviewRepository.save(productReview);
+
+		// Update the reviews and rating count
+		product.reviewsCount = Math.max(1, product.reviewsCount + 1);
+		product.ratingCount = Math.max(1, product.ratingCount + 1);
+
+		// Update the rating per star base
 		switch (rating) {
 			case 1:
 				product.ratingOneStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 1;
-				product.ratingCount += 1;
 				break;
 			case 2:
 				product.ratingTwoStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 2;
-				product.ratingCount += 1;
 				break;
 			case 3:
 				product.ratingThreeStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 3;
-				product.ratingCount += 1;
 				break;
 			case 4:
 				product.ratingFourStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 4;
-				product.ratingCount += 1;
 				break;
 			case 5:
 				product.ratingFiveStarCount += 1;
-				product.reviewsCount += 1;
 				product.ratingSum += 5;
-				product.ratingCount += 1;
 				break;
 			default: // do nothing
 				break;
@@ -296,15 +298,42 @@ export class ProductReviewService {
 		// Save the product after updating the rating.
 		await this.productRepository.save(product);
 
-		// Create the product review
-		const productReview = new ProductReview();
-		productReview.uuid = crypto.randomUUID();
-		productReview.customer = customer;
-		productReview.product = product;
-		productReview.rating = rating;
-		productReview.comment = body.comment.trim();
-		productReview.orderUuid = "c2eb7cc0-653d-42bf-98dd-f80aa289e1d4";
-		return this.reviewRepository.save(productReview);
+		return productReview;
+	}
+
+	/**
+	 * Patch product reviews
+	 *
+	 * @param productUUID
+	 * @returns
+	 */
+	async patchProductReviews(productUUID: string): Promise<void> {
+		this.logger.log(`Patching product reviews for product: ${productUUID}`);
+
+		// Find the product
+		const product = await this.productRepository.findOneBy({ uuid: productUUID, });
+		if (product === null) {
+			throw new NotFoundException({
+				slug: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Count the reviews
+		const reviewsCount = await this.reviewRepository.count({
+			where: {
+				product: {
+					id: product.id,
+				},
+			},
+			skip: 0,
+			take: 100,
+		});
+
+		this.logger.log(`Found ${reviewsCount} to patch for product: ${productUUID}`);
+
+		// Update the product with reviews count
+		product.reviewsCount = reviewsCount;
+		await this.productRepository.save(product);
 	}
 
 	/**
