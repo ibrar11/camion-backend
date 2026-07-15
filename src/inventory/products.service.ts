@@ -3497,8 +3497,7 @@ export class ProductsService {
 		}
 
 		// Increment the number of views on the product
-		product.viewsCount += 1;
-		await this.productRepository.save(product);
+		await this.productRepository.increment({ id: product.id, }, "viewsCount", 1);
 
 		return product;
 	}
