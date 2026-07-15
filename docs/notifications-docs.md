@@ -270,9 +270,15 @@ title | Yes | String (max 100) | Short title shown in the notification header
 brief | Yes | String (max 160) | One-line summary shown in the notification list
 message | Yes | String | Full notification body text
 priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
-scheduledFor | No | Enum | `every_3`, `every_6` , `every_12` , or `every_24`. Defaults to `null`
+scheduledFor | No | Enum | `every_30_min`, `every_3`, `every_6` , `every_12` , or `every_24`. Recurring schedule — fires repeatedly at this interval. Defaults to `null`
+scheduledAt | No | String (ISO 8601 datetime) | One-time schedule — fires once at this exact time, then marked `SENT`. Must be in the future. Mutually exclusive with `scheduledFor` — providing both returns a `400`
+
+> [!NOTE]
+> The scheduler checks for due notifications once every hour, so `scheduledAt` is effectively **hour-granular** — a notification scheduled for `14:23` will fire on the next hourly check at or after that time, not at the exact minute.
 
 ### Request Body
+
+Recurring schedule:
 
 ```json
 {
@@ -280,7 +286,19 @@ scheduledFor | No | Enum | `every_3`, `every_6` , `every_12` , or `every_24`. De
     "brief": "Order #1042 is on its way",
     "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
     "priority": "HIGH",
-    "scheduledFor": "every_3",
+    "scheduledFor": "every_3"
+}
+```
+
+One-time schedule at a specific time:
+
+```json
+{
+    "title": "Your order has been shipped",
+    "brief": "Order #1042 is on its way",
+    "message": "Great news! Your order #1042 has been shipped and is on its way to you. Expected delivery in 2–3 business days.",
+    "priority": "HIGH",
+    "scheduledAt": "2026-07-20T14:00:00.000Z"
 }
 ```
 
@@ -323,7 +341,7 @@ receiverType | Yes | String | guest | customer | affiliate | influencer | allCus
     "pushNotificationUUID": [
         "a3f1e2c4-9b87-4d12-bc34-1f2e3d4a5b6c"
     ],
-    "receiverType": "allCustomer", 
+    "receiverType": "allCustomer",
 }
 ```
 ---
@@ -404,7 +422,8 @@ title | Yes | String (max 100) | Short title shown in the notification header
 brief | Yes | String (max 160) | One-line summary shown in the notification list
 message | Yes | String | Full notification body text
 priority | No | Enum | `LOW`, `MEDIUM`, or `HIGH`. Defaults to `MEDIUM`
-scheduledFor | No | Enum | `every_3`, `every_6` , `every_12` , or `every_24`. Defaults to `null`
+scheduledFor | No | Enum | `every_30_min`, `every_3`, `every_6` , `every_12` , or `every_24`. Recurring schedule — fires repeatedly at this interval. Defaults to `null`
+scheduledAt | No | String (ISO 8601 datetime) | One-time schedule — fires once at this exact time, then marked `SENT`. Must be in the future. Mutually exclusive with `scheduledFor` — providing both returns a `400`
 
 ### Request Body
 
