@@ -298,6 +298,7 @@ type PostAuthor {
 }
 
 type Product {
+  attachments: [ProductAttachment!]!
   brief(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   briefAr: String!
   briefEn: String!
@@ -334,6 +335,12 @@ type Product {
   uuid: String!
   variants(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [ProductVariant!]!
   viewsCount: Float!
+}
+
+type ProductAttachment {
+  mediaType: String!
+  mediaUrl: String!
+  uuid: String!
 }
 
 type ProductCategory {

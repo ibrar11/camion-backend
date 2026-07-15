@@ -1910,6 +1910,11 @@ query GetProduct($slug: String, $language: String, $currency: String) {
         startsAt
         finishesAt
     }
+    attachments {
+        uuid
+        mediaUrl
+        mediaType
+    }
     reviews {
         uuid
         rating
@@ -2081,6 +2086,28 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                 "startsAt": "2026-01-01T00:00:00.000Z",
                 "finishesAt": "2026-12-31T00:00:00.000Z"
             },
+            "attachments": [
+                {
+                    "uuid": "c3390237-08e1-4d21-8992-a4a722501d87",
+                    "mediaUrl": "s3://attachments/1dd28f63-23e1-4b64-b6d5-7f9a26f894fd.webp",
+                    "mediaType": "image"
+                },
+                {
+                    "uuid": "bcd9ba92-2af6-46c0-945c-ba61ce8fdab1",
+                    "mediaUrl": "s3://attachments/b5bbcb49-1534-462f-9110-71730cf82ee7.webp",
+                    "mediaType": "image"
+                },
+                {
+                    "uuid": "661b6835-d338-41a7-97f5-96a4d4ab2543",
+                    "mediaUrl": "s3://attachments/81016090-46e2-45ba-9e80-6b76194d0377.webp",
+                    "mediaType": "image"
+                },
+                {
+                    "uuid": "d5524b7e-e72a-405f-868d-c8bf8be96404",
+                    "mediaUrl": "s3://attachments/2487ab0d-945e-459b-bccf-903feb9200a4.webp",
+                    "mediaType": "image"
+                }
+            ],
             "reviews": [
                 {
                     "uuid": "337579b9-bf12-456a-89f4-d8c1e85507e7",
