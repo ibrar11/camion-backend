@@ -65,6 +65,7 @@ import { Product } from '../inventory/entities/product.entity';
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 
 import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
+import { OrderScheduler } from './order.scheduler';
 
 @Module({
     imports: [
@@ -117,6 +118,7 @@ import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
         PushNotificationService,
         FirebaseAdminProvider,
         OrderSkuMetaProcessor,
+        OrderScheduler,
     ],
     controllers: [
         OrderController,

@@ -69,6 +69,14 @@ interface OrderCancelledTemplateData {
 	reason?: string;
 }
 
+// Sent when the payment gateway confirms a declined/rejected charge. Retry
+// happens via POST /v1/orders/:uuid/retry-payment, not a link in this email.
+interface PaymentFailedTemplateData {
+	customerName: string;
+	orderId: string;
+	failureReason: string;
+}
+
 interface AdminNewOrderData {
 	orderId: string;
 	customerName: string;
@@ -123,6 +131,8 @@ export class EmailService {
 			adminNewOrder: this.configService.get<string>(
 				"SENDGRID_TEMPLATE_ADMIN_NEW_ORDER",
 			) as string,
+			// TODO: move to SENDGRID_TEMPLATE_PAYMENT_FAILED env var once it's provisioned in deployment config
+			paymentFailed: "d-3a2f9e56d7614d82b778d14049ba9ea0",
 			// TODO: move to SENDGRID_TEMPLATE_PAYMENT_SUCCESS env var once it's provisioned in deployment config
 			paymentSuccess: "d-5e8807f9a145460c940574c82e73d009",
 		};
@@ -186,6 +196,13 @@ export class EmailService {
 		data: OrderCancelledTemplateData,
 	): Promise<void> {
 		await this.send(to, this.templateIds.orderCancelled, data);
+	}
+
+	async sendPaymentFailedEmail(
+		to: string,
+		data: PaymentFailedTemplateData,
+	): Promise<void> {
+		await this.send(to, this.templateIds.paymentFailed, data);
 	}
 
 	async sendAdminNewOrderEmail(data: AdminNewOrderData): Promise<void> {

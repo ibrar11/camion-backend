@@ -3048,7 +3048,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
 
 ```json
 {
-    "status": "pending" | "confirmed" | "cancelled" | "delivered" | "payment_pending" | "payment_successful"|  "payment_rejected" ,
+    "status": "pending" | "confirmed" | "cancelled" | "delivered" | "payment_pending" | "payment_successful" | "payment_failed" | "payment_cancelled" | "payment_expired" ,
     "language":"en",
     "currency": "qar",
     "pageNumber":1,
