@@ -2201,50 +2201,89 @@ POST /v1/products/<product-uuid>/attachments HTTP/1.1
 ### Request Body
 
 ```bash
-curl --location --request POST 'http://localhost:8000/v1/products/<product-uuid>/attachments' \
+curl --location --request POST 'http://localhost:8000/v1/products/8ba85e9b-ebae-4a5b-9165-55cc438ef0d4/attachments' \
 --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
---form 'file=@"/C:/m_Direct_Media____YWCMXRBDU8.jpg"'
+--form 'files=@"/C:/Users/Gloria/Pictures/Test/m_Direct_Media____YWCMXRBDU8.jpg"' \
+--form 'files=@"/C:/Users/Gloria/Pictures/Test/m_Freerangestock-Skintone_Studios-12.jpg"'
 ```
 
 ### Response Body
 
 ```json
-{
-    "uuid": "1271b28d-4404-40cb-acb5-969b59291acf",
-    "product": {
-        "uuid": "8ba85e9b-ebae-4a5b-9165-55cc438ef0d4",
-        "slug": "triangle-leopard-print-silk-printed-silk-scarf-w-1035742933292",
-        "titleEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
-        "titleAr": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
-        "briefEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
-        "briefAr": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
-        "descriptionEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
-        "descriptionAr": "وشاح حرير مطبوع بنقشة فهد مثلث، وشاح طويل نسائي لفصلي الربيع والصيف، شال",
-        "descriptionHtmlEn": "FASHION TREND\n品名材质尺寸克重包装JY260409棉麻手感/聚酯纤维88*180cm约100g单个opp\n测量说明：尺寸均是平铺手工测量，由于测量方法不同，可能会有1~3CM的允许范围内的误差。\n温馨提示：围巾纺织品面料特点，不能保证每条围巾都无暇，部分有轻微的面料飞纱，勾丝，小染色等完全不影响佩戴效果和牢固效果，请在意的亲请慎拍。\n为什么选择我们？\n厂家直销，货源稳定；自主设计，款式新颖；实力雄厚，价格合理",
-        "descriptionHtmlAr": "FASHION TREND\n品名材质尺寸克重包装JY260409棉麻手感/聚酯纤维88*180cm约100g单个opp\n测量说明：尺寸均是平铺手工测量，由于测量方法不同，可能会有1~3CM的允许范围内的误差。\n温馨提示：围巾纺织品面料特点，不能保证每条围巾都无暇，部分有轻微的面料飞纱，勾丝，小染色等完全不影响佩戴效果和牢固效果，请在意的亲请慎拍。\n为什么选择我们？\n厂家直销，货源稳定；自主设计，款式新颖；实力雄厚，价格合理",
-        "featuredImageUrl": "s3://product-images/af28d700-ea28-4a6c-80c4-4cbd80e642b0.webp",
-        "featuredThumbnailUrl": "s3://product-images/5a9be6a8-d192-4af3-b4b3-7bfbb0886b51.webp",
-        "sizechartUrl": "s3://sizecharts/b59f7619-0f73-4d42-9c68-5907d4ea5ff6.webp",
-        "status": "active",
-        "shopId": "BBB1xC2MM5HFhsw0VHNbzeHVA",
-        "shopName": "德清新景悦服饰有限公司",
-        "procurementId": "1035742933292",
-        "salesCount": 0,
-        "likesCount": 0,
-        "reviewsCount": 0,
-        "viewsCount": 13,
-        "ratingSum": 0,
-        "ratingCount": 0,
-        "ratingAvg": "0",
-        "ratingOneStarCount": 0,
-        "ratingTwoStarCount": 0,
-        "ratingThreeStarCount": 0,
-        "ratingFourStarCount": 0,
-        "ratingFiveStarCount": 0
+[
+    {
+        "uuid": "d5524b7e-e72a-405f-868d-c8bf8be96404",
+        "product": {
+            "uuid": "8ba85e9b-ebae-4a5b-9165-55cc438ef0d4",
+            "slug": "triangle-leopard-print-silk-printed-silk-scarf-w-1035742933292",
+            "titleEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "titleAr": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "briefEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "briefAr": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "descriptionEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "descriptionAr": "وشاح حرير مطبوع بنقشة فهد مثلث، وشاح طويل نسائي لفصلي الربيع والصيف، شال",
+            "descriptionHtmlEn": "FASHION TREND\n品名材质尺寸克重包装JY260409棉麻手感/聚酯纤维88*180cm约100g单个opp\n测量说明：尺寸均是平铺手工测量，由于测量方法不同，可能会有1~3CM的允许范围内的误差。\n温馨提示：围巾纺织品面料特点，不能保证每条围巾都无暇，部分有轻微的面料飞纱，勾丝，小染色等完全不影响佩戴效果和牢固效果，请在意的亲请慎拍。\n为什么选择我们？\n厂家直销，货源稳定；自主设计，款式新颖；实力雄厚，价格合理",
+            "descriptionHtmlAr": "FASHION TREND\n品名材质尺寸克重包装JY260409棉麻手感/聚酯纤维88*180cm约100g单个opp\n测量说明：尺寸均是平铺手工测量，由于测量方法不同，可能会有1~3CM的允许范围内的误差。\n温馨提示：围巾纺织品面料特点，不能保证每条围巾都无暇，部分有轻微的面料飞纱，勾丝，小染色等完全不影响佩戴效果和牢固效果，请在意的亲请慎拍。\n为什么选择我们？\n厂家直销，货源稳定；自主设计，款式新颖；实力雄厚，价格合理",
+            "featuredImageUrl": "s3://product-images/af28d700-ea28-4a6c-80c4-4cbd80e642b0.webp",
+            "featuredThumbnailUrl": "s3://product-images/5a9be6a8-d192-4af3-b4b3-7bfbb0886b51.webp",
+            "sizechartUrl": "s3://sizecharts/b59f7619-0f73-4d42-9c68-5907d4ea5ff6.webp",
+            "status": "active",
+            "shopId": "BBB1xC2MM5HFhsw0VHNbzeHVA",
+            "shopName": "德清新景悦服饰有限公司",
+            "procurementId": "1035742933292",
+            "salesCount": 0,
+            "likesCount": 0,
+            "reviewsCount": 0,
+            "viewsCount": 13,
+            "ratingSum": 0,
+            "ratingCount": 0,
+            "ratingAvg": "0",
+            "ratingOneStarCount": 0,
+            "ratingTwoStarCount": 0,
+            "ratingThreeStarCount": 0,
+            "ratingFourStarCount": 0,
+            "ratingFiveStarCount": 0
+        },
+        "mediaUrl": "s3://attachments/2487ab0d-945e-459b-bccf-903feb9200a4.webp",
+        "mediaType": "image"
     },
-    "mediaUrl": "s3://attachments/7507e3e3-deee-4e49-99a9-19a8ca265c0a.webp",
-    "mediaType": "image"
-}
+    {
+        "uuid": "661b6835-d338-41a7-97f5-96a4d4ab2543",
+        "product": {
+            "uuid": "8ba85e9b-ebae-4a5b-9165-55cc438ef0d4",
+            "slug": "triangle-leopard-print-silk-printed-silk-scarf-w-1035742933292",
+            "titleEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "titleAr": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "briefEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "briefAr": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "descriptionEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl",
+            "descriptionAr": "وشاح حرير مطبوع بنقشة فهد مثلث، وشاح طويل نسائي لفصلي الربيع والصيف، شال",
+            "descriptionHtmlEn": "FASHION TREND\n品名材质尺寸克重包装JY260409棉麻手感/聚酯纤维88*180cm约100g单个opp\n测量说明：尺寸均是平铺手工测量，由于测量方法不同，可能会有1~3CM的允许范围内的误差。\n温馨提示：围巾纺织品面料特点，不能保证每条围巾都无暇，部分有轻微的面料飞纱，勾丝，小染色等完全不影响佩戴效果和牢固效果，请在意的亲请慎拍。\n为什么选择我们？\n厂家直销，货源稳定；自主设计，款式新颖；实力雄厚，价格合理",
+            "descriptionHtmlAr": "FASHION TREND\n品名材质尺寸克重包装JY260409棉麻手感/聚酯纤维88*180cm约100g单个opp\n测量说明：尺寸均是平铺手工测量，由于测量方法不同，可能会有1~3CM的允许范围内的误差。\n温馨提示：围巾纺织品面料特点，不能保证每条围巾都无暇，部分有轻微的面料飞纱，勾丝，小染色等完全不影响佩戴效果和牢固效果，请在意的亲请慎拍。\n为什么选择我们？\n厂家直销，货源稳定；自主设计，款式新颖；实力雄厚，价格合理",
+            "featuredImageUrl": "s3://product-images/af28d700-ea28-4a6c-80c4-4cbd80e642b0.webp",
+            "featuredThumbnailUrl": "s3://product-images/5a9be6a8-d192-4af3-b4b3-7bfbb0886b51.webp",
+            "sizechartUrl": "s3://sizecharts/b59f7619-0f73-4d42-9c68-5907d4ea5ff6.webp",
+            "status": "active",
+            "shopId": "BBB1xC2MM5HFhsw0VHNbzeHVA",
+            "shopName": "德清新景悦服饰有限公司",
+            "procurementId": "1035742933292",
+            "salesCount": 0,
+            "likesCount": 0,
+            "reviewsCount": 0,
+            "viewsCount": 13,
+            "ratingSum": 0,
+            "ratingCount": 0,
+            "ratingAvg": "0",
+            "ratingOneStarCount": 0,
+            "ratingTwoStarCount": 0,
+            "ratingThreeStarCount": 0,
+            "ratingFourStarCount": 0,
+            "ratingFiveStarCount": 0
+        },
+        "mediaUrl": "s3://attachments/81016090-46e2-45ba-9e80-6b76194d0377.webp",
+        "mediaType": "image"
+    }
+]
 ```
 
 Get Product Attachments

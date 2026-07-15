@@ -3792,16 +3792,17 @@ export class ProductsService {
 	 * Creates a product attachment
 	 *
 	 * @param uuid
-	 * @param file
+	 * @param files
 	 * @returns
 	 */
-	async createProductAttachment(uuid: string, file: Express.Multer.File): Promise<ProductAttachment> {
+	async createProductAttachments(uuid: string, files: Array<Express.Multer.File>): Promise<Array<ProductAttachment>> {
 		this.logger.log(`Attaching images to product: ${uuid}`);
 
-		if (file === undefined || file === null || file.path === undefined || file.path === null) {
+		// Make sure we have enough attachments
+		if (!Array.isArray(files) || files.length === 0) {
 			throw new BadRequestException({
 				errors: {
-					file: "Please upload a valid file.",
+					files: "Please upload valid images.",
 				},
 			});
 		}
@@ -3818,31 +3819,36 @@ export class ProductsService {
 			});
 		}
 
-		// Generate a small image for the attachment
-		const imagePath = await this.imageThumbnailService.generateImageWithoutCrop(file.path);
+		// Upload each file and create an attachment
+		return Promise.all(
+			files.map(async file => {
+				// Generate a small image for the attachment
+				const imagePath = await this.imageThumbnailService.generateImageWithoutCrop(file.path);
 
-		// Upload the image to s3
-		let imageParams: { key: string, url: string, } | null = null;
-		try {
-			imageParams = await this.s3Service.uploadPath("attachments", imagePath, "image/webp");
-		} catch (err) {
-			this.logger.error(err);
-			throw new InternalServerErrorException({
-				error: "Failed to upload the product attachment. Please try again.",
-			});
-		}
+				// Upload the image to s3
+				let imageParams: { key: string, url: string, } | null = null;
+				try {
+					imageParams = await this.s3Service.uploadPath("attachments", imagePath, "image/webp");
+				} catch (err) {
+					this.logger.error(err);
+					throw new InternalServerErrorException({
+						error: "Failed to upload the product attachment. Please try again.",
+					});
+				}
 
-		// Delete the temporary files from the disk
-		await this.fileService.deletePath(imagePath);
-		await this.fileService.deleteFile(file);
+				// Delete the temporary files from the disk
+				await this.fileService.deletePath(imagePath);
+				await this.fileService.deleteFile(file);
 
-		// Create an attachment entry
-		const attachment = new ProductAttachment();
-		attachment.uuid = crypto.randomUUID();
-		attachment.product = product;
-		attachment.mediaUrl = imageParams.url;
-		attachment.mediaType = AttachmentMediaType.Image;
-		return this.productAttachmentRepository.save(attachment);
+				// Create an attachment entry
+				const attachment = new ProductAttachment();
+				attachment.uuid = crypto.randomUUID();
+				attachment.product = product;
+				attachment.mediaUrl = imageParams.url;
+				attachment.mediaType = AttachmentMediaType.Image;
+				return this.productAttachmentRepository.save(attachment);
+			})
+		);
 	}
 
 	/**
