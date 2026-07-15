@@ -36,6 +36,7 @@ import { Category } from "./entities/category.entity";
 import { Customer } from "src/customers/entities/customer.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
+import { ProductAttachment } from "./entities/product-attachment.entity";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -259,13 +260,13 @@ export class GetProductsInDesiredCampaignArgs {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Product)
 export class ProductsResolver {
-	assetsHost: string = "";
+	ASSETS_HOST: string = "";
 
 	constructor(
 		@Inject(ProductsService) private readonly productsService: ProductsService,
 		private readonly configService: ConfigService
 	) {
-		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
 	}
 
 	@ResolveField("title", () => String)
@@ -342,9 +343,9 @@ export class ProductsResolver {
 		// Split the path to get the full address.
 		const segments = featuredImageUrl.split("/");
 		if (featuredImageUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (featuredImageUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -365,7 +366,7 @@ export class ProductsResolver {
 		// Split the path to get the full address
 		const segments = sizechartUrl.split("/")
 		if (sizechartUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -397,9 +398,9 @@ export class ProductsResolver {
 		// Split the path to get the full address.
 		const segments = featuredThumbnailUrl.split("/");
 		if (featuredThumbnailUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (featuredThumbnailUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -551,10 +552,10 @@ export class ProductVariantResolver {
 
 @Resolver(() => ProductVariantImage)
 export class ProductVariantImageResolver {
-	assetsHost: string = "";
+	ASSETS_HOST: string = "";
 
 	constructor(private readonly configService: ConfigService) {
-		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
 	}
 
 	@ResolveField("imageUrl", () => String)
@@ -565,9 +566,9 @@ export class ProductVariantImageResolver {
 
 		const segments = productVariantImage.imageUrl.split("/");
 		if (productVariantImage.imageUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (productVariantImage.imageUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -581,9 +582,9 @@ export class ProductVariantImageResolver {
 
 		const segments = productVariantImage.thumbnailUrl.split("/");
 		if (productVariantImage.thumbnailUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (productVariantImage.thumbnailUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -592,10 +593,10 @@ export class ProductVariantImageResolver {
 
 @Resolver(() => ProductReviewImage)
 export class ProductReviewImageResolver {
-	assetsHost: string = "";
+	ASSETS_HOST: string = "";
 
 	constructor(private readonly configService: ConfigService) {
-		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
 	}
 
 	@ResolveField("imageUrl", () => String)
@@ -606,9 +607,9 @@ export class ProductReviewImageResolver {
 
 		const segments = reviewImage.imageUrl.split("/");
 		if (reviewImage.imageUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (reviewImage.imageUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -622,9 +623,34 @@ export class ProductReviewImageResolver {
 
 		const segments = reviewImage.thumbnailUrl.split("/");
 		if (reviewImage.thumbnailUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (reviewImage.thumbnailUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+}
+
+@Resolver(() => ProductAttachment)
+export class ProductAttachmentResolver {
+	ASSETS_HOST: string = "";
+
+	constructor(private readonly configService: ConfigService) {
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
+	}
+
+	@ResolveField("mediaUrl", () => String)
+	getMediaUrl(@Parent() attachment: ProductAttachment): string {
+		if (attachment === undefined || attachment === null || attachment.mediaUrl === undefined || attachment.mediaUrl === null) {
+			return "";
+		}
+
+		const segments = attachment.mediaUrl.split("/");
+		if (attachment.mediaUrl.startsWith("https://")) {
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
+		} else if (attachment.mediaUrl.startsWith("s3://")) {
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
