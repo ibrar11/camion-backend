@@ -88,19 +88,17 @@ export class PushNotificationScheduler {
                 });
 
                 if (notification.repeatInterval && notification.scheduledFor) {
-                    const hoursMap: Record<NotificationScheduler, number> = {
-                        [NotificationScheduler.EVERY_3]: 3,
-                        [NotificationScheduler.EVERY_6]: 6,
-                        [NotificationScheduler.EVERY_12]: 12,
-                        [NotificationScheduler.EVERY_24]: 24,
+                    const from: Date = new Date();
+
+                    const intervalMs: Record<NotificationScheduler, number> = {
+                        [NotificationScheduler.EVERY_30_MIN]: 30 * 60 * 1000,
+                        [NotificationScheduler.EVERY_3]: 3 * 60 * 60 * 1000,
+                        [NotificationScheduler.EVERY_6]: 6 * 60 * 60 * 1000,
+                        [NotificationScheduler.EVERY_12]: 12 * 60 * 60 * 1000,
+                        [NotificationScheduler.EVERY_24]: 24 * 60 * 60 * 1000,
                     };
 
-                    const hours = hoursMap[notification.repeatInterval];
-
-                    notification.scheduledFor = new Date(
-                        notification.scheduledFor.getTime() +
-                        hours * 60 * 60 * 1000,
-                    );
+                    notification.scheduledFor = new Date(from.getTime() + intervalMs[notification.repeatInterval]);
 
                     notification.status = NotificationStatus.PENDING;
                 } else {

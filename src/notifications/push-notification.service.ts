@@ -278,17 +278,14 @@ export class PushNotificationService {
      * @param body
      * @returns
      */
-    async create(body: CreateCustomizePushNotificationDto): Promise<PushNotification> {
+async create(body: CreateCustomizePushNotificationDto): Promise<PushNotification> {
 
         const customizeNotification = new PushNotification();
         customizeNotification.uuid = crypto.randomUUID();
         customizeNotification.title = body.title.trim();
         customizeNotification.brief = body.brief.trim();
         customizeNotification.message = body.message.trim();
-        if (body.scheduledFor) {
-            customizeNotification.scheduledFor = this.calculateNextRun(body.scheduledFor);
-            customizeNotification.repeatInterval = body.scheduledFor;
-        }
+        this.applySchedule(customizeNotification, body);
         customizeNotification.priority = body.priority ?? NotificationPriority.MEDIUM;
 
         const saved = await this.pushNotificationRepository.save(customizeNotification);
@@ -358,10 +355,7 @@ export class PushNotificationService {
         customizeNotification.title = body.title.trim();
         customizeNotification.brief = body.brief.trim();
         customizeNotification.message = body.message.trim();
-        if (body.scheduledFor) {
-            customizeNotification.scheduledFor = this.calculateNextRun(body.scheduledFor);
-            customizeNotification.repeatInterval = body.scheduledFor;
-        }
+        this.applySchedule(customizeNotification, body);
         customizeNotification.priority = body.priority ?? NotificationPriority.MEDIUM;
         return this.pushNotificationRepository.save(customizeNotification);
     }
@@ -396,17 +390,51 @@ export class PushNotificationService {
         });
     }
 
-    private calculateNextRun(interval: NotificationScheduler, from: Date = new Date()): Date {
-        const hoursMap: Record<NotificationScheduler, number> = {
-            [NotificationScheduler.EVERY_3]: 3,
-            [NotificationScheduler.EVERY_6]: 6,
-            [NotificationScheduler.EVERY_12]: 12,
-            [NotificationScheduler.EVERY_24]: 24,
+    /**
+     * Applies scheduling fields to a push notification. `scheduledAt` (an
+     * absolute datetime) and `scheduledFor` (a recurring interval) are
+     * mutually exclusive: providing `scheduledAt` schedules a one-time send
+     * with no repeatInterval, so the scheduler marks it SENT after firing
+     * instead of rescheduling it.
+     */
+    private applySchedule(
+        notification: PushNotification,
+        body: CreateCustomizePushNotificationDto | UpdateCustomizePushNotificationDto,
+    ): void {
+        if (body.scheduledAt && body.scheduledFor) {
+            throw new BadRequestException({
+                scheduledAt: "Please provide either a one-time scheduled time or a recurring interval, not both.",
+            });
+        }
+
+        if (body.scheduledAt) {
+            if (new Date().getTime() >= new Date(body.scheduledAt).getTime()) {
+                throw new BadRequestException({
+                    scheduledAt: "Please make sure the scheduled time is in the future.",
+                });
+            }
+
+            notification.scheduledFor = new Date(body.scheduledAt);
+            notification.repeatInterval = null;
+        } else if (body.scheduledFor) {
+            notification.scheduledFor = this.calculateNextRun(body.scheduledFor);
+            notification.repeatInterval = body.scheduledFor;
+        }
+    }
+
+    private calculateNextRun(
+        interval: NotificationScheduler,
+        from: Date = new Date(),
+    ): Date {
+        const intervalMs: Record<NotificationScheduler, number> = {
+            [NotificationScheduler.EVERY_30_MIN]: 30 * 60 * 1000,
+            [NotificationScheduler.EVERY_3]: 3 * 60 * 60 * 1000,
+            [NotificationScheduler.EVERY_6]: 6 * 60 * 60 * 1000,
+            [NotificationScheduler.EVERY_12]: 12 * 60 * 60 * 1000,
+            [NotificationScheduler.EVERY_24]: 24 * 60 * 60 * 1000,
         };
 
-        return new Date(
-            from.getTime() + hoursMap[interval] * 60 * 60 * 1000,
-        );
+        return new Date(from.getTime() + intervalMs[interval]);
     }
 
 }
