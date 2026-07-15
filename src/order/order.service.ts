@@ -1596,7 +1596,7 @@ export class OrderService {
                     customer: { id: customer.id },
                     product: {
                         status: ProductStatus.ACTIVE,
-                    }
+                    },
                 },
                 relations: {
                     product: {

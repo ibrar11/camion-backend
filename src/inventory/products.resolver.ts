@@ -38,6 +38,8 @@ import { Customer } from "src/customers/entities/customer.entity";
 import { GqlAuthGuard } from "../auth/gql.guard";
 import { ProductAttachment } from "./entities/product-attachment.entity";
 
+import { BLACKLIST_REGEX } from "./data/blacklist";
+
 @ArgsType()
 export class GetProductsArgs {
 	@Field({ defaultValue: "en", })
@@ -273,48 +275,48 @@ export class ProductsResolver {
 	getTitle(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const titleMap = {
+		const titleMap: Record<string, string> = {
 			"en": product.titleEn,
 			"ar": product.titleAr,
 		};
 
-		return titleMap[language] ?? product.titleEn;
+		return (titleMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("brief", () => String)
 	getBrief(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const briefMap = {
+		const briefMap: Record<string, string> = {
 			"en": product.briefEn,
 			"ar": product.briefAr,
 		};
 
-		return briefMap[language] ?? product.briefEn;
+		return (briefMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("description", () => String)
 	getDescription(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const descriptionMap = {
+		const descriptionMap: Record<string, string> = {
 			"en": product.descriptionEn,
 			"ar": product.descriptionAr,
 		};
 
-		return descriptionMap[language] ?? product.descriptionEn;
+		return (descriptionMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("descriptionHtml", () => String)
 	getDescriptionHtml(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const descriptionHtmlMap = {
+		const descriptionHtmlMap: Record<string, string> = {
 			"en": product.descriptionHtmlEn,
 			"ar": product.descriptionHtmlAr,
 		};
 
-		return descriptionHtmlMap[language] ?? product.descriptionHtmlEn;
+		return (descriptionHtmlMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("featuredImageUrl", () => String)
@@ -541,12 +543,12 @@ export class ProductVariantResolver {
 	getName(@Parent() productVariant: ProductVariant, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const titleMap = {
+		const titleMap: Record<string, string> = {
 			"en": productVariant.titleEn,
 			"ar": productVariant.titleAr,
 		};
 
-		return titleMap[language] ?? productVariant.titleEn;
+		return titleMap[language] ?? "";
 	}
 }
 
