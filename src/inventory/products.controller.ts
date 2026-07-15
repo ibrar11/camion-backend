@@ -13,11 +13,15 @@ import {
 	Put,
 	Query,
 	UploadedFile,
+	UploadedFiles,
 	UseGuards,
 	UseInterceptors,
 } from '@nestjs/common';
 
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+	FileFieldsInterceptor,
+	FileInterceptor,
+} from '@nestjs/platform-express';
 
 import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
@@ -167,13 +171,15 @@ export class ProductsController {
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Post(':uuid/attachments')
-	@UseInterceptors(FileInterceptor("file", { dest: os.tmpdir(), }))
+	@UseInterceptors(FileFieldsInterceptor([
+		{ name: "files", maxCount: 5, },
+	], { dest: os.tmpdir(), }))
 	@HttpCode(HttpStatus.OK)
-	actionCreateAttachment(
+	actionCreateAttachments(
 		@Param('uuid') uuid: string,
-		@UploadedFile() file: Express.Multer.File,
-	): Promise<ProductAttachment> {
-		return this.productsService.createProductAttachment(uuid, file);
+		@UploadedFiles() files: { files: Express.Multer.File[], }
+	): Promise<Array<ProductAttachment>> {
+		return this.productsService.createProductAttachments(uuid, files.files);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
