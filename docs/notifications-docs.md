@@ -70,7 +70,9 @@ The following notifications are sent automatically by the system. The customer d
 | Admin sets order status → `delivered` | `ORDER_DELIVERED` | Via `PATCH /v1/orders/:uuid/status` |
 | Admin cancels order | `ORDER_CANCELLED` | Via `DELETE /v1/orders/:uuid` or status update |
 | Admin sets order status → `payment_successful` | `PAYMENT_SUCCESSFUL` | Manual override only; see payment events for automatic |
-| Admin sets order status → `payment_rejected` | `PAYMENT_FAILED` | Manual override only |
+| Admin sets order status → `payment_failed` | `PAYMENT_FAILED` | Manual override only |
+| Admin sets order status → `payment_cancelled` | `PAYMENT_FAILED` | Manual override only |
+| Admin sets order status → `payment_expired` | `PAYMENT_FAILED` | Manual override only |
 
 > **No notification is sent at order creation.** The order stays `payment_pending` with no customer-facing push until the payment gateway confirms the charge — see Payment Events below. (Zero-cost orders, e.g. fully covered by a coupon, are the one exception: they skip the gateway entirely and get their confirmation notification/email synchronously at creation, since no webhook will ever arrive for them.)
 
@@ -79,7 +81,9 @@ The following notifications are sent automatically by the system. The customer d
 | Trigger | Type | Notes |
 |---|---|---|
 | SkipCash webhook — payment paid | `PAYMENT_SUCCESSFUL` | Combined "order placed + payment confirmed" copy. Guarded against duplicate webhook deliveries by the payment transaction's status (skipped if already `PAID`) |
-| SkipCash webhook — payment failed or cancelled | `PAYMENT_FAILED` | Sent on failed or cancelled SkipCash transactions |
+| SkipCash webhook — payment failed or rejected | `PAYMENT_FAILED` | Order → `payment_failed`. Only sent once per order (skipped if already `payment_failed`/`cancelled`); retry happens via `POST /v1/orders/:uuid/retry-payment`, not a link in the email |
+| SkipCash webhook — payment cancelled | `PAYMENT_FAILED` | Order → `payment_cancelled`. Only sent once per order (skipped if already `payment_cancelled`/`cancelled`) |
+| Payment-expiry scheduler force-expires a stale unpaid order | `PAYMENT_FAILED` | Order → `payment_expired`; also releases held stock and coupon usage. Runs every 15 min, threshold configurable via `PAYMENT_EXPIRY_MINUTES` |
 
 ### Return & Refund Events
 

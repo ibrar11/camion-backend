@@ -50,6 +50,18 @@ export class PaymentTransaction {
     @Column({ type: "jsonb", nullable: true })
     webhookData: any;
 
+    @Column({ type: "varchar", length: 512, nullable: true, name: "failure_reason" })
+    failureReason: string | null;
+
+    @Column({ type: "varchar", length: 128, nullable: true, name: "error_code" })
+    errorCode: string | null;
+
+    @Column({ type: "varchar", length: 128, nullable: true, name: "payment_method" })
+    paymentMethod: string | null;
+
+    @Column({ type: "timestamptz", nullable: true, name: "last_attempt_at" })
+    lastAttemptAt: Date | null;
+
     @Exclude()
     @UpdateDateColumn({
         name: "updated_at",
