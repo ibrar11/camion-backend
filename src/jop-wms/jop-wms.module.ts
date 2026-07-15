@@ -18,6 +18,7 @@ import { CustomersService } from '../customers/customers.service';
 import { ClientsModule } from '../clients/clients.module';
 import { ProcurementModule } from '../procurement/procurement.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailModule } from '../email/email.module';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 
@@ -50,6 +51,7 @@ import { DispatchOrderProcessor } from './workers/dispatch-order.processor';
         ClientsModule,
         ProcurementModule,
         NotificationsModule,
+        EmailModule,
     ],
     providers: [
         UsersService,
