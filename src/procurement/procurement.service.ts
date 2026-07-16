@@ -1960,11 +1960,13 @@ export class ProcurementService {
         try {
             this.logger.log(`Hiobuy: creating order (${dto.lines.length} line(s))`);
             const response = await fetch(
-                `${process.env.HIOBUY_BASE_URL}/v1/orders/create`,
+                // TODO: remove hardcoded base URL, revert to process.env.HIOBUY_BASE_URL (testing only)
+                `https://api.hiobuy.com/v1/orders/create`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${process.env.HIOBUY_API_KEY}`,
+                        // TODO: remove hardcoded key, revert to process.env.HIOBUY_API_KEY (testing only)
+                        Authorization: `Bearer hio_live_6p4q672c2o315x011o2b2t733w5h2b5q2z5q0p002j281d4o`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
@@ -2009,11 +2011,13 @@ export class ProcurementService {
     async getHiobuyLogisticsTrace(orderId: string): Promise<{ trackingNumber: string | null; raw: any }> {
         try {
             const response = await fetch(
-                `${process.env.HIOBUY_BASE_URL}/v1/orders/logistics/trace`,
+                // TODO: remove hardcoded base URL, revert to process.env.HIOBUY_BASE_URL (testing only)
+                `https://api.hiobuy.com/v1/orders/logistics/trace`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${process.env.HIOBUY_API_KEY}`,
+                        // TODO: remove hardcoded key, revert to process.env.HIOBUY_API_KEY (testing only)
+                        Authorization: `Bearer hio_live_6p4q672c2o315x011o2b2t733w5h2b5q2z5q0p002j281d4o`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
