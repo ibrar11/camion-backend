@@ -15,6 +15,8 @@ import { CreateExchangeRateDto } from "./dtos/CreateExchangeRateDto";
 import { UpdateExchangeRateDto } from "./dtos/UpdateExchangeRateDto";
 
 import { ExchangeRate } from "./entities/exchange-rate.entity";
+import { skip } from "node:test";
+import { take } from "rxjs";
 
 @Injectable()
 export class ExchangeRateService {
@@ -58,11 +60,28 @@ export class ExchangeRateService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		return this.exchangeRateRepository.find({
-			order:{
+			order: {
 				id: "DESC",
 			},
 			skip: skip,
 			take: take,
+		});
+	}
+
+	/**
+	 * Returns the exchange rates in full
+	 *
+	 * @returns
+	 */
+	async findAllFull(): Promise<Array<ExchangeRate>> {
+		this.logger.log(`Retrieving exchange rates in full`);
+
+		return this.exchangeRateRepository.find({
+			order: {
+				id: 'DESC',
+			},
+			skip: 0,
+			take: 100,
 		});
 	}
 
