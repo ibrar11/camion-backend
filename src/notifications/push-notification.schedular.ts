@@ -1,7 +1,7 @@
 import { NotificationReceiver } from './enums/notification-receiver.enum';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { LessThan, LessThanOrEqual, Repository } from 'typeorm';
+import { IsNull, LessThan, LessThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { PushNotification } from './entities/push-notification';
@@ -35,6 +35,10 @@ export class PushNotificationScheduler {
             where: {
                 scheduledFor: LessThanOrEqual(now),
                 status: NotificationStatus.PENDING,
+                repeatInterval: Raw(
+                    alias => `${alias} IS NOT NULL AND ${alias} != :interval`,
+                    { interval: NotificationScheduler.EVERY_30_MIN }
+                ),
             },
             relations: {
                 images: true,
@@ -65,11 +69,22 @@ export class PushNotificationScheduler {
      */
     @Cron(CronExpression.EVERY_MINUTE)
     async processNotifications() {
+        const now = new Date();
 
         const notifications = await this.pushNotificationRepository.find({
-            where: {
-                status: NotificationStatus.PROCESSING
-            },
+            where: [
+                {
+                    status: NotificationStatus.PROCESSING,
+                },
+                {
+                    scheduledFor: LessThanOrEqual(now),
+                    repeatInterval: NotificationScheduler.EVERY_30_MIN
+                },
+                {
+                    scheduledFor: LessThanOrEqual(now),
+                    repeatInterval: IsNull(),
+                },
+            ],
             relations: {
                 images: true
             }
