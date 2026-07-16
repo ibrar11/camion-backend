@@ -13,6 +13,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Not, Repository } from "typeorm";
 
 import { ProductCategory } from "./entities/product-category.entity";
+import { ProductStatus } from "./enums/ProductStatus.enum";
 
 import { S3Service } from "../common/s3.service";
 import { FileService } from "../common/file.service";
@@ -335,7 +336,13 @@ export class CategoriesService {
 			.createQueryBuilder()
 			.update(Category)
 			.set({
-				productsCount: () => `(SELECT COUNT(*) FROM product_categories WHERE product_categories.category_id = categories.id)`,
+				productsCount: () => `(
+					SELECT COUNT(*)
+					FROM product_categories product_categories
+					INNER JOIN products product ON product.id = product_categories.product_id
+					WHERE product_categories.category_id = categories.id
+					AND product.status = '${ProductStatus.ACTIVE}'
+				)`,
 			})
 			.execute();
 
