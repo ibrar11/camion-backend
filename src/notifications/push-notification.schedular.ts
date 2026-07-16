@@ -22,7 +22,7 @@ export class PushNotificationScheduler {
     /**
      * Look for the scheduled notification and marked them processing.
      */
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_5_MINUTES)
     async broadCastNotification() {
         await this.broadcastScheduledNotifications();
     }
@@ -56,7 +56,7 @@ export class PushNotificationScheduler {
     /**
      * Look for the processing scheduled notification and broadcast.
      */
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_5_MINUTES)
     async processNotifications() {
 
         const notifications = await this.pushNotificationRepository.find({
