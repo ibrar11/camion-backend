@@ -429,7 +429,14 @@ export class ProductsResolver {
 	}
 
 	@Query(() => Product, { nullable: true, })
-	async getProduct(@Context('req') req: Request & { jti: string, customer: Customer, }, @Args() args: GetProductArgs): Promise<Product | null> {
+	async getProduct(
+		@Context('req')
+		req: Request & {
+			customer: Customer,
+		},
+		@Args()
+		args: GetProductArgs
+	): Promise<Product | null> {
 		try {
 			return await this.productsService.findOneBySlug(req.customer, args.slug);
 		} catch {
@@ -443,8 +450,15 @@ export class ProductsResolver {
 	}
 
 	@Query(() => [Product])
-	getRecommendedProducts(@Args() args: GetRecommendedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getRecommendedProducts(args.slug, args.pageNumber, args.itemsPerPage);
+	getRecommendedProducts(
+		@Context('req')
+		req: Request & {
+			customer: Customer,
+		},
+		@Args()
+		args: GetRecommendedProductsArgs
+	): Promise<Array<Product>> {
+		return this.productsService.getRecommendedProducts(req.customer, args.slug, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
