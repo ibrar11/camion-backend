@@ -50,6 +50,8 @@ import { QueueName } from '../queue/enums/QueueTypes.enum';
 import { DispatchShopJobData, DispatchOrderJobData } from '../queue/types';
 import { WmsOutboundStatus } from './enums/WmsOutboundStatus';
 
+import { moneyToFloat, multiplyMoney } from '../common/currency';
+
 @Injectable()
 export class JopWmsService {
     private readonly logger = new Logger(JopWmsService.name);
@@ -470,11 +472,11 @@ export class JopWmsService {
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
                 name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
-                goods_amount: String(item.variant.cost.amount * item.quantity),
+                goods_amount: String(moneyToFloat(multiplyMoney(item.variant.cost, item.quantity))),
                 freight_fee: '0',
                 skus: [{
                     platform_sku: item.variant.sku,
-                    price: String(item.variant.cost.amount),
+                    price: String(moneyToFloat(item.variant.cost)),
                     quantity: String(item.quantity),
                     sku_info: item.variant.skuMeta ?? {},
                 }],
@@ -1027,10 +1029,10 @@ export class JopWmsService {
                     platform: '1688',
                     platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
                     name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
-                    goods_amount: String(item.variant.cost.amount * item.quantity),
+                    goods_amount: String(moneyToFloat(multiplyMoney(item.variant.cost, item.quantity))),
                     skus: [{
                         platform_sku: item.variant.sku,
-                        price: String(item.variant.cost.amount),
+                        price: String(moneyToFloat(item.variant.cost)),
                         quantity: String(item.quantity),
                         sku_info: item.variant.skuMeta ?? {},
                     }],
@@ -1355,11 +1357,11 @@ export class JopWmsService {
                 platform: '1688',
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
                 name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
-                goods_amount: String(item.variant.cost.amount * item.quantity),
+                goods_amount: String(moneyToFloat(multiplyMoney(item.variant.cost, item.quantity))),
                 freight_fee: '0',
                 skus: [{
                     platform_sku: item.variant.sku,
-                    price: String(item.variant.cost.amount),
+                    price: String(moneyToFloat(item.variant.cost)),
                     quantity: String(item.quantity),
                     sku_info: item.variant.skuMeta ?? {},
                 }],

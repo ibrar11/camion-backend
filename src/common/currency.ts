@@ -84,6 +84,27 @@ export const moneyToMinor = (money: Money): number => {
 }
 
 /**
+ * Converts a minor-unit integer back into a Money object
+ *
+ * ```ts
+ * const value = moneyFromMinor(2720, CurrencyCode.QAR);
+ * console.log(value);
+ * => { amount: 27, minorAmount: 20, currencyCode: "qar" }
+ * ```
+ *
+ * @param minorUnits
+ * @param currencyCode
+ * @returns
+ */
+export const moneyFromMinor = (minorUnits: number, currencyCode: CurrencyCode): Money => {
+	return {
+		amount: Math.trunc(minorUnits / 100),
+		minorAmount: minorUnits % 100,
+		currencyCode,
+	};
+}
+
+/**
  * Adds 2 objects of money
  *
  * ```ts
@@ -285,7 +306,7 @@ export const multiplyMoney = (money: Money, factor: number): Money => {
 	}
 
 	// Multiply the total minor amount by a factor
-	const totalDestMinor = Math.ceil((money.amount * 100) + money.minorAmount * factor);
+	const totalDestMinor = Math.ceil(((money.amount * 100) + money.minorAmount) * factor);
 
 	return {
 		amount: Math.trunc(totalDestMinor / 100),

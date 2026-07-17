@@ -53,6 +53,8 @@ import { calculateStock } from "../common/calculateStock";
 
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
 
+import { multiplyMoney } from "../common/currency";
+
 @Injectable()
 export class CustomerAuthService {
 	private readonly logger = new Logger(CustomerAuthService.name);
@@ -1007,7 +1009,7 @@ export class CustomerAuthService {
 					existingItem.quantity = availableStock < totalQuantity ? availableStock : totalQuantity;
 					existingItem.subTotal = {
 						...existingItem.subTotal,
-						amount: existingItem.quantity * existingItem.variant.cost.amount,
+						...multiplyMoney(existingItem.variant.cost, existingItem.quantity),
 					};
 					itemsToSave.push(existingItem);
 					guestItemsToRemove.push(guestItem);

@@ -72,6 +72,8 @@ import {
 
 import { smartRoundInt } from "../common/smartRound";
 
+import { Money, multiplyMoney, addMoney, subtractMoney, moneyToFloat, moneyToMinor, isLesserThan } from "../common/currency";
+
 import {
     NotificationPayload,
     OrderFilters,
@@ -200,14 +202,14 @@ export class OrderService {
     }
 
     private static readonly TRACKING_STAGES: { id: number; stage: OrderTrackingStage; name: string; nameAr: string }[] = [
-        { id: 1, stage: OrderTrackingStage.ORDER_PLACED,      name: 'Order Placed',      nameAr: 'تم تقديم الطلب' },
+        { id: 1, stage: OrderTrackingStage.ORDER_PLACED, name: 'Order Placed', nameAr: 'تم تقديم الطلب' },
         { id: 2, stage: OrderTrackingStage.PAYMENT_CONFIRMED, name: 'Payment Confirmed', nameAr: 'تم تأكيد الدفع' },
-        { id: 3, stage: OrderTrackingStage.ORDER_CONFIRMED,   name: 'Order Confirmed',   nameAr: 'تم تأكيد الطلب' },
-        { id: 4, stage: OrderTrackingStage.PROCESSING,        name: 'Processing',        nameAr: 'قيد المعالجة' },
-        { id: 5, stage: OrderTrackingStage.PACKING,           name: 'Packing',           nameAr: 'قيد التغليف' },
-        { id: 6, stage: OrderTrackingStage.DISPATCHING,       name: 'Dispatching',       nameAr: 'قيد الشحن' },
-        { id: 7, stage: OrderTrackingStage.ORDER_DELIVERED,   name: 'Order Delivered',   nameAr: 'تم التسليم' },
-        { id: 8, stage: OrderTrackingStage.ORDER_REVIEW,      name: 'Order Review',      nameAr: 'تقييم الطلب' },
+        { id: 3, stage: OrderTrackingStage.ORDER_CONFIRMED, name: 'Order Confirmed', nameAr: 'تم تأكيد الطلب' },
+        { id: 4, stage: OrderTrackingStage.PROCESSING, name: 'Processing', nameAr: 'قيد المعالجة' },
+        { id: 5, stage: OrderTrackingStage.PACKING, name: 'Packing', nameAr: 'قيد التغليف' },
+        { id: 6, stage: OrderTrackingStage.DISPATCHING, name: 'Dispatching', nameAr: 'قيد الشحن' },
+        { id: 7, stage: OrderTrackingStage.ORDER_DELIVERED, name: 'Order Delivered', nameAr: 'تم التسليم' },
+        { id: 8, stage: OrderTrackingStage.ORDER_REVIEW, name: 'Order Review', nameAr: 'تقييم الطلب' },
     ];
 
     private static readonly CANCELLED_STAGE = { id: 9, name: 'Order Cancelled', nameAr: 'تم إلغاء الطلب' };
@@ -288,9 +290,9 @@ export class OrderService {
             //     })
             // );
 
-            let subTotal = 0;
-            const orderItems: OrderItem[] = [];
             const currency = dto.currency ?? "qar";
+            let subTotal: Money = { amount: 0, minorAmount: 0, currencyCode: currency as CurrencyCode };
+            const orderItems: OrderItem[] = [];
             let campaign: Campaign | null = null;
 
             for (const cart of cartItems) {
@@ -331,9 +333,9 @@ export class OrderService {
 
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
                 const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, campaign, currency, true);
-                const totalAmount = priceAmount.amount * cart.quantity;
+                const totalAmount = multiplyMoney(priceAmount, cart.quantity);
 
-                subTotal += totalAmount;
+                subTotal = addMoney(subTotal, totalAmount);
 
                 // create order items within transaction
                 const orderItem = new OrderItem()
@@ -342,25 +344,16 @@ export class OrderService {
                 orderItem.variant = variant;
                 orderItem.warehouse = level.warehouse;
 
-                // FIXME: Fix this
-                orderItem.price = {
-                    ...priceAmount,
-                    amount: priceAmount.amount,
-                };
+                orderItem.price = priceAmount;
 
-                // FIXME: Fix this
                 orderItem.discountedPrice = {
-                    ...priceAmount,
                     amount: 0,
+                    minorAmount: 0,
+                    currencyCode: priceAmount.currencyCode,
                 };
                 orderItem.quantity = cart.quantity;
 
-                // FIXME: Fix this
-                orderItem.total = {
-                    amount: totalAmount,
-                    minorAmount: 0,
-                    currencyCode: variant.cost.currencyCode,
-                };
+                orderItem.total = totalAmount;
 
                 await queryRunner.manager.save(orderItem);
 
@@ -392,7 +385,7 @@ export class OrderService {
             const freeShippingExchangeRate = 1 / (exchangeRates.find((rate) => rate.srcCurrencyCode === currency && rate.targetCurrencyCode === 'qar')?.factor || 1);
 
             // Decide if we should charge shipping
-            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < (freeShippingValue * freeShippingExchangeRate);
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || moneyToFloat(subTotal) < (freeShippingValue * freeShippingExchangeRate);
 
             if (shouldApplyShipping) {
                 const shippingCartItems = cartItems.map(item => ({
@@ -409,14 +402,14 @@ export class OrderService {
                     address.country,
                     currency, // Todo make currency dynamic
                     exchangeRates,
-                    subTotal
+                    moneyToFloat(subTotal)
                 );
                 shippingCost = Math.ceil(shippingCalculation.totalShippingCost);
                 eta = shippingCalculation.transitTime.estimatedRange
             }
 
             // COUPON VALIDATION & DISCOUNT
-            let discount = 0;
+            let discount: Money = { amount: 0, minorAmount: 0, currencyCode: currency as CurrencyCode };
             let affiliateCoupon: Coupon | null = null;
             let globalCoupon: GlobalCoupon | null = null;
             if (dto.couponCode) {
@@ -467,13 +460,14 @@ export class OrderService {
                 }))?.integerValue
             ) || 0;
 
-            if (subTotal < min_order_amount) {
+            if (isLesserThan(subTotal, { amount: min_order_amount, minorAmount: 0, currencyCode: currency as CurrencyCode })) {
                 throw new BadRequestException({
                     error: `Order value should not be less than ${min_order_amount} ${dto.currency}`
                 });
             }
 
-            const total = subTotal + shippingCost - discount;
+            const shippingCostMoney: Money = { amount: shippingCost, minorAmount: 0, currencyCode: currency as CurrencyCode };
+            const total = subtractMoney(addMoney(subTotal, shippingCostMoney), discount);
 
             // create a order within transaction
             const order = new Order();
@@ -483,33 +477,10 @@ export class OrderService {
             order.globalCoupon = globalCoupon;
             order.status = OrderStatus.PAYMENT_PENDING;
 
-            // FIXME: Fix this
-            order.subTotal = {
-                amount: subTotal,
-                minorAmount: 0,
-                currencyCode: currency,
-            };
-
-            // FIXME: Fix this
-            order.shippingCost = {
-                amount: shippingCost,
-                minorAmount: 0,
-                currencyCode: currency,
-            };
-
-            // FIXME: Fix this
-            order.discount = {
-                amount: discount,
-                minorAmount: 0,
-                currencyCode: currency,
-            };
-
-            // FIXME: Fix this
-            order.total = {
-                amount: total,
-                minorAmount: 0,
-                currencyCode: currency,
-            };
+            order.subTotal = subTotal;
+            order.shippingCost = shippingCostMoney;
+            order.discount = discount;
+            order.total = total;
             order.eta = eta;
             order.orderItems = orderItems;
             order.shippingAddress = address;
@@ -529,10 +500,10 @@ export class OrderService {
             await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
 
             // RECORD AFFILIATE COMMISSION
-            if (affiliateCoupon?.affiliate && affiliateCoupon.code && discount >= 0) {
+            if (affiliateCoupon?.affiliate && affiliateCoupon.code && moneyToMinor(discount) >= 0) {
                 const commissionAmount = discount;
 
-                if (commissionAmount > 0 && affiliateCoupon.affiliate.wallet?.id) {
+                if (moneyToMinor(commissionAmount) > 0 && affiliateCoupon.affiliate.wallet?.id) {
                     const walletId = affiliateCoupon.affiliate.wallet.id;
                     const wallet = await queryRunner.manager.findOne(Wallet, {
                         where: { id: walletId },
@@ -550,39 +521,36 @@ export class OrderService {
                     referralTx.uuid = crypto.randomUUID();
                     referralTx.wallet = wallet;
                     referralTx.amount = new TransactionMoney();
-                    referralTx.amount.amount = commissionAmount;
+                    referralTx.amount.amount = commissionAmount.amount;
+                    referralTx.amount.minorAmount = commissionAmount.minorAmount;
                     referralTx.amount.currencyCode = currency as CurrencyCode;
                     referralTx.description = `Commission from order #${order.uuid} using coupon ${affiliateCoupon.code}`;
                     await queryRunner.manager.save(referralTx);
 
                     // Update wallet balance
-                    wallet.amount.amount += commissionAmount;
-                    wallet.amountAvailable.amount += commissionAmount;
+                    wallet.amount = addMoney(wallet.amount, commissionAmount);
+                    wallet.amountAvailable = addMoney(wallet.amountAvailable, commissionAmount);
                     await queryRunner.manager.save(wallet);
 
                     // Update affiliate's total commission and remaining balance
                     const affiliate = wallet.affiliate;
-                    affiliate.totalCommission.amount += commissionAmount;
-                    affiliate.remainingBalance.amount += commissionAmount;
+                    affiliate.totalCommission = addMoney(affiliate.totalCommission, commissionAmount);
+                    affiliate.remainingBalance = addMoney(affiliate.remainingBalance, commissionAmount);
                     affiliate.couponsUsed += 1;
                     await queryRunner.manager.save(affiliate);
 
                     // Update the statistics on the coupon
                     affiliateCoupon.ordersCount += 1;
-                    affiliateCoupon.totalSales.amount += subTotal;
-                    affiliateCoupon.totalSales.currencyCode = currency;
-                    affiliateCoupon.totalCommission.amount += commissionAmount;
-                    affiliateCoupon.totalCommission.currencyCode = currency;
+                    affiliateCoupon.totalSales = addMoney(affiliateCoupon.totalSales, subTotal);
+                    affiliateCoupon.totalCommission = addMoney(affiliateCoupon.totalCommission, commissionAmount);
                     await queryRunner.manager.save(affiliateCoupon);
                 }
-            } else if (globalCoupon && globalCoupon.code && discount >= 0) {
+            } else if (globalCoupon && globalCoupon.code && moneyToMinor(discount) >= 0) {
                 const commissionAmount = discount;
 
                 globalCoupon.ordersCount += 1;
-                globalCoupon.totalSales.amount += subTotal;
-                globalCoupon.totalSales.currencyCode = currency;
-                globalCoupon.totalCommission.amount += commissionAmount;
-                globalCoupon.totalCommission.currencyCode = currency;
+                globalCoupon.totalSales = addMoney(globalCoupon.totalSales, subTotal);
+                globalCoupon.totalCommission = addMoney(globalCoupon.totalCommission, commissionAmount);
                 globalCoupon.timesUsed++;
                 await queryRunner.manager.save(globalCoupon);
             }
@@ -592,7 +560,7 @@ export class OrderService {
             // payment service needs to integrated here
             const paymentPayload = {
                 provider: provider,
-                amount: total,
+                amount: moneyToFloat(total),
                 currency: currency,
                 orderUUID: order.uuid,
                 firstName: customerName[0],
@@ -609,7 +577,7 @@ export class OrderService {
             // External payment call — if this throws, the entire DB transaction rolls back
             const payment = await this.paymentService.createPayment(paymentPayload);
             order.paymentTransaction = payment;
-            if (total === 0) {
+            if (moneyToMinor(total) === 0) {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
             }
             await queryRunner.manager.save(order);
@@ -1469,7 +1437,7 @@ export class OrderService {
 
             // Validate cart items and prepare for shipping calculation
             const validatedItems: CartItem[] = [];
-            let subTotal = 0;
+            let subTotal: Money = { amount: 0, minorAmount: 0, currencyCode: currencyCode };
 
             let campaign: Campaign | null = null;
 
@@ -1488,25 +1456,20 @@ export class OrderService {
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
                 const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, campaign, currencyCode, true);
 
-                const itemTotal = priceDiscount.amount * item.quantity;
-                subTotal += itemTotal;
+                const itemTotal = multiplyMoney(priceDiscount, item.quantity);
+                subTotal = addMoney(subTotal, itemTotal);
 
                 item.availableStock = stock;
                 item.isAvailable = stock > 0;
 
-                item.subTotal = {
-                    amount: priceDiscount.amount * item.quantity,
-                    currencyCode: priceDiscount.currencyCode,
-                };
+                item.subTotal = itemTotal;
                 item.discountPrice = {
                     amount: 0,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
-                item.total = {
-                    amount: priceDiscount.amount * item.quantity,
-                    currencyCode: priceDiscount.currencyCode,
-                };
-                
+                item.total = itemTotal;
+
                 validatedItems.push(item);
             }
 
@@ -1538,7 +1501,7 @@ export class OrderService {
             ) || false;
 
             // Decide if we should charge shipping
-            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < (freeShippingValue * freeShippingExchangeRate);
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || moneyToFloat(subTotal) < (freeShippingValue * freeShippingExchangeRate);
 
 
             if (shouldApplyShipping) {
@@ -1552,7 +1515,7 @@ export class OrderService {
                     address.country,
                     currencyCode,
                     exchangeRates,
-                    subTotal
+                    moneyToFloat(subTotal)
                 );
 
                 shippingCost = Math.ceil(shippingCalculation.totalShippingCost);
@@ -1560,7 +1523,7 @@ export class OrderService {
             }
 
             // COUPON VALIDATION & DISCOUNT
-            let discount = 0;
+            let discount: Money = { amount: 0, minorAmount: 0, currencyCode: currencyCode };
             if (couponCode) {
                 let coupon: Coupon | GlobalCoupon | null = null;
                 const affiliateCoupon = await this.couponRepository.findOne({
@@ -1573,7 +1536,7 @@ export class OrderService {
                     },
                 });
 
-                if(campaign && affiliateCoupon) {
+                if (campaign && affiliateCoupon) {
                     throw new BadRequestException(
                         "Coupon cannot be applied. Campaign products exists."
                     )
@@ -1620,17 +1583,18 @@ export class OrderService {
             // }
 
             // Calculate total order amount
-            const totalAmount = subTotal + shippingCost - discount;
+            const shippingCostMoney: Money = { amount: shippingCost, minorAmount: 0, currencyCode: currencyCode };
+            const totalAmount = subtractMoney(addMoney(subTotal, shippingCostMoney), discount);
 
             // Return complete order preview
             const orderPreview: OrderPreviewResponse = {
                 items: validatedItems,
                 shippingAddress: address,
-                cart_total: subTotal,
-                discount: discount,
+                cart_total: moneyToFloat(subTotal),
+                discount: moneyToFloat(discount),
                 shipping: shippingCalculation,
                 shippingTotal: shippingCost,
-                grand_total: totalAmount,
+                grand_total: moneyToFloat(totalAmount),
                 eta: eta,
             };
 
@@ -1643,7 +1607,7 @@ export class OrderService {
                 }))?.integerValue
             ) || 0;
 
-            if (subTotal < min_order_amount) {
+            if (isLesserThan(subTotal, { amount: min_order_amount, minorAmount: 0, currencyCode: currencyCode })) {
                 orderPreview.orderTotalWarning = "Order value should not be less than 250 QAR"
             }
 

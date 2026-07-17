@@ -19,6 +19,8 @@ import { Customer } from "../customers/entities/customer.entity";
 import { TransactionMoney, Transaction } from "./entities/transaction.entity";
 import { Wallet } from "./entities/wallet.entity";
 
+import { Money, addMoney, subtractMoney } from "../common/currency";
+
 @Injectable()
 export class TransactionsService {
 	private readonly logger = new Logger(TransactionsService.name);
@@ -47,12 +49,20 @@ export class TransactionsService {
 			});
 		}
 
+		// Split the incoming decimal amount into major/minor units
+		const amount: Money = {
+			amount: Math.trunc(body.amount),
+			minorAmount: Math.round((body.amount % 1) * 100),
+			currencyCode: body.currencyCode,
+		};
+
 		// Create the transaction
 		const transaction = new Transaction();
 		transaction.uuid = crypto.randomUUID();
 		transaction.wallet = wallet;
 		transaction.amount = new TransactionMoney();
-		transaction.amount.amount = body.amount;
+		transaction.amount.amount = amount.amount;
+		transaction.amount.minorAmount = amount.minorAmount;
 		transaction.amount.currencyCode = body.currencyCode;
 		transaction.description = body.description.trim();
 		await this.transactionRepository.save(transaction);
@@ -60,11 +70,11 @@ export class TransactionsService {
 		// Add or deduct the amount to the wallet
 		switch (body.type) {
 			case TransactionType.Credit:
-				wallet.amount.amount += body.amount;
+				wallet.amount = addMoney(wallet.amount, amount);
 				break;
 
 			case TransactionType.Debit:
-				wallet.amount.amount -= body.amount;
+				wallet.amount = subtractMoney(wallet.amount, amount);
 				break;
 
 			default: // do nothing
@@ -135,10 +145,10 @@ export class TransactionsService {
 		// Deduct the amount from the wallet
 		switch (srcTransaction.type) {
 			case TransactionType.Credit:
-				wallet.amount.amount -= srcTransaction.amount.amount;
+				wallet.amount = subtractMoney(wallet.amount, srcTransaction.amount);
 				break;
 			case TransactionType.Debit:
-				wallet.amount.amount += srcTransaction.amount.amount;
+				wallet.amount = addMoney(wallet.amount, srcTransaction.amount);
 				break;
 			default: // do nothing
 				break;

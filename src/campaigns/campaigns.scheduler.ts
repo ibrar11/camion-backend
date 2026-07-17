@@ -6,6 +6,7 @@ import { IsNull, LessThan, MoreThan, Repository } from 'typeorm';
 import { Campaign } from './entities/campaign.entity';
 import { CartItem } from '../cart/entities/cart-items.entity';
 import { PricingService } from '../pricing/pricing.service';
+import { multiplyMoney } from '../common/currency';
 
 // Node.js setTimeout max safe delay (~24.8 days). Campaigns further away than
 // this will be re-registered on the next server restart via onModuleInit.
@@ -151,9 +152,10 @@ export class CampaignsScheduler implements OnModuleInit {
           continue;
         }
 
-        cartItem.subTotal = { amount: price.amount * cartItem.quantity, currencyCode: currency };
-        cartItem.discountPrice = { amount: 0, currencyCode: currency };
-        cartItem.total = { amount: price.amount * cartItem.quantity, currencyCode: currency };
+        const itemPrice = multiplyMoney(price, cartItem.quantity);
+        cartItem.subTotal = { ...itemPrice, currencyCode: currency };
+        cartItem.discountPrice = { amount: 0, minorAmount: 0, currencyCode: currency };
+        cartItem.total = { ...itemPrice, currencyCode: currency };
 
         await this.cartItemRepository.save(cartItem);
       }

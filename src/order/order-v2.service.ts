@@ -52,6 +52,8 @@ import { getBestCampaign } from "../common/bestCampaign";
 import { Campaign } from "../campaigns/entities/campaign.entity";
 import { OrderPreviewV2Dto } from './dtos/OrderPreviewV2Dto';
 
+import { Money, multiplyMoney, addMoney, subtractMoney, moneyToFloat, isLesserThan } from '../common/currency';
+
 @Injectable()
 export class OrderServiceV2 {
     private readonly logger = new Logger(OrderServiceV2.name);
@@ -149,7 +151,7 @@ export class OrderServiceV2 {
 
             // Validate cart items and prepare for shipping calculation
             const validatedItems: CartItem[] = [];
-            let subTotal = 0;
+            let subTotal: Money = { amount: 0, minorAmount: 0, currencyCode: body.currency };
 
             let campaign: Campaign | null = null;
 
@@ -168,24 +170,19 @@ export class OrderServiceV2 {
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
                 const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, campaign, body.currency, true);
 
-                const itemTotal = priceDiscount.amount * item.quantity;
-                subTotal += itemTotal;
+                const itemTotal = multiplyMoney(priceDiscount, item.quantity);
+                subTotal = addMoney(subTotal, itemTotal);
 
                 item.availableStock = stock;
                 item.isAvailable = stock > 0;
 
-                item.subTotal = {
-                    amount: priceDiscount.amount * item.quantity,
-                    currencyCode: priceDiscount.currencyCode,
-                };
+                item.subTotal = itemTotal;
                 item.discountPrice = {
                     amount: 0,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
-                item.total = {
-                    amount: priceDiscount.amount * item.quantity,
-                    currencyCode: priceDiscount.currencyCode,
-                };
+                item.total = itemTotal;
 
                 validatedItems.push(item);
             }
@@ -218,7 +215,7 @@ export class OrderServiceV2 {
             ) || false;
 
             // Decide if we should charge shipping
-            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || subTotal < (freeShippingValue * freeShippingExchangeRate);
+            const shouldApplyShipping = !freeShippingEnabled || freeShippingValue === null || moneyToFloat(subTotal) < (freeShippingValue * freeShippingExchangeRate);
 
 
             if (shouldApplyShipping) {
@@ -232,7 +229,7 @@ export class OrderServiceV2 {
                     address.country,
                     body.currency,
                     exchangeRates,
-                    subTotal
+                    moneyToFloat(subTotal)
                 );
 
                 shippingCost = Math.ceil(shippingCalculation.totalShippingCost);
@@ -240,7 +237,7 @@ export class OrderServiceV2 {
             }
 
             // COUPON VALIDATION & DISCOUNT
-            let discount = 0;
+            let discount: Money = { amount: 0, minorAmount: 0, currencyCode: body.currency };
             if (body?.couponCode) {
                 let coupon: Coupon | GlobalCoupon | null = null;
                 const affiliateCoupon = await this.couponRepository.findOne({
@@ -300,17 +297,18 @@ export class OrderServiceV2 {
             // }
 
             // Calculate total order amount
-            const totalAmount = subTotal + shippingCost - discount;
+            const shippingCostMoney: Money = { amount: shippingCost, minorAmount: 0, currencyCode: body.currency };
+            const totalAmount = subtractMoney(addMoney(subTotal, shippingCostMoney), discount);
 
             // Return complete order preview
             const orderPreview: OrderPreviewResponse = {
                 items: validatedItems,
                 shippingAddress: address,
-                cart_total: subTotal,
-                discount: discount,
+                cart_total: moneyToFloat(subTotal),
+                discount: moneyToFloat(discount),
                 shipping: shippingCalculation,
                 shippingTotal: shippingCost,
-                grand_total: totalAmount,
+                grand_total: moneyToFloat(totalAmount),
                 eta: eta,
             };
 
@@ -323,7 +321,7 @@ export class OrderServiceV2 {
                 }))?.integerValue
             ) || 0;
 
-            if (subTotal < min_order_amount) {
+            if (isLesserThan(subTotal, { amount: min_order_amount, minorAmount: 0, currencyCode: body.currency })) {
                 orderPreview.orderTotalWarning = "Order value should not be less than 250 QAR"
             }
 

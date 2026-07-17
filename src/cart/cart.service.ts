@@ -32,6 +32,8 @@ import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { getBestCampaign } from "../common/bestCampaign";
 
+import { multiplyMoney } from "../common/currency";
+
 @Injectable()
 export class CartItemsService {
     private readonly logger = new Logger(CartItemsService.name);
@@ -140,24 +142,15 @@ export class CartItemsService {
                 });
             }
 
-            // FIXME: Fix this
-            const updatedPrice = price.amount * updatedQuantity;
+            const updatedPrice = multiplyMoney(price, updatedQuantity);
             existingCartItem.quantity = updatedQuantity;
-            existingCartItem.subTotal = {
-                amount: updatedPrice,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            };
+            existingCartItem.subTotal = updatedPrice;
             existingCartItem.discountPrice = {
                 amount: 0,
                 minorAmount: 0,
                 currencyCode: price.currencyCode
             }
-            existingCartItem.total = {
-                amount: updatedPrice,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            }
+            existingCartItem.total = updatedPrice;
             return this.cartRepository.save(existingCartItem);
         }
 
@@ -173,26 +166,17 @@ export class CartItemsService {
         cartItem.variant = variant;
         cartItem.quantity = body.quantity;
 
-        // FIXME: Fix this
-        cartItem.subTotal = {
-            amount: price.amount * body.quantity,
-            minorAmount: 0,
-            currencyCode: price.currencyCode,
-        };
+        const newItemPrice = multiplyMoney(price, body.quantity);
 
-        // FIXME: Fix this
+        cartItem.subTotal = newItemPrice;
+
         cartItem.discountPrice = {
             amount: 0,
             minorAmount: 0,
             currencyCode: price.currencyCode
         }
 
-        // FIXME: Fix this
-        cartItem.total = {
-            amount: price.amount * body.quantity,
-            minorAmount: 0,
-            currencyCode: price.currencyCode
-        }
+        cartItem.total = newItemPrice;
         const savedCartItem = await this.cartRepository.save(cartItem);
 
         customer.cartItemsCount++;
@@ -270,10 +254,10 @@ export class CartItemsService {
             cartItem.isAvailable = stock > 0;
 
             const campaign = getBestCampaign(cartItem.product);
-            
+
             if (campaign !== null) {
                 cartItem.product.campaign = campaign;
-            } 
+            }
 
             const price = await this.pricingService.applyPriceOnProductVariant(
                 cartItem.product,
@@ -283,34 +267,24 @@ export class CartItemsService {
                 true,
             );
 
-            // FIXME: Fix this
-            cartItem.subTotal = {
-                amount: price.amount * cartItem.quantity,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            };
+            const itemPrice = multiplyMoney(price, cartItem.quantity);
 
-            // FIXME: Fix this
+            cartItem.subTotal = itemPrice;
+
             cartItem.discountPrice = {
                 amount: 0,
                 minorAmount: 0,
                 currencyCode: price.currencyCode,
             };
 
-            // FIXME: Fix this
-            cartItem.total = {
-                amount: price.amount * cartItem.quantity,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            };
+            cartItem.total = itemPrice;
 
             result.push(cartItem);
         }
 
         return result;
     }
-
-    /**
+/**
      * Fetch cart count
      *
      * @param customer
@@ -465,23 +439,17 @@ export class CartItemsService {
                 throw new BadRequestException('Insufficient stock after merge');
             }
 
+            const mergedPrice = multiplyMoney(price, mergedQuantity);
+
             existingItem.product.variants = [];
             existingItem.quantity = mergedQuantity;
-            existingItem.subTotal = {
-                amount: price.amount * mergedQuantity,
-                minorAmount: 0,
-                currencyCode: body.currency,
-            };
+            existingItem.subTotal = { ...mergedPrice, currencyCode: body.currency };
             existingItem.discountPrice = {
                 amount: 0,
                 minorAmount: 0,
                 currencyCode: body.currency,
             };
-            existingItem.total = {
-                amount: price.amount * mergedQuantity,
-                minorAmount: 0,
-                currencyCode: body.currency,
-            };
+            existingItem.total = { ...mergedPrice, currencyCode: body.currency };
 
             await this.cartRepository.remove(cartItem);
             return this.cartRepository.save(existingItem);
@@ -489,24 +457,18 @@ export class CartItemsService {
         }
 
         // Update the cart item
+        const updatedItemPrice = multiplyMoney(price, body.quantity);
+
         cartItem.product.variants = [];
         cartItem.variant = variant;
         cartItem.quantity = body.quantity;
-        cartItem.subTotal = {
-            amount: price.amount * body.quantity,
-            minorAmount: 0,
-            currencyCode: body.currency,
-        };
+        cartItem.subTotal = { ...updatedItemPrice, currencyCode: body.currency };
         cartItem.discountPrice = {
-            amount: (price.amount * body.quantity) - (price.amount * body.quantity),
+            amount: 0,
             minorAmount: 0,
             currencyCode: body.currency,
         };
-        cartItem.total = {
-            amount: (price.amount * body.quantity) - ((price.amount * body.quantity) - (price.amount * body.quantity)),
-            minorAmount: 0,
-            currencyCode: body.currency,
-        };
+        cartItem.total = { ...updatedItemPrice, currencyCode: body.currency };
 
         return this.cartRepository.save(cartItem);
     }
