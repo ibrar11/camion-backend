@@ -331,7 +331,7 @@ export function getShippingRate(countryCode: string, weightKg: number): Shipping
             }
         })
         throw new BadRequestException(
-            `No shipping rate for ${countryCode} at weight ${weightKg}kg, weight should not be more than ${maxWeight}kg`
+            `We don't ship above 20kgs. Please remove few items from the cart.`
         );
     }
 
