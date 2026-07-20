@@ -95,6 +95,14 @@ export class JopWmsOrder {
     @Column({ type: 'varchar', nullable: true })
     hiobuyOrderId: string | null;
 
+    // Hiobuy flow only: the dispatch batch id returned by POST v1/wms/orders/dispatch
+    // (one dispatchJobId spans multiple shop batches/rows). Lets an admin look up which
+    // placeholder inbounds came from a given dispatch call after the BullMQ job data
+    // has been pruned (removeOnComplete/removeOnFail).
+    @Column({ type: 'varchar', nullable: true })
+    @Index()
+    dispatchJobId: string | null;
+
     @Column({ type: 'timestamptz', nullable: true })
     lastPolledAt: Date | null;
 
