@@ -67,6 +67,7 @@ import { InventoryResyncJobData, SkuMetaImportJobData } from 'src/queue/types';
 import { ConfigService } from '@nestjs/config';
 
 import { TranslationJobRegistryService } from '../translation/translation-job-registry.service';
+import { moneyFromFloat } from 'src/common/currency';
 
 
 @Injectable()
@@ -1130,7 +1131,7 @@ export class ProcurementService {
                 return {
                     title: title,
                     skuId: sku.skuId,
-                    price: smartRoundInt(price),
+                    price: price,
                     stock: sku.amountOnSale,
                     attributes,
                     image: skuImg,
@@ -1409,11 +1410,7 @@ export class ProcurementService {
                                                         sku: variant.skuId?.toString() || crypto.randomUUID(),
                                                         barcode: variant.skuId?.toString() || '',
                                                         quantity: variant.stock || 0,
-                                                        cost: {
-                                                            amount: smartRoundInt(variant.price) || 0,
-                                                            minorAmount: 0,
-                                                            currencyCode: productDetails.currencyCode,
-                                                        },
+                                                        cost: moneyFromFloat(variant.price, CurrencyCode.CNY),
                                                         weight: {
                                                             amount: variant.shipping?.weight || 0,
                                                             unit: WeightUnit.Kilograms,
@@ -1677,8 +1674,8 @@ export class ProcurementService {
                                                         barcode: variant.barcode?.toString() || '',
                                                         quantity: variant.quantity || 0,
                                                         cost: {
-                                                            amount: smartRoundInt(variant.cost.amount) || 0,
-                                                            minorAmount: 0,
+                                                            amount: variant.cost.amount || 0,
+                                                            minorAmount: variant.cost.minorAmount || 0,
                                                             currencyCode: variant.cost.currencyCode,
                                                         },
                                                         weight: {

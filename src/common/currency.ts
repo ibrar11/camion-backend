@@ -105,6 +105,29 @@ export const moneyFromMinor = (minorUnits: number, currencyCode: CurrencyCode): 
 }
 
 /**
+ * Converts a floating-point monetary value into a Money object
+ *
+ * ```ts
+ * const value = moneyFromFloat(27.2, CurrencyCode.QAR);
+ * console.log(value);
+ * => { amount: 27, minorAmount: 20, currencyCode: "qar" }
+ * ```
+ *
+ * @param value
+ * @param currencyCode
+ * @returns
+ */
+export const moneyFromFloat = ( value: number, currencyCode: CurrencyCode ): Money => {
+	const totalMinor = Math.round(value * 100);
+
+	return {
+		amount: Math.trunc(totalMinor / 100),
+		minorAmount: totalMinor % 100,
+		currencyCode,
+	};
+};
+
+/**
  * Adds 2 objects of money
  *
  * ```ts
