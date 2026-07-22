@@ -34,6 +34,9 @@ import { Category } from "./entities/category.entity";
 import { Customer } from "src/customers/entities/customer.entity";
 
 import { GqlAuthGuard } from "../auth/gql.guard";
+import { ProductAttachment } from "./entities/product-attachment.entity";
+
+import { BLACKLIST_REGEX } from "./data/blacklist";
 
 @ArgsType()
 export class GetProductsArgs {
@@ -257,61 +260,61 @@ export class GetProductsInDesiredCampaignArgs {
 @UseGuards(GqlAuthGuard)
 @Resolver(() => Product)
 export class ProductsResolver {
-	assetsHost: string = "";
+	ASSETS_HOST: string = "";
 
 	constructor(
 		@Inject(ProductsService) private readonly productsService: ProductsService,
 		private readonly configService: ConfigService
 	) {
-		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
 	}
 
 	@ResolveField("title", () => String)
 	getTitle(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const titleMap = {
+		const titleMap: Record<string, string> = {
 			"en": product.titleEn,
 			"ar": product.titleAr,
 		};
 
-		return titleMap[language] ?? product.titleEn;
+		return (titleMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("brief", () => String)
 	getBrief(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const briefMap = {
+		const briefMap: Record<string, string> = {
 			"en": product.briefEn,
 			"ar": product.briefAr,
 		};
 
-		return briefMap[language] ?? product.briefEn;
+		return (briefMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("description", () => String)
 	getDescription(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const descriptionMap = {
+		const descriptionMap: Record<string, string> = {
 			"en": product.descriptionEn,
 			"ar": product.descriptionAr,
 		};
 
-		return descriptionMap[language] ?? product.descriptionEn;
+		return (descriptionMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("descriptionHtml", () => String)
 	getDescriptionHtml(@Parent() product: Product, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const descriptionHtmlMap = {
+		const descriptionHtmlMap: Record<string, string> = {
 			"en": product.descriptionHtmlEn,
 			"ar": product.descriptionHtmlAr,
 		};
 
-		return descriptionHtmlMap[language] ?? product.descriptionHtmlEn;
+		return (descriptionHtmlMap[language] ?? "").replace(BLACKLIST_REGEX, match => "*".repeat(match.length));
 	}
 
 	@ResolveField("featuredImageUrl", () => String)
@@ -340,9 +343,9 @@ export class ProductsResolver {
 		// Split the path to get the full address.
 		const segments = featuredImageUrl.split("/");
 		if (featuredImageUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (featuredImageUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -363,7 +366,7 @@ export class ProductsResolver {
 		// Split the path to get the full address
 		const segments = sizechartUrl.split("/")
 		if (sizechartUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -395,9 +398,9 @@ export class ProductsResolver {
 		// Split the path to get the full address.
 		const segments = featuredThumbnailUrl.split("/");
 		if (featuredThumbnailUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (featuredThumbnailUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -445,8 +448,15 @@ export class ProductsResolver {
 	}
 
 	@Query(() => [Product])
-	getRecommendedProducts(@Args() args: GetRecommendedProductsArgs): Promise<Array<Product>> {
-		return this.productsService.getRecommendedProducts(args.slug, args.currency, args.pageNumber, args.itemsPerPage);
+	getRecommendedProducts(
+		@Context('req')
+		req: Request & {
+			customer: Customer,
+		},
+		@Args()
+		args: GetRecommendedProductsArgs
+	): Promise<Array<Product>> {
+		return this.productsService.getRecommendedProducts(req.customer, args.slug, args.currency, args.pageNumber, args.itemsPerPage);
 	}
 
 	@Query(() => [Product])
@@ -563,21 +573,21 @@ export class ProductVariantResolver {
 	getName(@Parent() productVariant: ProductVariant, @Args() args: GetProductsArgs): string {
 		const language = args.language.toLowerCase() || "en";
 
-		const titleMap = {
+		const titleMap: Record<string, string> = {
 			"en": productVariant.titleEn,
 			"ar": productVariant.titleAr,
 		};
 
-		return titleMap[language] ?? productVariant.titleEn;
+		return titleMap[language] ?? "";
 	}
 }
 
 @Resolver(() => ProductVariantImage)
 export class ProductVariantImageResolver {
-	assetsHost: string = "";
+	ASSETS_HOST: string = "";
 
 	constructor(private readonly configService: ConfigService) {
-		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
 	}
 
 	@ResolveField("imageUrl", () => String)
@@ -588,9 +598,9 @@ export class ProductVariantImageResolver {
 
 		const segments = productVariantImage.imageUrl.split("/");
 		if (productVariantImage.imageUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (productVariantImage.imageUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -604,9 +614,9 @@ export class ProductVariantImageResolver {
 
 		const segments = productVariantImage.thumbnailUrl.split("/");
 		if (productVariantImage.thumbnailUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (productVariantImage.thumbnailUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -615,10 +625,10 @@ export class ProductVariantImageResolver {
 
 @Resolver(() => ProductReviewImage)
 export class ProductReviewImageResolver {
-	assetsHost: string = "";
+	ASSETS_HOST: string = "";
 
 	constructor(private readonly configService: ConfigService) {
-		this.assetsHost = this.configService.get<string>('ASSETS_HOST') as string;
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
 	}
 
 	@ResolveField("imageUrl", () => String)
@@ -629,9 +639,9 @@ export class ProductReviewImageResolver {
 
 		const segments = reviewImage.imageUrl.split("/");
 		if (reviewImage.imageUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (reviewImage.imageUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";
@@ -645,9 +655,34 @@ export class ProductReviewImageResolver {
 
 		const segments = reviewImage.thumbnailUrl.split("/");
 		if (reviewImage.thumbnailUrl.startsWith("https://")) {
-			return `${this.assetsHost}/${segments[3]}/${segments[4]}`;
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
 		} else if (reviewImage.thumbnailUrl.startsWith("s3://")) {
-			return `${this.assetsHost}/${segments[2]}/${segments[3]}`;
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
+		}
+
+		return "";
+	}
+}
+
+@Resolver(() => ProductAttachment)
+export class ProductAttachmentResolver {
+	ASSETS_HOST: string = "";
+
+	constructor(private readonly configService: ConfigService) {
+		this.ASSETS_HOST = this.configService.get<string>('ASSETS_HOST') as string;
+	}
+
+	@ResolveField("mediaUrl", () => String)
+	getMediaUrl(@Parent() attachment: ProductAttachment): string {
+		if (attachment === undefined || attachment === null || attachment.mediaUrl === undefined || attachment.mediaUrl === null) {
+			return "";
+		}
+
+		const segments = attachment.mediaUrl.split("/");
+		if (attachment.mediaUrl.startsWith("https://")) {
+			return `${this.ASSETS_HOST}/${segments[3]}/${segments[4]}`;
+		} else if (attachment.mediaUrl.startsWith("s3://")) {
+			return `${this.ASSETS_HOST}/${segments[2]}/${segments[3]}`;
 		}
 
 		return "";

@@ -50,7 +50,7 @@ export class PaymentsService {
             await this.paymentTransactionRepository.save(transaction);
 
             if (dto.amount > 0) {
-                const exchangeRates = await this.exchangeRateService.findAll("", "");
+                const exchangeRates = await this.exchangeRateService.findAllFull();
                 if (dto?.provider === PaymentProvider.SKIPCASH) {
                     if (dto.currency.toLowerCase().trim() !== "qar") {
 

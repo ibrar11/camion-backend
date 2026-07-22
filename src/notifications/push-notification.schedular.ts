@@ -1,7 +1,7 @@
 import { NotificationReceiver } from './enums/notification-receiver.enum';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { LessThan, LessThanOrEqual, Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { PushNotification } from './entities/push-notification';
@@ -22,58 +22,52 @@ export class PushNotificationScheduler {
     /**
      * Look for the scheduled notification and marked them processing.
      */
-    @Cron(CronExpression.EVERY_HOUR)
+    @Cron(CronExpression.EVERY_5_MINUTES)
     async broadCastNotification() {
-        this.logger.log("Checking scheduled notifications...");
         await this.broadcastScheduledNotifications();
     }
 
     async broadcastScheduledNotifications() {
         const now = new Date();
 
+        const notifications = await this.pushNotificationRepository
+            .createQueryBuilder()
+            .update(PushNotification)
+            .set({
+                status: NotificationStatus.PROCESSING,
+                processingStartedAt: now,
+            })
+            .where("status = :status", {
+                status: NotificationStatus.PENDING,
+            })
+            .andWhere("scheduledFor IS NOT NULL")
+            .andWhere("scheduledFor <= :now", {
+                now,
+            })
+            .execute();
+
+        if (notifications.affected) {
+            this.logger.log(
+                `${notifications.affected} notification(s) marked as PROCESSING`,
+            );
+        }
+    }
+
+    /**
+     * Look for the processing scheduled notification and broadcast.
+     */
+    @Cron(CronExpression.EVERY_5_MINUTES)
+    async processNotifications() {
+
         const notifications = await this.pushNotificationRepository.find({
             where: {
-                scheduledFor: LessThanOrEqual(now),
-                status: NotificationStatus.PENDING,
+                status: NotificationStatus.PROCESSING,
             },
             relations: {
                 images: true,
             },
         });
 
-        if (!notifications.length) {
-            this.logger.log("No scheduled notifications due.");
-            return;
-        }
-
-        for (const notification of notifications) {
-
-            notification.status = NotificationStatus.PROCESSING;
-
-            notification.processingStartedAt = new Date();
-
-            await this.pushNotificationRepository.save(notification);
-        }
-
-        this.logger.log(
-            `${notifications.length} notification(s) marked as PROCESSING`,
-        );
-    }
-
-    /**
-     * Look for the processing scheduled notification and broadcast.
-     */
-    @Cron(CronExpression.EVERY_MINUTE)
-    async processNotifications() {
-
-        const notifications = await this.pushNotificationRepository.find({
-            where: {
-                status: NotificationStatus.PROCESSING
-            },
-            relations: {
-                images: true
-            }
-        });
         if (notifications.length > 0) {
             this.logger.log(`Found ${notifications.length} notifications with processing status`);
         } else {
@@ -88,18 +82,18 @@ export class PushNotificationScheduler {
                 });
 
                 if (notification.repeatInterval && notification.scheduledFor) {
-                    const hoursMap: Record<NotificationScheduler, number> = {
-                        [NotificationScheduler.EVERY_3]: 3,
-                        [NotificationScheduler.EVERY_6]: 6,
-                        [NotificationScheduler.EVERY_12]: 12,
-                        [NotificationScheduler.EVERY_24]: 24,
+
+                    const intervalMs: Record<NotificationScheduler, number> = {
+                        [NotificationScheduler.EVERY_30_MIN]: 30 * 60 * 1000,
+                        [NotificationScheduler.EVERY_3]: 3 * 60 * 60 * 1000,
+                        [NotificationScheduler.EVERY_6]: 6 * 60 * 60 * 1000,
+                        [NotificationScheduler.EVERY_12]: 12 * 60 * 60 * 1000,
+                        [NotificationScheduler.EVERY_24]: 24 * 60 * 60 * 1000,
                     };
 
-                    const hours = hoursMap[notification.repeatInterval];
-
                     notification.scheduledFor = new Date(
-                        notification.scheduledFor.getTime() +
-                        hours * 60 * 60 * 1000,
+                        notification.scheduledFor!.getTime() +
+                        intervalMs[notification.repeatInterval]
                     );
 
                     notification.status = NotificationStatus.PENDING;

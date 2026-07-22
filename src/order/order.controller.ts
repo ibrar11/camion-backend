@@ -96,6 +96,16 @@ export class OrderController {
         return this.orderService.getOrderTracking(uuid, customerUuid, language);
     }
 
+    @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+    @Post(':uuid/retry-payment')
+    @HttpCode(HttpStatus.OK)
+    retryPayment(
+        @Param('uuid') uuid: string,
+        @GetCustomer() customer: Customer,
+    ): Promise<Order> {
+        return this.orderService.retryPayment(uuid, customer.uuid);
+    }
+
     @Roles(UserRole.SuperAdmin)
     @Post('backfill-tracking')
     @HttpCode(HttpStatus.OK)

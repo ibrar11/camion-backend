@@ -67,20 +67,20 @@ export class ProductsService {
 	};
 
 	constructor(
-		@Inject(TranslationService) private readonly translationService: TranslationService,
+		@Inject(FileService) private readonly fileService: FileService,
+		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
 		@Inject(PricingService) private readonly pricingService: PricingService,
+		@Inject(QueueService) private readonly queueService: QueueService,
+		@Inject(S3Service) private readonly s3Service: S3Service,
+		@Inject(TranslationService) private readonly translationService: TranslationService,
+		@InjectRepository(Campaign) private readonly campaignRepository: Repository<Campaign>,
 		@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
 		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
+		@InjectRepository(ProductAttachment) private readonly productAttachmentRepository: Repository<ProductAttachment>,
 		@InjectRepository(ProductCategory) private readonly productCategoryRepository: Repository<ProductCategory>,
 		@InjectRepository(ProductVariant) private readonly productVariantRepository: Repository<ProductVariant>,
 		@InjectRepository(ProductVariantImage) private readonly productImageVariantImageRepository: Repository<ProductVariantImage>,
 		@InjectRepository(ProductView) private readonly productViewRepository: Repository<ProductView>,
-		@InjectRepository(Campaign) private readonly campaignRepository: Repository<Campaign>,
-		@InjectRepository(ProductAttachment) private readonly productAttachmentRepository: Repository<ProductAttachment>,
-		@Inject(QueueService) private readonly queueService: QueueService,
-		@Inject(S3Service) private readonly s3Service: S3Service,
-		@Inject(FileService) private readonly fileService: FileService,
-		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
 	) { }
 
 	private chunkArray<T>(items: T[], chunkSize: number): T[][] {
@@ -517,7 +517,7 @@ export class ProductsService {
 		this.logger.log(`Registering a product view`);
 
 		// Check if an existing view exists
-		const existingView = await this.productViewRepository.findOne({
+		const existingProductView = await this.productViewRepository.findOne({
 			where: {
 				customer: { id: customer.id, },
 				product: { id: product.id, },
@@ -525,18 +525,18 @@ export class ProductsService {
 		});
 
 		// Update the existing view
-		if (existingView) {
-			existingView.viewsCount += 1;
-			return this.productViewRepository.save(existingView);
+		if (existingProductView) {
+			existingProductView.viewsCount += 1;
+			return this.productViewRepository.save(existingProductView);
 		}
 
 		// Create a new view
-		const view = new ProductView();
-		view.uuid = crypto.randomUUID();
-		view.customer = customer;
-		view.product = product;
-		view.viewsCount = 1;
-		return this.productViewRepository.save(view);
+		const productView = new ProductView();
+		productView.uuid = crypto.randomUUID();
+		productView.customer = customer;
+		productView.product = product;
+		productView.viewsCount = 1;
+		return this.productViewRepository.save(productView);
 	}
 
 	/**
@@ -3170,32 +3170,52 @@ export class ProductsService {
 	/**
 	 * Returns a list of recommended products
 	 *
+	 * @param customer
 	 * @param slug
 	 * @param currency
 	 * @param pageNumber
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	async getRecommendedProducts(slug: string, currency: CurrencyCode, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async getRecommendedProducts(customer: Customer, slug: string, currency: CurrencyCode, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving a list of recommended products for product: ${slug}`);
 
-		// Find the source product with its categories
-		const product = await this.productRepository.findOne({
+		// Find some product views of the customer
+		const productViews = await this.productViewRepository.find({
 			cache: true,
-			relationLoadStrategy: "query",
+			relationLoadStrategy: 'query',
 			where: {
-				slug: slug.toLowerCase().trim(),
-				status: ProductStatus.ACTIVE,
+				customer: {
+					id: customer.id,
+				},
 			},
 			relations: {
-				productCategories: {
-					category: true,
+				product: {
+					productCategories: {
+						category: true,
+					},
 				},
+			},
+			skip: 3,
+			take: 3,
+			order: {
+				viewsCount: 'DESC',
 			},
 		});
 
-		// We don't have a product, return an empty list of products
-		if (product === null) {
+		// Make sure we have enough products to recommend.
+		if (!Array.isArray(productViews) || productViews.length === 0) {
+			return [];
+		}
+
+		// Find a random view and use it to fetch recommended products.
+		const randomView = productViews[Math.floor(Math.random() * productViews.length)];
+		if (randomView === undefined || randomView === null || randomView.product === undefined || randomView.product === null) {
+			return [];
+		}
+
+		// Make sure we have enough categories to fetch recommended products from
+		if (!Array.isArray(randomView.product.productCategories) || randomView.product.productCategories.length === 0) {
 			return [];
 		}
 
@@ -3205,7 +3225,7 @@ export class ProductsService {
 		let products: Array<Product> = [];
 
 		// Find the products in the same category
-		if (Array.isArray(product.productCategories) && product.productCategories.length !== 0 && product.productCategories[0].category !== null) {
+		if (randomView.product.productCategories[0].category !== undefined && randomView.product.productCategories[0].category !== null) {
 			products = await this.productRepository.createQueryBuilder("product")
 				.cache(true)
 				.setFindOptions({
@@ -3221,10 +3241,10 @@ export class ProductsService {
 				.innerJoin("filterProductCategories.category", "filterCategory")
 
 				.where("filterCategory.id = :id", {
-					id: product.productCategories[0].category.id,
+					id: randomView.product.productCategories[0].category.id,
 				})
 				.andWhere('product.id != :productId', {
-					productId: product.id,
+					productId: randomView.product.id,
 				})
 				.andWhere("product.status = :status", {
 					status: ProductStatus.ACTIVE,
@@ -3550,8 +3570,7 @@ export class ProductsService {
 		}
 
 		// Increment the number of views on the product
-		product.viewsCount += 1;
-		await this.productRepository.save(product);
+		await this.productRepository.increment({ id: product.id, }, "viewsCount", 1);
 
 		return this.__findCampaignAndPrices(product, currency);
 	}

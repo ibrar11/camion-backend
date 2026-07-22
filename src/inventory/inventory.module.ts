@@ -21,12 +21,13 @@ import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import {
-	ProductsResolver,
+	ProductAttachmentResolver,
 	ProductOptionResolver,
 	ProductOptionValueResolver,
-	ProductVariantResolver,
-	ProductVariantImageResolver,
 	ProductReviewImageResolver,
+	ProductsResolver,
+	ProductVariantImageResolver,
+	ProductVariantResolver,
 } from './products.resolver';
 
 import { ProductCategory } from './entities/product-category.entity';
@@ -128,6 +129,7 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 		CustomersService,
 		FileService,
 		ImageThumbnailService,
+		ProductAttachmentResolver,
 		ProductCategoryResyncProcessor,
 		ProductOptionResolver,
 		ProductOptionService,

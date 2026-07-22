@@ -473,6 +473,11 @@ Parameter Name | Required | Type | Description
 status | Yes | String | New status for the order
 cancellationReason | No | String | Human-readable reason stored on the order when `status` is `cancelled`
 
+Valid `status` values: `pending`, `confirmed`, `cancelled`, `delivered`, `payment_pending`, `payment_successful`, `payment_failed`, `payment_cancelled`, `payment_expired`, `return_requested`, `returned`.
+
+> [!IMPORTANT]
+> Setting `status` to `confirmed` requires the order to already be `payment_successful` — otherwise the request fails with `400 Bad Request`. An order can never be confirmed (or trigger the order-confirmed email) without a successful payment first.
+
 ### Request Body
 ```json
 {
@@ -688,6 +693,40 @@ When an order is placed, a 30-minute delayed job is queued. If the order status 
 If payment arrives before the 30 minutes expire, the timeout job exits silently with no action.
 
 **Webhook reopen behaviour:** If a successful payment webhook arrives for an already-cancelled order (e.g. payment completed just after the timeout), the order is automatically reopened — status is set back to `payment_successful`, `cancellationReason` is cleared, the active `ORDER_CANCELLED` tracking event is deactivated (`active = false`), and the customer receives a "Payment Successful" push notification and order-confirmed email. The `cancelled` field in the tracking response returns `null` after a reopen.
+
+---
+
+Retry Payment
+--------------
+
+Creates a fresh SkipCash checkout session on an existing order so the customer can retry a payment that failed, was cancelled, or never got a gateway response — without creating a duplicate order.
+
+```http
+POST /v1/orders/<order-uuid>/retry-payment HTTP/1.1
+```
+
+Customer only (`Customer`, `Affiliate`, or `Influencer` role) — must be the order's owner.
+
+Allowed only when the order's current `status` is `payment_pending`, `payment_failed`, or `payment_cancelled`. Called on any other status (e.g. already `payment_successful`, or `payment_expired`) returns `400 Bad Request`. `payment_expired` orders can't be retried — the stock reservation and any coupon usage have already been released, so the customer needs to place a new order.
+
+No request body.
+
+### Response Body
+
+Same shape as the `POST /v1/orders` response — the order object with a fresh `paymentTransaction` attached and `status` reset to `payment_pending`. Read the checkout/session info from `paymentTransaction` exactly as you do after initial checkout.
+
+```json
+{
+    "uuid": "9f71e265-0343-4cb5-9f00-17b515bfb980",
+    "status": "payment_pending",
+    "paymentTransaction": {
+        "id": "b1e2c3d4-...",
+        "provider": "skipcash",
+        "status": "pending",
+        "rawResponse": { "...": "..." }
+    }
+}
+```
 
 ---
 

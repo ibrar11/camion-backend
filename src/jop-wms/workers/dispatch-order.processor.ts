@@ -137,6 +137,7 @@ export class DispatchOrderProcessor extends WorkerHost {
                 hiobuyShipperCompany: shipperCompany ?? null,
                 hiobuyShopId: shopId,
                 hiobuyOrderId,
+                dispatchJobId,
             }),
         );
 
