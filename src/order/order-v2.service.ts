@@ -176,14 +176,17 @@ export class OrderServiceV2 {
 
                 item.subTotal = {
                     amount: priceDiscount.amount * item.quantity,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
                 item.discountPrice = {
                     amount: 0,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
                 item.total = {
                     amount: priceDiscount.amount * item.quantity,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
 

@@ -151,9 +151,9 @@ export class CampaignsScheduler implements OnModuleInit {
           continue;
         }
 
-        cartItem.subTotal = { amount: price.amount * cartItem.quantity, currencyCode: currency };
-        cartItem.discountPrice = { amount: 0, currencyCode: currency };
-        cartItem.total = { amount: price.amount * cartItem.quantity, currencyCode: currency };
+        cartItem.subTotal = { amount: price.amount * cartItem.quantity, minorAmount: 0, currencyCode: currency };
+        cartItem.discountPrice = { amount: 0, minorAmount: 0, currencyCode: currency };
+        cartItem.total = { amount: price.amount * cartItem.quantity, minorAmount: 0, currencyCode: currency };
 
         await this.cartItemRepository.save(cartItem);
       }
