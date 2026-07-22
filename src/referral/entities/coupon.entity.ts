@@ -24,6 +24,10 @@ export class CouponMoney {
 	@Column({ type: "integer", default: 0, })
 	amount: number;
 
+	@Field(() => Int)
+	@Column({ type: "integer", nullable: false, default: 0, })
+	minorAmount: number;
+
 	@Field()
 	@Column({
 		type: "enum",

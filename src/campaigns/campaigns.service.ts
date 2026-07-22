@@ -251,7 +251,7 @@ export class CampaignsService {
 
 		// Find the featured category
 		const campaign = await this.campaignRepository.findOne({
-			// cache: true,
+			cache: true,
 			relationLoadStrategy: "query",
 			where: {
 				isActive: true,

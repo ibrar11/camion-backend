@@ -462,6 +462,7 @@ export class ProcurementService {
             quantity: sourceVariant.stock || 0,
             cost: {
                 amount: smartRoundInt(sourceVariant.price) || 0,
+                minorAmount: 0,
                 currencyCode: sourceProduct.currencyCode,
             },
             weight: {
@@ -1418,6 +1419,7 @@ export class ProcurementService {
                                                         quantity: variant.stock || 0,
                                                         cost: {
                                                             amount: smartRoundInt(variant.price) || 0,
+                                                            minorAmount: 0,
                                                             currencyCode: productDetails.currencyCode,
                                                         },
                                                         weight: {
@@ -1684,6 +1686,7 @@ export class ProcurementService {
                                                         quantity: variant.quantity || 0,
                                                         cost: {
                                                             amount: smartRoundInt(variant.cost.amount) || 0,
+                                                            minorAmount: 0,
                                                             currencyCode: variant.cost.currencyCode,
                                                         },
                                                         weight: {

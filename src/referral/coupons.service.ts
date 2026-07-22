@@ -130,10 +130,12 @@ export class CouponsService {
 		coupon.expiresAt = new Date(body.expiresAt);
 		coupon.totalSales = {
 			amount: 0,
+			minorAmount: 0,
 			currencyCode: CurrencyCode.QAR,
 		};
 		coupon.totalCommission = {
 			amount: 0,
+			minorAmount: 0,
 			currencyCode: CurrencyCode.QAR,
 		};
 		return this.couponRepository.save(coupon);
@@ -202,10 +204,12 @@ export class CouponsService {
 		coupon.expiresAt = new Date(body.expiresAt);
 		coupon.totalSales = {
 			amount: 0,
+			minorAmount: 0,
 			currencyCode: CurrencyCode.QAR,
 		};
 		coupon.totalCommission = {
 			amount: 0,
+			minorAmount: 0,
 			currencyCode: CurrencyCode.QAR,
 		};
 		return this.couponRepository.save(coupon);

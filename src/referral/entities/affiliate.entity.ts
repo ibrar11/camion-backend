@@ -31,6 +31,10 @@ export class AffiliateMoney {
 	amount: number;
 
 	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	minorAmount: number;
+
+	@Field()
 	@Column({
 		type: "enum",
 		enum: CurrencyCode,
