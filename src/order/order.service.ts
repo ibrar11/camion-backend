@@ -204,14 +204,14 @@ export class OrderService {
     }
 
     private static readonly TRACKING_STAGES: { id: number; stage: OrderTrackingStage; name: string; nameAr: string }[] = [
-        { id: 1, stage: OrderTrackingStage.ORDER_PLACED,      name: 'Order Placed',      nameAr: 'تم تقديم الطلب' },
+        { id: 1, stage: OrderTrackingStage.ORDER_PLACED, name: 'Order Placed', nameAr: 'تم تقديم الطلب' },
         { id: 2, stage: OrderTrackingStage.PAYMENT_CONFIRMED, name: 'Payment Confirmed', nameAr: 'تم تأكيد الدفع' },
-        { id: 3, stage: OrderTrackingStage.ORDER_CONFIRMED,   name: 'Order Confirmed',   nameAr: 'تم تأكيد الطلب' },
-        { id: 4, stage: OrderTrackingStage.PROCESSING,        name: 'Processing',        nameAr: 'قيد المعالجة' },
-        { id: 5, stage: OrderTrackingStage.PACKING,           name: 'Packing',           nameAr: 'قيد التغليف' },
-        { id: 6, stage: OrderTrackingStage.DISPATCHING,       name: 'Dispatching',       nameAr: 'قيد الشحن' },
-        { id: 7, stage: OrderTrackingStage.ORDER_DELIVERED,   name: 'Order Delivered',   nameAr: 'تم التسليم' },
-        { id: 8, stage: OrderTrackingStage.ORDER_REVIEW,      name: 'Order Review',      nameAr: 'تقييم الطلب' },
+        { id: 3, stage: OrderTrackingStage.ORDER_CONFIRMED, name: 'Order Confirmed', nameAr: 'تم تأكيد الطلب' },
+        { id: 4, stage: OrderTrackingStage.PROCESSING, name: 'Processing', nameAr: 'قيد المعالجة' },
+        { id: 5, stage: OrderTrackingStage.PACKING, name: 'Packing', nameAr: 'قيد التغليف' },
+        { id: 6, stage: OrderTrackingStage.DISPATCHING, name: 'Dispatching', nameAr: 'قيد الشحن' },
+        { id: 7, stage: OrderTrackingStage.ORDER_DELIVERED, name: 'Order Delivered', nameAr: 'تم التسليم' },
+        { id: 8, stage: OrderTrackingStage.ORDER_REVIEW, name: 'Order Review', nameAr: 'تقييم الطلب' },
     ];
 
     private static readonly CANCELLED_STAGE = { id: 9, name: 'Order Cancelled', nameAr: 'تم إلغاء الطلب' };
@@ -1711,17 +1711,20 @@ export class OrderService {
 
                 item.subTotal = {
                     amount: priceDiscount.amount * item.quantity,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
                 item.discountPrice = {
                     amount: 0,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
                 item.total = {
                     amount: priceDiscount.amount * item.quantity,
+                    minorAmount: 0,
                     currencyCode: priceDiscount.currencyCode,
                 };
-                
+
                 validatedItems.push(item);
             }
 
@@ -1788,7 +1791,7 @@ export class OrderService {
                     },
                 });
 
-                if(campaign && affiliateCoupon) {
+                if (campaign && affiliateCoupon) {
                     throw new BadRequestException(
                         "Coupon cannot be applied. Campaign products exists."
                     )
