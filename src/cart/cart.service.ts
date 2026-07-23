@@ -253,61 +253,73 @@ export class CartItemsService {
             order: { id: 'DESC' }
         });
 
-        const result: CartItem[] = [];
+        // Set price and discounted price on each cart item
+        const res: Array<CartItem | null> = await Promise.all(
+            cartItems.map(async cartItem => {
+                if (!cartItem.product || !cartItem.variant || cartItem.product.status !== ProductStatus.ACTIVE) {
+                    return null;
+                }
 
-        for (const cartItem of cartItems) {
-            if (!cartItem.product || cartItem.product.status !== ProductStatus.ACTIVE) {
-                continue;
-            }
+                // Calculate the stock of the variant in the inventory
+                const stock = calculateStock(cartItem.variant);
+                cartItem.product.variants = [];
+                cartItem.availableStock = stock;
+                cartItem.isAvailable = stock > 0;
 
-            if (!cartItem.variant) {
-                continue;
-            }
+                // Find the best campaign for the product in the cart
+                const campaign = getBestCampaign(cartItem.product);
+                if (campaign !== null) {
+                    cartItem.product.campaign = campaign;
+                }
 
-            const stock = calculateStock(cartItem.variant);
-            cartItem.product.variants = [];
-            cartItem.availableStock = stock;
-            cartItem.isAvailable = stock > 0;
+                // Calculate base price on the variant
+                const price = await this.pricingService.applyPriceOnProductVariant(
+                    cartItem.product,
+                    cartItem.variant,
+                    campaign,
+                    currency,
+                    false,
+                );
 
-            const campaign = getBestCampaign(cartItem.product);
-            
-            if (campaign !== null) {
-                cartItem.product.campaign = campaign;
-            } 
+                // Calculate discounted price on the variant
+                const discountedPrice = await this.pricingService.applyPriceOnProductVariant(
+                    cartItem.product,
+                    cartItem.variant,
+                    campaign,
+                    currency,
+                    true,
+                );
 
-            const price = await this.pricingService.applyPriceOnProductVariant(
-                cartItem.product,
-                cartItem.variant,
-                campaign,
-                currency,
-                true,
-            );
+                // Apply base and discounted price on the variant
+                cartItem.variant.price = price;
+                cartItem.variant.discountedPrice = discountedPrice;
 
-            // FIXME: Fix this
-            cartItem.subTotal = {
-                amount: price.amount * cartItem.quantity,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            };
+                // FIXME: Fix this
+                cartItem.subTotal = {
+                    amount: price.amount * cartItem.quantity,
+                    minorAmount: 0,
+                    currencyCode: price.currencyCode,
+                };
 
-            // FIXME: Fix this
-            cartItem.discountPrice = {
-                amount: 0,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            };
+                // FIXME: Fix this
+                cartItem.discountPrice = {
+                    amount: 0,
+                    minorAmount: 0,
+                    currencyCode: price.currencyCode,
+                };
 
-            // FIXME: Fix this
-            cartItem.total = {
-                amount: price.amount * cartItem.quantity,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            };
+                // FIXME: Fix this
+                cartItem.total = {
+                    amount: price.amount * cartItem.quantity,
+                    minorAmount: 0,
+                    currencyCode: price.currencyCode,
+                };
 
-            result.push(cartItem);
-        }
+                return cartItem;
+            })
+        );
 
-        return result;
+        return res.filter(r => r !== null);
     }
 
     /**
