@@ -23,28 +23,26 @@ import { PricingModule } from 'src/pricing/pricing.module';
 
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
-import { PricingService } from '../pricing/pricing.service';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([
-            User,
-            Customer,
             CartItem,
-            Product,
-            ProductVariant,
+            Customer,
             ExchangeRate,
             KeyValuePair,
+            Product,
+            ProductVariant,
+            User,
         ]),
         ClientsModule,
         PricingModule,
     ],
     providers: [
         CartItemsService,
-        UsersService,
-        CustomersService,
         CartResolver,
-        PricingService,
+        CustomersService,
+        UsersService,
     ],
     controllers: [CartItemsController]
 })

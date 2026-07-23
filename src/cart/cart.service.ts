@@ -37,12 +37,10 @@ export class CartItemsService {
     private readonly logger = new Logger(CartItemsService.name);
 
     constructor(
-        @InjectRepository(CartItem) private readonly cartRepository: Repository<CartItem>,
-        @InjectRepository(Product) private readonly productRepository: Repository<Product>,
-        @InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
-        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
-        @InjectRepository(ExchangeRate) private readonly exchangeRateRepository: Repository<ExchangeRate>,
         @Inject(PricingService) private readonly pricingService: PricingService,
+        @InjectRepository(CartItem) private readonly cartRepository: Repository<CartItem>,
+        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+        @InjectRepository(Product) private readonly productRepository: Repository<Product>,
     ) { }
 
     /**
