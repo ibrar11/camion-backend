@@ -1669,7 +1669,26 @@ export class OrderService {
                 campaign = getBestCampaign(item.product);
 
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, null, item.subTotal.currencyCode, false);
-                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(item.product, item.variant, campaign, currencyCode, true);
+                const price = await this.pricingService.applyPriceOnProductVariant(
+                    item.product,
+                    item.variant,
+                    campaign,
+                    currencyCode,
+                    false,
+                );
+
+                // Calculate discounted price on the variant
+                const priceDiscount = await this.pricingService.applyPriceOnProductVariant(
+                    item.product,
+                    item.variant,
+                    campaign,
+                    currencyCode,
+                    true,
+                );
+
+                // Apply base and discounted price on the variant
+                item.variant.price = price;
+                item.variant.discountedPrice = priceDiscount;
 
                 const itemTotal = multiplyMoney(priceDiscount, item.quantity);
                 subTotal = addMoney(subTotal, itemTotal);
