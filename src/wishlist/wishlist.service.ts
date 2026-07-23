@@ -3,6 +3,7 @@ import * as crypto from "node:crypto";
 import {
     BadRequestException,
     ConflictException,
+    Inject,
     Injectable,
     Logger,
     NotFoundException
@@ -16,6 +17,7 @@ import { getSkipAndTake } from "../common/pagination";
 import { CreateWishlistDto } from './dtos/CreateWishListDto';
 
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 import { Customer } from '../customers/entities/customer.entity';
 import { WishlistItem } from './entities/wishlist.entity';
@@ -23,13 +25,16 @@ import { Product } from '../inventory/entities/product.entity';
 
 import { getBestCampaign } from "../common/bestCampaign";
 
+import { PricingService } from "../pricing/pricing.service";
+
 @Injectable()
 export class WishlistService {
     private readonly logger = new Logger(WishlistService.name);
 
     constructor(
-        @InjectRepository(WishlistItem) private readonly wishlistRepository: Repository<WishlistItem>,
+        @Inject(PricingService) private readonly pricingService: PricingService,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+        @InjectRepository(WishlistItem) private readonly wishlistRepository: Repository<WishlistItem>,
     ) { }
 
     /**
@@ -110,9 +115,14 @@ export class WishlistService {
      * Fetch wish list
      *
      * @param customer
+     * @param filters
+     * @param sort
+     * @param pageNumber
+     * @param itemsPerPage
+     * @param currency
      * @returns
      */
-    async getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
+    async getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, currency: CurrencyCode = CurrencyCode.QAR): Promise<Array<WishlistItem>> {
         // Get pagination params
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
@@ -146,24 +156,42 @@ export class WishlistService {
             take: take,
         });
 
-        for (const wishListItem of wishListItems) {
-            if (!wishListItem.product || wishListItem.product.status !== ProductStatus.ACTIVE) {
-                continue;
-            }
+        // Set price and discounted price on each wishlist item
+        const res: Array<WishlistItem | null> = await Promise.all(
+            wishListItems.map(async wishlistItem => {
+                if (!wishlistItem.product || !wishlistItem.variant || wishlistItem.product.status !== ProductStatus.ACTIVE) {
+                    return null;
+                }
 
-            if (!wishListItem.variant) {
-                continue;
-            }
+                // Find the best campaign for the product in the wishlist
+                const campaign = getBestCampaign(wishlistItem.product);
+                if (campaign !== null) {
+                    wishlistItem.product.campaign = campaign;
+                }
 
-            const campaign = getBestCampaign(wishListItem.product);
+                // Calculate base price on the variant
+                wishlistItem.variant.price = await this.pricingService.applyPriceOnProductVariant(
+                    wishlistItem.product,
+                    wishlistItem.variant,
+                    campaign,
+                    currency,
+                    false,
+                );
 
-            if (campaign !== null) {
-                wishListItem.product.campaign = campaign;
-            }
+                // Calculate discounted price on the variant
+                wishlistItem.variant.discountedPrice = await this.pricingService.applyPriceOnProductVariant(
+                    wishlistItem.product,
+                    wishlistItem.variant,
+                    campaign,
+                    currency,
+                    true,
+                );
 
-        }
+                return wishlistItem;
+            })
+        );
 
-        return wishListItems;
+        return res.filter(r => r !== null);
     }
 
     /**

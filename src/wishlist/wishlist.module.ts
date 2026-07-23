@@ -16,22 +16,25 @@ import { ClientsModule } from '../clients/clients.module';
 
 import { CustomersModule } from '../customers/customers.module';
 
+import { PricingModule } from '../pricing/pricing.module';
+
 import { WishListResolver } from './wishlist.resolver';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([
+            Product,
             WishlistItem,
-            Product
         ]),
         AuthModule,
-        UsersModule,
         ClientsModule,
         CustomersModule,
+        PricingModule,
+        UsersModule,
     ],
     providers: [
-        WishlistService,
         WishListResolver,
+        WishlistService,
     ],
     controllers: [WishlistController]
 })
