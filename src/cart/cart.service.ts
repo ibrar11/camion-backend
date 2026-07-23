@@ -237,52 +237,64 @@ export class CartItemsService {
             order: { id: 'DESC' }
         });
 
-        const result: CartItem[] = [];
+        // Set price and discounted price on each cart item
+        const res: Array<CartItem | null> = await Promise.all(
+            cartItems.map(async cartItem => {
+                if (!cartItem.product || !cartItem.variant || cartItem.product.status !== ProductStatus.ACTIVE) {
+                    return null;
+                }
 
-        for (const cartItem of cartItems) {
-            if (!cartItem.product || cartItem.product.status !== ProductStatus.ACTIVE) {
-                continue;
-            }
+                // Calculate the stock of the variant in the inventory
+                const stock = calculateStock(cartItem.variant);
+                cartItem.product.variants = [];
+                cartItem.availableStock = stock;
+                cartItem.isAvailable = stock > 0;
 
-            if (!cartItem.variant) {
-                continue;
-            }
+                // Find the best campaign for the product in the cart
+                const campaign = getBestCampaign(cartItem.product);
+                if (campaign !== null) {
+                    cartItem.product.campaign = campaign;
+                }
 
-            const stock = calculateStock(cartItem.variant);
-            cartItem.product.variants = [];
-            cartItem.availableStock = stock;
-            cartItem.isAvailable = stock > 0;
+                // Calculate base price on the variant
+                const price = await this.pricingService.applyPriceOnProductVariant(
+                    cartItem.product,
+                    cartItem.variant,
+                    campaign,
+                    currency,
+                    false,
+                );
 
-            const campaign = getBestCampaign(cartItem.product);
+                // Calculate discounted price on the variant
+                const discountedPrice = await this.pricingService.applyPriceOnProductVariant(
+                    cartItem.product,
+                    cartItem.variant,
+                    campaign,
+                    currency,
+                    true,
+                );
 
-            if (campaign !== null) {
-                cartItem.product.campaign = campaign;
-            }
+                // Apply base and discounted price on the variant
+                cartItem.variant.price = price;
+                cartItem.variant.discountedPrice = discountedPrice;
 
-            const price = await this.pricingService.applyPriceOnProductVariant(
-                cartItem.product,
-                cartItem.variant,
-                campaign,
-                currency,
-                true,
-            );
+                const itemPrice = multiplyMoney(discountedPrice, cartItem.quantity);
 
-            const itemPrice = multiplyMoney(price, cartItem.quantity);
+                cartItem.subTotal = itemPrice;
 
-            cartItem.subTotal = itemPrice;
+                cartItem.discountPrice = {
+                    amount: 0,
+                    minorAmount: 0,
+                    currencyCode: price.currencyCode,
+                };
 
-            cartItem.discountPrice = {
-                amount: 0,
-                minorAmount: 0,
-                currencyCode: price.currencyCode,
-            };
+                cartItem.total = itemPrice;
 
-            cartItem.total = itemPrice;
+                return cartItem;
+            })
+        );
 
-            result.push(cartItem);
-        }
-
-        return result;
+        return res.filter(r => r !== null);
     }
 /**
      * Fetch cart count
