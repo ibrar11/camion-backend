@@ -59,11 +59,12 @@ export class OrderController {
         @Query("pageNumber") pageNumber: number,
         @Query("itemsPerPage") itemsPerPage: number,
         @Query("status") status: OrderStatus,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<Array<Order>> {
         if (customer) {
-            return this.orderService.findAllByCustomer(customer.uuid, filters, sort, pageNumber, itemsPerPage, status);
+            return this.orderService.findAllByCustomer(customer.uuid, filters, sort, pageNumber, itemsPerPage, currency, status);
         }
-        return this.orderService.findAll(filters, sort, pageNumber, itemsPerPage, status);
+        return this.orderService.findAll(filters, sort, pageNumber, itemsPerPage, currency, status);
     }
 
 
@@ -80,8 +81,11 @@ export class OrderController {
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Get(':uuid')
     @HttpCode(HttpStatus.OK)
-    findOne(@Param('uuid') uuid: string): Promise<Order> {
-        return this.orderService.findOne(uuid);
+    findOne(
+        @Param('uuid') uuid: string,
+        @Query("currency") currency: CurrencyCode,
+    ): Promise<Order> {
+        return this.orderService.findOne(uuid, currency);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
@@ -113,15 +117,16 @@ export class OrderController {
         return this.orderService.backfillTrackingEvents();
     }
 
-@Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
     @Patch(':uuid/status')
     @HttpCode(HttpStatus.OK)
     updateStatus(
         @Param('uuid') uuid: string,
         @Body('status') status: OrderStatus,
+        @Body('currency') currency: CurrencyCode,
         @Body('cancellationReason') cancellationReason?: string,
     ): Promise<Order> {
-        return this.orderService.updateStatus(uuid, status, cancellationReason);
+        return this.orderService.updateStatus(uuid, status, currency, cancellationReason);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)

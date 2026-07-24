@@ -43,6 +43,9 @@ export class GetCustomerOrdersArgs {
     @IsOptional()
     @IsEnum(OrderStatus)
     status?: OrderStatus;
+
+    @Field({ defaultValue: "usd", })
+    currency: CurrencyCode;
 }
 @ArgsType()
 export class VariantArgs {
@@ -64,7 +67,7 @@ export class GetCustomerOrderArgs {
     language: string;
 
     @Field({ defaultValue: "usd", })
-    currency: string;
+    currency: CurrencyCode;
 }
 @ArgsType()
 export class GetOrderTrackingArgs {
@@ -120,7 +123,7 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer orders. Please check and try again.",
             });
         }
-        return this.orderService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage, args.status);
+        return this.orderService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage, args.currency,  args.status);
     }
 
     @Query(() => Order)
@@ -130,7 +133,7 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer order. Please check and try again.",
             });
         }
-        return this.orderService.findOne(args.uuid);
+        return this.orderService.findOne(args.uuid, args.currency);
     }
 
     @Query(() => [OrderTrackingItem])

@@ -5,13 +5,13 @@ import {
 import { Coupon } from "../referral/entities/coupon.entity";
 import { GlobalCoupon } from "../referral/entities/global-coupon.entity";
 
-import { Affiliate } from "../referral/entities/affiliate.entity";
+import { Money, moneyToMinor, moneyFromMinor, isGreaterThan } from "./currency";
 
 export function calculateCouponDiscount(
     coupon: Coupon | GlobalCoupon,
-    orderSubtotal: number,
+    orderSubtotal: Money,
     customerId?: string,
-): number {
+): Money {
     try {
         // Check if coupon is expired
         if (coupon.expiresAt < new Date()) {
@@ -19,6 +19,8 @@ export function calculateCouponDiscount(
                 "This coupon has expired. Please use a different coupon."
             );
         }
+
+        const subtotalMinor = moneyToMinor(orderSubtotal);
 
         if ('affiliate' in coupon) {
             // Check if affiliate is active
@@ -35,23 +37,25 @@ export function calculateCouponDiscount(
                 );
             }
 
-            // Calculate discount amount
-            const discountAmount = Math.ceil((orderSubtotal * coupon.discountPercentage) / 100);
+            // Calculate discount amount (minor-unit precise)
+            const discountMinor = Math.ceil((subtotalMinor * coupon.discountPercentage) / 100);
 
-            return discountAmount;
+            return moneyFromMinor(discountMinor, orderSubtotal.currencyCode);
         }
 
         if ('discountType' in coupon && coupon.discountType === "fixed") {
-            if (coupon.discountValue > orderSubtotal) {
+            // discountValue has no minor-unit component in the DB — major units only
+            const fixedDiscount: Money = { amount: coupon.discountValue, minorAmount: 0, currencyCode: orderSubtotal.currencyCode };
+            if (isGreaterThan(fixedDiscount, orderSubtotal)) {
                 return orderSubtotal;
             }
-            return coupon.discountValue;
+            return fixedDiscount;
         }
 
-        // Calculate discount amount
-        const discountAmount = Math.ceil((orderSubtotal * coupon.discountPercentage) / 100);
+        // Calculate discount amount (minor-unit precise)
+        const discountMinor = Math.ceil((subtotalMinor * coupon.discountPercentage) / 100);
 
-        return discountAmount;
+        return moneyFromMinor(discountMinor, orderSubtotal.currencyCode);
     } catch (error: any) {
         throw error;
     }

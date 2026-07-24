@@ -84,6 +84,50 @@ export const moneyToMinor = (money: Money): number => {
 }
 
 /**
+ * Converts a minor-unit integer back into a Money object
+ *
+ * ```ts
+ * const value = moneyFromMinor(2720, CurrencyCode.QAR);
+ * console.log(value);
+ * => { amount: 27, minorAmount: 20, currencyCode: "qar" }
+ * ```
+ *
+ * @param minorUnits
+ * @param currencyCode
+ * @returns
+ */
+export const moneyFromMinor = (minorUnits: number, currencyCode: CurrencyCode): Money => {
+	return {
+		amount: Math.trunc(minorUnits / 100),
+		minorAmount: minorUnits % 100,
+		currencyCode,
+	};
+}
+
+/**
+ * Converts a floating-point monetary value into a Money object
+ *
+ * ```ts
+ * const value = moneyFromFloat(27.2, CurrencyCode.QAR);
+ * console.log(value);
+ * => { amount: 27, minorAmount: 20, currencyCode: "qar" }
+ * ```
+ *
+ * @param value
+ * @param currencyCode
+ * @returns
+ */
+export const moneyFromFloat = ( value: number, currencyCode: CurrencyCode ): Money => {
+	const totalMinor = Math.round(value * 100);
+
+	return {
+		amount: Math.trunc(totalMinor / 100),
+		minorAmount: totalMinor % 100,
+		currencyCode,
+	};
+};
+
+/**
  * Adds 2 objects of money
  *
  * ```ts
