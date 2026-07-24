@@ -2998,18 +2998,22 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
         status
         subTotal {
             amount
+            minorAmount
             currencyCode
         }
         shippingCost {
             amount
+            minorAmount
             currencyCode
         }
         discount {
             amount
+            minorAmount
             currencyCode
         }
         total {
             amount
+            minorAmount
             currencyCode
         }
         eta
@@ -3034,15 +3038,18 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
             uuid
             price {
                 amount
+                minorAmount
                 currencyCode
             }
             discountedPrice {
                 amount
+                minorAmount
                 currencyCode
             }
             quantity
             total {
                 amount
+                minorAmount
                 currencyCode
             }
             product {
@@ -3063,10 +3070,12 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 barcode
                 price(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3115,18 +3124,22 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 "status": "payment_pending",
                 "subTotal": {
                     "amount": 688,
+                    "minorAmount": 32,
                     "currencyCode": "qar"
                 },
                 "shippingCost": {
                     "amount": 0,
+                    "minorAmount": 0,
                     "currencyCode": "qar"
                 },
                 "discount": {
                     "amount": 0,
+                    "minorAmount": 0,
                     "currencyCode": "qar"
                 },
                 "total": {
                     "amount": 688,
+                    "minorAmount": 32,
                     "currencyCode": "qar"
                 },
                 "eta": "6-10 working days",
@@ -3135,15 +3148,18 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                         "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                         "price": {
                             "amount": 688,
+                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 688,
+                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "quantity": 1,
                         "total": {
                             "amount": 688,
+                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "product": {
@@ -3164,6 +3180,12 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                             "barcode": "10000",
                             "price": {
                                 "amount": 1000,
+                                "minorAmount": 32,
+                                "currencyCode": "qar"
+                            },
+                            "discountedPrice": {
+                                "amount": 1000,
+                                "minorAmount": 32,
                                 "currencyCode": "qar"
                             },
                             "weight": {
@@ -3207,18 +3229,22 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
         status
         subTotal {
             amount
+            minorAmount
             currencyCode
         }
         shippingCost {
             amount
+            minorAmount
             currencyCode
         }
         discount {
             amount
+            minorAmount
             currencyCode
         }
         total {
             amount
+            minorAmount
             currencyCode
         }
         eta
@@ -3243,15 +3269,18 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
             uuid
             price {
                 amount
+                minorAmount
                 currencyCode
             }
             discountedPrice {
                 amount
+                minorAmount
                 currencyCode
             }
             quantity
             total {
                 amount
+                minorAmount
                 currencyCode
             }
             product {
@@ -3282,10 +3311,12 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                 barcode
                 price(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3340,21 +3371,25 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
     "data": {
         "getCurrentCustomerOrder":{
             "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
-            "status": "confirmed",
+            "status": "payment_pending",
             "subTotal": {
                 "amount": 688,
+                "minorAmount": 32,
                 "currencyCode": "qar"
             },
             "shippingCost": {
-                "amount": 321,
+                "amount": 0,
+                "minorAmount": 0,
                 "currencyCode": "qar"
             },
             "discount": {
                 "amount": 0,
+                "minorAmount": 0,
                 "currencyCode": "qar"
             },
             "total": {
-                "amount": 1009,
+                "amount": 688,
+                "minorAmount": 32,
                 "currencyCode": "qar"
             },
             "eta": "6-10 working days",
@@ -3369,15 +3404,18 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                     "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                     "price": {
                         "amount": 688,
+                        "minorAmount": 32,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
                         "amount": 688,
+                        "minorAmount": 32,
                         "currencyCode": "qar"
                     },
                     "quantity": 1,
                     "total": {
                         "amount": 688,
+                        "minorAmount": 32,
                         "currencyCode": "qar"
                     },
                     "product": {
@@ -3410,6 +3448,12 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                         "barcode": "10000",
                         "price": {
                             "amount": 1000,
+                            "minorAmount": 32,
+                            "currencyCode": "qar"
+                        },
+                        "discountedPrice": {
+                            "amount": 1000,
+                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "weight": {
@@ -3592,10 +3636,12 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                 barcode
                 price(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3632,14 +3678,17 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
             availableStock
             subTotal {
                 amount
+                minorAmount
                 currencyCode
             }
             discountPrice {
                 amount
+                minorAmount
                 currencyCode
             }
             total {
                 amount
+                minorAmount
                 currencyCode
             }
         }
@@ -3711,10 +3760,12 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                         "barcode": "6044512586268",
                         "price": {
                             "amount": 525,
+                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 525,
+                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "weight": {
@@ -3767,14 +3818,17 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                     "availableStock": 100,
                     "subTotal": {
                         "amount": 15000,
+                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "discountPrice": {
                         "amount": 2000,
+                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "subTotal": {
                         "amount": 13000,
+                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                 }
@@ -3839,10 +3893,12 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                 barcode
                 price(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
+                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3879,14 +3935,17 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
             availableStock
             subTotal {
                 amount
+                minorAmount
                 currencyCode
             }
             discountPrice {
                 amount
+                minorAmount
                 currencyCode
             }
             total {
                 amount
+                minorAmount
                 currencyCode
             }
         }
@@ -3959,10 +4018,12 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                         "barcode": "6044512586268",
                         "price": {
                             "amount": 525,
+                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 525,
+                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "weight": {
@@ -4015,14 +4076,17 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                     "availableStock": 100,
                     "subTotal": {
                         "amount": 15000,
+                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "discountPrice": {
                         "amount": 2000,
+                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "subTotal": {
                         "amount": 13000,
+                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                 }
@@ -4095,10 +4159,12 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             barcode
             price(currency: $currency) {
                 amount
+                minorAmount
                 currencyCode
             }
             discountedPrice(currency: $currency) {
                 amount
+                minorAmount
                 currencyCode
             }
             weight {
@@ -4178,10 +4244,12 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                     "barcode": "10000",
                     "price": {
                         "amount": 7500,
+                        "minorAmount": 75,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
                         "amount": 6750,
+                        "minorAmount": 75,
                         "currencyCode": "qar"
                     },
                     "weight": {
@@ -4277,10 +4345,12 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
             barcode
             price(currency: $currency) {
                 amount
+                minorAmount
                 currencyCode
             }
             discountedPrice(currency: $currency) {
                 amount
+                minorAmount
                 currencyCode
             }
             weight {
@@ -4317,14 +4387,17 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
         availableStock
         subTotal {
             amount
+            minorAmount
             currencyCode
         }
         discountPrice {
             amount
+            minorAmount
             currencyCode
         }
         total {
             amount
+            minorAmount
             currencyCode
         }
     }
@@ -4386,10 +4459,12 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                     "barcode": "10000",
                     "price": {
                         "amount": 7500,
+                        "minorAmount": 75,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
                         "amount": 7500,
+                        "minorAmount": 75,
                         "currencyCode": "qar"
                     },
                     "weight": {
@@ -4430,14 +4505,17 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                 "availableStock": 100,
                 "subTotal": {
                     "amount": 15000,
+                    "minorAmount": 75,
                     "currencyCode": "qar"
                 },
                 "discountPrice": {
                     "amount": 2000,
+                    "minorAmount": 75,
                     "currencyCode": "qar"
                 },
                 "subTotal": {
                     "amount": 13000,
+                    "minorAmount": 75,
                     "currencyCode": "qar"
                 },
             }
