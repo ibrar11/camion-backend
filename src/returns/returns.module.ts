@@ -29,6 +29,9 @@ import { ClientsModule } from "../clients/clients.module";
 
 import { ImageThumbnailService } from "../common/image-thumbnail.service";
 
+import { ExchangeRate } from "../pricing/entities/exchange-rate.entity";
+import { PricingService } from "../pricing/pricing.service";
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -41,6 +44,7 @@ import { ImageThumbnailService } from "../common/image-thumbnail.service";
             User,
             Customer,
             Notification,
+            ExchangeRate,
         ]),
         ClientsModule,
     ],
@@ -53,6 +57,7 @@ import { ImageThumbnailService } from "../common/image-thumbnail.service";
         S3Service,
         FileService,
         ImageThumbnailService,
+        PricingService,
     ],
     controllers: [ReturnsController],
 })
