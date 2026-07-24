@@ -24,6 +24,7 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 import { ReturnRequest } from "./entities/return-request.entity";
 import { ReturnStatus } from "./enums/ReturnStatus.enum";
 import { ReturnsService } from "./returns.service";
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 
 @ArgsType()
 class GetMyReturnRequestsArgs {
@@ -32,6 +33,9 @@ class GetMyReturnRequestsArgs {
 
     @Field(() => Int, { defaultValue: 20 })
     itemsPerPage: number;
+
+    @Field({ defaultValue: "usd", })
+    currency: CurrencyCode;
 
     @Field(() => String, { nullable: true })
     @IsOptional()
@@ -43,12 +47,15 @@ class GetMyReturnRequestsArgs {
 class GetMyReturnRequestArgs {
     @Field(() => String)
     uuid: string;
+
+    @Field({ defaultValue: "usd", })
+    currency: CurrencyCode;
 }
 
 @UseGuards(GqlAuthGuard)
 @Resolver(() => ReturnRequest)
 export class ReturnsResolver {
-    constructor(@Inject(ReturnsService) private readonly returnsService: ReturnsService) {}
+    constructor(@Inject(ReturnsService) private readonly returnsService: ReturnsService) { }
 
     @Query(() => [ReturnRequest])
     getCurrentCustomerReturnRequests(
@@ -64,6 +71,7 @@ export class ReturnsResolver {
             context.req.customer.uuid,
             args.pageNumber,
             args.itemsPerPage,
+            args.currency,
             args.status,
         );
     }
@@ -78,6 +86,6 @@ export class ReturnsResolver {
                 error: "You are not allowed to retrieve return requests.",
             });
         }
-        return this.returnsService.findOne(args.uuid);
+        return this.returnsService.findOne(args.uuid, args.currency);
     }
 }
