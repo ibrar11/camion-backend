@@ -2998,22 +2998,18 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
         status
         subTotal {
             amount
-            minorAmount
             currencyCode
         }
         shippingCost {
             amount
-            minorAmount
             currencyCode
         }
         discount {
             amount
-            minorAmount
             currencyCode
         }
         total {
             amount
-            minorAmount
             currencyCode
         }
         eta
@@ -3038,18 +3034,15 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
             uuid
             price {
                 amount
-                minorAmount
                 currencyCode
             }
             discountedPrice {
                 amount
-                minorAmount
                 currencyCode
             }
             quantity
             total {
                 amount
-                minorAmount
                 currencyCode
             }
             product {
@@ -3070,12 +3063,10 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 barcode
                 price(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3124,22 +3115,18 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 "status": "payment_pending",
                 "subTotal": {
                     "amount": 688,
-                    "minorAmount": 32,
                     "currencyCode": "qar"
                 },
                 "shippingCost": {
                     "amount": 0,
-                    "minorAmount": 0,
                     "currencyCode": "qar"
                 },
                 "discount": {
                     "amount": 0,
-                    "minorAmount": 0,
                     "currencyCode": "qar"
                 },
                 "total": {
                     "amount": 688,
-                    "minorAmount": 32,
                     "currencyCode": "qar"
                 },
                 "eta": "6-10 working days",
@@ -3148,18 +3135,15 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                         "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                         "price": {
                             "amount": 688,
-                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 688,
-                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "quantity": 1,
                         "total": {
                             "amount": 688,
-                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "product": {
@@ -3180,12 +3164,6 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                             "barcode": "10000",
                             "price": {
                                 "amount": 1000,
-                                "minorAmount": 32,
-                                "currencyCode": "qar"
-                            },
-                            "discountedPrice": {
-                                "amount": 1000,
-                                "minorAmount": 32,
                                 "currencyCode": "qar"
                             },
                             "weight": {
@@ -3229,22 +3207,18 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
         status
         subTotal {
             amount
-            minorAmount
             currencyCode
         }
         shippingCost {
             amount
-            minorAmount
             currencyCode
         }
         discount {
             amount
-            minorAmount
             currencyCode
         }
         total {
             amount
-            minorAmount
             currencyCode
         }
         eta
@@ -3269,18 +3243,15 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
             uuid
             price {
                 amount
-                minorAmount
                 currencyCode
             }
             discountedPrice {
                 amount
-                minorAmount
                 currencyCode
             }
             quantity
             total {
                 amount
-                minorAmount
                 currencyCode
             }
             product {
@@ -3311,12 +3282,10 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                 barcode
                 price(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3371,25 +3340,21 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
     "data": {
         "getCurrentCustomerOrder":{
             "uuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
-            "status": "payment_pending",
+            "status": "confirmed",
             "subTotal": {
                 "amount": 688,
-                "minorAmount": 32,
                 "currencyCode": "qar"
             },
             "shippingCost": {
-                "amount": 0,
-                "minorAmount": 0,
+                "amount": 321,
                 "currencyCode": "qar"
             },
             "discount": {
                 "amount": 0,
-                "minorAmount": 0,
                 "currencyCode": "qar"
             },
             "total": {
-                "amount": 688,
-                "minorAmount": 32,
+                "amount": 1009,
                 "currencyCode": "qar"
             },
             "eta": "6-10 working days",
@@ -3404,18 +3369,15 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                     "uuid": "acd18a70-693a-4167-b813-5d5a925786de",
                     "price": {
                         "amount": 688,
-                        "minorAmount": 32,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
                         "amount": 688,
-                        "minorAmount": 32,
                         "currencyCode": "qar"
                     },
                     "quantity": 1,
                     "total": {
                         "amount": 688,
-                        "minorAmount": 32,
                         "currencyCode": "qar"
                     },
                     "product": {
@@ -3448,12 +3410,6 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                         "barcode": "10000",
                         "price": {
                             "amount": 1000,
-                            "minorAmount": 32,
-                            "currencyCode": "qar"
-                        },
-                        "discountedPrice": {
-                            "amount": 1000,
-                            "minorAmount": 32,
                             "currencyCode": "qar"
                         },
                         "weight": {
@@ -3636,12 +3592,10 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                 barcode
                 price(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3678,17 +3632,14 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
             availableStock
             subTotal {
                 amount
-                minorAmount
                 currencyCode
             }
             discountPrice {
                 amount
-                minorAmount
                 currencyCode
             }
             total {
                 amount
-                minorAmount
                 currencyCode
             }
         }
@@ -3760,12 +3711,10 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                         "barcode": "6044512586268",
                         "price": {
                             "amount": 525,
-                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 525,
-                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "weight": {
@@ -3818,17 +3767,14 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                     "availableStock": 100,
                     "subTotal": {
                         "amount": 15000,
-                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "discountPrice": {
                         "amount": 2000,
-                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "subTotal": {
                         "amount": 13000,
-                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                 }
@@ -3893,12 +3839,10 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                 barcode
                 price(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 discountedPrice(currency: $currency) {
                     amount
-                    minorAmount
                     currencyCode
                 }
                 weight {
@@ -3935,17 +3879,14 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
             availableStock
             subTotal {
                 amount
-                minorAmount
                 currencyCode
             }
             discountPrice {
                 amount
-                minorAmount
                 currencyCode
             }
             total {
                 amount
-                minorAmount
                 currencyCode
             }
         }
@@ -4018,12 +3959,10 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                         "barcode": "6044512586268",
                         "price": {
                             "amount": 525,
-                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "discountedPrice": {
                             "amount": 525,
-                            "minorAmount": 25,
                             "currencyCode": "qar"
                         },
                         "weight": {
@@ -4076,17 +4015,14 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                     "availableStock": 100,
                     "subTotal": {
                         "amount": 15000,
-                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "discountPrice": {
                         "amount": 2000,
-                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                     "subTotal": {
                         "amount": 13000,
-                        "minorAmount": 25,
                         "currencyCode": "qar"
                     },
                 }
@@ -4130,8 +4066,6 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             brief(language: $language)
             description(language: $language)
             descriptionHtml(language: $language)
-            featuredImageUrl
-            featuredThumbnailUrl
             status
             salesCount
             likesCount
@@ -4142,27 +4076,18 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
             ratingThreeStarCount
             ratingFourStarCount
             ratingFiveStarCount
-            campaign {
-                uuid
-                name(language: $language)
-                brief(language: $language)
-                slug
-                discountPercentage
-                startsAt
-                finishesAt
-            }
         }
         variant {
             uuid
             title
             sku
             barcode
-            price(currency: $currency) {
+            price {
                 amount
                 minorAmount
                 currencyCode
             }
-            discountedPrice(currency: $currency) {
+            discountedPrice {
                 amount
                 minorAmount
                 currencyCode
@@ -4207,49 +4132,38 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
     "data": {
         "getCustomerWishlist": [
             {
-                "uuid": "056c1bcc-f421-47f9-8a4c-a95a6e8c98e8",
+                "uuid": "c4dcad74-9073-4be8-8b7b-1218efcaab89",
                 "product": {
-                    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
-                    "slug": "iphone-22",
-                    "title": "iPhone 22",
-                    "brief": "From $799 or $33.29/mo. per month for 24 months",
-                    "description": "Your new iPhone awaits. Make it yours.",
-                    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                    "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                    "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                    "uuid": "f59e5a8e-ab12-4f59-9444-a3e4bad96582",
+                    "slug": "applicable-samsung-s23ultra-phone-case-flip-card-693327095419",
+                    "title": "Applicable Samsung s23ultra Phone Case Flip Card Holder Protective Case s24 Leather Phone Leather Case",
+                    "brief": "",
+                    "description": "PS: If you have any questions, please contact us.\nCompatible with Samsung A14 5G/S23 Ultra/S23 Plus/S23/A23E/A04 4G/M13/M33 5G/M53/M23 5G/F23 5G/A23/A73/A03 Core/A13 4G/A35/A35 5G/A03 (International)/A03 (EU)/F22/M52 5G/A13 5G/S22 Ultra/S22 Plus/S22/Galaxy F52 5G/Galaxy F12/Galaxy M12/AF Phone Download 5S/F62/M62/A02/A32 4G/A52 5G/A72 5G/A02S/A12/S21 Plus/S21 Motorcycle lighting is lightweight, designed for motorcycles. Looking for logo and branding.",
+                    "descriptionHtml": "PS：其他品牌型号请联系客服备注下单\n注，需要其他款式或手机型号联系旺旺客服\n适用三星 A14 5G/S23 Ultra/S23 Plus/S23/A23E/A04 4G/M13/M33 5G/M53/M23 5G/F23 5G/A23/A73/A03 Core/A13 4G/A33 5G/A53 5G/A03(国际版)短款/A03(欧版)/F22/M52 5G/A13 5G/S22 Ultra/S22 Plus/S22/Galaxy F52 5G/Galaxy F12/Galaxy M12/A03S/A22 5G/S21 FE/Xcover 5/Xcover 5S/F62/M62/A02/A32 4G/A52 5G/A72 5G/A02S/A12/S21 Plus/S21等手机型号iPhone苹果 小米 红米 华为 荣耀 一加 谷歌 索尼 moto等品牌通用。颜色众多 型号齐全 一手货源工厂店 支持拿样 支持包装定制 材料定制 logo文字压印定制等",
                     "status": "active",
                     "salesCount": 0,
-                    "likesCount": 0,
-                    "reviewsCount": 1,
-                    "ratingAvg": 5,
+                    "likesCount": 3,
+                    "reviewsCount": 0,
+                    "ratingAvg": 0,
                     "ratingOneStarCount": 0,
                     "ratingTwoStarCount": 0,
                     "ratingThreeStarCount": 0,
                     "ratingFourStarCount": 0,
-                    "ratingFiveStarCount": 0,
-                    "campaign": {
-                        "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
-                        "name": "Summer 50%",
-                        "brief": "",
-                        "slug": "summer-50",
-                        "discountPercentage": 50,
-                        "startsAt": "2026-01-01T00:00:00.000Z",
-                        "finishesAt": "2026-12-31T00:00:00.000Z"
-                    }
+                    "ratingFiveStarCount": 0
                 },
                 "variant": {
-                    "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
-                    "title": "iPhone 20 RED 1 TB",
-                    "sku": "iphone-20-red-1tb",
-                    "barcode": "10000",
+                    "uuid": "1c5abd38-a6aa-4a15-8801-593e9ef66ac6",
+                    "title": "Green Samsung S20 FE 5g",
+                    "sku": "4952542037686",
+                    "barcode": "4952542037686",
                     "price": {
-                        "amount": 7500,
-                        "minorAmount": 75,
+                        "amount": 53,
+                        "minorAmount": 43,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
-                        "amount": 6750,
-                        "minorAmount": 75,
+                        "amount": 37,
+                        "minorAmount": 41,
                         "currencyCode": "qar"
                     },
                     "weight": {
@@ -4257,16 +4171,16 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
                         "unit": "kg"
                     },
                     "dimensions": {
-                        "width": 1000,
-                        "height": 1000,
-                        "length": 1000,
-                        "unit": "in"
+                        "width": 8,
+                        "height": 2,
+                        "length": 19,
+                        "unit": "cm"
                     },
                     "images": [
                         {
-                            "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
-                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "uuid": "bd66a56a-5856-4459-a7b0-0cc666a5d5aa",
+                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/b281256f-e50f-4e7d-9a98-d090b63be520.webp",
+                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/e60449f5-68a0-44a4-be2b-94eff1f0cc66.webp",
                             "alt": "",
                             "isFeatured": false,
                             "position": 0
@@ -4306,8 +4220,8 @@ Get Customer Cart
 ### GraphQL Query
 
 ```graphql
-query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $itemsPerPage: Int) {
-    getCustomerCart(language: $language, currency: $currency, pageNumber: $pageNumber, itemsPerPage: $itemsPerPage) {
+query GetCustomerCart($language: String, $currency: String) {
+    getCustomerCart(language: $language, currency: $currency) {
         uuid
         product {
             uuid
@@ -4316,8 +4230,6 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
             brief(language: $language)
             description(language: $language)
             descriptionHtml(language: $language)
-            featuredImageUrl
-            featuredThumbnailUrl
             status
             salesCount
             likesCount
@@ -4328,27 +4240,18 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
             ratingThreeStarCount
             ratingFourStarCount
             ratingFiveStarCount
-            campaign {
-                uuid
-                name(language: $language)
-                brief(language: $language)
-                slug
-                discountPercentage
-                startsAt
-                finishesAt
-            }
         }
         variant {
             uuid
             title
             sku
             barcode
-            price(currency: $currency) {
+            price {
                 amount
                 minorAmount
                 currencyCode
             }
-            discountedPrice(currency: $currency) {
+            discountedPrice {
                 amount
                 minorAmount
                 currencyCode
@@ -4371,26 +4274,10 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                 isFeatured
                 position
             }
-            optionValues{
-                optionValue{
-                    uuid
-                    value(language: $language)
-                    position
-                    option {
-                        uuid
-                        name(language: $language)
-                        position
-                    }
-                }
-            }
         }
+        quantity
         availableStock
         subTotal {
-            amount
-            minorAmount
-            currencyCode
-        }
-        discountPrice {
             amount
             minorAmount
             currencyCode
@@ -4409,9 +4296,7 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
 ```json
 {
     "language": "en",
-    "currency": "qar",
-    "pageNumber": 1,
-    "itemsPerPage": 1
+    "currency": "qar"
 }
 ```
 
@@ -4422,48 +4307,90 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
     "data": {
         "getCustomerCart": [
             {
-                "uuid": "8c534e15-673f-440e-b548-04424cc92363",
+                "uuid": "b1610613-0de5-4466-b9f3-1526e17d0794",
                 "product": {
-                    "uuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
-                    "slug": "iphone-22",
-                    "title": "iPhone 22",
-                    "brief": "From $799 or $33.29/mo. per month for 24 months",
-                    "description": "Your new iPhone awaits. Make it yours.",
-                    "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
-                    "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                    "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                    "uuid": "638b6747-df77-40b8-af12-69197c41c61c",
+                    "slug": "iphone15promax-small-fragrant-quilted-luxury-appl-988918916083",
+                    "title": "Iphone15Promax Small Fragrant Quilted Luxury Apple 15 Caviar 13 Leather 12 Goddess Mobile Phone Case",
                     "status": "active",
                     "salesCount": 0,
                     "likesCount": 0,
-                    "reviewsCount": 1,
-                    "ratingAvg": 5,
+                    "reviewsCount": 0,
+                    "ratingAvg": 0,
                     "ratingOneStarCount": 0,
                     "ratingTwoStarCount": 0,
                     "ratingThreeStarCount": 0,
                     "ratingFourStarCount": 0,
-                    "ratingFiveStarCount": 0,
-                    "campaign": {
-                        "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
-                        "name": "Summer 50%",
-                        "brief": "",
-                        "slug": "summer-50",
-                        "discountPercentage": 50,
-                        "startsAt": "2026-01-01T00:00:00.000Z",
-                        "finishesAt": "2026-12-31T00:00:00.000Z"
-                    }
+                    "ratingFiveStarCount": 0
                 },
                 "variant": {
-                    "uuid": "27da54da-8ef9-424f-9c62-ba11f4f924fd",
-                    "title": "iPhone 20 RED 1 TB",
-                    "sku": "iphone-20-red-1tb",
-                    "barcode": "10000",
+                    "uuid": "7e1c725a-66b4-4b25-a6c9-1f360ff52825",
+                    "title": "Mint neutral iphone 15promax",
+                    "sku": "6118194454365",
+                    "barcode": "6118194454365",
                     "price": {
-                        "amount": 7500,
-                        "minorAmount": 75,
+                        "amount": 38,
+                        "minorAmount": 59,
                         "currencyCode": "qar"
                     },
                     "discountedPrice": {
-                        "amount": 7500,
+                        "amount": 27,
+                        "minorAmount": 2,
+                        "currencyCode": "qar"
+                    },
+                    "weight": {
+                        "amount": 1,
+                        "unit": "kg"
+                    },
+                    "dimensions": {
+                        "width": 1,
+                        "height": 1,
+                        "length": 1,
+                        "unit": "cm"
+                    }
+                },
+                "quantity": 2,
+                "availableStock": 100,
+                "subTotal": {
+                    "amount": 27,
+                    "minorAmount": 4,
+                    "currencyCode": "qar"
+                },
+                "total": {
+                    "amount": 27,
+                    "minorAmount": 4,
+                    "currencyCode": "qar"
+                }
+            },
+            {
+                "uuid": "868c0fe4-058a-44db-bd7a-01b36e6e715e",
+                "product": {
+                    "uuid": "5fc9b9d0-5755-4554-a489-884abd0a9c61",
+                    "slug": "women-clothing-wish-women-s-jeans-high-waist-slim-707007812408",
+                    "title": "Women Clothing Wish Women's Jeans High-Waist Slim Pencil Pants",
+                    "status": "active",
+                    "salesCount": 0,
+                    "likesCount": 1,
+                    "reviewsCount": 0,
+                    "ratingAvg": 0,
+                    "ratingOneStarCount": 0,
+                    "ratingTwoStarCount": 0,
+                    "ratingThreeStarCount": 0,
+                    "ratingFourStarCount": 0,
+                    "ratingFiveStarCount": 0
+                },
+                "variant": {
+                    "uuid": "e4a223bb-fa7a-4118-be19-c13d278ff2b9",
+                    "title": "Medium Blue XXXL",
+                    "sku": "4967683228068",
+                    "barcode": "4967683228068",
+                    "price": {
+                        "amount": 79,
+                        "minorAmount": 50,
+                        "currencyCode": "qar"
+                    },
+                    "discountedPrice": {
+                        "amount": 39,
                         "minorAmount": 75,
                         "currencyCode": "qar"
                     },
@@ -4472,52 +4399,24 @@ query GetCustomerCart($language: String, $currency: String, $pageNumber: Int, $i
                         "unit": "kg"
                     },
                     "dimensions": {
-                        "width": 1000,
-                        "height": 1000,
-                        "length": 1000,
-                        "unit": "in"
-                    },
-                    "images": [
-                        {
-                            "uuid": "e23e83b6-48b9-436b-84c1-617a9bc5a60e",
-                            "imageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                            "thumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
-                            "alt": "",
-                            "isFeatured": false,
-                            "position": 0
-                        }
-                    ],
-                    "optionValues": [
-                        {
-                            "optionValue": {
-                                "uuid": "853fe098-90a1-460d-ab49-20abc7f55896",
-                                "value": "Off-white and dark gray [double standard model]",
-                                "position": 8,
-                                "option": {
-                                    "uuid": "caf82529-a8a9-43e3-b927-7447e61eba12",
-                                    "name": "Color",
-                                    "position": 1
-                                }
-                            }
-                        }
-                    ]
+                        "width": 1,
+                        "height": 1,
+                        "length": 1,
+                        "unit": "cm"
+                    }
                 },
-                "availableStock": 100,
+                "quantity": 7,
+                "availableStock": 89,
                 "subTotal": {
-                    "amount": 15000,
-                    "minorAmount": 75,
+                    "amount": 44,
+                    "minorAmount": 25,
                     "currencyCode": "qar"
                 },
-                "discountPrice": {
-                    "amount": 2000,
-                    "minorAmount": 75,
+                "total": {
+                    "amount": 44,
+                    "minorAmount": 25,
                     "currencyCode": "qar"
-                },
-                "subTotal": {
-                    "amount": 13000,
-                    "minorAmount": 75,
-                    "currencyCode": "qar"
-                },
+                }
             }
         ]
     }

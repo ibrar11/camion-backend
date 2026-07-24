@@ -116,13 +116,13 @@ export class WishlistService {
      *
      * @param customer
      * @param filters
+     * @param currency
      * @param sort
      * @param pageNumber
      * @param itemsPerPage
-     * @param currency
      * @returns
      */
-    async getWishlist(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, currency: CurrencyCode = CurrencyCode.QAR): Promise<Array<WishlistItem>> {
+    async getWishlist(customer: Customer, filters: string, currency: CurrencyCode = CurrencyCode.QAR, sort: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<WishlistItem>> {
         // Get pagination params
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 

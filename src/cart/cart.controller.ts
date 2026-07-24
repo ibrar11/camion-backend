@@ -59,10 +59,8 @@ export class CartItemsController {
         @GetCustomer() customer: Customer,
         @Query("filters") filters: string,
         @Query("sort") sort: string,
-        @Query("pageNumber") pageNumber: number,
-        @Query("itemsPerPage") itemsPerPage: number,
     ): Promise<Array<CartItem>> {
-        return this.cartService.findCart(customer, filters, sort, pageNumber, itemsPerPage);
+        return this.cartService.findCart(customer, filters, CurrencyCode.QAR, sort);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)

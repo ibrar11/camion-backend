@@ -30,14 +30,8 @@ export class GetCustomerCartArgs {
     @Field({ defaultValue: "en", })
     language: string;
 
-    @Field({ defaultValue: "usd", })
+    @Field({ defaultValue: CurrencyCode.QAR, })
     currency: CurrencyCode;
-
-    @Field(() => Int, { defaultValue: 1, })
-    pageNumber: number;
-
-    @Field(() => Int, { defaultValue: 100, })
-    itemsPerPage: number;
 }
 
 @UseGuards(GqlAuthGuard)
@@ -65,7 +59,7 @@ export class CartResolver {
             });
         }
         console.log(`Attempting to fetch cart for customer ${customer.uuid} with currency ${args.currency}`);
-        return this.cartService.findCart(customer, "", "", args.pageNumber, args.itemsPerPage, args.currency);
+        return this.cartService.findCart(customer, "", args.currency, "");
     }
 
     @Query(() => Number)
