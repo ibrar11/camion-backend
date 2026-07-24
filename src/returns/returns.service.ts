@@ -39,6 +39,12 @@ import { FileService } from "../common/file.service";
 
 import { ImageThumbnailService } from "../common/image-thumbnail.service";
 
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+
+import { getBestCampaign } from "../common/bestCampaign";
+
+import { PricingService } from "../pricing/pricing.service";
+
 @Injectable()
 export class ReturnsService {
     private readonly logger = new Logger(ReturnsService.name);
@@ -54,6 +60,7 @@ export class ReturnsService {
         @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
         @Inject(S3Service) private readonly s3Service: S3Service,
         @Inject(FileService) private readonly fileService: FileService,
+        @Inject(PricingService) private readonly pricingService: PricingService,
     ) { }
 
     async createReturnRequest(customer: Customer, dto: CreateReturnRequestDto): Promise<ReturnRequest> {
@@ -183,63 +190,67 @@ export class ReturnsService {
         }
     }
 
-    async findAllByCustomer(customerUuid: string, pageNumber = 1, itemsPerPage = 20, status?: ReturnStatus): Promise<ReturnRequest[]> {
+    async findAllByCustomer(customerUuid: string, pageNumber = 1, itemsPerPage = 20, currency: CurrencyCode, status?: ReturnStatus): Promise<ReturnRequest[]> {
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
-        return this.returnRequestRepository.find({
+        const returnRequests = await this.returnRequestRepository.find({
             where: {
                 customer: { uuid: customerUuid },
                 ...(status ? { status } : {}),
             },
-            relations: { 
-                order: true, 
+            relations: {
+                order: true,
                 orderItem: {
                     product: {
                         productCategories: {
-                            category: true
-                        }
+                            category: true,
+                        },
                     },
                     variant: {
-                        images: true
-                    }
-                }, 
-                evidence: true 
-            },
-            order: { id: "DESC" },
-            skip,
-            take,
-        });
-    }
-
-    async findAll(pageNumber = 1, itemsPerPage = 20, status?: ReturnStatus): Promise<ReturnRequest[]> {
-        const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
-        return this.returnRequestRepository.find({
-            where: status ? { status } : {},
-            relations: { 
-                order: true, 
-                orderItem: {
-                    product: {
-                        productCategories: {
-                            category: true
-                        }
+                        images: true,
                     },
-                    variant: {
-                        images: true
-                    }
                 },
-                evidence: true, 
-                customer: true 
+                evidence: true,
             },
             order: { id: "DESC" },
             skip,
             take,
         });
+
+        return this.applyPricingToReturnRequests(returnRequests, currency);
     }
 
-    async findOne(uuid: string): Promise<ReturnRequest> {
+    async findAll(pageNumber = 1, itemsPerPage = 20, currency: CurrencyCode, status?: ReturnStatus): Promise<ReturnRequest[]> {
+        const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+        const returnRequests = await this.returnRequestRepository.find({
+            where: status ? { status } : {},
+            relations: {
+                order: true,
+                orderItem: {
+                    product: {
+                        productCategories: {
+                            category: true,
+                        },
+                    },
+                    variant: {
+                        images: true,
+                    },
+                },
+                evidence: true,
+                customer: true,
+            },
+            order: { id: "DESC" },
+            skip,
+            take,
+        });
+
+        return this.applyPricingToReturnRequests(returnRequests, currency);
+    }
+
+    async findOne(uuid: string, currency: CurrencyCode): Promise<ReturnRequest> {
         const returnRequest = await this.returnRequestRepository.findOne({
             where: { uuid },
-            relations: { 
-                order: true, 
+            relations: {
+                order: true,
                 orderItem: {
                     product: {
                         productCategories: {
@@ -250,7 +261,7 @@ export class ReturnsService {
                         images: true
                     }
                 },
-                evidence: true 
+                evidence: true
             },
         });
 
@@ -258,7 +269,12 @@ export class ReturnsService {
             throw new NotFoundException({ error: "Return request not found" });
         }
 
-        return returnRequest;
+        const [result] = await this.applyPricingToReturnRequests(
+            [returnRequest],
+            currency,
+        );
+
+        return result;
     }
 
     async updateStatus(uuid: string, dto: UpdateReturnRequestStatusDto): Promise<ReturnRequest> {
@@ -375,5 +391,53 @@ export class ReturnsService {
                 details: error?.message,
             });
         }
+    }
+
+    /**
+ * Apply pricing to return request order items
+ */
+    private async applyPricingToReturnRequests(
+        returnRequests: ReturnRequest[],
+        currency: CurrencyCode,
+    ): Promise<ReturnRequest[]> {
+        return Promise.all(
+            returnRequests.map(async (returnRequest) => {
+                if (!returnRequest.orderItem) {
+                    return returnRequest;
+                }
+
+                const { product, variant } = returnRequest.orderItem;
+
+                // Find the best campaign
+                const campaign = getBestCampaign(product);
+
+                if (campaign) {
+                    product.campaign = campaign;
+                }
+
+                // Calculate prices in parallel
+                const [price, discountedPrice] = await Promise.all([
+                    this.pricingService.applyPriceOnProductVariant(
+                        product,
+                        variant,
+                        campaign,
+                        currency,
+                        false,
+                    ),
+                    this.pricingService.applyPriceOnProductVariant(
+                        product,
+                        variant,
+                        campaign,
+                        currency,
+                        true,
+                    ),
+                ]);
+
+                variant.price = price;
+                variant.discountedPrice = discountedPrice;
+
+                return returnRequest;
+            }),
+        );
     }
 }

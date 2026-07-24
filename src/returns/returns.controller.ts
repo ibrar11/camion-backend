@@ -36,6 +36,8 @@ import { ReturnStatus } from "./enums/ReturnStatus.enum";
 import { CreateReturnRequestDto } from "./dtos/CreateReturnRequestDto";
 import { UpdateReturnRequestStatusDto } from "./dtos/UpdateReturnRequestStatusDto";
 
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+
 @UseGuards(AuthGuard, RolesGuard)
 @Controller("v1/return-requests")
 export class ReturnsController {
@@ -70,15 +72,19 @@ export class ReturnsController {
         @Query("pageNumber") pageNumber: number,
         @Query("itemsPerPage") itemsPerPage: number,
         @Query("status") status: ReturnStatus,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<ReturnRequest[]> {
-        return this.returnsService.findAllByCustomer(customer.uuid, pageNumber, itemsPerPage, status);
+        return this.returnsService.findAllByCustomer(customer.uuid, pageNumber, itemsPerPage, currency, status);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Get(":uuid")
     @HttpCode(HttpStatus.OK)
-    findOne(@Param("uuid") uuid: string): Promise<ReturnRequest> {
-        return this.returnsService.findOne(uuid);
+    findOne(
+        @Param("uuid") uuid: string,
+        @Query("currency") currency: CurrencyCode,
+    ): Promise<ReturnRequest> {
+        return this.returnsService.findOne(uuid, currency);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
@@ -88,8 +94,9 @@ export class ReturnsController {
         @Query("pageNumber") pageNumber: number,
         @Query("itemsPerPage") itemsPerPage: number,
         @Query("status") status: ReturnStatus,
+        @Query("currency") currency: CurrencyCode,
     ): Promise<ReturnRequest[]> {
-        return this.returnsService.findAll(pageNumber, itemsPerPage, status);
+        return this.returnsService.findAll(pageNumber, itemsPerPage, currency, status);
     }
 
     @Roles(UserRole.SuperAdmin, UserRole.Admin)
