@@ -707,7 +707,7 @@ export class OrderService {
      *
      * @returns
      */
-    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
+    async findAll(filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, currency: CurrencyCode, status?: OrderStatus): Promise<Array<Order>> {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
@@ -750,12 +750,22 @@ export class OrderService {
                 skip: skip,
                 take: take,
             });
-            const result = orders.map((order) => {
-                order.orderPlacementDate = order.createdAt;
-                return order;
-            });
-            await this.attachTracking(result);
-            return result;
+            await this.attachTracking(orders);
+
+            const res = await Promise.all(
+                orders.map(async (order) => {
+                    order.orderItems = await this.applyPricingToOrderItems(
+                        order.orderItems,
+                        currency,
+                    );
+
+                    order.orderPlacementDate = order.createdAt;
+
+                    return order;
+                }),
+            );
+
+            return res;
         } catch (error: any) {
             this.logger.error(`Error fetching orders: ${error}`);
             throw new InternalServerErrorException({
@@ -781,7 +791,7 @@ export class OrderService {
      * @param customerUuid
      * @returns
      */
-    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, status?: OrderStatus): Promise<Array<Order>> {
+    async findAllByCustomer(customerUuid: string, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, currency: CurrencyCode, status?: OrderStatus): Promise<Array<Order>> {
         try {
 
             // Get pagination params
@@ -813,12 +823,22 @@ export class OrderService {
                 skip: skip,
                 take: take,
             });
-            const result = orders.map((order) => {
-                order.orderPlacementDate = order.createdAt;
-                return order;
-            });
-            await this.attachTracking(result);
-            return result;
+            await this.attachTracking(orders);
+
+            const res = await Promise.all(
+                orders.map(async (order) => {
+                    order.orderItems = await this.applyPricingToOrderItems(
+                        order.orderItems,
+                        currency,
+                    );
+
+                    order.orderPlacementDate = order.createdAt;
+
+                    return order;
+                }),
+            );
+
+            return res;
         } catch (error: any) {
             this.logger.error(`Error fetching my orders: ${error}`);
             throw new InternalServerErrorException({
@@ -860,7 +880,7 @@ export class OrderService {
      * @param uuid
      * @returns
      */
-    async findOne(uuid: string): Promise<Order> {
+    async findOne(uuid: string, currency: CurrencyCode): Promise<Order> {
         try {
             const order = await this.orderRepository.findOne({
                 relationLoadStrategy: "query",
@@ -899,6 +919,11 @@ export class OrderService {
             (order as any).wmsOrders = wmsLinks.map(l => l.wmsOrder);
             await this.attachTracking([order]);
 
+            order.orderItems = await this.applyPricingToOrderItems(
+                order.orderItems,
+                currency,
+            );
+
             return order;
         } catch (error: any) {
             this.logger.error(`Error fetching order: ${error}`);
@@ -907,6 +932,51 @@ export class OrderService {
                 details: error,
             });
         }
+    }
+
+    /**
+     * apply pricing to order items
+     * @param orderItems
+     * @param currency
+     * @returns
+     */
+    private async applyPricingToOrderItems(
+        orderItems: OrderItem[],
+        currency: CurrencyCode,
+    ): Promise<OrderItem[]> {
+        return Promise.all(
+            orderItems.map(async (orderItem) => {
+                // Find the best campaign
+                const campaign = getBestCampaign(orderItem.product);
+
+                if (campaign) {
+                    orderItem.product.campaign = campaign;
+                }
+
+                // Calculate prices in parallel
+                const [price, discountedPrice] = await Promise.all([
+                    this.pricingService.applyPriceOnProductVariant(
+                        orderItem.product,
+                        orderItem.variant,
+                        campaign,
+                        currency,
+                        false,
+                    ),
+                    this.pricingService.applyPriceOnProductVariant(
+                        orderItem.product,
+                        orderItem.variant,
+                        campaign,
+                        currency,
+                        true,
+                    ),
+                ]);
+
+                orderItem.variant.price = price;
+                orderItem.variant.discountedPrice = discountedPrice;
+
+                return orderItem;
+            }),
+        );
     }
 
     async getOrderTracking(orderUuid: string, customerUuid?: string, language: string = 'en'): Promise<OrderTrackingResponse> {
@@ -1067,9 +1137,9 @@ export class OrderService {
      * @param status
      * @returns
      */
-    async updateStatus(uuid: string, status: OrderStatus, cancellationReason?: string): Promise<Order> {
+    async updateStatus(uuid: string, status: OrderStatus, currency: CurrencyCode, cancellationReason?: string): Promise<Order> {
         try {
-            const order = await this.findOne(uuid);
+            const order = await this.findOne(uuid, currency);
 
             if (status === OrderStatus.CONFIRMED && order.status !== OrderStatus.PAYMENT_SUCCESSFUL) {
                 throw new BadRequestException({
