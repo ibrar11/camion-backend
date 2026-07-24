@@ -452,9 +452,7 @@ export const getDiscountedPrice = (
  *
  * @param cost
  * @param currencyCode
- * @param pricingFactor
  * @param exchangeRateFactor
- * @param discountPercentage
  * @returns
  */
 export const getExchangedPrice = (
