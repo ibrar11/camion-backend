@@ -564,7 +564,7 @@ export class OrderService {
             // payment service needs to integrated here
             const paymentPayload = {
                 provider: provider,
-                amount: moneyToFloat(total),
+                amount: total,
                 currency: currency,
                 orderUUID: order.uuid,
                 firstName: customerName[0],
@@ -1481,7 +1481,7 @@ export class OrderService {
 
         const paymentPayload = {
             provider,
-            amount: order.total.amount,
+            amount: order.total,
             currency: order.total.currencyCode,
             orderUUID: order.uuid,
             firstName: customerName[0],

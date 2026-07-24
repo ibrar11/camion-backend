@@ -18,6 +18,8 @@ import {
     SignaturePayload
 } from "../types";
 
+import { moneyToString } from "../../common/currency";
+
 @Injectable()
 export class SkipCashAdapter {
     private readonly logger = new Logger(SkipCashAdapter.name);
@@ -43,7 +45,7 @@ export class SkipCashAdapter {
             const payload: SignaturePayload = {
                 Uid: crypto.randomUUID(),
                 KeyId: this.configService.get<string>("SKIPCASH_KEY_ID"),
-                Amount: dto.amount.toFixed(2),
+                Amount: moneyToString(dto.amount),
                 FirstName: dto.firstName,
                 LastName: dto.lastName,
                 Phone: dto.phoneNumber,

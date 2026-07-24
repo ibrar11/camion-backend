@@ -121,19 +121,22 @@ export const moneyFromMinor = (minorUnits: number, currencyCode: CurrencyCode): 
  * ```ts
  * const value = moneyFromFloat(27.2, CurrencyCode.QAR);
  * console.log(value);
- * => { amount: 27, minorAmount: 20, currencyCode: "qar" }
+ * => { amount: 27, minorAmount: 2, currencyCode: "qar" }
  * ```
  *
  * @param value
  * @param currencyCode
  * @returns
  */
-export const moneyFromFloat = (value: number, currencyCode: CurrencyCode): Money => {
-	const totalMinor = Math.round(value * 100);
+export const moneyFromFloat = (
+	value: number,
+	currencyCode: CurrencyCode
+): Money => {
+	const [amount, minor = "0"] = value.toString().split(".");
 
 	return {
-		amount: Math.trunc(totalMinor / 100),
-		minorAmount: totalMinor % 100,
+		amount: Number(amount),
+		minorAmount: Number(minor),
 		currencyCode,
 	};
 };
@@ -424,6 +427,41 @@ export const getDiscountedPrice = (
 	if (discountPercentage !== 0) {
 		totalDestMinor = Math.ceil(totalDestMinor * (1 - (discountPercentage / 100)));
 	}
+
+	return {
+		amount: Math.trunc(totalDestMinor / 100),
+		minorAmount: totalDestMinor % 100,
+		currencyCode: currencyCode,
+	};
+};
+
+/**
+ * Converts cost to price using exchangeRateFactor
+ *
+ * ```ts
+ * const cost = {
+ * 	amount: 14,
+ * 	minorAmount: 0,
+ * 	currencyCode: CurrencyCode.QAR,
+ * };
+ * 
+ * const totalDestMinor = Math.ceil(((cost.amount * 100) + cost.minorAmount) * exchangeRateFactor);
+ * console.log(totalDestMinor);
+ * => { amount: 25, minorAmount: 97, currencyCode: "qar" }
+ * ```
+ *
+ * @param cost
+ * @param currencyCode
+ * @param exchangeRateFactor
+ * @returns
+ */
+export const getExchangedPrice = (
+	cost: Money,
+	currencyCode: CurrencyCode,
+	exchangeRateFactor: number,
+) => {
+	// Apply the exchange rate
+	const totalDestMinor = Math.ceil(((cost.amount * 100) + cost.minorAmount) * exchangeRateFactor);
 
 	return {
 		amount: Math.trunc(totalDestMinor / 100),

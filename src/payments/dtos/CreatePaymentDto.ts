@@ -9,16 +9,19 @@ import {
 
 import { PaymentProvider } from "../enums/PaymentProvider";
 
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
+import { PaymentMoney } from "../entities/payment-transaction.entity";
+
 export class CreatePaymentDto {
     @IsEnum(PaymentProvider)
     provider: PaymentProvider;
 
     @IsNumber()
-    amount: number;
+    amount: PaymentMoney;
 
     @IsString()
     @MinLength(1)
-    currency: string;
+    currency: CurrencyCode;
 
     @IsString()
     @IsUUID()
