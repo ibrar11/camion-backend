@@ -20,6 +20,8 @@ import { ExchangeRateService } from "../pricing/exchange-rate.service";
 
 import { PaymentProvider } from "./enums/PaymentProvider";
 
+import { getExchangedPrice } from "../common/currency";
+
 @Injectable()
 export class PaymentsService {
     private readonly logger = new Logger(PaymentsService.name);
@@ -49,7 +51,7 @@ export class PaymentsService {
             })
             await this.paymentTransactionRepository.save(transaction);
 
-            if (dto.amount > 0) {
+            if (dto.amount.amount > 0 || dto.amount.minorAmount > 0) {
                 const exchangeRates = await this.exchangeRateService.findAllFull();
                 if (dto?.provider === PaymentProvider.SKIPCASH) {
                     if (dto.currency.toLowerCase().trim() !== "qar") {
@@ -65,7 +67,7 @@ export class PaymentsService {
                         }
 
                         // convert the total in QAR for skipcash.
-                        dto.amount = dto.amount * exchangeRate.factor;
+                        dto.amount = getExchangedPrice(dto.amount, dto.currency, exchangeRate.factor);
                     }
                 }
 

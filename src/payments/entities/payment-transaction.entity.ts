@@ -14,6 +14,22 @@ import { PaymentStatus } from "../enums/PaymentStatus";
 
 import { Order } from "../../order/entities/order.entity";
 
+import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
+
+export class PaymentMoney {
+    @Column({ type: "integer", nullable: true })
+    amount: number;
+
+    @Column({ type: "integer", nullable: false, default: 0, })
+    minorAmount: number;
+
+    @Column({
+        type: "enum",
+        enum: CurrencyCode,
+        default: CurrencyCode.USD,
+    })
+    currencyCode: CurrencyCode;
+}
 @Entity("payment_transactions")
 export class PaymentTransaction {
     @PrimaryGeneratedColumn("uuid")
@@ -28,11 +44,15 @@ export class PaymentTransaction {
     @Column({ nullable: true })
     transactionId: string;
 
-    @Column({ type: "decimal", precision: 10, scale: 2 })
-    amount: number;
+    @Column(() => PaymentMoney)
+    amount: PaymentMoney;
 
-    @Column()
-    currency: string;
+    @Column({
+        type: "enum",
+        enum: CurrencyCode,
+        default: CurrencyCode.USD,
+    })
+    currency: CurrencyCode;
 
     @Column({
         type: "enum",
