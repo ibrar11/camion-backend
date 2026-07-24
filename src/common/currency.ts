@@ -60,6 +60,17 @@ export const moneyToFloat = (money: Money): number => {
  * @returns
  */
 export const moneyToString = (money: Money): string => {
+
+	// Handle when minor amount is 0
+	if (money.minorAmount === 0) {
+		return `${money.amount}.00`;
+	}
+
+	// Handle when minor amount is 1..9
+	if (money.minorAmount <= 9) {
+		return `${money.amount}.${`${Math.trunc(money.minorAmount) / 100}`.substring(2)}`;
+	}
+
 	return `${money.amount}.${money.minorAmount}`;
 };
 
@@ -117,7 +128,7 @@ export const moneyFromMinor = (minorUnits: number, currencyCode: CurrencyCode): 
  * @param currencyCode
  * @returns
  */
-export const moneyFromFloat = ( value: number, currencyCode: CurrencyCode ): Money => {
+export const moneyFromFloat = (value: number, currencyCode: CurrencyCode): Money => {
 	const totalMinor = Math.round(value * 100);
 
 	return {
