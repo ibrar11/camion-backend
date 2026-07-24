@@ -25,6 +25,7 @@ import { Customer } from '../customers/entities/customer.entity';
 
 import { WishlistItem } from './entities/wishlist.entity';
 import { WishlistService } from './wishlist.service';
+import { CurrencyCode } from 'src/inventory/enums/CurrencyCode.enum';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/wishlist')
@@ -51,7 +52,7 @@ export class WishlistController {
         @Query("pageNumber") pageNumber: number,
         @Query("itemsPerPage") itemsPerPage: number,
     ): Promise<Array<WishlistItem>> {
-        return await this.wishlistService.getWishlist(customer, filters, sort, pageNumber, itemsPerPage);
+        return await this.wishlistService.getWishlist(customer, filters, CurrencyCode.QAR, sort, pageNumber, itemsPerPage);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate)

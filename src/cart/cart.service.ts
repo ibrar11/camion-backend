@@ -187,16 +187,12 @@ export class CartItemsService {
      * Find the cart items for a customer
      * @param customer
      * @param filters
+     * @param currency
      * @param sort
-     * @param pageNumber
-     * @param itemsPerPage
      * @returns
      */
-    async findCart(customer: Customer, filters: string, sort: string, pageNumber: number = 1, itemsPerPage: number = 100, currency: CurrencyCode = CurrencyCode.QAR): Promise<Array<CartItem>> {
+    async findCart(customer: Customer, filters: string, currency: CurrencyCode = CurrencyCode.QAR, sort: string): Promise<Array<CartItem>> {
         this.logger.log(`Retrieving cart items for customer: ${customer.uuid}`);
-
-        // Get pagination params
-        const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
         // Find the items in the customer cart
         const cartItems = await this.cartRepository.find({
@@ -294,7 +290,8 @@ export class CartItemsService {
 
         return res.filter(r => r !== null);
     }
-/**
+
+    /**
      * Fetch cart count
      *
      * @param customer

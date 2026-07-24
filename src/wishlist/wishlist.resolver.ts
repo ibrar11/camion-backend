@@ -16,6 +16,8 @@ import {
     Parent,
 } from "@nestjs/graphql";
 
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+
 import { Customer } from "../customers/entities/customer.entity";
 
 import { WishlistItem } from "./entities/wishlist.entity";
@@ -30,8 +32,8 @@ export class GetCustomerWishListArgs {
     @Field({ defaultValue: "en", })
     language: string;
 
-    @Field({ defaultValue: "usd", })
-    currency: string;
+    @Field({ defaultValue: CurrencyCode.USD, })
+    currency: CurrencyCode;
 
     @Field(() => Int, { defaultValue: 1, })
     pageNumber: number;
@@ -64,7 +66,7 @@ export class WishListResolver {
                 error: "Failed to find the customer. Please check and try again.",
             });
         }
-        return this.wishlistService.getWishlist(customer, "", "", args.pageNumber, args.itemsPerPage);
+        return this.wishlistService.getWishlist(customer, "", args.currency, "", args.pageNumber, args.itemsPerPage);
     }
 
     @Query(() => Number)
