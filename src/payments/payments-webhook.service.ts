@@ -31,6 +31,7 @@ import { PushNotificationService } from "../notifications/push-notification.serv
 
 import { CartItem } from "../cart/entities/cart-items.entity";
 import { EmailService } from "../email/email.service";
+import { getOrderReference } from "../common/maskUuid";
 
 @Injectable()
 export class PaymentsWebhookService {
@@ -212,7 +213,7 @@ export class PaymentsWebhookService {
                     const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
 
                     notification = await this.notificationsService.create({
-                        customerUUID: order.customer.uuid,
+                        customerUUID: getOrderReference(order.customer.uuid),
                         type: NotificationType.PAYMENT_SUCCESSFUL,
                         title: 'Payment Successful',
                         brief: 'Your order has been placed and payment confirmed.',
@@ -243,7 +244,7 @@ export class PaymentsWebhookService {
                             order.customer.emailAddress,
                             {
                                 customerName: order.customer.fullName,
-                                orderId: order.uuid,
+                                orderId: getOrderReference(order.uuid),
                                 orderTotal,
                                 paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
                                 items,
@@ -269,7 +270,7 @@ export class PaymentsWebhookService {
 
                     if (order.customer) {
                         notification = await this.notificationsService.create({
-                            customerUUID: order.customer.uuid,
+                            customerUUID: getOrderReference(order.customer.uuid),
                             type: NotificationType.PAYMENT_FAILED,
                             title: 'Payment Failed',
                             brief: 'Your payment could not be processed.',
@@ -282,7 +283,7 @@ export class PaymentsWebhookService {
                                 order.customer.emailAddress,
                                 {
                                     customerName: order.customer.fullName,
-                                    orderId: order.uuid,
+                                    orderId: getOrderReference(order.uuid),
                                     failureReason: transaction.failureReason ?? 'Your payment could not be processed.',
                                 },
                             ).catch(err => this.logger.error(`[Email] Failed to send payment-failed email for order ${order.uuid}: ${err?.message}`));
@@ -303,7 +304,7 @@ export class PaymentsWebhookService {
 
                     if (order.customer) {
                         notification = await this.notificationsService.create({
-                            customerUUID: order.customer.uuid,
+                            customerUUID: getOrderReference(order.customer.uuid),
                             type: NotificationType.PAYMENT_FAILED,
                             title: 'Payment Cancelled',
                             brief: 'Your payment was cancelled.',
@@ -316,7 +317,7 @@ export class PaymentsWebhookService {
                                 order.customer.emailAddress,
                                 {
                                     customerName: order.customer.fullName,
-                                    orderId: order.uuid,
+                                    orderId: getOrderReference(order.uuid),
                                     reason: 'Your payment was cancelled. You can return to checkout to try again.',
                                 },
                             ).catch(err => this.logger.error(`[Email] Failed to send payment-cancelled email for order ${order.uuid}: ${err?.message}`));

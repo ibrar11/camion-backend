@@ -14,6 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
     DataSource,
     In,
+    Raw,
     Repository
 } from 'typeorm';
 
@@ -111,6 +112,8 @@ import { Product } from "../inventory/entities/product.entity";
 import { getBestCampaign } from "../common/bestCampaign";
 
 import { Campaign } from "../campaigns/entities/campaign.entity";
+
+import { getOrderReference } from "../common/maskUuid";
 
 @Injectable()
 export class OrderService {
@@ -600,7 +603,7 @@ export class OrderService {
             }
 
             this.emailService.sendAdminNewOrderEmail({
-                orderId: order.uuid,
+                orderId: getOrderReference(order.uuid),
                 customerName: customer.fullName,
                 customerEmail: customer.emailAddress ?? '',
                 orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
@@ -640,13 +643,14 @@ export class OrderService {
      */
     private async sendOrderConfirmation(order: Order, customer: Customer): Promise<void> {
         const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
+        const orderId = getOrderReference(order.uuid);
 
         const notification = await this.notificationsService.create({
             customerUUID: customer.uuid,
             type: NotificationType.PAYMENT_SUCCESSFUL,
             title: 'Payment Successful',
             brief: 'Your order has been placed and payment confirmed.',
-            message: `Your order #${order.uuid} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
+            message: `Your order #${orderId} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
             priority: NotificationPriority.HIGH,
             payload: {
                 type: NotificationType.PAYMENT_SUCCESSFUL,
@@ -656,23 +660,23 @@ export class OrderService {
         }).catch(err => this.logger.warn(`Failed to send payment-success notification: ${err?.message}`));
 
         if (notification?.uuid) {
-            this.logger.log(`Attempting to create push notification for payment success: ${JSON.stringify(order.uuid)}`);
+            this.logger.log(`Attempting to create push notification for payment success: ${JSON.stringify(orderId)}`);
             await this.pushNotificationService.sendToToken(notification.uuid);
         }
 
         if (!customer.emailAddress) {
-            this.logger.warn(`[Email] Skipping payment-success email for order ${order.uuid} — customer has no email address`);
+            this.logger.warn(`[Email] Skipping payment-success email for order ${orderId} — customer has no email address`);
             return;
         }
 
         this.emailService.sendPaymentSuccessEmail(customer.emailAddress, {
             customerName: customer.fullName,
-            orderId: order.uuid,
+            orderId: orderId,
             orderTotal,
             paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
             ...this.buildPaymentSuccessEmailExtras(order),
             nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
-        }).catch(err => this.logger.error(`[Email] Failed to send payment-success email for order ${order.uuid}: ${err?.message}`));
+        }).catch(err => this.logger.error(`[Email] Failed to send payment-success email for order ${orderId}: ${err?.message}`));
     }
 
     /**
@@ -759,6 +763,7 @@ export class OrderService {
                         currency,
                     );
 
+                    order.uuid = getOrderReference(order.uuid);
                     order.orderPlacementDate = order.createdAt;
 
                     return order;
@@ -832,6 +837,7 @@ export class OrderService {
                         currency,
                     );
 
+                    order.uuid = getOrderReference(order.uuid);
                     order.orderPlacementDate = order.createdAt;
 
                     return order;
@@ -882,29 +888,52 @@ export class OrderService {
      */
     async findOne(uuid: string, currency: CurrencyCode): Promise<Order> {
         try {
-            const order = await this.orderRepository.findOne({
-                relationLoadStrategy: "query",
-                where: { uuid },
-                relations: {
-                    orderItems: {
-                        product: {
-                            productCategories: {
-                                category: true
-                            }
-                        },
-                        variant: {
-                            images: true,
-                            optionValues: {
-                                optionValue: {
-                                    option: true
-                                }
-                            }
-                        },
+            let order: Order | null = null;
+            if (uuid.length === 6) {
+                order = await this.orderRepository
+                    .createQueryBuilder("order")
+                    .leftJoinAndSelect("order.orderItems", "orderItems")
+                    .leftJoinAndSelect("orderItems.product", "product")
+                    .leftJoinAndSelect("product.productCategories", "productCategories")
+                    .leftJoinAndSelect("productCategories.category", "category")
+                    .leftJoinAndSelect("orderItems.variant", "variant")
+                    .leftJoinAndSelect("variant.images", "images")
+                    .leftJoinAndSelect("variant.optionValues", "optionValues")
+                    .leftJoinAndSelect("optionValues.optionValue", "optionValue")
+                    .leftJoinAndSelect("optionValue.option", "option")
+                    .leftJoinAndSelect("order.shippingAddress", "shippingAddress")
+                    .leftJoinAndSelect("order.customer", "customer")
+                    .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
+                        uuid: uuid,
+                    })
+                    .getOne();
+            } else {
+                order = await this.orderRepository.findOne({
+                    relationLoadStrategy: "query",
+                    where: {
+                        uuid: uuid
                     },
-                    shippingAddress: true,
-                    customer: true,
-                },
-            });
+                    relations: {
+                        orderItems: {
+                            product: {
+                                productCategories: {
+                                    category: true
+                                }
+                            },
+                            variant: {
+                                images: true,
+                                optionValues: {
+                                    optionValue: {
+                                        option: true
+                                    }
+                                }
+                            },
+                        },
+                        shippingAddress: true,
+                        customer: true,
+                    },
+                });
+            }
 
             if (!order) throw new NotFoundException({
                 error: 'Order not found',
@@ -913,12 +942,13 @@ export class OrderService {
             order.orderPlacementDate = order.createdAt;
 
             const wmsLinks = await this.wmsOrderLinkRepository.find({
-                where: { orderUuid: uuid },
+                where: { orderUuid: order.uuid },
                 relations: ['wmsOrder'],
             });
             (order as any).wmsOrders = wmsLinks.map(l => l.wmsOrder);
             await this.attachTracking([order]);
 
+            order.uuid = getOrderReference(order.uuid);
             order.orderItems = await this.applyPricingToOrderItems(
                 order.orderItems,
                 currency,
