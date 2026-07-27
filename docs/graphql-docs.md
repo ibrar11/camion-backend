@@ -2638,14 +2638,17 @@ query GetCurrentAffiliate {
         status
         totalCommission {
             amount
+            minorAmount
             currencyCode
         }
         totalPaid {
             amount
+            minorAmount
             currencyCode
         }
         remainingBalance {
             amount
+            minorAmount
             currencyCode
         }
         couponsCreated
@@ -2660,6 +2663,7 @@ query GetCurrentAffiliate {
             uuid
             amount {
                 amount
+                minorAmount
                 currencyCode
             }
         }
@@ -2696,15 +2700,18 @@ If the current customer is not an affiliate, this method should return null.
             "type": "affiliate",
             "status": "rejected",
             "totalCommission": {
-                "amount": 0,
+                "amount": 10,
+                "minorAmount": 20,
                 "currencyCode": "qar"
             },
             "totalPaid": {
                 "amount": 0,
+                "minorAmount": 20,
                 "currencyCode": "qar"
             },
             "remainingBalance": {
                 "amount": 0,
+                "minorAmount": 20,
                 "currencyCode": "qar"
             },
             "couponsCreated": 18,
@@ -2719,6 +2726,7 @@ If the current customer is not an affiliate, this method should return null.
                 "uuid": "c807c0a1-152d-4348-a7b1-b2320eabf9fc",
                 "amount": {
                     "amount": 200,
+                    "minorAmount": 20,
                     "currencyCode": "qar"
                 }
             },
@@ -2739,6 +2747,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
         uuid
         amount {
             amount
+            minorAmount
             currencyCode
         }
         type
@@ -2758,6 +2767,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "804f8446-cb10-4997-bfac-d7e0487aba93",
                 "amount": {
                     "amount": 100,
+                    "minorAmount": 50,
                     "currencyCode": "qar"
                 },
                 "type": "credit",
@@ -2768,6 +2778,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "34995443-d0ff-4c94-b7ee-975850a85a00",
                 "amount": {
                     "amount": 100,
+                    "minorAmount": 50,
                     "currencyCode": "qar"
                 },
                 "type": "debit",
@@ -2778,6 +2789,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "505f3585-fe14-4d1b-b12d-85c9f822f8ee",
                 "amount": {
                     "amount": 100,
+                    "minorAmount": 50,
                     "currencyCode": "qar"
                 },
                 "type": "credit",
@@ -2788,6 +2800,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "e883c151-de96-4ba3-b294-24db6e75661d",
                 "amount": {
                     "amount": 100,
+                    "minorAmount": 50,
                     "currencyCode": "qar"
                 },
                 "type": "credit",
@@ -2798,6 +2811,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "32a41b95-25dd-4024-beea-5858633d034a",
                 "amount": {
                     "amount": 100,
+                    "minorAmount": 50,
                     "currencyCode": "qar"
                 },
                 "type": "credit",
@@ -2808,6 +2822,7 @@ query GetCurrentAffiliateWalletTransactions($pageNumber: Int, $itemsPerPage: Int
                 "uuid": "72b2d69c-aa4b-44ff-b61e-920c7947e909",
                 "amount": {
                     "amount": 100,
+                    "minorAmount": 50,
                     "currencyCode": "qar"
                 },
                 "type": "debit",
@@ -2890,10 +2905,12 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
         ordersCount
         totalSales {
             amount
+            minorAmount
             currencyCode
         }
         totalCommission {
             amount
+            minorAmount
             currencyCode
         }
         expiresAt
@@ -2909,20 +2926,22 @@ query GetCurrentAffiliateCoupons($pageNumber: Int, $itemsPerPage: Int) {
     "data": {
         "getCurrentAffiliateCoupons": [
             {
-                "uuid": "41cc410c-faad-4732-b301-8a31d09e671f",
+                "uuid": "42499a38-d495-423e-8d9a-60151a3bc7f4",
                 "code": "james16",
                 "discountPercentage": 10,
-                "ordersCount": 1,
+                "ordersCount": 3,
                 "totalSales": {
-                    "amount": 100,
+                    "amount": 45,
+                    "minorAmount": 45,
                     "currencyCode": "qar"
                 },
                 "totalCommission": {
-                    "amount": 10,
+                    "amount": 20,
+                    "minorAmount": 45,
                     "currencyCode": "qar"
                 },
                 "expiresAt": "Mon Dec 31 2029 05:00:00 GMT+0500 (Pakistan Standard Time)",
-                "createdAt": "Fri May 22 2026 17:28:07 GMT+0500 (Pakistan Standard Time)"
+                "createdAt": "Mon Jul 27 2026 15:20:32 GMT+0500 (Pakistan Standard Time)"
             }
         ]
     }
@@ -2940,10 +2959,12 @@ query GetCouponOrders($uuid: String, $pageNumber: Int, $itemsPerPage: Int) {
         uuid
         total {
             amount
+            minorAmount
             currencyCode
         }
         commission {
             amount
+            minorAmount
             currencyCode
         }
         status
@@ -2972,10 +2993,12 @@ query GetCouponOrders($uuid: String, $pageNumber: Int, $itemsPerPage: Int) {
                 "uuid": "c87da440-5ce4-4cdf-9111-524420c0a0f0",
                 "total": {
                     "amount": 100,
+                    "minorAmount": 24,
                     "currencyCode": "qar"
                 },
                 "commission": {
                     "amount": 10,
+                    "minorAmount": 24,
                     "currencyCode": "qar"
                 },
                 "status": "payment_pending",
