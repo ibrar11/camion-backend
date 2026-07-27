@@ -888,33 +888,52 @@ export class OrderService {
      */
     async findOne(uuid: string, currency: CurrencyCode): Promise<Order> {
         try {
-            const order = await this.orderRepository.findOne({
-                relationLoadStrategy: "query",
-                where: {
-                    uuid: Raw((alias) => `CAST(${alias} AS TEXT) ILIKE :uuid`, {
-                        uuid: `%${uuid}%`,
-                    }),
-                },
-                relations: {
-                    orderItems: {
-                        product: {
-                            productCategories: {
-                                category: true
-                            }
-                        },
-                        variant: {
-                            images: true,
-                            optionValues: {
-                                optionValue: {
-                                    option: true
-                                }
-                            }
-                        },
+            let order: Order | null = null;
+            if (uuid.length === 6) {
+                order = await this.orderRepository
+                    .createQueryBuilder("order")
+                    .leftJoinAndSelect("order.orderItems", "orderItems")
+                    .leftJoinAndSelect("orderItems.product", "product")
+                    .leftJoinAndSelect("product.productCategories", "productCategories")
+                    .leftJoinAndSelect("productCategories.category", "category")
+                    .leftJoinAndSelect("orderItems.variant", "variant")
+                    .leftJoinAndSelect("variant.images", "images")
+                    .leftJoinAndSelect("variant.optionValues", "optionValues")
+                    .leftJoinAndSelect("optionValues.optionValue", "optionValue")
+                    .leftJoinAndSelect("optionValue.option", "option")
+                    .leftJoinAndSelect("order.shippingAddress", "shippingAddress")
+                    .leftJoinAndSelect("order.customer", "customer")
+                    .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
+                        uuid: uuid,
+                    })
+                    .getOne();
+            } else {
+                order = await this.orderRepository.findOne({
+                    relationLoadStrategy: "query",
+                    where: {
+                        uuid: uuid
                     },
-                    shippingAddress: true,
-                    customer: true,
-                },
-            });
+                    relations: {
+                        orderItems: {
+                            product: {
+                                productCategories: {
+                                    category: true
+                                }
+                            },
+                            variant: {
+                                images: true,
+                                optionValues: {
+                                    optionValue: {
+                                        option: true
+                                    }
+                                }
+                            },
+                        },
+                        shippingAddress: true,
+                        customer: true,
+                    },
+                });
+            }
 
             if (!order) throw new NotFoundException({
                 error: 'Order not found',
