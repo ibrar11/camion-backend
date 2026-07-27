@@ -60,7 +60,6 @@ export const moneyToFloat = (money: Money): number => {
  * @returns
  */
 export const moneyToString = (money: Money): string => {
-
 	// Handle when minor amount is 0
 	if (money.minorAmount === 0) {
 		return `${money.amount}.00`;
@@ -68,10 +67,10 @@ export const moneyToString = (money: Money): string => {
 
 	// Handle when minor amount is 1..9
 	if (money.minorAmount <= 9) {
-		return `${money.amount}.${`${Math.trunc(money.minorAmount) / 100}`.substring(2)}`;
+		return `${Math.trunc(money.amount)}.${`${Math.trunc(money.minorAmount) / 100}`.substring(2)}`;
 	}
 
-	return `${money.amount}.${money.minorAmount}`;
+	return `${Math.trunc(money.amount)}.${Math.trunc(money.minorAmount)}`;
 };
 
 /**
@@ -444,7 +443,7 @@ export const getDiscountedPrice = (
  * 	minorAmount: 0,
  * 	currencyCode: CurrencyCode.QAR,
  * };
- * 
+ *
  * const totalDestMinor = Math.ceil(((cost.amount * 100) + cost.minorAmount) * exchangeRateFactor);
  * console.log(totalDestMinor);
  * => { amount: 25, minorAmount: 97, currencyCode: "qar" }
