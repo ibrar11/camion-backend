@@ -60,7 +60,7 @@ export class VariantArgs {
 @ArgsType()
 export class GetCustomerOrderArgs {
     @Field(() => String)
-    @IsUUID('4')
+    // @IsUUID('4')
     uuid: string;
 
     @Field({ defaultValue: "en", })
