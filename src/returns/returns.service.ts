@@ -65,13 +65,31 @@ export class ReturnsService {
 
     async createReturnRequest(customer: Customer, dto: CreateReturnRequestDto): Promise<ReturnRequest> {
         try {
-            const order = await this.orderRepository.findOne({
-                where: {
-                    uuid: dto.orderUuid,
-                    customer: { id: customer.id },
-                },
-                relations: { orderItems: true },
-            });
+            let order: Order | null = null;
+
+            if (dto.orderUuid.length === 6) {
+                order = await this.orderRepository
+                    .createQueryBuilder("order")
+                    .leftJoin("order.customer", "customer")
+                    .leftJoinAndSelect("order.orderItems", "orderItems")
+                    .where('RIGHT("order"."uuid"::text, 6) = :orderUuid', {
+                        orderUuid: dto.orderUuid,
+                    })
+                    .andWhere("customer.id = :customerId", {
+                        customerId: customer.id,
+                    })
+                    .getOne();
+            } else {
+                order = await this.orderRepository.findOne({
+                    where: {
+                        uuid: dto.orderUuid,
+                        customer: { id: customer.id },
+                    },
+                    relations: {
+                        orderItems: true,
+                    },
+                });
+            }
 
             if (!order) {
                 throw new NotFoundException({ error: "Order not found" });
