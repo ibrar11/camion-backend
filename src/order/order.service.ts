@@ -1010,14 +1010,44 @@ export class OrderService {
     }
 
     async getOrderTracking(orderUuid: string, customerUuid?: string, language: string = 'en'): Promise<OrderTrackingResponse> {
-        const whereClause: any = { uuid: orderUuid };
-        if (customerUuid) whereClause.customer = { uuid: customerUuid };
+        let order: Order | null = null;
 
-        const order = await this.orderRepository.findOne({ where: whereClause });
+        if (orderUuid.length === 6) {
+            const query = this.orderRepository
+                .createQueryBuilder("order")
+                .where('RIGHT("order"."uuid"::text, 6) = :orderUuid', {
+                    orderUuid,
+                });
+
+            if (customerUuid) {
+                query
+                    .leftJoinAndSelect("order.customer", "customer")
+                    .andWhere("customer.uuid = :customerUuid", {
+                        customerUuid,
+                    });
+            }
+
+            order = await query.getOne();
+        } else {
+            const whereClause: any = { uuid: orderUuid };
+
+            if (customerUuid) {
+                whereClause.customer = { uuid: customerUuid };
+            }
+
+            order = await this.orderRepository.findOne({
+                where: whereClause,
+            });
+        }
         if (!order) throw new NotFoundException({ error: 'Order not found' });
 
+        console.log("orderorderorderorder", order);
+
         const events = await this.trackingEventRepository.find({
-            where: { orderUuid, active: true },
+            where: {
+                orderUuid: order.uuid,
+                active: true
+            },
             order: { createdAt: 'ASC' },
         });
 
@@ -1474,14 +1504,28 @@ export class OrderService {
      * isn't stuck waiting out the payment-expiry window to try again.
      */
     async retryPayment(uuid: string, customerUuid?: string): Promise<Order> {
-        const order = await this.orderRepository.findOne({
-            where: { uuid },
-            relations: {
-                customer: true,
-                shippingAddress: true,
-                paymentTransaction: true,
-            },
-        });
+        let order: Order | null = null;
+
+        if (uuid.length === 6) {
+            order = await this.orderRepository
+                .createQueryBuilder("order")
+                .leftJoinAndSelect("order.customer", "customer")
+                .leftJoinAndSelect("order.shippingAddress", "shippingAddress")
+                .leftJoinAndSelect("order.paymentTransaction", "paymentTransaction")
+                .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
+                    uuid,
+                })
+                .getOne();
+        } else {
+            order = await this.orderRepository.findOne({
+                where: { uuid },
+                relations: {
+                    customer: true,
+                    shippingAddress: true,
+                    paymentTransaction: true,
+                },
+            });
+        }
 
         if (!order) {
             throw new NotFoundException({
@@ -1540,18 +1584,37 @@ export class OrderService {
      * who never retries has no further claim on either.
      */
     async expireStalePayment(uuid: string): Promise<void> {
-        const order = await this.orderRepository.findOne({
-            where: { uuid },
-            relations: {
-                customer: true,
-                coupon: true,
-                globalCoupon: true,
-                orderItems: {
-                    variant: true,
-                    warehouse: true,
+        let order: Order | null = null;
+
+        if (uuid.length === 6) {
+            order = await this.orderRepository.findOne({
+                where: {
+                    uuid: Raw((alias) => `RIGHT(${alias}::text, 6) = '${uuid}'`),
                 },
-            },
-        });
+                relations: {
+                    customer: true,
+                    coupon: true,
+                    globalCoupon: true,
+                    orderItems: {
+                        variant: true,
+                        warehouse: true,
+                    },
+                },
+            });
+        } else {
+            order = await this.orderRepository.findOne({
+                where: { uuid },
+                relations: {
+                    customer: true,
+                    coupon: true,
+                    globalCoupon: true,
+                    orderItems: {
+                        variant: true,
+                        warehouse: true,
+                    },
+                },
+            });
+        }
 
         if (!order) return;
 
@@ -1596,16 +1659,31 @@ export class OrderService {
     async cancel(uuid: string): Promise<void> {
         try {
             // find the order to cancel
-            const order = await this.orderRepository.findOne({
-                where: { uuid },
-                relations: {
-                    orderItems: {
-                        variant: true,
-                        warehouse: true
+            let order: Order | null = null;
+
+            if (uuid.length === 6) {
+                order = await this.orderRepository
+                    .createQueryBuilder("order")
+                    .leftJoinAndSelect("order.orderItems", "orderItems")
+                    .leftJoinAndSelect("orderItems.variant", "variant")
+                    .leftJoinAndSelect("orderItems.warehouse", "warehouse")
+                    .leftJoinAndSelect("order.customer", "customer")
+                    .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
+                        uuid,
+                    })
+                    .getOne();
+            } else {
+                order = await this.orderRepository.findOne({
+                    where: { uuid },
+                    relations: {
+                        orderItems: {
+                            variant: true,
+                            warehouse: true,
+                        },
+                        customer: true,
                     },
-                    customer: true,
-                },
-            });
+                });
+            }
 
             if (!order) {
                 throw new NotFoundException({

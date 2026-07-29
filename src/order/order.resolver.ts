@@ -72,7 +72,7 @@ export class GetCustomerOrderArgs {
 @ArgsType()
 export class GetOrderTrackingArgs {
     @Field(() => String)
-    @IsUUID('4')
+    // @IsUUID('4')
     uuid: string;
 
     @Field({ defaultValue: "en" })

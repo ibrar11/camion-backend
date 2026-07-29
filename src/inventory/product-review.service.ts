@@ -121,10 +121,34 @@ export class ProductReviewService {
 
 		if (body.orderUuid) {
 			try {
-				const order = await this.orderRepository.findOne({
-					where: { uuid: body.orderUuid, customer: { uuid: customer.uuid } },
-					relations: { orderItems: { product: true } },
-				});
+				let order: Order | null = null;
+
+				if (body.orderUuid.length === 6) {
+					order = await this.orderRepository
+						.createQueryBuilder("order")
+						.leftJoinAndSelect("order.customer", "customer")
+						.leftJoinAndSelect("order.orderItems", "orderItems")
+						.leftJoinAndSelect("orderItems.product", "product")
+						.where('RIGHT("order"."uuid"::text, 6) = :orderUuid', {
+							orderUuid: body.orderUuid,
+						})
+						.andWhere("customer.uuid = :customerUuid", {
+							customerUuid: customer.uuid,
+						})
+						.getOne();
+				} else {
+					order = await this.orderRepository.findOne({
+						where: {
+							uuid: body.orderUuid,
+							customer: { uuid: customer.uuid },
+						},
+						relations: {
+							orderItems: {
+								product: true,
+							},
+						},
+					});
+				}
 				const productInOrder = order?.orderItems?.some(item => item.product?.uuid === productUUID);
 				if (order && order.status === OrderStatus.DELIVERED && productInOrder) {
 					const existing = await this.trackingEventRepository.findOne({
