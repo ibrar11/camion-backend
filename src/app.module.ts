@@ -147,7 +147,10 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 
 import { Campaign } from "./campaigns/entities/campaign.entity";
-import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";;
+import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";
+
+import { Bundle } from "./bundles/entities/bundle.entity";
+import { BundleItem } from "./bundles/entities/bundle-item.entity";
 
 @Module({
 	imports: [
@@ -286,6 +289,9 @@ import { CampaignCategory } from "./campaigns/entities/campaign-category.entity"
 
 					Campaign,
 					CampaignCategory,
+
+					Bundle,
+					BundleItem,
 				],
 			}),
 		}),
