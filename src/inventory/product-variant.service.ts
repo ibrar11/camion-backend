@@ -239,7 +239,16 @@ export class ProductVariantService {
 		this.logger.log(`Retrieving variant: ${uuid}`);
 
 		// Find the variant
-		const variant = await this.variantRepository.findOneBy({ uuid: uuid, });
+		const variant = await this.variantRepository.findOne({
+			where: { uuid: uuid, },
+			relations: {
+				inventoryItem: {
+					levels: {
+						warehouse: true,
+					},
+				},
+			},
+		});
 		if (variant === null) {
 			throw new NotFoundException({
 				error: "Failed to find the variant. Please check and try again.",
@@ -291,7 +300,54 @@ export class ProductVariantService {
 		variant.cost = body.price;
 		variant.weight = body.weight;
 		variant.dimensions = body.dimensions;
-		return this.variantRepository.save(variant);
+		const savedVariant = await this.variantRepository.save(variant);
+
+		if (body.quantity !== undefined && body.quantity !== null) {
+			let inventoryItem = await this.inventoryItemRepository.findOne({
+				where: { variant: { uuid: savedVariant.uuid } },
+				relations: {
+					levels: {
+						warehouse: true,
+					},
+				},
+			});
+
+			if (!inventoryItem) {
+				inventoryItem = new InventoryItem();
+				inventoryItem.uuid = crypto.randomUUID();
+				inventoryItem.variant = savedVariant;
+				inventoryItem.sku = savedVariant.sku;
+			}
+
+			inventoryItem.sku = savedVariant.sku;
+			await this.inventoryItemRepository.save(inventoryItem);
+
+			let inventoryLevel = Array.isArray(inventoryItem.levels) && inventoryItem.levels.length > 0
+				? inventoryItem.levels[0]
+				: null;
+
+			if (!inventoryLevel) {
+				const warehouse = await this.warehouseRepository.findOne({
+					order: { id: "ASC" },
+				});
+
+				if (!warehouse) {
+					throw new NotFoundException({
+						error: "Failed to find a warehouse for this variant. Please create a warehouse first.",
+					});
+				}
+
+				inventoryLevel = new InventoryLevel();
+				inventoryLevel.uuid = crypto.randomUUID();
+				inventoryLevel.inventoryItem = inventoryItem;
+				inventoryLevel.warehouse = warehouse;
+			}
+
+			inventoryLevel.quantity = body.quantity;
+			await this.inventoryLevelRepository.save(inventoryLevel);
+		}
+
+		return savedVariant;
 	}
 
 	/**
