@@ -504,7 +504,7 @@ export class OrderService {
             );
 
             // Clear the cart within transaction
-            await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
+            // await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
 
             // RECORD AFFILIATE COMMISSION
             if (affiliateCoupon?.affiliate && affiliateCoupon.code && moneyToMinor(discount) >= 0) {
@@ -1523,6 +1523,10 @@ export class OrderService {
                     customer: true,
                     shippingAddress: true,
                     paymentTransaction: true,
+                    orderItems: {
+                        variant: true,
+                        warehouse: true,
+                    },
                 },
             });
         }
@@ -1548,6 +1552,46 @@ export class OrderService {
             throw new BadRequestException({
                 error: `Cannot retry payment for an order in status ${order.status}`,
             });
+        }
+
+        for (const orderItem of order.orderItems) {
+            const inventoryItem = await this.inventoryRepository.findOne({
+                where: { variant: { id: orderItem.variant.id } },
+                relations: { levels: { warehouse: true } },
+            });
+
+            if (!inventoryItem || !inventoryItem.levels.length) {
+                throw new BadRequestException({
+                    error: `No inventory found for ${orderItem.variant.sku}`,
+                });
+            }
+
+            const level = inventoryItem.levels.find(
+                l => l.warehouse.id === orderItem.warehouse.id
+            );
+
+            if (!level) {
+                throw new BadRequestException({
+                    error: `No inventory level found for ${orderItem.variant.sku} in warehouse ${orderItem.warehouse.id}`,
+                });
+            }
+
+            if (level.quantity < orderItem.quantity) {
+                throw new BadRequestException({
+                    error: `Insufficient stock for ${orderItem.variant.sku}. Available: ${level.quantity}, Requested: ${orderItem.quantity}`,
+                });
+            }
+
+            level.quantity -= orderItem.quantity;
+            await this.inventoryLevelRepository.save(level);
+        }
+
+        const lastAttempt = order.paymentTransaction?.updatedAt;
+        if (lastAttempt) {
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            if (lastAttempt > oneHourAgo) {
+                return order;
+            }
         }
 
         const customerName: Array<string> = order.customer.fullName.split(" ");

@@ -23,31 +23,31 @@ export class OrderScheduler {
      * for longer than PAYMENT_EXPIRY_MINUTES and force-expires them, releasing
      * the stock and coupon usage held since order creation.
      */
-    @Cron('0 */15 * * * *')
-    async expireStalePaymentOrders() {
-        const cutoff = new Date(Date.now() - this.PAYMENT_EXPIRY_MINUTES * 60 * 1000);
+    // @Cron('0 */15 * * * *')
+    // async expireStalePaymentOrders() {
+    //     const cutoff = new Date(Date.now() - this.PAYMENT_EXPIRY_MINUTES * 60 * 1000);
 
-        const stale = await this.orderRepository.find({
-            where: {
-                status: In([
-                    OrderStatus.PAYMENT_PENDING,
-                    OrderStatus.PAYMENT_FAILED,
-                    OrderStatus.PAYMENT_CANCELLED,
-                ]),
-                updatedAt: LessThan(cutoff),
-            },
-        });
+    //     const stale = await this.orderRepository.find({
+    //         where: {
+    //             status: In([
+    //                 OrderStatus.PAYMENT_PENDING,
+    //                 OrderStatus.PAYMENT_FAILED,
+    //                 OrderStatus.PAYMENT_CANCELLED,
+    //             ]),
+    //             updatedAt: LessThan(cutoff),
+    //         },
+    //     });
 
-        if (!stale.length) return;
+    //     if (!stale.length) return;
 
-        this.logger.log(`Expiring ${stale.length} stale payment order(s) older than ${this.PAYMENT_EXPIRY_MINUTES}m`);
+    //     this.logger.log(`Expiring ${stale.length} stale payment order(s) older than ${this.PAYMENT_EXPIRY_MINUTES}m`);
 
-        for (const order of stale) {
-            try {
-                await this.orderService.expireStalePayment(order.uuid);
-            } catch (err: any) {
-                this.logger.error(`Failed to expire payment for order ${order.uuid}: ${err?.message}`);
-            }
-        }
-    }
+    //     for (const order of stale) {
+    //         try {
+    //             await this.orderService.expireStalePayment(order.uuid);
+    //         } catch (err: any) {
+    //             this.logger.error(`Failed to expire payment for order ${order.uuid}: ${err?.message}`);
+    //         }
+    //     }
+    // }
 }

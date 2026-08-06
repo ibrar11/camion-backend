@@ -48,6 +48,9 @@ import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
 import { CartItem } from '../cart/entities/cart-items.entity';
 
+import { InventoryItem } from "../inventory/entities/inventory-item.entity";
+import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -62,6 +65,8 @@ import { CartItem } from '../cart/entities/cart-items.entity';
             Notification,
             PushNotification,
             CartItem,
+            InventoryItem,
+            InventoryLevel,
         ]),
         NotificationsModule,
         EmailModule,

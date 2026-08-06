@@ -32,7 +32,8 @@ import { PushNotificationService } from "../notifications/push-notification.serv
 import { CartItem } from "../cart/entities/cart-items.entity";
 import { EmailService } from "../email/email.service";
 import { getOrderReference } from "../common/maskUuid";
-
+import { InventoryItem } from "../inventory/entities/inventory-item.entity";
+import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
 @Injectable()
 export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
@@ -45,6 +46,8 @@ export class PaymentsWebhookService {
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
+        @InjectRepository(InventoryItem) private readonly inventoryRepository: Repository<InventoryItem>,
+        @InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -81,6 +84,7 @@ export class PaymentsWebhookService {
                     orderItems: {
                         product: true,
                         variant: true,
+                        warehouse:true
                     }
                 },
             })
@@ -181,33 +185,33 @@ export class PaymentsWebhookService {
                     );
                 }
 
-                // const orderProductVariants = order.orderItems.map(item => ({
-                //     productId: item.product.id,
-                //     variantId: item.variant.id,
-                //     quantity: item.quantity,
-                // }));
+                const orderProductVariants = order.orderItems.map(item => ({
+                    productId: item.product.id,
+                    variantId: item.variant.id,
+                    quantity: item.quantity,
+                }));
 
                 // Find cart items for this customer that match the order items
-                // const cartItems = await this.cartRepository.find({
-                //     where: {
-                //         customer: { id: order.customer.id },
-                //     },
-                //     relations: ['product', 'variant'],
-                // });
+                const cartItems = await this.cartRepository.find({
+                    where: {
+                        customer: { id: order.customer.id },
+                    },
+                    relations: ['product', 'variant'],
+                });
 
                 // Filter cart items that match the ordered items
-                // const cartItemsToDelete = cartItems.filter(cartItem => {
-                //     return orderProductVariants.some(ordered =>
-                //         ordered.productId === cartItem.product.id &&
-                //         ordered.variantId === cartItem.variant.id
-                //     );
-                // });
+                const cartItemsToDelete = cartItems.filter(cartItem => {
+                    return orderProductVariants.some(ordered =>
+                        ordered.productId === cartItem.product.id &&
+                        ordered.variantId === cartItem.variant.id
+                    );
+                });
 
-                // if (cartItemsToDelete.length > 0) {
-                //     const uuidsToDelete = cartItemsToDelete.map(item => item.uuid);
-                //     await this.cartRepository.delete({ uuid: In(uuidsToDelete) });
-                //     this.logger.log(`Cleared ${uuidsToDelete.length} cart items for order ${order.uuid}`);
-                // }
+                if (cartItemsToDelete.length > 0) {
+                    const uuidsToDelete = cartItemsToDelete.map(item => item.uuid);
+                    await this.cartRepository.delete({ uuid: In(uuidsToDelete) });
+                    this.logger.log(`Cleared ${uuidsToDelete.length} cart items for order ${order.uuid}`);
+                }
 
                 if (order.customer) {
                     const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
@@ -260,6 +264,23 @@ export class PaymentsWebhookService {
                 newStatus === PaymentStatus.REJECTED
             ) {
                 this.logger.log(`Payment FAILED/REJECTED for transaction: ${TransactionId}`);
+
+                for (const item of order.orderItems) {
+                        const inventoryItem = await this.inventoryRepository.findOne({
+                            where: { variant: { id: item.variant.id } },
+                        });
+                        if (!inventoryItem) continue;
+                        const level = await this.inventoryLevelRepository.findOne({
+                            where: {
+                                inventoryItem: { id: inventoryItem.id },
+                                warehouse: { id: item.warehouse.id },
+                            },
+                        });
+                        if (level) {
+                            level.quantity += item.quantity;
+                            await this.inventoryLevelRepository.save(level);
+                        }
+                    }
 
                 const alreadyHandled = order.status === OrderStatus.PAYMENT_FAILED
                     || order.status === OrderStatus.CANCELLED;
