@@ -300,7 +300,19 @@ export class ProductVariantService {
 	 * @param uuid
 	 */
 	async delete(uuid: string): Promise<void> {
-		await this.productRepository.delete({
+		this.logger.log(`Deleting variant: ${uuid}`);
+
+		const variant = await this.variantRepository.findOneBy({
+			uuid: uuid,
+		});
+
+		if (variant === null) {
+			throw new NotFoundException({
+				error: "Failed to find the variant. Please check and try again.",
+			});
+		}
+
+		await this.variantRepository.delete({
 			uuid: uuid,
 		});
 	}
