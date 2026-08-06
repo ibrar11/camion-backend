@@ -35,6 +35,7 @@ import { ProductCategory } from './entities/product-category.entity';
 import { ProductVariant } from './entities/product-variant.entity';
 import { ProductVariantService } from './product-variant.service';
 import { ProductVariantController } from './product-variant.controller';
+import { VariantController } from './variant.controller';
 
 import { ProductOption } from './entities/product-option.entity';
 import { ProductOptionService } from './product-option.service';
@@ -162,6 +163,7 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 		ProductVariantController,
 		ProductVariantImageController,
 		WarehouseController,
+		VariantController,
 	],
 })
 export class InventoryModule { }

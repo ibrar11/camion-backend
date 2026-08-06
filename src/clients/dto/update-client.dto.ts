@@ -26,6 +26,7 @@ export class UpdateClientDto {
     @IsUrl()
     homepage?: string;
 
+    @IsString()
     @IsEnum(ClientRole)
     role: ClientRole;
 }

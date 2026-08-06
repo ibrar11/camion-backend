@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import {
+	BadRequestException,
 	Inject,
 	Injectable,
 	Logger,
@@ -14,6 +15,7 @@ import { getSkipAndTake } from "../common/pagination";
 
 import { CreateProductVariantDto } from "./dtos/CreateProductVariantDto";
 import { UpdateProductVariantDto } from "./dtos/UpdateProductVariantDto";
+import { BulkStockUpdateDto, StockUpdateItemDto } from "./dtos/BulkStockUpdateDto";
 
 import { Product } from "./entities/product.entity";
 import { ProductOptionValue } from "./entities/product-option-value.entity";
@@ -25,6 +27,8 @@ import { Warehouse } from "./entities/warehouse.entity";
 
 import { TranslationService } from "../translation/translation.service";
 import { FieldTranslationType } from "../translation/enums/FieldTranslationType.enum";
+
+import { chunkArray } from "../common/chunkArray";
 
 @Injectable()
 export class ProductVariantService {
@@ -304,4 +308,107 @@ export class ProductVariantService {
 			uuid: uuid,
 		});
 	}
+
+	/**
+	 * Bulk update stock for multiple variants
+	 * Used by external stock tracker service
+	 */
+	async bulkStockUpdate(dto: BulkStockUpdateDto): Promise<{
+		success: number;
+		failed: number;
+		errors: Array<{ variantUuid: string; error: string }>;
+	}> {
+		this.logger.log(`Bulk stock update for ${dto.updates.length} variants`);
+
+		const errors: Array<{ variantUuid: string; error: string }> = [];
+		let success = 0;
+
+		// Process updates in batches
+		const batchSize = 20;
+		const batches = chunkArray(dto.updates, batchSize);
+
+		for (const batch of batches) {
+			const promises = batch.map(async (update) => {
+				try {
+					await this.updateVariantStockInternal(update);
+					success++;
+				} catch (error: any) {
+					errors.push({
+						variantUuid: update.variantUuid,
+						error: error.message,
+					});
+					this.logger.error(
+						`Failed to update stock for variant ${update.variantUuid}: ${error.message}`,
+					);
+				}
+			});
+
+			await Promise.all(promises);
+		}
+
+		this.logger.log(
+			`Bulk stock update complete: ${success} succeeded, ${errors.length} failed`,
+		);
+
+		return {
+			success,
+			failed: errors.length,
+			errors,
+		};
+	}
+
+	/**
+	 * Internal method to update variant stock
+	 */
+	private async updateVariantStockInternal(update: StockUpdateItemDto): Promise<void> {
+		const variant = await this.variantRepository.findOne({
+			where: { uuid: update.variantUuid },
+			relations: ['inventoryItem', 'inventoryItem.levels', 'inventoryItem.levels.warehouse'],
+		});
+
+		if (!variant) {
+			throw new NotFoundException(`Variant ${update.variantUuid} not found`);
+		}
+
+		if (!variant.inventoryItem) {
+			throw new BadRequestException(`Variant ${update.variantUuid} has no inventory item`);
+		}
+
+		// Find or create inventory level for the warehouse
+		let level = variant.inventoryItem.levels.find(
+			(l) => l.warehouse?.uuid === update.warehouseUuid,
+		);
+
+		if (!level) {
+			// Create new inventory level for this warehouse
+			const warehouse = await this.warehouseRepository.findOne({
+				where: { uuid: update.warehouseUuid },
+			});
+
+			if (!warehouse) {
+				throw new NotFoundException(`Warehouse ${update.warehouseUuid} not found`);
+			}
+
+			level = new InventoryLevel();
+			level.uuid = crypto.randomUUID();
+			level.inventoryItem = variant.inventoryItem;
+			level.warehouse = warehouse;
+			level.quantity = 0;
+		}
+
+		level.quantity = update.quantity;
+		await this.inventoryLevelRepository.save(level);
+
+		// If stock is 0, update product status if needed
+		if (update.quantity === 0) {
+			const product = await this.productRepository.findOne({
+				where: { id: variant.productId },
+			});
+
+			if (product && product.status === 'active') {
+				this.logger.log(`Variant ${update.variantUuid} stock set to 0`);
+			}
+		}
+	}
+
 }
