@@ -180,3 +180,10 @@ export interface BulkCreateOrderResponse {
     success: { shopId: string | undefined; orderSn: string; raw: GulltransOrderResult }[];
     failed: { shopId: string | undefined; reason: string }[];
 }
+
+export interface PreviewOrderResponse {
+    goodsFee: number;
+    paymentFee: number;
+    freightFee: number;
+    isFree: boolean;
+}

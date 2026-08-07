@@ -144,6 +144,10 @@ export class OrderSkuDto {
 
     @IsString()
     @IsNotEmpty()
+    goods_id: string;
+
+    @IsString()
+    @IsNotEmpty()
     platform_sku: string;
 
     @IsString()

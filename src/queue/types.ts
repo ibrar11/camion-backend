@@ -38,6 +38,7 @@ export interface DispatchShopJobData extends BaseJobData {
         name: string;
         goods_amount: string;
         skus: Array<{
+            goods_id: string;
             platform_sku: string;
             price: string;
             quantity: string;

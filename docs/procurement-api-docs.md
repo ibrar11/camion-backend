@@ -438,6 +438,8 @@ Create Order
 
 Creates a single Gulltrans daigou order for one shop. `shop_id` and `shop_name` are obtained from the `supplier` field of the product detail response (`GET /v1/procurement/<product-id>`). `warehouse_id` and `user_id` are injected server-side from environment variables and must not be sent in the request.
 
+Before the real order is placed, the backend automatically calls Gulltrans's shipping-cost preview endpoint with the same `skus`/`address` and overwrites `freight_fee` with the real quoted cost — see [Automatic Shipping Cost Preview](#automatic-shipping-cost-preview-internal) below. `freight_fee` in the request body is therefore ignored.
+
 ```http
 POST /v1/procurement/order HTTP/1.1
 ```
@@ -452,14 +454,13 @@ POST /v1/procurement/order HTTP/1.1
     "name": "Wedding Dress 2025",
     "title_cn": "抖音主婚纱2025新款",
     "goods_amount": "480",
-    "freight_fee": "8",
     "remark": "Optional order note",
     "skus": [
         {
+            "goods_id": "682292125022",
             "price": "120",
             "platform_sku": "4881544500911",
             "quantity": "2",
-            "freight_fee": "8",
             "sku_info": {
                 "shop_id": "BBBZSESFJBTCxhL370nJnRUjQ",
                 "shop_name": "BBBZSESFJBTCxhL370nJnRUjQ",
@@ -511,9 +512,9 @@ platform_url | Yes | String | Product URL on 1688
 name | Yes | String | Product name
 title_cn | No | String | Product name in Chinese
 goods_amount | Yes | String | Total goods price (sum of all SKUs)
-freight_fee | No | String | Shipping fee
+freight_fee | No | String | Ignored — always overwritten server-side with the real cost from the automatic shipping-cost preview (see below). Safe to omit
 remark | No | String | Order note
-skus | Yes | Array | At least one SKU required
+skus | Yes | Array | At least one SKU required. Each item needs `goods_id` (1688 product SPU/offer ID — from `Product.procurementId`), `platform_sku`, `price`, `quantity`, and `sku_info`. `goods_id` is required by the automatic shipping-cost preview
 address | Yes | Object | Delivery address
 
 ### Response Body
@@ -535,7 +536,7 @@ Bulk Create Orders
 
 Creates multiple Gulltrans daigou orders in a single request. Each item in `orders` becomes its own Gulltrans order — no merging is done. The `address` is shared across all orders.
 
-Orders are processed in parallel batches of 3. Failures are collected per item and returned alongside successes — a single failure does not abort the rest.
+Orders are processed in parallel batches of 3. Before each order is created, the backend automatically previews its shipping cost (see [Automatic Shipping Cost Preview](#automatic-shipping-cost-preview-internal) below) and overwrites that order's `freight_fee` with the real quoted cost — `freight_fee` in the request is ignored. If the preview call itself fails for an order, that order is added to `failed[]` just like a create-order failure, without aborting the rest of the batch.
 
 ```http
 POST /v1/procurement/order/bulk HTTP/1.1
@@ -552,9 +553,9 @@ POST /v1/procurement/order/bulk HTTP/1.1
             "platform_url": "https://detail.1688.com/offer/111.html",
             "name": "Product A",
             "goods_amount": "240",
-            "freight_fee": "8",
             "skus": [
                 {
+                    "goods_id": "111",
                     "price": "120",
                     "platform_sku": "4881544500911",
                     "quantity": "2",
@@ -578,9 +579,9 @@ POST /v1/procurement/order/bulk HTTP/1.1
             "platform_url": "https://detail.1688.com/offer/222.html",
             "name": "Product B",
             "goods_amount": "300",
-            "freight_fee": "10",
             "skus": [
                 {
+                    "goods_id": "222",
                     "price": "150",
                     "platform_sku": "4881544500912",
                     "quantity": "2",
@@ -605,6 +606,7 @@ POST /v1/procurement/order/bulk HTTP/1.1
             "goods_amount": "180",
             "skus": [
                 {
+                    "goods_id": "333",
                     "price": "90",
                     "platform_sku": "4881544500913",
                     "quantity": "2",
@@ -655,9 +657,9 @@ orders[].platform_url | Yes | String | Product URL on 1688
 orders[].name | Yes | String | Product name
 orders[].title_cn | No | String | Product name in Chinese
 orders[].goods_amount | Yes | String | Goods price for this product
-orders[].freight_fee | No | String | Shipping fee for this product
+orders[].freight_fee | No | String | Ignored — always overwritten server-side per-order with the real cost from the automatic shipping-cost preview (see below). Safe to omit
 orders[].remark | No | String | Order note for this product
-orders[].skus | Yes | Array | At least one SKU required
+orders[].skus | Yes | Array | At least one SKU required. Each item needs `goods_id` (1688 product SPU/offer ID — from `Product.procurementId`), `platform_sku`, `price`, `quantity`, and `sku_info`. `goods_id` is required by the automatic shipping-cost preview
 address | Yes | Object | Shared delivery address applied to all orders
 
 ### Response Body
@@ -683,6 +685,57 @@ address | Yes | Object | Shared delivery address applied to all orders
     ]
 }
 ```
+
+---
+
+Automatic Shipping Cost Preview (internal)
+------------------
+
+Not a public REST endpoint. Before either `POST /v1/procurement/order` or `POST /v1/procurement/order/bulk` places a real Gulltrans order, `ProcurementService.createOrder`/`bulkCreateOrder` automatically call `ProcurementService.previewOrder`, which hits Gulltrans's `preview-order` endpoint with the same `skus`/`address` the caller supplied, and overwrites `freight_fee` on the outgoing create-order request with the real quoted cost.
+
+```http
+POST {GULLTRANS_BASE_URL}/api/client/third-purchase/preview-order
+```
+
+**Request** (built internally — `goods_id`/`sku_id`/`sum`/`spec_id` are mapped from the caller's `skus[].goods_id`/`platform_sku`/`quantity`/`sku_info.spec_id`; `address` is mapped from the caller's `address`, dropping `company`/`email`/`country`/`country_name`):
+```json
+{
+    "platform": "1688",
+    "skus": [
+        { "goods_id": "682292125022", "sku_id": "4881544500911", "sum": "2", "spec_id": "7f74e9dcb448177df9404cb65f6bad1e" }
+    ],
+    "address": {
+        "receiver_name": "丁XX",
+        "postcode": "518054",
+        "province": "广东省",
+        "city": "深圳市",
+        "district": "龙华区",
+        "street": "XX公寓",
+        "address": "广东省深圳市龙华区XX公寓",
+        "phone": "18512345678"
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "ret": 1,
+    "msg": "success",
+    "data": { "goodsFee": 1349.5, "paymentFee": 1349.5, "freightFee": 12.5, "isFree": false }
+}
+```
+
+`data.freightFee` becomes `freight_fee` on the real create-order request that follows. If the response is successful but `freightFee` is missing/null, `freight_fee` falls back to `"0"`.
+
+**On preview failure:**
+- `POST /v1/procurement/order` — the whole request fails; the preview error is what's returned.
+- `POST /v1/procurement/order/bulk` — only that one order is added to `failed[]`; the rest of the batch still proceeds.
+
+> [!NOTE]
+> `goods_id` (the 1688 product SPU/offer ID, sourced from `Product.procurementId`) must be present on every `skus[]` item passed to `createOrder`/`bulkCreateOrder` — it's required by this preview call even though Gulltrans's real create-order call doesn't otherwise use it.
+
+The active warehouse's address (used as the `address` for both the preview and the real create-order call, since goods ship from the 1688 supplier to Camion's warehouse, not the end customer) is built by `ProcurementService.getWarehouseAddress()` — the single source of truth for this address across the procurement and JOP WMS dispatch flows.
 
 ---
 

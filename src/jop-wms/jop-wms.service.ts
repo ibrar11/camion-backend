@@ -44,7 +44,6 @@ import { HIOBUY_DISPATCH_ENABLED } from './hiobuy-dispatch.config';
 import { RecoverInboundDto } from './dtos/RecoverInboundDto';
 
 import { ProcurementService } from '../procurement/procurement.service';
-import { OrderAddressDto } from '../procurement/dtos/CreateProcurementOrderDto';
 
 import { QueueName } from '../queue/enums/QueueTypes.enum';
 import { DispatchShopJobData, DispatchOrderJobData } from '../queue/types';
@@ -444,20 +443,7 @@ export class JopWmsService {
         }
 
         // ── Load warehouse address (needed by Gulltrans) ───────────────────────
-        const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
-        if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
-
-        const warehouseAddress = {
-            receiver_name: activeWarehouse.contactName ?? '',
-            phone: activeWarehouse.phone ?? '',
-            address: [activeWarehouse.addressLine1, activeWarehouse.addressLine2].filter(Boolean).join(', '),
-            city: activeWarehouse.city,
-            province: activeWarehouse.state,
-            postcode: activeWarehouse.postcode ?? '',
-            company: activeWarehouse.name,
-            country_name: activeWarehouse.country,
-            country: { country_code: activeWarehouse.countryCode ?? '', name: activeWarehouse.country },
-        };
+        const warehouseAddress = await this.procurementService.getWarehouseAddress();
 
         // ── Enqueue one BullMQ job per shop ───────────────────────────────────
         const dispatchJobId = crypto.randomUUID();
@@ -473,8 +459,8 @@ export class JopWmsService {
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
                 name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                 goods_amount: String(moneyToFloat(multiplyMoney(item.variant.cost, item.quantity))),
-                freight_fee: '0',
                 skus: [{
+                    goods_id: String(item.variant.product.procurementId),
                     platform_sku: item.variant.sku,
                     price: String(moneyToFloat(item.variant.cost)),
                     quantity: String(item.quantity),
@@ -1031,6 +1017,7 @@ export class JopWmsService {
                     name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                     goods_amount: String(moneyToFloat(multiplyMoney(item.variant.cost, item.quantity))),
                     skus: [{
+                        goods_id: String(item.variant.product.procurementId),
                         platform_sku: item.variant.sku,
                         price: String(moneyToFloat(item.variant.cost)),
                         quantity: String(item.quantity),
@@ -1333,20 +1320,7 @@ export class JopWmsService {
 
         if (!shopGroups.size) throw new BadRequestException('No order items have Gulltrans shop data');
 
-        const activeWarehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
-        if (!activeWarehouse) throw new NotFoundException('No active warehouse found');
-
-        const warehouseAddress: OrderAddressDto = {
-            receiver_name: activeWarehouse.contactName ?? '',
-            phone: activeWarehouse.phone ?? '',
-            address: [activeWarehouse.addressLine1, activeWarehouse.addressLine2].filter(Boolean).join(', '),
-            city: activeWarehouse.city,
-            province: activeWarehouse.state,
-            postcode: activeWarehouse.postcode ?? '',
-            company: activeWarehouse.name,
-            country_name: activeWarehouse.country,
-            country: { country_code: activeWarehouse.countryCode ?? '', name: activeWarehouse.country },
-        };
+        const warehouseAddress = await this.procurementService.getWarehouseAddress();
 
         const gulltransOrders: any[] = [];
 
@@ -1358,8 +1332,8 @@ export class JopWmsService {
                 platform_url: `https://detail.1688.com/offer/${item.variant.product.procurementId}.html`,
                 name: (() => { const v = item.variant.titleEn?.trim() ?? ''; const p = item.variant.product.titleEn?.trim() ?? ''; const prefix = v ? `${v} - ` : ''; return prefix + p.slice(0, 128 - prefix.length); })(),
                 goods_amount: String(moneyToFloat(multiplyMoney(item.variant.cost, item.quantity))),
-                freight_fee: '0',
                 skus: [{
+                    goods_id: String(item.variant.product.procurementId),
                     platform_sku: item.variant.sku,
                     price: String(moneyToFloat(item.variant.cost)),
                     quantity: String(item.quantity),
