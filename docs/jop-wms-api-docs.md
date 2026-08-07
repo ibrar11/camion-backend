@@ -312,7 +312,9 @@ Batch-dispatches all `CONFIRMED` customer orders that have not yet been procured
 
 When the inbound reaches status `14` (STORED), the scheduler checks whether all inbounds for each linked customer order are at a terminal status. Once they all are, it auto-creates one outbound per customer order, consolidating all items into a single shipment. If outbound creation is missed (e.g. env var was unset at the time), the recovery job running at 09:00 and 21:00 will catch and retry it automatically.
 
-Products must have been imported via `POST /v1/procurement/import` first — the `shopId`, `shopName`, `procurementId`, and `skuMeta` stored during import are used to build the Gulltrans payload automatically. The warehouse address is read from the active `Warehouse` record in the database.
+Products must have been imported via `POST /v1/procurement/import` first — the `shopId`, `shopName`, `procurementId`, and `skuMeta` stored during import are used to build the Gulltrans payload automatically. The warehouse address is read from the active `Warehouse` record in the database (`ProcurementService.getWarehouseAddress()`).
+
+Before each Gulltrans order is actually created, the backend automatically previews its shipping cost via Gulltrans's `preview-order` endpoint and uses the real quoted cost as that order's `freight_fee` — see `docs/procurement-api-docs.md`, "Automatic Shipping Cost Preview". This also applies to the `dispatch-missing`/recovery path below, since it goes through the same `ProcurementService.createOrder`/`bulkCreateOrder`.
 
 ```http
 POST /v1/wms/orders/dispatch HTTP/1.1
