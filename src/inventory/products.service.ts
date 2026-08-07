@@ -3491,9 +3491,7 @@ export class ProductsService {
 						optionValue: true,
 					},
 					inventoryItem: {
-						levels: {
-							warehouse: true,
-						},
+						levels: true,
 					},
 					images: true,
 				},
@@ -3545,9 +3543,7 @@ export class ProductsService {
 						optionValue: true,
 					},
 					inventoryItem: {
-						levels: {
-							warehouse: true,
-						},
+						levels: true,
 					},
 					images: true,
 				},

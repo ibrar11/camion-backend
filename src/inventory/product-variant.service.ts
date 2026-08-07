@@ -243,9 +243,7 @@ export class ProductVariantService {
 			where: { uuid: uuid, },
 			relations: {
 				inventoryItem: {
-					levels: {
-						warehouse: true,
-					},
+					levels: true,
 				},
 			},
 		});
@@ -306,9 +304,7 @@ export class ProductVariantService {
 			let inventoryItem = await this.inventoryItemRepository.findOne({
 				where: { variant: { uuid: savedVariant.uuid } },
 				relations: {
-					levels: {
-						warehouse: true,
-					},
+					levels: true,
 				},
 			});
 
