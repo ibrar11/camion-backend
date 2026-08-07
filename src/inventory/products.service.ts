@@ -147,7 +147,13 @@ export class ProductsService {
 			.createQueryBuilder()
 			.update(Category)
 			.set({
-				productsCount: () => `(SELECT COUNT(*) FROM product_categories WHERE product_categories.category_id = categories.id)`,
+				productsCount: () => `(
+					SELECT COUNT(*)
+					FROM product_categories product_categories
+					INNER JOIN products product ON product.id = product_categories.product_id
+					WHERE product_categories.category_id = categories.id
+					AND product.status = 'active'
+				)`,
 			})
 			.whereInIds(categoryIds)
 			.execute();
@@ -3589,6 +3595,11 @@ export class ProductsService {
 		const product = await this.productRepository.findOne({
 			relationLoadStrategy: "query",
 			where: { uuid: uuid, },
+			relations: {
+				productCategories: {
+					category: true,
+				},
+			},
 		});
 
 		if (product === null) {
@@ -3721,6 +3732,7 @@ export class ProductsService {
 		}
 
 		// Create the status of the product
+		const previousStatus = product.status;
 		let status = ProductStatus.DRAFT;
 		switch (body.status) {
 			case "active":
@@ -3738,7 +3750,16 @@ export class ProductsService {
 
 		// Update the product
 		product.status = status;
-		return this.productRepository.save(product);
+		const savedProduct = await this.productRepository.save(product);
+
+		if (previousStatus !== savedProduct.status) {
+			const categoryIds = (savedProduct.productCategories ?? [])
+				.map((productCategory) => productCategory.category?.id)
+				.filter((id): id is number => id !== undefined);
+			await this.recalculateCategoryProductsCount(categoryIds);
+		}
+
+		return savedProduct;
 	}
 
 	/**
