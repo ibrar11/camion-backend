@@ -886,7 +886,7 @@ export class OrderService {
      * @param uuid
      * @returns
      */
-    async findOne(uuid: string, currency: CurrencyCode): Promise<Order> {
+    async findOne(uuid: string, currency: CurrencyCode, maskUuid = true): Promise<Order> {
         try {
             let order: Order | null = null;
             if (uuid.length === 6) {
@@ -948,7 +948,9 @@ export class OrderService {
             (order as any).wmsOrders = wmsLinks.map(l => l.wmsOrder);
             await this.attachTracking([order]);
 
-            order.uuid = getOrderReference(order.uuid);
+            if (maskUuid) {
+                order.uuid = getOrderReference(order.uuid);
+            }
             order.orderItems = await this.applyPricingToOrderItems(
                 order.orderItems,
                 currency,
@@ -1199,7 +1201,7 @@ export class OrderService {
      */
     async updateStatus(uuid: string, status: OrderStatus, currency: CurrencyCode, cancellationReason?: string): Promise<Order> {
         try {
-            const order = await this.findOne(uuid, currency);
+            const order = await this.findOne(uuid, currency, false);
 
             if (status === OrderStatus.CONFIRMED && order.status !== OrderStatus.PAYMENT_SUCCESSFUL) {
                 throw new BadRequestException({
@@ -1397,6 +1399,8 @@ export class OrderService {
             } else {
                 this.logger.warn(`[Email] Skipping email for order ${order.uuid} status=${status} — customer has no email address`);
             }
+
+            saved.uuid = getOrderReference(saved.uuid);
 
             return saved;
         } catch (error: any) {
