@@ -13,6 +13,7 @@ import { verifySkipcashSignature } from "../common/skipcash";
 import { OrderStatus } from "../order/enums/OrderStatus";
 import { OrderTrackingEvent } from "../order/entities/order-tracking-event.entity";
 import { OrderTrackingStage } from "../order/enums/OrderTrackingStage";
+import { PaymentProvider } from "./enums/PaymentProvider";
 
 import { SkipcashWebhookDto } from "./dtos/SkipcashWebhookDto";
 
@@ -21,7 +22,7 @@ import { PaymentStatus } from "./enums/PaymentStatus";
 
 import { Order } from "../order/entities/order.entity";
 
-import { skipcashWebhookResponse } from "./types";
+import { SkipCashWebhookPayload, skipcashWebhookResponse } from "./types";
 
 import { Notification } from "../notifications/entities/notification.entity";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -32,6 +33,8 @@ import { PushNotificationService } from "../notifications/push-notification.serv
 import { CartItem } from "../cart/entities/cart-items.entity";
 import { EmailService } from "../email/email.service";
 import { getOrderReference } from "../common/maskUuid";
+
+import { SavedCardsService } from "./saved-cards.service";
 
 @Injectable()
 export class PaymentsWebhookService {
@@ -45,6 +48,7 @@ export class PaymentsWebhookService {
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
+        private readonly savedCardsService: SavedCardsService,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -349,4 +353,182 @@ export class PaymentsWebhookService {
             };
         }
     }
+
+    /**
+   * Handle SkipCash sdk webhook
+   */
+    // async handleSkipcashSdkWebhook(
+    //     payload: SkipCashWebhookPayload,
+    //     signature: string,
+    // ): Promise<{ received: boolean; status: string }> {
+    //     this.logger.log(`Received SkipCash webhook: ${JSON.stringify(payload)}`);
+
+    //     const isValid = verifySkipcashSignature(payload, signature);
+
+    //     if (!isValid) {
+    //         this.logger.warn("Invalid SkipCash webhook signature");
+    //         throw new UnauthorizedException({
+    //             error: "Invalid signature"
+    //         });
+    //     }
+
+    //     // 2. Find the order
+    //     const order = await this.orderRepository.findOne({
+    //         where: { uuid: payload.orderId },
+    //         relations: { customer: true, orderItems: true },
+    //     });
+
+    //     if (!order) {
+    //         this.logger.warn(`Order not found: ${payload.orderId}`);
+    //         return { received: true, status: 'order_not_found' };
+    //     }
+
+    //     // 3. Find or create payment transaction
+    //     let transaction = await this.paymentRepository.findOne({
+    //         where: { order: { id: order.id } },
+    //     });
+
+    //     if (!transaction) {
+    //         transaction = new PaymentTransaction();
+    //         transaction.id = crypto.randomUUID();
+    //         transaction.order = order;
+    //         transaction.provider = PaymentProvider.SKIPCASH;
+    //         transaction.currency = payload.currency;
+    //         transaction.amount = {
+    //             amount: Math.trunc(parseFloat(payload.amount)),
+    //             minorAmount: Math.round((parseFloat(payload.amount) % 1) * 100),
+    //             currencyCode: payload.currency,
+    //         };
+    //     }
+
+    //     // 4. Update transaction
+    //     transaction.transactionId = payload.paymentId;
+    //     transaction.rawResponse = payload;
+
+    //     // 5. Idempotent status update
+    //     const statusMap: Record<string, PaymentStatus> = {
+    //         paid: PaymentStatus.PAID,
+    //         failed: PaymentStatus.FAILED,
+    //         refunded: PaymentStatus.REFUNDED,
+    //     };
+
+    //     const newStatus = statusMap[payload.status] || PaymentStatus.PENDING;
+
+    //     // If already paid, skip processing
+    //     if (transaction.status === PaymentStatus.PAID) {
+    //         this.logger.log(`Order ${payload.orderId} already paid, skipping`);
+    //         return { received: true, status: 'already_paid' };
+    //     }
+
+    //     transaction.status = newStatus;
+    //     transaction.lastAttemptAt = new Date();
+    //     await this.paymentRepository.save(transaction);
+
+    //     // 6. Update order status
+    //     if (payload.status === 'paid') {
+    //         order.status = OrderStatus.PAYMENT_SUCCESSFUL;
+    //         await this.orderRepository.save(order);
+
+    //         // 7. Save card token if provided
+    //         if (payload.tokenId && order.customer) {
+    //             await this.savedCardsService.saveCardToken(order.customer, payload.tokenId, {
+    //                 brand: payload.cardBrand || 'unknown',
+    //                 last4: payload.cardLast4 || '****',
+    //                 expiryMonth: payload.cardExpiryMonth || '12',
+    //                 expiryYear: payload.cardExpiryYear || '2030',
+    //                 cardholderName: payload.cardholderName,
+    //             });
+    //             this.logger.log(`Saved card token ${payload.tokenId} for customer ${order.customer.uuid}`);
+    //         }
+
+    //         // 8. Send notifications
+    //         await this.sendPaymentSuccessNotifications(order);
+
+    //     } else if (payload.status === 'failed') {
+    //         order.status = OrderStatus.PAYMENT_FAILED;
+    //         await this.orderRepository.save(order);
+
+    //         await this.sendPaymentFailedNotifications(order);
+    //     }
+
+    //     return { received: true, status: 'processed' };
+    // }
+
+    /**
+     * Send payment success notifications
+     */
+    // private async sendPaymentSuccessNotifications(order: Order): Promise<void> {
+    //     if (!order.customer) return;
+
+    //     const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
+
+    //     await this.notificationsService.create({
+    //         customerUUID: order.customer.uuid,
+    //         type: NotificationType.PAYMENT_SUCCESSFUL,
+    //         title: 'Payment Successful',
+    //         brief: 'Your payment was processed successfully.',
+    //         message: `Payment of ${orderTotal} for order #${order.uuid} was successful. Your order is now being processed.`,
+    //         priority: NotificationPriority.HIGH,
+    //         payload: {
+    //             orderUuid: order.uuid,
+    //             type: NotificationType.PAYMENT_SUCCESSFUL,
+    //             isRead: 'false',
+    //         },
+    //     });
+
+    //     if (order.customer.emailAddress) {
+    //         await this.emailService.sendPaymentSuccessEmail(order.customer.emailAddress, {
+    //             customerName: order.customer.fullName,
+    //             orderId: order.uuid,
+    //             orderTotal,
+    //             paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
+    //             items: order.orderItems?.map((item) => ({
+    //                 name: item.variant?.titleEn || item.product?.titleEn || 'Item',
+    //                 quantity: item.quantity,
+    //                 unitPrice: `${item.price.amount} ${item.price.currencyCode}`,
+    //                 lineTotal: `${item.total.amount} ${item.total.currencyCode}`,
+    //             })) || [],
+    //             deliveryDetails: {
+    //                 fullName: order.shippingAddress?.fullName || '',
+    //                 streetAddress: order.shippingAddress?.streetAddress || '',
+    //                 apartment: order.shippingAddress?.apartment || '',
+    //                 city: order.shippingAddress?.city || '',
+    //                 state: order.shippingAddress?.state || '',
+    //                 country: order.shippingAddress?.country || '',
+    //                 zipCode: order.shippingAddress?.zipCode || '',
+    //                 phoneNumber: order.shippingAddress?.phoneNumber || '',
+    //             },
+    //             nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
+    //         });
+    //     }
+    // }
+
+    /**
+     * Send payment failed notifications
+     */
+    // private async sendPaymentFailedNotifications(order: Order): Promise<void> {
+    //     if (!order.customer) return;
+
+    //     await this.notificationsService.create({
+    //         customerUUID: order.customer.uuid,
+    //         type: NotificationType.PAYMENT_FAILED,
+    //         title: 'Payment Failed',
+    //         brief: 'Your payment could not be processed.',
+    //         message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
+    //         priority: NotificationPriority.HIGH,
+    //         payload: {
+    //             orderUuid: order.uuid,
+    //             type: NotificationType.PAYMENT_FAILED,
+    //             isRead: 'false',
+    //         },
+    //     });
+
+    //     if (order.customer.emailAddress) {
+    //         await this.emailService.sendPaymentFailedEmail(order.customer.emailAddress, {
+    //             customerName: order.customer.fullName,
+    //             orderId: order.uuid,
+    //             failureReason: 'Your payment could not be processed. Please try again.',
+    //         });
+    //     }
+    // }
 }

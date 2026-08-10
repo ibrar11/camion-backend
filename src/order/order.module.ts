@@ -67,6 +67,11 @@ import { QueueName } from '../queue/enums/QueueTypes.enum';
 import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
 import { OrderScheduler } from './order.scheduler';
 
+import { SkipCashSessionService } from '../payments/skipcash-session.service';
+
+import { SavedCard } from 'src/payments/entities/saved-card.entity';
+import { SavedCardsService } from '../payments/saved-cards.service';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -92,6 +97,7 @@ import { OrderScheduler } from './order.scheduler';
             Notification,
             PushNotification,
             Product,
+            SavedCard,
         ]),
         BullModule.registerQueue(
             { name: QueueName.ORDER_SKUMETA_VALIDATION },
@@ -111,6 +117,8 @@ import { OrderScheduler } from './order.scheduler';
         OrderResolver,
         OrderItemResolver,
         PaymentsService,
+        SkipCashSessionService,
+        SavedCardsService,
         PaymentStrategyFactory,
         ExchangeRateService,
         TransactionsService,

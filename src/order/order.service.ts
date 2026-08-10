@@ -1400,6 +1400,8 @@ export class OrderService {
 
             return saved;
         } catch (error: any) {
+            console.log("errorerrorerror", error);
+            
             this.logger.error(`Error updating order status: ${error}`);
             if (error instanceof HttpException) {
                 throw error;

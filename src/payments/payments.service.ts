@@ -9,6 +9,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
 import { CreatePaymentDto } from "./dtos/CreatePaymentDto";
+import { CreateSkipCashSessionDto } from "./dtos/CreateSkipCashSessionDto";
 
 import { PaymentTransaction } from "./entities/payment-transaction.entity";
 
@@ -22,6 +23,10 @@ import { PaymentProvider } from "./enums/PaymentProvider";
 
 import { getExchangedPrice } from "../common/currency";
 
+import { SkipCashSessionService } from "./skipcash-session.service";
+
+import { SkipCashSessionResponse } from "./types";
+
 @Injectable()
 export class PaymentsService {
     private readonly logger = new Logger(PaymentsService.name);
@@ -29,6 +34,7 @@ export class PaymentsService {
     constructor(
         @InjectRepository(PaymentTransaction) private paymentTransactionRepository: Repository<PaymentTransaction>,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
+        @Inject(SkipCashSessionService) private readonly skipCashSessionService: SkipCashSessionService,
         private strategyfactory: PaymentStrategyFactory,
     ) { }
 
@@ -89,6 +95,21 @@ export class PaymentsService {
             throw error;
         }
     }
+
+    /**
+     * Creates new skipcash payment session
+     *
+     * @param customerUuid
+     * @param dto
+     * @returns
+     */
+    async createSkipCashSession(
+        customerUuid: string,
+        dto: CreateSkipCashSessionDto,
+    ): Promise<SkipCashSessionResponse> {
+        return this.skipCashSessionService.createSession(customerUuid, dto);
+    }
+
 
     /**
      * Fetch all payments
