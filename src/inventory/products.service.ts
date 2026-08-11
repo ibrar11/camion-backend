@@ -50,6 +50,8 @@ import { Campaign } from "src/campaigns/entities/campaign.entity";
 import { ProductAttachment } from "./entities/product-attachment.entity";
 import { PricingService } from "src/pricing/pricing.service";
 
+import { Client } from "../clients/entities/client.entity";
+
 @Injectable()
 export class ProductsService {
 	private readonly logger = new Logger(ProductsService.name);
@@ -616,7 +618,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAllUncached(filters: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	findAllUncached(filters: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100, client?: Client): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products uncached`);
 
 		// Get pagination params
@@ -650,6 +652,13 @@ export class ProductsService {
 				productCategories: {
 					category: true,
 				},
+				...(client && {
+					variants: {
+						inventoryItem: {
+							levels: true,
+						},
+					},
+				}),
 			},
 			order: {
 				id: "DESC",
@@ -3760,6 +3769,33 @@ export class ProductsService {
 		}
 
 		return savedProduct;
+	}
+
+	/**
+ * Updates a product's procurement status
+ *
+ * @param uuid
+ * @param body
+ * @returns
+ */
+	async updateProcurementStatus(uuid: string, body: { status: boolean }): Promise<Product> {
+		this.logger.log(`Updating product procurement status: ${uuid}`);
+
+		// Find the product
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		// Update the product
+		product.procurementStatus = body.status;
+		return this.productRepository.save(product);
 	}
 
 	/**

@@ -34,6 +34,10 @@ import { GoogleOAuthStrategy } from './strategies/google.strategy';
 import { FacebookOAuthStrategy } from './strategies/facebook.strategy';
 import { SocialAuthController } from './social-auth.controller';
 
+import { Client } from '../clients/entities/client.entity';
+import { ClientAuthService } from './client-auth.service';
+import { ClientAuthController } from './client-auth.controller';
+
 @Module({
     imports: [
         PassportModule,
@@ -41,7 +45,8 @@ import { SocialAuthController } from './social-auth.controller';
             User,
             Customer,
             LoginRequest,
-            CartItem
+            CartItem,
+            Client,
         ]),
         UsersModule,
         ClientsModule,
@@ -59,12 +64,14 @@ import { SocialAuthController } from './social-auth.controller';
         TwilioService,
         GoogleOAuthStrategy,
         FacebookOAuthStrategy,
+        ClientAuthService,
     ],
     controllers: [
         CustomerAuthController,
         UserAuthController,
         GuestAuthController,
         SocialAuthController,
+        ClientAuthController,
     ],
     exports: [
         AuthGuard,

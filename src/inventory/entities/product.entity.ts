@@ -141,6 +141,9 @@ export class Product {
 	@Index()
 	status: ProductStatus;
 
+	@Column({ type: "boolean", default: true, })
+	procurementStatus: boolean;
+
 	@Field(() => String, { nullable: true })
 	@Column({ type: 'varchar', length: 128, nullable: true, default: null })
 	shopId: string | null;
