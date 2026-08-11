@@ -5,6 +5,7 @@ import {
 	IsNotEmptyObject,
 	IsNumber,
 	IsObject,
+	IsOptional,
 	IsString,
 	MaxLength,
 	MinLength,
@@ -72,6 +73,11 @@ export class UpdateProductVariantDto {
 	@IsString()
 	@MinLength(1)
 	sku: string;
+
+	@IsOptional()
+	@Type(() => Number)
+	@IsNumber()
+	quantity?: number;
 
 	@IsString()
 	@MinLength(1)

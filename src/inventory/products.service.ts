@@ -3505,6 +3505,9 @@ export class ProductsService {
 					optionValues: {
 						optionValue: true,
 					},
+					inventoryItem: {
+						levels: true,
+					},
 					images: true,
 				},
 				productCategories: {
@@ -3553,6 +3556,9 @@ export class ProductsService {
 				variants: {
 					optionValues: {
 						optionValue: true,
+					},
+					inventoryItem: {
+						levels: true,
 					},
 					images: true,
 				},
