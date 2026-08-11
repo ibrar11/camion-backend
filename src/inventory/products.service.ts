@@ -21,12 +21,14 @@ import { ImageThumbnailService } from "../common/image-thumbnail.service";
 import { getSkipAndTake } from "../common/pagination";
 import { generateSlug } from "../common/slug";
 import { sortProducts } from "../common/product-variant-filter";
+import { generateDeterministicUrgencyStockCount } from "../common/product-urgency";
 
 import { CreateProductDto } from './dtos/CreateProductDto';
 import { UpdateProductDto } from './dtos/UpdateProductDto';
 import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 import { UpdateProductFeaturedImageDto } from "./dtos/UpdateProductFeaturedImageDto";
+import { UpdateProductUrgencyDto } from "./dtos/UpdateProductUrgencyDto";
 
 import { ProductStatus } from './enums/ProductStatus.enum';
 import { ProductSort } from "./enums/ProductSort.enum";
@@ -139,6 +141,84 @@ export class ProductsService {
 		}
 
 		return [...expandedUuids];
+	}
+
+	private async __getProductUrgencyCampaign(product: Product): Promise<Campaign | null> {
+		if (product === null || !Array.isArray(product.productCategories) || product.productCategories.length === 0) {
+			return null;
+		}
+
+		const categoryIds = product.productCategories
+			.map((entry) => entry.category?.id)
+			.filter((id): id is number => id !== undefined)
+			.sort((idA, idB) => idA - idB);
+
+		if (categoryIds.length === 0) {
+			return null;
+		}
+
+		const now = new Date();
+		return this.campaignRepository.createQueryBuilder("campaign")
+			.cache(true)
+			.setFindOptions({
+				relationLoadStrategy: "query",
+			})
+			.innerJoin("campaign.campaignCategories", "campaignCategory")
+			.innerJoin("campaignCategory.category", "category")
+			.where("category.id IN (:...categoryIds)", {
+				categoryIds: categoryIds,
+			})
+			.andWhere("campaign.isActive = :isActive", { isActive: true, })
+			.andWhere("campaign.urgencyEnabled = :urgencyEnabled", { urgencyEnabled: true, })
+			.andWhere("campaign.urgencyMinStockCount IS NOT NULL")
+			.andWhere("campaign.urgencyMaxStockCount IS NOT NULL")
+			.andWhere("campaign.startsAt <= :now", { now: now, })
+			.andWhere("campaign.finishesAt >= :now", { now: now, })
+			.orderBy("campaign.discountPercentage", "DESC")
+			.getOne();
+	}
+
+	private async __attachUrgencyStockCount(product: Product, campaign: Campaign | null = null): Promise<Product> {
+		if (product === null) {
+			return product;
+		}
+
+		if (product.urgencyEnabled && product.urgencyStockCount !== null && product.urgencyStockCount !== undefined) {
+			product.stockCount = Math.max(0, Math.floor(product.urgencyStockCount));
+			return product;
+		}
+
+		const urgencyCampaign = campaign !== null && campaign !== undefined && campaign.urgencyEnabled
+			? campaign
+			: await this.__getProductUrgencyCampaign(product);
+
+		if (urgencyCampaign === null) {
+			product.stockCount = null;
+			return product;
+		}
+
+		if (urgencyCampaign.urgencyMinStockCount === null || urgencyCampaign.urgencyMinStockCount === undefined ||
+			urgencyCampaign.urgencyMaxStockCount === null || urgencyCampaign.urgencyMaxStockCount === undefined) {
+			product.stockCount = null;
+			return product;
+		}
+
+		product.stockCount = generateDeterministicUrgencyStockCount(
+			product.id,
+			urgencyCampaign.id,
+			urgencyCampaign.urgencyMinStockCount,
+			urgencyCampaign.urgencyMaxStockCount,
+		);
+
+		return product;
+	}
+
+	private async __attachUrgencyStockCounts(products: Array<Product>, campaign: Campaign | null = null): Promise<Array<Product>> {
+		if (!Array.isArray(products) || products.length === 0) {
+			return [];
+		}
+
+		return Promise.all(products.map((product) => this.__attachUrgencyStockCount(product, campaign)));
 	}
 
 	private async recalculateCategoryProductsCount(categoryIds: number[]): Promise<void> {
@@ -398,7 +478,7 @@ export class ProductsService {
 		);
 
 		// Attach the variants to each product.
-		return products
+		const attachedProducts = products
 			.filter(product => variantsMap[product.id] !== undefined)
 			.map(product => {
 				product.variants = [
@@ -406,6 +486,8 @@ export class ProductsService {
 				];
 				return product;
 			});
+
+		return this.__attachUrgencyStockCounts(attachedProducts);
 	}
 
 	/**
@@ -446,7 +528,7 @@ export class ProductsService {
 		);
 
 		// Attach the variants to each product.
-		return products
+		const attachedProducts = products
 			.filter(product => variantsMap[product.id] !== undefined)
 			.map(product => {
 				product.variants = [
@@ -454,6 +536,8 @@ export class ProductsService {
 				];
 				return product;
 			});
+
+		return this.__attachUrgencyStockCounts(attachedProducts);
 	}
 
 	/**
@@ -616,7 +700,7 @@ export class ProductsService {
 	 * @param itemsPerPage
 	 * @returns
 	 */
-	findAllUncached(filters: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
+	async findAllUncached(filters: string, sort: ProductSort, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<Product>> {
 		this.logger.log(`Retrieving products uncached`);
 
 		// Get pagination params
@@ -644,7 +728,7 @@ export class ProductsService {
 		}
 
 		// Find the products
-		return this.productRepository.find({
+		const products = await this.productRepository.find({
 			relationLoadStrategy: "query",
 			relations: {
 				productCategories: {
@@ -657,6 +741,8 @@ export class ProductsService {
 			skip: skip,
 			take: take,
 		});
+
+		return this.__attachUrgencyStockCounts(products);
 	}
 
 	/**
@@ -1083,6 +1169,8 @@ export class ProductsService {
 					return product;
 				});
 
+			products = await this.__attachUrgencyStockCounts(products);
+
 			// Add the products to the result
 			res = res.concat(products);
 
@@ -1178,6 +1266,8 @@ export class ProductsService {
 					return product;
 				});
 
+			products = await this.__attachUrgencyStockCounts(products);
+
 			// Add the products to the result
 			res = res.concat(products);
 
@@ -1222,7 +1312,7 @@ export class ProductsService {
 		const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
 		// Find the products in the desired category
-		return this.productRepository.createQueryBuilder("product")
+		const products = await this.productRepository.createQueryBuilder("product")
 			.setFindOptions({
 				relationLoadStrategy: "query",
 			})
@@ -1240,6 +1330,8 @@ export class ProductsService {
 			.skip(skip)
 			.take(take)
 			.getMany();
+
+		return this.__attachUrgencyStockCounts(products);
 	}
 
 	/**
@@ -1701,7 +1793,7 @@ export class ProductsService {
 			})
 		);
 
-		return product;
+		return this.__attachUrgencyStockCount(product, campaign);
 	}
 
 	/**
@@ -1734,7 +1826,7 @@ export class ProductsService {
 				// Apply discounted price on the first variant of the product
 				product.variants[0].discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], campaign, currency, true);
 
-				return product;
+				return this.__attachUrgencyStockCount(product, campaign);
 			})
 		);
 
@@ -1770,7 +1862,7 @@ export class ProductsService {
 				// Apply discounted price on the first variant of the product
 				product.variants[0].discountedPrice = await this.pricingService.applyPriceOnProductVariant(product, product.variants[0], campaign, currency, true);
 
-				return product;
+				return this.__attachUrgencyStockCount(product, campaign);
 			})
 		);
 
@@ -3514,7 +3606,7 @@ export class ProductsService {
 			});
 		}
 
-		return product;
+		return this.__attachUrgencyStockCount(product);
 	}
 
 	/**
@@ -3650,7 +3742,7 @@ export class ProductsService {
 		product.descriptionAr = body.description.ar.trim();
 		product.descriptionHtmlEn = body.descriptionHtml.en.trim();
 		product.descriptionHtmlAr = body.descriptionHtml.ar.trim();
-		await this.productRepository.save(product);
+		const savedProduct = await this.productRepository.save(product);
 
 		// Find the categories and create product categories.
 		// This is to join the categories to its associated product.
@@ -3658,7 +3750,53 @@ export class ProductsService {
 			await this.syncProductCategories(product, body.categories);
 		}
 
-		return product;
+		const reloadedProduct = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+			relations: {
+				productCategories: {
+					category: true,
+				},
+			},
+		});
+
+		return this.__attachUrgencyStockCount(reloadedProduct ?? savedProduct);
+	}
+
+	/**
+	 * Updates a product urgency override
+	 *
+	 * @param uuid
+	 * @param body
+	 */
+	async updateProductUrgency(uuid: string, body: UpdateProductUrgencyDto): Promise<Product> {
+		this.logger.log(`Updating product urgency: ${uuid}`);
+
+		const product = await this.productRepository.findOne({
+			relationLoadStrategy: "query",
+			where: { uuid: uuid, },
+			relations: {
+				productCategories: {
+					category: true,
+				},
+			},
+		});
+
+		if (product === null) {
+			throw new NotFoundException({
+				error: "Failed to find the product. Please check and try again.",
+			});
+		}
+
+		product.urgencyEnabled = Boolean(body.enabled);
+		if (!product.urgencyEnabled) {
+			product.urgencyStockCount = null;
+		} else if (body.stockCount !== undefined && body.stockCount !== null) {
+			product.urgencyStockCount = Math.max(0, Math.floor(body.stockCount));
+		}
+
+		const savedProduct = await this.productRepository.save(product);
+		return this.__attachUrgencyStockCount(savedProduct);
 	}
 
 	/**

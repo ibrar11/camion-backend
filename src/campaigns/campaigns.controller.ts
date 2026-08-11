@@ -15,6 +15,7 @@ import {
 
 import { CreateCampaignDto } from './dtos/CreateCampaignDto';
 import { UpdateCampaignDto } from './dtos/UpdateCampaignDto';
+import { UpdateCampaignUrgencyDto } from './dtos/UpdateCampaignUrgencyDto';
 
 import { UserRole } from '../users/enums/UserRole';
 
@@ -62,6 +63,13 @@ export class CampaignsController {
 	@HttpCode(HttpStatus.OK)
 	actionUpdateCampaign(@Param('uuid') uuid: string, @Body() body: UpdateCampaignDto): Promise<Campaign> {
 		return this.campaignsService.updateCampaign(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@Put(':uuid/urgency')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateCampaignUrgency(@Param('uuid') uuid: string, @Body() body: UpdateCampaignUrgencyDto): Promise<Campaign> {
+		return this.campaignsService.updateCampaignUrgency(uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
