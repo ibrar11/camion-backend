@@ -464,7 +464,6 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
         brief(language: $language)
         slug
         discountPercentage
-        urgencyEnabled
         startsAt
         finishesAt
     }
@@ -1976,7 +1975,6 @@ query GetProduct($slug: String, $language: String, $currency: String) {
         brief(language: $language)
         slug
         discountPercentage
-        urgencyEnabled
         startsAt
         finishesAt
     }
@@ -5439,7 +5437,6 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
         brief(language: $language)
         slug
         discountPercentage
-        urgencyEnabled
         startsAt
         finishesAt
     }
