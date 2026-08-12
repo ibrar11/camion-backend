@@ -156,6 +156,13 @@ export class ProductsController {
 		return this.productsService.updateProcurementStatus(uuid, body);
 	}
 
+	@Roles(ClientRole.StockTracker)
+	@Put(':uuid/resync-status')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateResyncStatus(@Param('uuid') uuid: string, @Body() body: { status: boolean }): Promise<Product> {
+		return this.productsService.updateResyncStatus(uuid, body);
+	}
+
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
 	@Put(':uuid/featured-image')
 	@HttpCode(HttpStatus.OK)
