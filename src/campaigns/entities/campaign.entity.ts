@@ -63,11 +63,9 @@ export class Campaign {
 	@Column({ type: "boolean", default: false, })
 	urgencyEnabled: boolean;
 
-	@Field(() => Int, { nullable: true })
 	@Column({ type: "integer", nullable: true, default: null, })
 	urgencyMinStockCount: number | null;
 
-	@Field(() => Int, { nullable: true })
 	@Column({ type: "integer", nullable: true, default: null, })
 	urgencyMaxStockCount: number | null;
 
