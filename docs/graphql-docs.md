@@ -408,15 +408,15 @@ query GetStories($language: String, $pageNumber: Int, $itemsPerPage: Int) {
 Search Products
 ---------------
 
-| Sort | Description |
-|---|---|
-| `best-match` | The default list of products |
+| Sort                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `best-match`        | The default list of products              |
 | `price:low-to-high` | A list of products, from low to high cost |
 | `price:high-to-low` | A list of products, from high to low cost |
-| `best-sellers` | A list of best sellers |
-| `most-favorited` | A list of most favorited products |
-| `new-arrivals` | A list of newly added products |
-| `most-rated` | A list of most rated products |
+| `best-sellers`      | A list of best sellers                    |
+| `most-favorited`    | A list of most favorited products         |
+| `new-arrivals`      | A list of newly added products            |
+| `most-rated`        | A list of most rated products             |
 
 ### Request Body
 
@@ -433,6 +433,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -463,9 +464,6 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
         brief(language: $language)
         slug
         discountPercentage
-        urgencyEnabled
-        urgencyMinStockCount
-        urgencyMaxStockCount
         startsAt
         finishesAt
     }
@@ -501,6 +499,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -565,6 +564,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -630,6 +630,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -696,6 +697,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -760,6 +762,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -824,6 +827,7 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -888,6 +892,7 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -937,15 +942,15 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
 Get Featured Products
 ---------------------
 
-| Sort | Description |
-|---|---|
-| `best-match` | The default list of products |
+| Sort                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `best-match`        | The default list of products              |
 | `price:low-to-high` | A list of products, from low to high cost |
 | `price:high-to-low` | A list of products, from high to low cost |
-| `best-sellers` | A list of best sellers |
-| `most-favorited` | A list of most favorited products |
-| `new-arrivals` | A list of newly added products |
-| `most-rated` | A list of most rated products |
+| `best-sellers`      | A list of best sellers                    |
+| `most-favorited`    | A list of most favorited products         |
+| `new-arrivals`      | A list of newly added products            |
+| `most-rated`        | A list of most rated products             |
 
 ### GraphQL Query
 
@@ -961,6 +966,7 @@ query GetFeaturedProducts($language: String, $sort: String, $currency: String!, 
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -1024,6 +1030,7 @@ query GetFeaturedProducts($language: String, $sort: String, $currency: String!, 
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1073,12 +1080,12 @@ query GetFeaturedProducts($language: String, $sort: String, $currency: String!, 
 Get Popular Products
 --------------------
 
-| Sort | Description |
-|---|---|
-| `most-viewed` | The default list of products, based on most number of views |
-| `best-sellers` | A list of products that are best sellers |
-| `most-favorited` | A list of products that are most favorited |
-| `most-rated` | A list of products that are rated highly |
+| Sort               | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `most-viewed`    | The default list of products, based on most number of views |
+| `best-sellers`   | A list of products that are best sellers                    |
+| `most-favorited` | A list of products that are most favorited                  |
+| `most-rated`     | A list of products that are rated highly                    |
 
 ### Request Body
 
@@ -1095,6 +1102,7 @@ query GetPopularProducts($language: String, $currency: String!, $sort: String, $
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1222,6 +1230,7 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1286,6 +1295,7 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1350,6 +1360,7 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1415,6 +1426,7 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                 "likesCount": 0,
                 "reviewsCount": 0,
                 "ratingAvg": 0,
+                "stockCount": 8,
                 "status": "active",
                 "variants": [
                     {
@@ -1461,15 +1473,15 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
 Get Products
 ------------
 
-| Sort | Description |
-|---|---|
-| `best-match` | The default list of products |
+| Sort                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `best-match`        | The default list of products              |
 | `price:low-to-high` | A list of products, from low to high cost |
 | `price:high-to-low` | A list of products, from high to low cost |
-| `best-sellers` | A list of best sellers |
-| `most-favorited` | A list of most favorited products |
-| `new-arrivals` | A list of newly added products |
-| `most-rated` | A list of most rated products |
+| `best-sellers`      | A list of best sellers                    |
+| `most-favorited`    | A list of most favorited products         |
+| `new-arrivals`      | A list of newly added products            |
+| `most-rated`        | A list of most rated products             |
 
 ### Request Body
 
@@ -1483,6 +1495,7 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1547,6 +1560,7 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1596,15 +1610,15 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
 Get Products By Category
 ------------------------
 
-| Sort | Description |
-|---|---|
-| `best-match` | The default list of products |
+| Sort                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `best-match`        | The default list of products              |
 | `price:low-to-high` | A list of products, from low to high cost |
 | `price:high-to-low` | A list of products, from high to low cost |
-| `best-sellers` | A list of best sellers |
-| `most-favorited` | A list of most favorited products |
-| `new-arrivals` | A list of newly added products |
-| `most-rated` | A list of most rated products |
+| `best-sellers`      | A list of best sellers                    |
+| `most-favorited`    | A list of most favorited products         |
+| `new-arrivals`      | A list of newly added products            |
+| `most-rated`        | A list of most rated products             |
 
 ### GraphQL Query
 
@@ -1621,6 +1635,7 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -1685,6 +1700,7 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1734,15 +1750,15 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
 Get Products By Categories
 --------------------------
 
-| Sort | Description |
-|---|---|
-| `best-match` | The default list of products |
+| Sort                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `best-match`        | The default list of products              |
 | `price:low-to-high` | A list of products, from low to high cost |
 | `price:high-to-low` | A list of products, from high to low cost |
-| `best-sellers` | A list of best sellers |
-| `most-favorited` | A list of most favorited products |
-| `new-arrivals` | A list of newly added products |
-| `most-rated` | A list of most rated products |
+| `best-sellers`      | A list of best sellers                    |
+| `most-favorited`    | A list of most favorited products         |
+| `new-arrivals`      | A list of newly added products            |
+| `most-rated`        | A list of most rated products             |
 
 ### GraphQL Query
 
@@ -1759,6 +1775,7 @@ query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: 
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -1825,6 +1842,7 @@ query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: 
                 "likesCount": 0,
                 "reviewsCount": 0,
                 "ratingAvg": 0,
+                "stockCount": 8,
                 "variants": [
                     {
                         "uuid": "30eb07ef-e95b-4b76-927e-2ba9291bb4c4",
@@ -1957,9 +1975,6 @@ query GetProduct($slug: String, $language: String, $currency: String) {
         brief(language: $language)
         slug
         discountPercentage
-        urgencyEnabled
-        urgencyMinStockCount
-        urgencyMaxStockCount
         startsAt
         finishesAt
     }
@@ -2140,8 +2155,6 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                 "slug": "summer-70",
                 "discountPercentage": 70,
                 "urgencyEnabled": true,
-                "urgencyMinStockCount": 3,
-                "urgencyMaxStockCount": 9,
                 "startsAt": "2026-01-01T00:00:00.000Z",
                 "finishesAt": "2026-12-31T00:00:00.000Z"
             },
@@ -2407,7 +2420,6 @@ query GetFeaturedCategories($language: String, $pageNumber: Int, $itemsPerPage: 
 }
 ```
 
-
 Get Languages
 -------------
 
@@ -2508,39 +2520,39 @@ Notifications are created by the system or admin and delivered to customers. Cus
 
 **Notification Types**
 
-| Type | Description |
-|---|---|
-| `ORDER_PLACED` | Order has been successfully placed |
-| `ORDER_CONFIRMED` | Order confirmed by the vendor |
-| `ORDER_PROCESSING` | Order is being prepared |
-| `ORDER_SHIPPED` | Order has been shipped |
-| `ORDER_OUT_FOR_DELIVERY` | Order is out for delivery |
-| `ORDER_DELIVERED` | Order has been delivered |
-| `ORDER_DELAYED` | Order delivery has been delayed |
-| `ORDER_CANCELLED` | Order was cancelled |
-| `ORDER_RETURNED` | Order return initiated |
-| `ORDER_REFUNDED` | Refund has been processed |
-| `PAYMENT_SUCCESSFUL` | Payment was completed successfully |
-| `PAYMENT_FAILED` | Payment attempt failed |
-| `PAYMENT_PENDING` | Payment is awaiting confirmation |
-| `PAYMENT_REFUND_INITIATED` | Refund has been initiated |
-| `PAYMENT_REFUND_COMPLETED` | Refund has been credited back |
-| `PAYMENT_METHOD_ADDED` | A new payment method was added |
-| `PAYMENT_METHOD_REMOVED` | A payment method was removed |
-| `PAYMENT_DUE_REMINDER` | Upcoming or overdue payment reminder |
-| `LOW_STOCK_ALERT` | Product stock is running low |
-| `OUT_OF_STOCK` | Product is now out of stock |
-| `BACK_IN_STOCK` | Previously out-of-stock product is available again |
-| `PRICE_DROP` | Product price has dropped |
-| `LIMITED_STOCK_WARNING` | Only a few units remaining |
+| Type                         | Description                                        |
+| ---------------------------- | -------------------------------------------------- |
+| `ORDER_PLACED`             | Order has been successfully placed                 |
+| `ORDER_CONFIRMED`          | Order confirmed by the vendor                      |
+| `ORDER_PROCESSING`         | Order is being prepared                            |
+| `ORDER_SHIPPED`            | Order has been shipped                             |
+| `ORDER_OUT_FOR_DELIVERY`   | Order is out for delivery                          |
+| `ORDER_DELIVERED`          | Order has been delivered                           |
+| `ORDER_DELAYED`            | Order delivery has been delayed                    |
+| `ORDER_CANCELLED`          | Order was cancelled                                |
+| `ORDER_RETURNED`           | Order return initiated                             |
+| `ORDER_REFUNDED`           | Refund has been processed                          |
+| `PAYMENT_SUCCESSFUL`       | Payment was completed successfully                 |
+| `PAYMENT_FAILED`           | Payment attempt failed                             |
+| `PAYMENT_PENDING`          | Payment is awaiting confirmation                   |
+| `PAYMENT_REFUND_INITIATED` | Refund has been initiated                          |
+| `PAYMENT_REFUND_COMPLETED` | Refund has been credited back                      |
+| `PAYMENT_METHOD_ADDED`     | A new payment method was added                     |
+| `PAYMENT_METHOD_REMOVED`   | A payment method was removed                       |
+| `PAYMENT_DUE_REMINDER`     | Upcoming or overdue payment reminder               |
+| `LOW_STOCK_ALERT`          | Product stock is running low                       |
+| `OUT_OF_STOCK`             | Product is now out of stock                        |
+| `BACK_IN_STOCK`            | Previously out-of-stock product is available again |
+| `PRICE_DROP`               | Product price has dropped                          |
+| `LIMITED_STOCK_WARNING`    | Only a few units remaining                         |
 
 **Priority Levels**
 
-| Value | Meaning |
-|---|---|
-| `LOW` | Informational, no urgency |
+| Value      | Meaning                         |
+| ---------- | ------------------------------- |
+| `LOW`    | Informational, no urgency       |
 | `MEDIUM` | Standard notification (default) |
-| `HIGH` | Requires immediate attention |
+| `HIGH`   | Requires immediate attention    |
 
 ---
 
@@ -3021,7 +3033,7 @@ query GetCouponOrders($uuid: String, $pageNumber: Int, $itemsPerPage: Int) {
 ```
 
 Get Current Customer Orders
------------------------------
+---------------------------
 
 ### GraphQL Query
 
@@ -3095,6 +3107,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                 descriptionHtml(language: $language)
                 featuredImageUrl
                 featuredThumbnailUrl
+                stockCount
                 status
             }
             variant {
@@ -3205,6 +3218,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
                             "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                             "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                             "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                            "stockCount": 8,
                             "status": "DRAFT",
                         },
                         "variant": {
@@ -3252,7 +3266,7 @@ query GetCurrentCustomerOrders($pageNumber: Int, $itemsPerPage: Int, $currency: 
 ```
 
 Get Current Customer Order
------------------------------
+--------------------------
 
 ### GraphQL Query
 
@@ -3326,6 +3340,7 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                 descriptionHtml(language: $language)
                 featuredImageUrl
                 featuredThumbnailUrl
+                stockCount
                 status
                 productCategories {
                     category {
@@ -3461,6 +3476,7 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
                         "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                         "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                         "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                        "stockCount": 8,
                         "status": "DRAFT",
                         "productCategories": [
                             {
@@ -3540,7 +3556,7 @@ query GetCurrentCustomerOrder($uuid: String!, $currency: String,  $language: Str
 ```
 
 Get Order Tracking (Timeline)
-------------------------------
+-----------------------------
 
 Returns 8 happy-path tracking stages as a flat array. If the order is cancelled, a 9th item (`Order Cancelled`, id `9`) is appended. Customers can only query their own orders; admins can query any order. Pass `language: "ar"` to get Arabic stage names.
 
@@ -3613,23 +3629,23 @@ query GetOrderTracking($uuid: String!, $language: String) {
 
 ### Notes
 
-| Field | Description |
-|---|---|
-| `[].id` | Stage position (1–8 for active orders; 1–9 when cancelled) |
-| `[].name` | Stage label — English by default, Arabic when `language: "ar"` |
-| `[].checked` | `true` if this stage has been reached |
-| `[].date` | Timestamp when the stage was reached; `null` if not yet reached |
-| `[].metadata.trackingId` | Carrier waybill number — populated on stage 6 (Dispatching) |
-| `[].metadata.cancellationReason` | Populated on stage 9 (Order Cancelled) |
-| `[].metadata.reviewText` | Customer review text — populated on stage 8 (Order Review) |
-| `[].metadata.reviewRating` | Customer rating (1–5) — populated on stage 8 (Order Review) |
+| Field                              | Description                                                      |
+| ---------------------------------- | ---------------------------------------------------------------- |
+| `[].id`                          | Stage position (1–8 for active orders; 1–9 when cancelled)     |
+| `[].name`                        | Stage label — English by default, Arabic when`language: "ar"` |
+| `[].checked`                     | `true` if this stage has been reached                          |
+| `[].date`                        | Timestamp when the stage was reached;`null` if not yet reached |
+| `[].metadata.trackingId`         | Carrier waybill number — populated on stage 6 (Dispatching)     |
+| `[].metadata.cancellationReason` | Populated on stage 9 (Order Cancelled)                           |
+| `[].metadata.reviewText`         | Customer review text — populated on stage 8 (Order Review)      |
+| `[].metadata.reviewRating`       | Customer rating (1–5) — populated on stage 8 (Order Review)    |
 
 **Cancellation / reopen behaviour:** The `ORDER_CANCELLED` event uses an `active` flag. When an order is reopened via a successful payment, the cancellation event is deactivated and the 9th item is no longer returned. If cancelled again, a fresh event is created with the latest reason.
 
 The `ORDER_REVIEW` stage (id 8) is stamped automatically when a customer calls `POST /v1/products/:uuid/reviews` with a valid `orderUuid`. Multiple reviews for the same order append text and average the rating.
 
 Get Current Customer Order Preview
------------------------------------
+----------------------------------
 
 ### GraphQL Query
 
@@ -3647,6 +3663,7 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                 descriptionHtml(language: $language)
                 featuredImageUrl
                 featuredThumbnailUrl
+                stockCount
                 status
                 salesCount
                 likesCount
@@ -3771,6 +3788,7 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
                         "descriptionHtml": "",
                         "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                         "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                        "stockCount": 8,
                         "status": "active",
                         "salesCount": 0,
                         "likesCount": 0,
@@ -3886,7 +3904,7 @@ query GetCurrentCustomerOrderPreview($language: String, $currency: String, $coup
 ```
 
 Get Current Customer Order Preview
------------------------------------
+----------------------------------
 
 ### GraphQL Query
 
@@ -3904,6 +3922,7 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                 descriptionHtml(language: $language)
                 featuredImageUrl
                 featuredThumbnailUrl
+                stockCount
                 status
                 salesCount
                 likesCount
@@ -4029,6 +4048,7 @@ query GetCurrentCustomerOrderPreviewV2($language: String, $currency: String, $co
                         "descriptionHtml": "",
                         "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                         "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                        "stockCount": 8,
                         "status": "active",
                         "salesCount": 0,
                         "likesCount": 0,
@@ -4207,6 +4227,7 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
     }
 }
 ```
+
 ### GraphQL Variables
 
 ```json
@@ -4287,7 +4308,7 @@ query GetCustomerWishlist($language: String, $currency: String, $pageNumber: Int
 ```
 
 Get Current Customer WishList Count
--------------------------------------
+-----------------------------------
 
 ### GraphQL Query
 
@@ -4308,7 +4329,7 @@ query GetCustomerWishlistCount {
 ```
 
 Get Customer Cart
-------------------
+-----------------
 
 ### GraphQL Query
 
@@ -4517,7 +4538,7 @@ query GetCustomerCart($language: String, $currency: String) {
 ```
 
 Get Current Customer Cart Count
---------------------------------
+-------------------------------
 
 ### GraphQL Query
 
@@ -4670,7 +4691,7 @@ query GetPost($slug: String!) {
 ```
 
 Get Current Customer Return Requests
--------------------------------------
+------------------------------------
 
 ### GraphQL Query
 
@@ -4729,6 +4750,7 @@ query GetCurrentCustomerReturnRequests($currency: String,  $language: String) {
                 descriptionHtml(language: $language)
                 featuredImageUrl
                 featuredThumbnailUrl
+                stockCount
                 status
                 productCategories {
                     category {
@@ -4854,7 +4876,7 @@ query GetCurrentCustomerReturnRequests($currency: String,  $language: String) {
 ```
 
 Get Current Customer Return Request
--------------------------------------
+-----------------------------------
 
 ### GraphQL Query
 
@@ -4913,6 +4935,7 @@ query GetCurrentCustomerReturnRequest($uuid: String!,$currency: String,  $langua
                 descriptionHtml(language: $language)
                 featuredImageUrl
                 featuredThumbnailUrl
+                stockCount
                 status
                 productCategories {
                     category {
@@ -5072,6 +5095,7 @@ query GetMinimumOrderValue($currency: String) {
     }
 }
 ```
+
 Get Free Shipping Key Value Pair
 --------------------------------
 
@@ -5124,8 +5148,6 @@ query GetCampaigns($language: String) {
     slug
     discountPercentage
     urgencyEnabled
-    urgencyMinStockCount
-    urgencyMaxStockCount
     startsAt
     finishesAt
   }
@@ -5144,7 +5166,6 @@ query GetCampaigns($language: String) {
 
 ### GraphQL Response
 
-
 ```json
 {
     "data": {
@@ -5155,8 +5176,6 @@ query GetCampaigns($language: String) {
                 "slug": "summer-70",
                 "discountPercentage": 50,
                 "urgencyEnabled": true,
-                "urgencyMinStockCount": 3,
-                "urgencyMaxStockCount": 9,
                 "startsAt": "2026-01-01T00:00:00.000Z",
                 "finishesAt": "2026-12-31T00:00:00.000Z"
             }
@@ -5178,8 +5197,6 @@ query GetFeaturedCampaign($language: String) {
     slug
     discountPercentage
     urgencyEnabled
-    urgencyMinStockCount
-    urgencyMaxStockCount
     startsAt
     finishesAt
     campaignCategories {
@@ -5213,8 +5230,6 @@ query GetFeaturedCampaign($language: String) {
             "slug": "summer-50",
             "discountPercentage": 50,
             "urgencyEnabled": true,
-            "urgencyMinStockCount": 3,
-            "urgencyMaxStockCount": 9,
             "startsAt": "2026-01-01T00:00:00.000Z",
             "finishesAt": "2026-12-31T00:00:00.000Z",
             "campaignCategories": [
@@ -5235,15 +5250,15 @@ query GetFeaturedCampaign($language: String) {
 Get Products In Featured Campaign
 ---------------------------------
 
-| Sort | Description |
-|---|---|
-| `best-match` | The default list of products |
+| Sort                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `best-match`        | The default list of products              |
 | `price:low-to-high` | A list of products, from low to high cost |
 | `price:high-to-low` | A list of products, from high to low cost |
-| `best-sellers` | A list of best sellers |
-| `most-favorited` | A list of most favorited products |
-| `new-arrivals` | A list of newly added products |
-| `most-rated` | A list of most rated products |
+| `best-sellers`      | A list of best sellers                    |
+| `most-favorited`    | A list of most favorited products         |
+| `new-arrivals`      | A list of newly added products            |
+| `most-rated`        | A list of most rated products             |
 
 ### GraphQL Query
 
@@ -5257,6 +5272,7 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -5356,8 +5372,6 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
                     "slug": "summer-50",
                     "discountPercentage": 50,
                     "urgencyEnabled": true,
-                    "urgencyMinStockCount": 3,
-                    "urgencyMaxStockCount": 9,
                     "startsAt": "2026-01-01T00:00:00.000Z",
                     "finishesAt": "2026-12-31T00:00:00.000Z"
                 }
@@ -5370,15 +5384,15 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
 Get Products In Desired Campaign
 --------------------------------
 
-| Sort | Description |
-|---|---|
-| `best-match` | The default list of products |
+| Sort                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `best-match`        | The default list of products              |
 | `price:low-to-high` | A list of products, from low to high cost |
 | `price:high-to-low` | A list of products, from high to low cost |
-| `best-sellers` | A list of best sellers |
-| `most-favorited` | A list of most favorited products |
-| `new-arrivals` | A list of newly added products |
-| `most-rated` | A list of most rated products |
+| `best-sellers`      | A list of best sellers                    |
+| `most-favorited`    | A list of most favorited products         |
+| `new-arrivals`      | A list of newly added products            |
+| `most-rated`        | A list of most rated products             |
 
 ### GraphQL Query
 
@@ -5392,6 +5406,7 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -5422,9 +5437,6 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
         brief(language: $language)
         slug
         discountPercentage
-        urgencyEnabled
-        urgencyMinStockCount
-        urgencyMaxStockCount
         startsAt
         finishesAt
     }
@@ -5495,8 +5507,6 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
                     "slug": "summer-70",
                     "discountPercentage": 50,
                     "urgencyEnabled": true,
-                    "urgencyMinStockCount": 3,
-                    "urgencyMaxStockCount": 9,
                     "startsAt": "2026-01-01T00:00:00.000Z",
                     "finishesAt": "2026-12-31T00:00:00.000Z"
                 }

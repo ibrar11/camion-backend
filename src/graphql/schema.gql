@@ -63,8 +63,6 @@ type Campaign {
   isActive: Boolean!
   isFeatured: Boolean!
   urgencyEnabled: Boolean!
-  urgencyMaxStockCount: Int
-  urgencyMinStockCount: Int
   name(language: String! = "en"): String!
   slug: String!
   startsAt: String!
