@@ -33,6 +33,7 @@ export class ClientsService {
         const client = this.clientRepository.create({
             uuid: crypto.randomUUID(),
             name: body.name,
+            role: body.role,
             description: body.description,
             homepage: body.homepage,
             secret: hashedSecret,
