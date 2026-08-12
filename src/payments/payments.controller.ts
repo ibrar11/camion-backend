@@ -27,6 +27,7 @@ import { Roles } from "../auth/roles.decorator";
 import { Customer } from "../customers/entities/customer.entity";
 
 import { SkipCashSessionService } from "./skipcash-session.service";
+import { SkipcashSdkResultDto } from "./dtos/SkipcashSdkResultDto";
 
 
 @UseGuards(AuthGuard, RolesGuard)
@@ -42,6 +43,13 @@ export class PaymentsController {
     @HttpCode(HttpStatus.CREATED)
     create(@Body() dto: CreatePaymentDto): Promise<PaymentTransaction> {
         return this.paymentsService.createPayment(dto);
+    }
+
+    @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+    @Post("result")
+    @HttpCode(HttpStatus.CREATED)
+    paymentResult(@Body() dto: SkipcashSdkResultDto): Promise<void> {
+        return this.paymentsService.paymentResult(dto);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)

@@ -1,6 +1,8 @@
 import {
+    BadRequestException,
     Inject,
     Injectable,
+    InternalServerErrorException,
     Logger,
     UnauthorizedException,
 } from "@nestjs/common";
@@ -8,7 +10,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 
-import { verifySkipcashSignature } from "../common/skipcash";
+import { generateSignature, verifySkipcashSignature } from "../common/skipcash";
 
 import { OrderStatus } from "../order/enums/OrderStatus";
 import { OrderTrackingEvent } from "../order/entities/order-tracking-event.entity";
@@ -22,7 +24,7 @@ import { PaymentStatus } from "./enums/PaymentStatus";
 
 import { Order } from "../order/entities/order.entity";
 
-import { SkipCashWebhookPayload, skipcashWebhookResponse } from "./types";
+import { SignaturePayload, SkipCashWebhookPayload, skipcashWebhookResponse } from "./types";
 
 import { Notification } from "../notifications/entities/notification.entity";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -36,6 +38,11 @@ import { getOrderReference } from "../common/maskUuid";
 
 import { SavedCardsService } from "./saved-cards.service";
 
+import { ConfigService } from "@nestjs/config";
+
+import { CustomerAddress } from "../customers/entities/customer-address.entity";
+import { moneyToString } from "src/common/currency";
+
 @Injectable()
 export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
@@ -45,10 +52,12 @@ export class PaymentsWebhookService {
         @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
         @InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
+        @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
         private readonly savedCardsService: SavedCardsService,
+        private readonly configService: ConfigService,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -70,6 +79,8 @@ export class PaymentsWebhookService {
                 PaymentId,
                 StatusId,
                 TransactionId,
+                TokenId,
+                Amount,
             } = payload;
 
             if (!TransactionId) {
@@ -170,6 +181,85 @@ export class PaymentsWebhookService {
 
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
+
+                if (TokenId && order.customer) {
+
+                    const address = await this.addressRepository.findOne({
+                        where: {
+                            customer: { id: order.customer.id },
+                            isDefault: true,
+                        },
+                    });
+
+                    if (!address) {
+                        throw new BadRequestException({
+                            error: 'User address cannot be found.'
+                        })
+                    }
+
+                    const payload: SignaturePayload = {
+                        Uid: crypto.randomUUID(),
+                        KeyId: this.configService.get<string>("SKIPCASH_KEY_ID"),
+                        Amount: Amount,
+                        FirstName: address.fullName.split(' ')[0],
+                        LastName: address.fullName.split(' ').slice(1).join(' '),
+                        Phone: address.phoneNumber || '',
+                        Email: order.customer.emailAddress,
+                        Street: address.streetAddress,
+                        City: address.city,
+                        State: address.state,
+                        Country: address.country,
+                        PostalCode: address.zipCode,
+                        TransactionId: PaymentId,
+                        Custom1: "",
+                    };
+
+                    const signature = generateSignature(payload);
+
+                    const res = await fetch(`${this.configService.get<string>("SKIPCASH_BASE_URL")}/token/cardDetails/${TokenId}`, {
+                        method: "POST",
+                        headers: {
+                            Authorization: signature,
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const data = await res.json();
+                    this.logger.log(`After hitting skipcash api ${data}`);
+
+                    if (!res.ok || data.hasError) {
+                        let message = "Payment creation failed";
+
+                        if (data?.error?.message) {
+                            message = `SkipCash error: ${data.error.message}`;
+                        } else if (data?.errorMessage) {
+                            message = `SkipCash error: ${data.errorMessage}`;
+                        } else if (res.status === 403) {
+                            message = "Forbidden: Signature does not match or invalid credentials";
+                        }
+
+                        this.logger.log(
+                            `Error saving card details for customer: ${order.customer.uuid} with token id ${TokenId}`,
+                        );
+                    }
+
+                    const savedCard = data.resultObj[0];
+
+                    if (savedCard) {
+                        const [expiryMonth, expiryYear] = savedCard.cardExpiry.split("/");
+
+                        await this.savedCardsService.saveCardToken(
+                            order.customer,
+                            TokenId,
+                            {
+                                brand: savedCard.cardType === 1 ? "Visa Card" : "MasterCard",
+                                last4: savedCard.cardNumber,
+                                expiryMonth: expiryMonth,
+                                expiryYear: expiryYear,
+                                cardholderName: order.customer.fullName
+                            }
+                        );
+                    }
+                }
 
                 const paymentEventExists = await this.trackingEventRepository.findOne({
                     where: { orderUuid: order.uuid, stage: OrderTrackingStage.PAYMENT_CONFIRMED },
@@ -353,182 +443,4 @@ export class PaymentsWebhookService {
             };
         }
     }
-
-    /**
-   * Handle SkipCash sdk webhook
-   */
-    // async handleSkipcashSdkWebhook(
-    //     payload: SkipCashWebhookPayload,
-    //     signature: string,
-    // ): Promise<{ received: boolean; status: string }> {
-    //     this.logger.log(`Received SkipCash webhook: ${JSON.stringify(payload)}`);
-
-    //     const isValid = verifySkipcashSignature(payload, signature);
-
-    //     if (!isValid) {
-    //         this.logger.warn("Invalid SkipCash webhook signature");
-    //         throw new UnauthorizedException({
-    //             error: "Invalid signature"
-    //         });
-    //     }
-
-    //     // 2. Find the order
-    //     const order = await this.orderRepository.findOne({
-    //         where: { uuid: payload.orderId },
-    //         relations: { customer: true, orderItems: true },
-    //     });
-
-    //     if (!order) {
-    //         this.logger.warn(`Order not found: ${payload.orderId}`);
-    //         return { received: true, status: 'order_not_found' };
-    //     }
-
-    //     // 3. Find or create payment transaction
-    //     let transaction = await this.paymentRepository.findOne({
-    //         where: { order: { id: order.id } },
-    //     });
-
-    //     if (!transaction) {
-    //         transaction = new PaymentTransaction();
-    //         transaction.id = crypto.randomUUID();
-    //         transaction.order = order;
-    //         transaction.provider = PaymentProvider.SKIPCASH;
-    //         transaction.currency = payload.currency;
-    //         transaction.amount = {
-    //             amount: Math.trunc(parseFloat(payload.amount)),
-    //             minorAmount: Math.round((parseFloat(payload.amount) % 1) * 100),
-    //             currencyCode: payload.currency,
-    //         };
-    //     }
-
-    //     // 4. Update transaction
-    //     transaction.transactionId = payload.paymentId;
-    //     transaction.rawResponse = payload;
-
-    //     // 5. Idempotent status update
-    //     const statusMap: Record<string, PaymentStatus> = {
-    //         paid: PaymentStatus.PAID,
-    //         failed: PaymentStatus.FAILED,
-    //         refunded: PaymentStatus.REFUNDED,
-    //     };
-
-    //     const newStatus = statusMap[payload.status] || PaymentStatus.PENDING;
-
-    //     // If already paid, skip processing
-    //     if (transaction.status === PaymentStatus.PAID) {
-    //         this.logger.log(`Order ${payload.orderId} already paid, skipping`);
-    //         return { received: true, status: 'already_paid' };
-    //     }
-
-    //     transaction.status = newStatus;
-    //     transaction.lastAttemptAt = new Date();
-    //     await this.paymentRepository.save(transaction);
-
-    //     // 6. Update order status
-    //     if (payload.status === 'paid') {
-    //         order.status = OrderStatus.PAYMENT_SUCCESSFUL;
-    //         await this.orderRepository.save(order);
-
-    //         // 7. Save card token if provided
-    //         if (payload.tokenId && order.customer) {
-    //             await this.savedCardsService.saveCardToken(order.customer, payload.tokenId, {
-    //                 brand: payload.cardBrand || 'unknown',
-    //                 last4: payload.cardLast4 || '****',
-    //                 expiryMonth: payload.cardExpiryMonth || '12',
-    //                 expiryYear: payload.cardExpiryYear || '2030',
-    //                 cardholderName: payload.cardholderName,
-    //             });
-    //             this.logger.log(`Saved card token ${payload.tokenId} for customer ${order.customer.uuid}`);
-    //         }
-
-    //         // 8. Send notifications
-    //         await this.sendPaymentSuccessNotifications(order);
-
-    //     } else if (payload.status === 'failed') {
-    //         order.status = OrderStatus.PAYMENT_FAILED;
-    //         await this.orderRepository.save(order);
-
-    //         await this.sendPaymentFailedNotifications(order);
-    //     }
-
-    //     return { received: true, status: 'processed' };
-    // }
-
-    /**
-     * Send payment success notifications
-     */
-    // private async sendPaymentSuccessNotifications(order: Order): Promise<void> {
-    //     if (!order.customer) return;
-
-    //     const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
-
-    //     await this.notificationsService.create({
-    //         customerUUID: order.customer.uuid,
-    //         type: NotificationType.PAYMENT_SUCCESSFUL,
-    //         title: 'Payment Successful',
-    //         brief: 'Your payment was processed successfully.',
-    //         message: `Payment of ${orderTotal} for order #${order.uuid} was successful. Your order is now being processed.`,
-    //         priority: NotificationPriority.HIGH,
-    //         payload: {
-    //             orderUuid: order.uuid,
-    //             type: NotificationType.PAYMENT_SUCCESSFUL,
-    //             isRead: 'false',
-    //         },
-    //     });
-
-    //     if (order.customer.emailAddress) {
-    //         await this.emailService.sendPaymentSuccessEmail(order.customer.emailAddress, {
-    //             customerName: order.customer.fullName,
-    //             orderId: order.uuid,
-    //             orderTotal,
-    //             paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
-    //             items: order.orderItems?.map((item) => ({
-    //                 name: item.variant?.titleEn || item.product?.titleEn || 'Item',
-    //                 quantity: item.quantity,
-    //                 unitPrice: `${item.price.amount} ${item.price.currencyCode}`,
-    //                 lineTotal: `${item.total.amount} ${item.total.currencyCode}`,
-    //             })) || [],
-    //             deliveryDetails: {
-    //                 fullName: order.shippingAddress?.fullName || '',
-    //                 streetAddress: order.shippingAddress?.streetAddress || '',
-    //                 apartment: order.shippingAddress?.apartment || '',
-    //                 city: order.shippingAddress?.city || '',
-    //                 state: order.shippingAddress?.state || '',
-    //                 country: order.shippingAddress?.country || '',
-    //                 zipCode: order.shippingAddress?.zipCode || '',
-    //                 phoneNumber: order.shippingAddress?.phoneNumber || '',
-    //             },
-    //             nextSteps: "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
-    //         });
-    //     }
-    // }
-
-    /**
-     * Send payment failed notifications
-     */
-    // private async sendPaymentFailedNotifications(order: Order): Promise<void> {
-    //     if (!order.customer) return;
-
-    //     await this.notificationsService.create({
-    //         customerUUID: order.customer.uuid,
-    //         type: NotificationType.PAYMENT_FAILED,
-    //         title: 'Payment Failed',
-    //         brief: 'Your payment could not be processed.',
-    //         message: `Payment for order #${order.uuid} failed. Please try again or use a different payment method.`,
-    //         priority: NotificationPriority.HIGH,
-    //         payload: {
-    //             orderUuid: order.uuid,
-    //             type: NotificationType.PAYMENT_FAILED,
-    //             isRead: 'false',
-    //         },
-    //     });
-
-    //     if (order.customer.emailAddress) {
-    //         await this.emailService.sendPaymentFailedEmail(order.customer.emailAddress, {
-    //             customerName: order.customer.fullName,
-    //             orderId: order.uuid,
-    //             failureReason: 'Your payment could not be processed. Please try again.',
-    //         });
-    //     }
-    // }
 }
