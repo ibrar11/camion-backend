@@ -342,7 +342,7 @@ export const multiplyMoney = (money: Money, factor: number): Money => {
 	}
 
 	// Multiply the total minor amount by a factor
-	const totalDestMinor = Math.ceil((money.amount * 100) + money.minorAmount * factor);
+	const totalDestMinor = Math.ceil(((money.amount * 100) + money.minorAmount) * factor);
 
 	return {
 		amount: Math.trunc(totalDestMinor / 100),

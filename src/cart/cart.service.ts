@@ -411,9 +411,11 @@ export class CartItemsService {
             });
         }
 
+        const campaign = getBestCampaign(product);
+
         // Calculate the price of the product/variant
         // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, false);
-        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, true);
+        const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, campaign, body.currency, true);
 
         //Check if a cart item with the target variant already exists
         const existingItem = await this.cartRepository.findOne({

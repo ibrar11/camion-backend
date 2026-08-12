@@ -146,7 +146,12 @@ export class Product {
 	status: ProductStatus;
 
 	@Column({ type: "boolean", default: true, })
+	@Index()
 	procurementStatus: boolean;
+
+	@Column({ type: "boolean", default: true, })
+	@Index()
+	resyncStatus: boolean;
 
 	@Field(() => String, { nullable: true })
 	@Column({ type: 'varchar', length: 128, nullable: true, default: null })
