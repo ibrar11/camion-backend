@@ -433,6 +433,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -499,6 +500,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -563,6 +565,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -628,6 +631,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -694,6 +698,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -758,6 +763,7 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -822,6 +828,7 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -886,6 +893,7 @@ query GetRecommendedProducts($slug: String!, $language: String, $currency: Strin
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -959,6 +967,7 @@ query GetFeaturedProducts($language: String, $sort: String, $currency: String!, 
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -1022,6 +1031,7 @@ query GetFeaturedProducts($language: String, $sort: String, $currency: String!, 
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1093,6 +1103,7 @@ query GetPopularProducts($language: String, $currency: String!, $sort: String, $
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1220,6 +1231,7 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1284,6 +1296,7 @@ query GetRelatedProducts($slug: String!, $language: String, $currency: String!, 
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1348,6 +1361,7 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1413,6 +1427,7 @@ query GetRecentlyViewedProducts($language: String, $currency: String!, $pageNumb
                 "likesCount": 0,
                 "reviewsCount": 0,
                 "ratingAvg": 0,
+                "stockCount": 8,
                 "status": "active",
                 "variants": [
                     {
@@ -1481,6 +1496,7 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -1545,6 +1561,7 @@ query GetProducts($language: String, $currency: String, $sort: String, $pageNumb
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1619,6 +1636,7 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -1683,6 +1701,7 @@ query GetProductsByCategory($slug: String!, $language: String, $currency: String
                 "descriptionHtml": "<b>Your new iPhone awaits. Make it yours</b>",
                 "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
                 "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 1,
@@ -1757,6 +1776,7 @@ query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: 
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     variants {
       uuid
       title(language: $language)
@@ -1823,6 +1843,7 @@ query GetProductsByCategories($slugs: [String!]!, $language: String, $currency: 
                 "likesCount": 0,
                 "reviewsCount": 0,
                 "ratingAvg": 0,
+                "stockCount": 8,
                 "variants": [
                     {
                         "uuid": "30eb07ef-e95b-4b76-927e-2ba9291bb4c4",
@@ -5253,6 +5274,7 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
@@ -5386,6 +5408,7 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
     likesCount
     reviewsCount
     ratingAvg
+    stockCount
     status
     variants {
       uuid
