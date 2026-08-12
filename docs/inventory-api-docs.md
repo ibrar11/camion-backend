@@ -654,6 +654,8 @@ Get products by a category | `filters={"slug":"sneakers"}`
         "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
         "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
         "status": "DRAFT",
+        "procurementStatus": true, //by default true for products that are available on 1688, will be false for products that are removed from 1688.
+        "resyncStatus": false, //by default false, will be true for products whose variants have been changed on 1688 and need to be resync.
         "options": [],
         "variants": []
     }
@@ -684,6 +686,8 @@ GET /v1/products/<product-uuid> HTTP/1.1
     "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
     "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
     "status": "DRAFT",
+    "procurementStatus": true, //by default true for products that are available on 1688, will be false for products that are removed from 1688.
+    "resyncStatus": false, //by default false, will be true for products whose variants have been changed on 1688 and need to be resync.
     "options": [],
     "variants": []
 }
