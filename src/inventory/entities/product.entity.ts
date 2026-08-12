@@ -1,6 +1,7 @@
 import {
-	ObjectType,
 	Field,
+	Int,
+	ObjectType,
 } from "@nestjs/graphql";
 
 import {
@@ -112,6 +113,9 @@ export class Product {
 	@Field(() => String, { name: "descriptionHtml" })
 	descriptionHtml: string;
 
+	@Field(() => Int, { nullable: true })
+	stockCount: number | null;
+
 	@Field(() => String)
 	@Column({ type: "text", })
 	descriptionHtmlEn: string;
@@ -155,6 +159,12 @@ export class Product {
 	@Field(() => String, { nullable: true })
 	@Column({ type: 'varchar', length: 64, nullable: true, default: null })
 	procurementId: string | null;
+
+	@Column({ type: "boolean", default: false, })
+	urgencyEnabled: boolean;
+
+	@Column({ type: "integer", nullable: true, default: null, })
+	urgencyStockCount: number | null;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })

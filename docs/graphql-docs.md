@@ -463,6 +463,9 @@ query SearchProducts($query: String!, $language: String, $currency: String!, $so
         brief(language: $language)
         slug
         discountPercentage
+        urgencyEnabled
+        urgencyMinStockCount
+        urgencyMaxStockCount
         startsAt
         finishesAt
     }
@@ -1881,6 +1884,7 @@ query GetProduct($slug: String, $language: String, $currency: String) {
     featuredImageUrl
     featuredThumbnailUrl
     sizechartUrl
+    stockCount
     status
     salesCount
     likesCount
@@ -1953,6 +1957,9 @@ query GetProduct($slug: String, $language: String, $currency: String) {
         brief(language: $language)
         slug
         discountPercentage
+        urgencyEnabled
+        urgencyMinStockCount
+        urgencyMaxStockCount
         startsAt
         finishesAt
     }
@@ -2016,6 +2023,7 @@ query GetProduct($slug: String, $language: String, $currency: String) {
             "featuredImageUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
             "featuredThumbnailUrl": "https://assets.dev.camiontrading.com/product-images/a5e23a38-d42c-4340-b601-51788510e52e.jpg",
             "sizechartUrl": "https://assets.dev.camiontrading.com/sizecharts/6e6992af-e7a2-4be4-8d23-46c0c7836afd.webp",
+            "stockCount": 8,
             "status": "active",
             "salesCount": 0,
             "likesCount": 0,
@@ -2131,6 +2139,9 @@ query GetProduct($slug: String, $language: String, $currency: String) {
                 "brief": "Get 70% off on all summer wear",
                 "slug": "summer-70",
                 "discountPercentage": 70,
+                "urgencyEnabled": true,
+                "urgencyMinStockCount": 3,
+                "urgencyMaxStockCount": 9,
                 "startsAt": "2026-01-01T00:00:00.000Z",
                 "finishesAt": "2026-12-31T00:00:00.000Z"
             },
@@ -5107,11 +5118,14 @@ Get Campaigns
 
 ```graphql
 query GetCampaigns($language: String) {
-  getCampaigns(language: $language) {
+    getCampaigns(language: $language) {
     uuid
     name(language: $language)
     slug
     discountPercentage
+    urgencyEnabled
+    urgencyMinStockCount
+    urgencyMaxStockCount
     startsAt
     finishesAt
   }
@@ -5140,6 +5154,9 @@ query GetCampaigns($language: String) {
                 "name": "Summer 70%",
                 "slug": "summer-70",
                 "discountPercentage": 50,
+                "urgencyEnabled": true,
+                "urgencyMinStockCount": 3,
+                "urgencyMaxStockCount": 9,
                 "startsAt": "2026-01-01T00:00:00.000Z",
                 "finishesAt": "2026-12-31T00:00:00.000Z"
             }
@@ -5160,6 +5177,9 @@ query GetFeaturedCampaign($language: String) {
     name(language: $language)
     slug
     discountPercentage
+    urgencyEnabled
+    urgencyMinStockCount
+    urgencyMaxStockCount
     startsAt
     finishesAt
     campaignCategories {
@@ -5192,6 +5212,9 @@ query GetFeaturedCampaign($language: String) {
             "name": "Summer 50%",
             "slug": "summer-50",
             "discountPercentage": 50,
+            "urgencyEnabled": true,
+            "urgencyMinStockCount": 3,
+            "urgencyMaxStockCount": 9,
             "startsAt": "2026-01-01T00:00:00.000Z",
             "finishesAt": "2026-12-31T00:00:00.000Z",
             "campaignCategories": [
@@ -5293,6 +5316,7 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
                 "uuid": "d7e99058-6148-47f7-9e40-154b4a491921",
                 "slug": "women-s-elastic-waist-drawstring-straight-casual-974575306049",
                 "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 0,
@@ -5331,6 +5355,9 @@ query GetProductsInFeaturedCampaign($language: String, $currency: String, $sort:
                     "brief": "Get 50% off on all summer wear",
                     "slug": "summer-50",
                     "discountPercentage": 50,
+                    "urgencyEnabled": true,
+                    "urgencyMinStockCount": 3,
+                    "urgencyMaxStockCount": 9,
                     "startsAt": "2026-01-01T00:00:00.000Z",
                     "finishesAt": "2026-12-31T00:00:00.000Z"
                 }
@@ -5395,6 +5422,9 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
         brief(language: $language)
         slug
         discountPercentage
+        urgencyEnabled
+        urgencyMinStockCount
+        urgencyMaxStockCount
         startsAt
         finishesAt
     }
@@ -5425,6 +5455,7 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
                 "uuid": "d7e99058-6148-47f7-9e40-154b4a491921",
                 "slug": "women-s-elastic-waist-drawstring-straight-casual-974575306049",
                 "title": "Women's Elastic Waist Drawstring Straight Casual Pants Fashionable Satin Leopard Print Jacquard Trousers",
+                "stockCount": 8,
                 "salesCount": 0,
                 "likesCount": 0,
                 "reviewsCount": 0,
@@ -5463,6 +5494,9 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
                     "brief": "Get 70% off on all summer wear",
                     "slug": "summer-70",
                     "discountPercentage": 50,
+                    "urgencyEnabled": true,
+                    "urgencyMinStockCount": 3,
+                    "urgencyMaxStockCount": 9,
                     "startsAt": "2026-01-01T00:00:00.000Z",
                     "finishesAt": "2026-12-31T00:00:00.000Z"
                 }

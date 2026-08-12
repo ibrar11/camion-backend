@@ -16,6 +16,7 @@ import { getSkipAndTake } from "../common/pagination";
 
 import { CreateCampaignDto } from './dtos/CreateCampaignDto';
 import { UpdateCampaignDto } from "./dtos/UpdateCampaignDto";
+import { UpdateCampaignUrgencyDto } from "./dtos/UpdateCampaignUrgencyDto";
 
 import { Campaign } from './entities/campaign.entity';
 import { CampaignCategory } from './entities/campaign-category.entity';
@@ -380,6 +381,53 @@ export class CampaignsService {
 		this.campaignsScheduler.scheduleCartAdjustment(campaign);
 
 		return campaign;
+	}
+
+	/**
+	 * Updates campaign urgency configuration
+	 *
+	 * @param uuid
+	 * @param body
+	 */
+	async updateCampaignUrgency(uuid: string, body: UpdateCampaignUrgencyDto): Promise<Campaign> {
+		this.logger.log(`Updating campaign urgency: ${uuid}`);
+
+		const campaign = await this.campaignRepository.findOneBy({ uuid: uuid, });
+		if (campaign === null) {
+			throw new NotFoundException({
+				error: "Failed to find the campaign. Please check and try again.",
+			});
+		}
+
+		if (!body.enabled) {
+			campaign.urgencyEnabled = false;
+			campaign.urgencyMinStockCount = null;
+			campaign.urgencyMaxStockCount = null;
+			return this.campaignRepository.save(campaign);
+		}
+
+		if (body.minStockCount === undefined || body.maxStockCount === undefined) {
+			throw new BadRequestException({
+				errors: {
+					minStockCount: "Minimum stock count is required when urgency is enabled.",
+					maxStockCount: "Maximum stock count is required when urgency is enabled.",
+				},
+			});
+		}
+
+		if (body.minStockCount > body.maxStockCount) {
+			throw new BadRequestException({
+				errors: {
+					minStockCount: "Minimum stock count cannot be greater than maximum stock count.",
+					maxStockCount: "Maximum stock count cannot be less than minimum stock count.",
+				},
+			});
+		}
+
+		campaign.urgencyEnabled = true;
+		campaign.urgencyMinStockCount = Math.max(0, Math.floor(body.minStockCount));
+		campaign.urgencyMaxStockCount = Math.max(0, Math.floor(body.maxStockCount));
+		return this.campaignRepository.save(campaign);
 	}
 
 	/**
