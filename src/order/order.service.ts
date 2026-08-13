@@ -108,6 +108,9 @@ import { PushNotificationService } from "../notifications/push-notification.serv
 import { ProductStatus } from "../inventory/enums/ProductStatus.enum";
 
 import { Product } from "../inventory/entities/product.entity";
+import { ProductReview } from "../inventory/entities/product-review.entity";
+
+import { ReturnRequest } from "../returns/entities/return-request.entity";
 
 import { getBestCampaign } from "../common/bestCampaign";
 
@@ -1750,6 +1753,101 @@ export class OrderService {
                 details: error,
             });
         }
+    }
+
+    /**
+     * Permanently deletes an order and every record that references it: order items,
+     * payment transaction, JOP WMS inbound/outbound links, tracking events, and return
+     * requests (with their evidence). Product reviews that cite this order have their
+     * order reference cleared rather than being deleted, since a review belongs to the
+     * product, not the order. SuperAdmin only — irreversible, unlike cancel().
+     *
+     * Reserved stock is restored and coupon usage is released, unless goods already
+     * shipped (a SHIPPED WMS outbound exists) — in that case inventory/coupon are left
+     * untouched since the physical goods already left the warehouse.
+     */
+    async hardDeleteOrder(uuid: string): Promise<{ message: string }> {
+        let order: Order | null = null;
+
+        if (uuid.length === 6) {
+            order = await this.orderRepository
+                .createQueryBuilder("order")
+                .leftJoinAndSelect("order.orderItems", "orderItems")
+                .leftJoinAndSelect("orderItems.variant", "variant")
+                .leftJoinAndSelect("orderItems.warehouse", "warehouse")
+                .leftJoinAndSelect("order.paymentTransaction", "paymentTransaction")
+                .leftJoinAndSelect("order.coupon", "coupon")
+                .leftJoinAndSelect("order.globalCoupon", "globalCoupon")
+                .where('RIGHT("order"."uuid"::text, 6) = :uuid', { uuid })
+                .getOne();
+        } else {
+            order = await this.orderRepository.findOne({
+                where: { uuid },
+                relations: {
+                    orderItems: { variant: true, warehouse: true },
+                    paymentTransaction: true,
+                    coupon: true,
+                    globalCoupon: true,
+                },
+            });
+        }
+
+        if (!order) {
+            throw new NotFoundException({ error: 'Order not found' });
+        }
+
+        const orderUuid = order.uuid;
+
+        const shippedOutboundLink = await this.wmsOrderLinkRepository
+            .createQueryBuilder('link')
+            .innerJoin('link.wmsOrder', 'wmsOrder', 'wmsOrder.type = :type AND wmsOrder.status = :status', {
+                type: JopWmsOrderType.OUTBOUND,
+                status: JopWmsOutboundStatus.SHIPPED,
+            })
+            .where('link.orderUuid = :uuid', { uuid: orderUuid })
+            .getOne();
+
+        if (shippedOutboundLink) {
+            this.logger.warn(`hardDeleteOrder ${orderUuid}: goods already shipped — skipping inventory restore and coupon release`);
+        } else {
+            await this.restoreInventory(order);
+            await this.releaseCouponUsage(order);
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // ReturnRequest has no onDelete: 'CASCADE' toward Order, so it must be removed
+            // before the order row itself or the delete would fail on the FK constraint.
+            // ReturnEvidence cascades from ReturnRequest at the DB level (onDelete: CASCADE).
+            await queryRunner.manager.delete(ReturnRequest, { order: { id: order.id } });
+
+            // Plain orderUuid columns, not enforced FKs — clear rather than fail on them.
+            await queryRunner.manager.delete(OrderTrackingEvent, { orderUuid });
+            await queryRunner.manager.update(ProductReview, { orderUuid }, { orderUuid: null });
+
+            // JopWmsOrderLink cascades automatically (onDelete: 'CASCADE' on its Order FK).
+            // orderItems/paymentTransaction cascade via Order's own relation config
+            // (cascade: true), since both are loaded on `order`.
+            await queryRunner.manager.remove(Order, order);
+
+            await queryRunner.commitTransaction();
+        } catch (error: any) {
+            await queryRunner.rollbackTransaction();
+            this.logger.error(`hardDeleteOrder ${orderUuid}: failed — ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to delete order',
+                details: error?.message || error,
+            });
+        } finally {
+            await queryRunner.release();
+        }
+
+        this.logger.warn(`Order ${orderUuid} HARD DELETED — items, payment record, WMS links, tracking events, and return requests removed`);
+
+        return { message: `Order ${orderUuid} permanently deleted` };
     }
 
     /**
