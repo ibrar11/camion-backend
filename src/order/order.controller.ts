@@ -135,4 +135,11 @@ export class OrderController {
     cancel(@Param('uuid') uuid: string): Promise<void> {
         return this.orderService.cancel(uuid);
     }
+
+    @Roles(UserRole.SuperAdmin)
+    @Delete(':uuid/hard-delete')
+    @HttpCode(HttpStatus.OK)
+    hardDelete(@Param('uuid') uuid: string): Promise<{ message: string }> {
+        return this.orderService.hardDeleteOrder(uuid);
+    }
 }
