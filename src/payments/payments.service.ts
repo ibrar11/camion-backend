@@ -1,5 +1,4 @@
 import {
-    BadRequestException,
     HttpException,
     Inject,
     Injectable,
@@ -25,11 +24,10 @@ import { ExchangeRateService } from "../pricing/exchange-rate.service";
 
 import { PaymentProvider } from "./enums/PaymentProvider";
 
-import { getExchangedPrice, moneyToString } from "../common/currency";
+import { getExchangedPrice } from "../common/currency";
 
 import { SkipCashSessionService } from "./skipcash-session.service";
 
-import { SignaturePayload, SkipCashSessionResponse } from "./types";
 import { SkipcashSdkResultDto } from "./dtos/SkipcashSdkResultDto";
 
 import { Order } from "../order/entities/order.entity";
@@ -51,10 +49,6 @@ import { SavedCardsService } from "./saved-cards.service";
 import { OrderTrackingStage } from "../order/enums/OrderTrackingStage";
 
 import { getOrderReference } from "../common/maskUuid";
-import { ConfigService } from "@nestjs/config";
-import { generateSignature } from "../common/skipcash";
-
-import { CustomerAddress } from "../customers/entities/customer-address.entity";
 
 @Injectable()
 export class PaymentsService {
@@ -67,13 +61,11 @@ export class PaymentsService {
         @Inject(SkipCashSessionService) private readonly skipCashSessionService: SkipCashSessionService,
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
         @InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
-        @InjectRepository(CustomerAddress) private readonly addressRepository: Repository<CustomerAddress>,
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
         private readonly savedCardsService: SavedCardsService,
         private strategyfactory: PaymentStrategyFactory,
-        private readonly configService: ConfigService,
     ) { }
 
     /**
@@ -144,8 +136,25 @@ export class PaymentsService {
     async createSkipCashSession(
         customerUuid: string,
         dto: CreateSkipCashSessionDto,
-    ): Promise<SkipCashSessionResponse> {
-        return this.skipCashSessionService.createSession(customerUuid, dto);
+    ): Promise<PaymentTransaction> {
+
+        // Create payment transaction
+        const transaction = this.paymentTransactionRepository.create({
+            provider: dto.provider,
+            amount: dto.amount,
+            currency: dto.currency,
+            status: PaymentStatus.PENDING,
+            paymentMethod: dto.paymentMethod,
+        })
+        await this.paymentTransactionRepository.save(transaction);
+
+        const result = await this.skipCashSessionService.createSession(customerUuid, dto);
+
+        transaction.transactionId = result.paymentId || '';
+        transaction.rawResponse = result;
+
+        this.logger.log(`Completed create payment for order ${dto.order} customer: ${dto.firstName} ${dto.lastName}`);
+        return await this.paymentTransactionRepository.save(transaction);
     }
 
     /**
@@ -228,83 +237,11 @@ export class PaymentsService {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
 
-                if (dto.tokenId && order.customer) {
-
-                    const address = await this.addressRepository.findOne({
-                        where: {
-                            customer: { id: order.customer.id },
-                            isDefault: true,
-                        },
-                    });
-
-                    if (!address) {
-                        throw new BadRequestException({
-                            error: 'User address cannot be found.'
-                        })
-                    }
-
-                    const payload: SignaturePayload = {
-                        Uid: crypto.randomUUID(),
-                        KeyId: this.configService.get<string>("SKIPCASH_KEY_ID"),
-                        Amount: moneyToString(dto.amount),
-                        FirstName: address.fullName.split(' ')[0],
-                        LastName: address.fullName.split(' ').slice(1).join(' '),
-                        Phone: address.phoneNumber || '',
-                        Email: order.customer.emailAddress,
-                        Street: address.streetAddress,
-                        City: address.city,
-                        State: address.state,
-                        Country: address.country,
-                        PostalCode: address.zipCode,
-                        TransactionId: dto.paymentId,
-                        Custom1: "",
-                    };
-
-                    const signature = generateSignature(payload);
-
-                    const res = await fetch(`${this.configService.get<string>("SKIPCASH_BASE_URL")}/token/cardDetails/${dto.tokenId}`, {
-                        method: "POST",
-                        headers: {
-                            Authorization: signature,
-                            "Content-Type": "application/json",
-                        },
-                    });
-                    const data = await res.json();
-                    this.logger.log(`After hitting skipcash api ${data}`);
-
-                    if (!res.ok || data.hasError) {
-                        let message = "Payment creation failed";
-
-                        if (data?.error?.message) {
-                            message = `SkipCash error: ${data.error.message}`;
-                        } else if (data?.errorMessage) {
-                            message = `SkipCash error: ${data.errorMessage}`;
-                        } else if (res.status === 403) {
-                            message = "Forbidden: Signature does not match or invalid credentials";
-                        }
-
-                        throw new InternalServerErrorException(
-                            message,
-                        );
-                    }
-
-                    const savedCard = data.resultObj[0];
-
-                    if (savedCard) {
-                        const [expiryMonth, expiryYear] = savedCard.cardExpiry.split("/");
-
-                        await this.savedCardsService.saveCardToken(
-                            order.customer,
-                            dto.tokenId,
-                            {
-                                brand: savedCard.cardType === 1 ? "Visa Card" : "MasterCard",
-                                last4: savedCard.cardNumber,
-                                expiryMonth: expiryMonth,
-                                expiryYear: expiryYear,
-                                cardholderName: order.customer.fullName
-                            }
-                        );
-                    }
+                if (dto.tokenId && dto.tokenId !== "NA" && order.customer) {
+                    await this.savedCardsService.saveCardToken(
+                        order.customer,
+                        dto.tokenId
+                    );
                 }
 
                 const paymentEventExists = await this.trackingEventRepository.findOne({
@@ -353,7 +290,7 @@ export class PaymentsService {
                     const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
 
                     notification = await this.notificationsService.create({
-                        customerUUID: getOrderReference(order.customer.uuid),
+                        customerUUID: order.customer.uuid,
                         type: NotificationType.PAYMENT_SUCCESSFUL,
                         title: 'Payment Successful',
                         brief: 'Your order has been placed and payment confirmed.',
@@ -410,7 +347,7 @@ export class PaymentsService {
 
                     if (order.customer) {
                         notification = await this.notificationsService.create({
-                            customerUUID: getOrderReference(order.customer.uuid),
+                            customerUUID: order.customer.uuid,
                             type: NotificationType.PAYMENT_FAILED,
                             title: 'Payment Failed',
                             brief: 'Your payment could not be processed.',
@@ -444,7 +381,7 @@ export class PaymentsService {
 
                     if (order.customer) {
                         notification = await this.notificationsService.create({
-                            customerUUID: getOrderReference(order.customer.uuid),
+                            customerUUID: order.customer.uuid,
                             type: NotificationType.PAYMENT_FAILED,
                             title: 'Payment Cancelled',
                             brief: 'Your payment was cancelled.',

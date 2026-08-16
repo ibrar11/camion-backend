@@ -120,3 +120,9 @@ export interface SkipCashWebhookPayload {
     cardExpiryYear?: string;
     cardholderName: string;
 }
+
+export interface SkipCashCard { 
+    cardNumber: string, 
+    cardType: number, 
+    cardExpiry: string, 
+}

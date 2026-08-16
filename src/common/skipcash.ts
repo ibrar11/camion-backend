@@ -56,9 +56,6 @@ export function verifySkipcashSignature(payload: SkipcashWebhookDto | SkipCashWe
         .createHmac("sha256", webhookKey)
         .update(baseString)
         .digest("base64");
-    
-        console.log("receivedSignaturereceivedSignaturereceivedSignature",receivedSignature)
-        console.log("computedSignaturecomputedSignaturecomputedSignature",computedSignature)
 
     return computedSignature === receivedSignature;
 }

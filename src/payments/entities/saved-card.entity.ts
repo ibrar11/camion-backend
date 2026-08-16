@@ -8,44 +8,47 @@ import {
     UpdateDateColumn,
 } from 'typeorm';
 
+import { Field, ObjectType } from "@nestjs/graphql";
+
 import { Exclude } from 'class-transformer';
 
 import { Customer } from '../../customers/entities/customer.entity';
-
+@ObjectType()
 @Entity({ name: 'saved_cards' })
 export class SavedCard {
     @Exclude()
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Field()
     @Column({ type: 'uuid', unique: true })
     uuid: string;
 
-    @ManyToOne(() => Customer, { onDelete: 'CASCADE' })
+    @ManyToOne(() => Customer, (customer) => customer.savedCards, { onDelete: 'CASCADE' })
     @Index()
     customer: Customer;
 
+    @Field()
     @Column({ type: 'varchar', length: 64, unique: true })
     tokenId: string; // SkipCash token ID
 
-    @Column({ type: 'varchar', length: 16 })
+    @Field()
     cardBrand: string; // visa, mastercard, amex, etc.
 
-    @Column({ type: 'varchar', length: 4 })
+    @Field()
     last4: string;
 
-    @Column({ type: 'varchar', length: 5 })
+    @Field()
     expiryMonth: string;
 
-    @Column({ type: 'varchar', length: 5 })
+    @Field()
     expiryYear: string;
 
-    @Column({ type: 'varchar', length: 32, nullable: true })
-    cardholderName: string;
-
+    @Field()
     @Column({ type: 'boolean', default: true })
     isActive: boolean;
 
+    @Field()
     @Column({ type: 'boolean', default: false })
     isDefault: boolean;
 

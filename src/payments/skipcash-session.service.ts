@@ -21,11 +21,12 @@ import { SavedCardsService } from './saved-cards.service';
 
 import { SkipCashSessionResponse } from './types';
 
+import { moneyToString } from '../common/currency';
+
 
 @Injectable()
 export class SkipCashSessionService {
     private readonly logger = new Logger(SkipCashSessionService.name);
-    private readonly apiBaseUrl: string;
     private readonly apiKey: string;
     private readonly webhookUrl: string;
 
@@ -38,16 +39,8 @@ export class SkipCashSessionService {
         private readonly customerRepository: Repository<Customer>,
     ) {
         // Determine environment
-        const env = this.configService.get<string>('SKIPCASH_ENV', 'sandbox');
-        this.apiBaseUrl =
-            env === 'production'
-                ? 'https://api.skipcash.app'
-                : 'https://sdk.skipcash.com';
         this.apiKey = this.configService.get<string>('SKIPCASH_API_KEY') || '';
-        this.webhookUrl = this.configService.get<string>(
-            'SKIPCASH_WEBHOOK_URL',
-            `${this.configService.get('APP_URL')}/v1/payments/skipcash/webhook`,
-        );
+        this.webhookUrl = `${this.configService.get('APP_URL')}/v1/payments/skipcash/webhook`;
     }
 
     /**
@@ -57,7 +50,7 @@ export class SkipCashSessionService {
         customerUuid: string,
         dto: CreateSkipCashSessionDto,
     ): Promise<SkipCashSessionResponse> {
-        this.logger.log(`Creating SkipCash session for order ${dto.orderUuid}`);
+        this.logger.log(`Creating SkipCash session for order ${dto.order.uuid}`);
 
         // 1. Find the customer
         const customer = await this.customerRepository.findOne({
@@ -70,9 +63,9 @@ export class SkipCashSessionService {
 
         // 2. Find the order
         const order = await this.orderRepository.findOne({
-            where: { uuid: dto.orderUuid },
+            where: { uuid: dto.order.uuid },
             relations: { customer: true },
-        });
+        }) || dto.order;
 
         if (!order) {
             throw new NotFoundException({ error: 'Order not found' });
@@ -87,17 +80,18 @@ export class SkipCashSessionService {
 
         // 4. Build the request payload
         const payload: any = {
-            amount: dto.amount,
+            amount: moneyToString(dto.amount),
             currency: dto.currency.toUpperCase(),
-            orderId: dto.orderUuid,
+            orderId: order.uuid,
             paymentMethod: dto.paymentMethod || 'credit_card',
-            platform: 'mobile', // or 'web' - can be passed in
+            platform: dto.platform, // or 'web' - can be passed in
             webhookUrl: this.webhookUrl,
             customer: {
                 firstName: dto.firstName || customer.fullName.split(' ')[0] || 'Customer',
                 lastName: dto.lastName || customer.fullName.split(' ').slice(1).join(' ') || 'Unknown',
-                email: dto.email || customer.emailAddress,
-                phone: dto.phone || customer.phoneNumber || '+97400000000',
+                email: dto.emailAddress || customer.emailAddress,
+                phone: dto.phoneNumber || customer.phoneNumber || '+97400000000',
+                Custom1: "",
             },
         };
 
@@ -106,31 +100,43 @@ export class SkipCashSessionService {
             payload.tokenizeCard = true;
         }
 
-        // 6. If using a saved card token
-        if (dto.savedCardTokenId) {
-            // Verify the saved card belongs to this customer
-            await this.savedCardsService.getSavedCard(customerUuid, dto.savedCardTokenId);
-            payload.savedCardTokenId = dto.savedCardTokenId;
-        }
-
         // 7. Call SkipCash API
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/v1/sessions`, {
+            const response = await fetch(`https://sdk.skipcash.com/api/v1/sessions`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${this.apiKey}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
-            });
+            });            
 
-            const data = await response.json();
+            const responseText = await response.text();
 
-            if (!response.ok) {
-                this.logger.error(`SkipCash session creation failed: ${JSON.stringify(data)}`);
+            this.logger.log(`SkipCash status: ${response.status}`);
+            this.logger.log(`SkipCash response: ${responseText}`);
+
+            let data: any = null;
+
+            try {
+                data = responseText ? JSON.parse(responseText) : null;
+            } catch (error) {
+                this.logger.error(`Invalid JSON from SkipCash: ${responseText}`);
                 throw new BadRequestException({
-                    error: data.error || 'Failed to create payment session',
-                    details: data.details || data,
+                    error: 'Invalid response from SkipCash',
+                    statusCode: response.status,
+                    details: responseText,
+                });
+            }
+
+            if (!response.ok) {                
+                this.logger.error(
+                    `SkipCash session creation failed: ${JSON.stringify(data)}`,
+                );
+
+                throw new BadRequestException({
+                    error: data?.error || 'Failed to create payment session',
+                    details: data?.details || data,
                 });
             }
 
@@ -160,7 +166,7 @@ export class SkipCashSessionService {
      */
     async getSessionStatus(sessionId: string): Promise<any> {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/v1/sessions/${sessionId}`, {
+            const response = await fetch(`https://sdk.skipcash.com/api/v1/sessions/${sessionId}`, {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${this.apiKey}`,

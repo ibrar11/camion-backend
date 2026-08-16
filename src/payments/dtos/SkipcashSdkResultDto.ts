@@ -9,12 +9,11 @@ import {
 } from "class-validator";
 
 import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
-import { PaymentMoney } from "../entities/payment-transaction.entity";
 import { PaymentStatus } from "../enums/PaymentStatus";
 
 export class SkipcashSdkResultDto {
-    @IsNumber()
-    amount: PaymentMoney;
+    @IsString()
+    amount: string;
 
     @IsString()
     @MinLength(1)

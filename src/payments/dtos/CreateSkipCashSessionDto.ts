@@ -2,6 +2,7 @@ import {
     IsBoolean,
     IsCurrency,
     IsEmail,
+    IsEnum,
     IsNotEmpty,
     IsNumber,
     IsOptional,
@@ -9,34 +10,44 @@ import {
     IsString,
     IsUUID,
     Min,
+    MinLength,
+    ValidateNested,
 } from 'class-validator';
 
+import { PaymentMethod } from '../enums/PaymentMethod';
+import { PaymentProvider } from '../enums/PaymentProvider';
+import { CurrencyCode } from '../../inventory/enums/CurrencyCode.enum';
+
+import { Order } from '../../order/entities/order.entity';
+
+import { PaymentMoney } from '../entities/payment-transaction.entity';
+import { Type } from 'class-transformer';
+
+
 export class CreateSkipCashSessionDto {
-    @IsUUID('4')
+    @IsEnum(PaymentProvider)
+    provider: PaymentProvider;
+    
+    @ValidateNested()
+    @Type(() => Order)
     @IsNotEmpty()
-    orderUuid: string;
+    order: Order;
 
     @IsNumber()
-    @Min(0.01)
-    amount: number;
+    amount: PaymentMoney;
 
     @IsCurrency()
-    currency: string;
+    currency: CurrencyCode;
 
-    @IsOptional()
     @IsString()
-    paymentMethod?: 'credit_card' | 'apple_pay' | 'google_pay' | 'all';
+    paymentMethod: PaymentMethod;
 
     @IsOptional()
     @IsBoolean()
     tokenizeCard?: boolean;
 
-    @IsOptional()
-    @IsString()
-    savedCardTokenId?: string; // For charging a saved card
-
     @IsEmail()
-    email: string;
+    emailAddress: string;
 
     @IsString()
     firstName: string;
@@ -45,5 +56,9 @@ export class CreateSkipCashSessionDto {
     lastName: string;
 
     @IsPhoneNumber()
-    phone: string;
+    phoneNumber: string;
+
+    @IsString()
+    @MinLength(1)
+    platform: "web" | "mobile" = "mobile"
 }

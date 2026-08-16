@@ -1,8 +1,11 @@
+import { length } from 'class-validator';
 import * as crypto from 'node:crypto';
-import { 
-    Injectable, 
-    Logger, 
-    NotFoundException 
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+    NotFoundException
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,13 +15,18 @@ import { Repository } from 'typeorm';
 import { SavedCard } from './entities/saved-card.entity';
 import { Customer } from '../customers/entities/customer.entity';
 
+import { getSkipAndTake } from 'src/common/pagination';
+import { ConfigService } from '@nestjs/config';
+import { SkipCashCard } from './types';
+
 @Injectable()
 export class SavedCardsService {
     private readonly logger = new Logger(SavedCardsService.name);
 
     constructor(
-        @InjectRepository(SavedCard)
-        private readonly savedCardRepository: Repository<SavedCard>,
+        @InjectRepository(SavedCard) private readonly savedCardRepository: Repository<SavedCard>,
+        @InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+        private readonly configService: ConfigService,
     ) { }
 
     /**
@@ -27,13 +35,6 @@ export class SavedCardsService {
     async saveCardToken(
         customer: Customer,
         tokenId: string,
-        cardDetails: {
-            brand: string;
-            last4: string;
-            expiryMonth: string;
-            expiryYear: string;
-            cardholderName: string;
-        },
     ): Promise<SavedCard> {
         this.logger.log(`Saving card token ${tokenId} for customer ${customer.uuid}`);
 
@@ -57,11 +58,6 @@ export class SavedCardsService {
         savedCard.uuid = crypto.randomUUID();
         savedCard.customer = customer;
         savedCard.tokenId = tokenId;
-        savedCard.cardBrand = cardDetails.brand.toLowerCase();
-        savedCard.last4 = cardDetails.last4;
-        savedCard.expiryMonth = cardDetails.expiryMonth;
-        savedCard.expiryYear = cardDetails.expiryYear;
-        savedCard.cardholderName = cardDetails.cardholderName;
         savedCard.isActive = true;
         savedCard.isDefault = count === 0; // First card becomes default
 
@@ -70,26 +66,94 @@ export class SavedCardsService {
 
     /**
      * Get all saved cards for a customer
+     *
+     * @param customerUUID
+     * @param pageNumber
+     * @param itemsPerPage
+     * @returns
      */
-    async getSavedCards(customerUuid: string): Promise<SavedCard[]> {
-        return this.savedCardRepository.find({
+    async getSavedCards(customerUUID: string, pageNumber: number = 1, itemsPerPage: number = 100): Promise<Array<SavedCard>> {
+        this.logger.log(`Retrieving customer addresses for customer: ${customerUUID}`);
+
+        // Find the customer
+        const customer = await this.customerRepository.findOneBy({ uuid: customerUUID });
+        if (customer === null) {
+            throw new NotFoundException({
+                error: "Failed to find the customer. Please check and try again.",
+            });
+        }
+
+        // Get pagination params
+        const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+
+        const cards = await this.savedCardRepository.find({
+            cache: true,
             where: {
-                customer: { uuid: customerUuid },
                 isActive: true,
+                customer: {
+                    id: customer.id,
+                },
             },
-            order: { isDefault: 'DESC', createdAt: 'DESC' },
-            select: [
-                'uuid',
-                'tokenId',
-                'cardBrand',
-                'last4',
-                'expiryMonth',
-                'expiryYear',
-                'cardholderName',
-                'isDefault',
-                'createdAt',
-            ],
+            order: {
+                id: "DESC",
+            },
+            skip: skip,
+            take: take,
         });
+
+        if (!cards.length) {
+            throw new NotFoundException({
+                error: 'cards not found',
+            });
+        }
+
+        let cardsTokenString = '';
+
+        cards.forEach((card, index) => {
+            cardsTokenString = (index === cards.length - 1) ? cardsTokenString + card.tokenId : cardsTokenString + card.tokenId + "|";
+        })
+
+        const res = await fetch(`${this.configService.get<string>("SKIPCASH_BASE_URL")}/token/cardDetails/${cardsTokenString}`, {
+            method: "GET",
+        });
+        const data = await res.json();
+        this.logger.log(`After hitting skipcash fetch card detail api ${data}`);
+
+        if (!res.ok || data.hasError) {
+            let message = "Payment creation failed";
+
+            if (data?.error?.message) {
+                message = `SkipCash error: ${data.error.message}`;
+            } else if (data?.errorMessage) {
+                message = `SkipCash error: ${data.errorMessage}`;
+            } else if (res.status === 403) {
+                message = "Forbidden: Signature does not match or invalid credentials";
+            }
+
+            throw new InternalServerErrorException(
+                message,
+            );
+        }
+
+        const savedCards: Array<SkipCashCard> = data.resultObj;
+
+        if (!savedCards.length) {
+            throw new NotFoundException({
+                error: 'Saved cards not found on skipcash',
+            });
+        }
+
+        savedCards.forEach((card, index) => {
+            const [expiryMonth, expiryYear] = card.cardExpiry.split("/");
+    
+            cards[index].cardBrand = card.cardType === 1 ? "Visa Card" : "MasterCard";
+            cards[index].last4 = card.cardNumber;
+            cards[index].expiryMonth = expiryMonth;
+            cards[index].expiryYear = expiryYear;
+        })
+
+
+        return cards;
     }
 
     /**
@@ -102,13 +166,60 @@ export class SavedCardsService {
                 customer: { uuid: customerUuid },
                 isActive: true,
             },
+            relations: {
+                customer: true
+            }
         });
 
         if (!card) {
             throw new NotFoundException({
-                error: 'Saved card not found',
+                error: 'card not found',
             });
         }
+
+        if(!card.isActive) {
+            throw new BadRequestException({
+                error: 'card has been deleted',
+            });
+        }
+
+        const res = await fetch(`${this.configService.get<string>("SKIPCASH_BASE_URL")}/token/cardDetails/${card.tokenId}`, {
+            method: "GET",
+        });
+        const data = await res.json();
+        this.logger.log(`After hitting skipcash fetch card detail api ${data}`);
+
+        if (!res.ok || data.hasError) {
+            let message = "Payment creation failed";
+
+            if (data?.error?.message) {
+                message = `SkipCash error: ${data.error.message}`;
+            } else if (data?.errorMessage) {
+                message = `SkipCash error: ${data.errorMessage}`;
+            } else if (res.status === 403) {
+                message = "Forbidden: Signature does not match or invalid credentials";
+            }
+
+            throw new InternalServerErrorException(
+                message,
+            );
+        }
+
+        const savedCard = data.resultObj[0] ?? data.resultObj;
+
+        if (!savedCard) {
+            throw new NotFoundException({
+                error: 'Saved card not found on skipcash',
+            });
+        }
+
+        const [expiryMonth, expiryYear] = savedCard.cardExpiry.split("/");
+
+        card.cardBrand = savedCard.cardType === 1 ? "Visa Card" : "MasterCard";
+        card.last4 = savedCard.cardNumber;
+        card.expiryMonth = expiryMonth;
+        card.expiryYear = expiryYear;
+
 
         return card;
     }
