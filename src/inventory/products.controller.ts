@@ -122,7 +122,7 @@ export class ProductsController {
 		return this.productsService.findProductsWithVariantsMissingSkuMeta(status);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader, ClientRole.StockTracker)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProduct(@Param('uuid') uuid: string): Promise<Product> {
