@@ -87,7 +87,6 @@ export class SavedCardsService {
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
         const cards = await this.savedCardRepository.find({
-            cache: true,
             where: {
                 isActive: true,
                 customer: {
@@ -105,9 +104,9 @@ export class SavedCardsService {
         });
 
         if (!cards.length) {
-            throw new NotFoundException({
-                error: 'cards not found',
-            });
+            throw new NotFoundException(
+                'Could not found any saved cards',
+            );
         }
 
         let cardsTokenString = '';
@@ -141,14 +140,14 @@ export class SavedCardsService {
         const savedCards: Array<SkipCashCard> = data.resultObj;
 
         if (!savedCards.length) {
-            throw new NotFoundException({
-                error: 'Saved cards not found on skipcash',
-            });
+            throw new NotFoundException(
+                'Saved cards not found on skipcash',
+            );
         }
 
         savedCards.forEach((card, index) => {
             const [expiryMonth, expiryYear] = card.cardExpiry.split("/");
-    
+
             cards[index].cardBrand = card.cardType === 1 ? "Visa Card" : "MasterCard";
             cards[index].last4 = card.cardNumber;
             cards[index].expiryMonth = expiryMonth;
@@ -180,7 +179,7 @@ export class SavedCardsService {
             });
         }
 
-        if(!card.isActive) {
+        if (!card.isActive) {
             throw new BadRequestException({
                 error: 'card has been deleted',
             });
