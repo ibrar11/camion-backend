@@ -94,6 +94,9 @@ export class SavedCardsService {
                     id: customer.id,
                 },
             },
+            relations: {
+                customer: true,
+            },
             order: {
                 id: "DESC",
             },
