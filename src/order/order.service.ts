@@ -118,6 +118,8 @@ import { Campaign } from "../campaigns/entities/campaign.entity";
 
 import { getOrderReference } from "../common/maskUuid";
 
+import { CreateSkipCashSessionDto } from "../payments/dtos/CreateSkipCashSessionDto";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -507,7 +509,7 @@ export class OrderService {
             );
 
             // Clear the cart within transaction
-            await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
+            // await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
 
             // RECORD AFFILIATE COMMISSION
             if (affiliateCoupon?.affiliate && affiliateCoupon.code && moneyToMinor(discount) >= 0) {
@@ -566,26 +568,33 @@ export class OrderService {
             }
 
             const customerName: Array<string> = customer.fullName.split(" ");
-            const provider = dto.paymentMethod === "default" ? PaymentProvider.SKIPCASH : PaymentProvider[dto.paymentMethod]
+            const provider = PaymentProvider.SKIPCASH;
             // payment service needs to integrated here
-            const paymentPayload = {
+            const paymentPayload: CreateSkipCashSessionDto = {
                 provider: provider,
                 amount: total,
                 currency: currency,
-                orderUUID: order.uuid,
+                paymentMethod: dto.paymentMethod,
+                order: order,
                 firstName: customerName[0],
                 lastName: customerName[1] ?? customerName[0],
                 emailAddress: customer.emailAddress,
                 phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
-                street: address.streetAddress,
-                city: address.city,
-                state: address.state,
-                country: address.country,
-                postalCode: address.zipCode,
+                // street: address.streetAddress,
+                // city: address.city,
+                // state: address.state,
+                // country: address.country,
+                // postalCode: address.zipCode,
+                platform: dto.platform,
+            }
+
+            if(dto.tokenizeCard) {
+                paymentPayload.tokenizeCard = dto.tokenizeCard;
             }
 
             // External payment call — if this throws, the entire DB transaction rolls back
-            const payment = await this.paymentService.createPayment(paymentPayload);
+            // const payment = await this.paymentService.createPayment(paymentPayload);
+            const payment = await this.paymentService.createSkipCashSession(customer.uuid, paymentPayload);
             order.paymentTransaction = payment;
             if (moneyToMinor(total) === 0) {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
@@ -1407,6 +1416,8 @@ export class OrderService {
 
             return saved;
         } catch (error: any) {
+            console.log("errorerrorerror", error);
+            
             this.logger.error(`Error updating order status: ${error}`);
             if (error instanceof HttpException) {
                 throw error;

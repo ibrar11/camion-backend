@@ -5515,3 +5515,53 @@ query GetProductsInDesiredCampaign($slug: String,$language: String, $currency: S
     }
 }
 ```
+
+Get Campaigns
+-------------
+
+### GraphQL Query
+
+```graphql
+query GetCustomerSavedCards() {
+  getCustomerSavedCards() {
+    uuid
+    tokenId
+    cardBrand
+    last4
+    expiryMonth
+    expiryYear
+    isActive
+    isDefault
+    customer {
+        uuid
+        fullName
+    }
+  }
+}
+```
+
+### GraphQL Response
+
+
+```json
+{
+    "data": {
+        "getCustomerSavedCards": [
+            {
+                "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                "tokenId": "123456786764453",
+                "cardBrand": "visa",
+                "last4": 5000,
+                "expiryMonth": "03",
+                "expiryYear": "28"
+                "isActive": true,
+                "isDefault": true,
+                "customer": {
+                    "uuid": "bfee8c29-c12c-4baa-b0fc-e2cc6fa6e8b0",
+                    "fullName": "Customer",
+                }
+            }
+        ]
+    }
+}
+```

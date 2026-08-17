@@ -48,6 +48,14 @@ import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
 import { CartItem } from '../cart/entities/cart-items.entity';
 
+import { SkipCashSessionService } from './skipcash-session.service';
+
+import { SavedCard } from './entities/saved-card.entity';
+import { SavedCardsService } from './saved-cards.service';
+import { SavedCardsController } from './saved-cards.controller';
+
+import { CustomerAddress } from '../customers/entities/customer-address.entity';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -62,12 +70,16 @@ import { CartItem } from '../cart/entities/cart-items.entity';
             Notification,
             PushNotification,
             CartItem,
+            SavedCard,
+            CustomerAddress,
         ]),
         NotificationsModule,
         EmailModule,
     ],
     providers: [
         PaymentsService,
+        SkipCashSessionService,
+        SavedCardsService,
         PaymentsWebhookService,
         PaymentStrategyFactory,
         SkipCashStrategy,
@@ -82,7 +94,8 @@ import { CartItem } from '../cart/entities/cart-items.entity';
     ],
     controllers: [
         PaymentsController,
-        PaymentsWebhookController
+        PaymentsWebhookController,
+        SavedCardsController,
     ],
     exports: [PaymentStrategyFactory],
 })

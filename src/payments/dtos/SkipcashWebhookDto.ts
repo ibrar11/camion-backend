@@ -24,4 +24,8 @@ export class SkipcashWebhookDto {
 
     @IsString()
     VisaId: string;
+
+    @IsOptional()
+    @IsString()
+    TokenId?: string;
 }

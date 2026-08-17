@@ -23,6 +23,8 @@ cartItems | Yes | Array<String> |list of cart items to be ordered
 paymentMethod | Yes | String | The payment method selected by the customer (e.g., COD, CARD, default(skipcash will be used) etc.)
 currency | Yes | String | target currency code
 couponCode | No | String | coupon code to apply
+platform | Yes | String | platform web | mobile
+tokenizeCard | No | boolean | if want to tokenize the card
 
 ### Request Body
 ```json

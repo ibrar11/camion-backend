@@ -147,7 +147,9 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 
 import { Campaign } from "./campaigns/entities/campaign.entity";
-import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";;
+import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";
+
+import { SavedCard } from "./payments/entities/saved-card.entity";
 
 @Module({
 	imports: [
@@ -286,6 +288,8 @@ import { CampaignCategory } from "./campaigns/entities/campaign-category.entity"
 
 					Campaign,
 					CampaignCategory,
+
+					SavedCard,
 				],
 			}),
 		}),

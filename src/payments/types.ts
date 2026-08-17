@@ -2,6 +2,8 @@ import crypto, { UUID } from "node:crypto";
 
 import { CreatePaymentDto } from "./dtos/CreatePaymentDto";
 
+import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+
 export interface PaymentStrategy {
     InitiatePayment(data: CreatePaymentDto): Promise<InitiatePaymentResponse>;
 }
@@ -95,4 +97,32 @@ export interface skipcashWebhookResponse {
     received: boolean;
     status?: string;
     transactionId?: string;
+}
+
+export interface SkipCashSessionResponse {
+    sessionId: string;
+    checkoutUrl: string;
+    expiresAt: string;
+    paymentId?: string;
+}
+
+export interface SkipCashWebhookPayload {
+    status: 'paid' | 'failed' | 'refunded';
+    orderId: string;
+    paymentId: string;
+    amount: string;
+    currency: CurrencyCode;
+    tokenId?: string;
+    visaId?: string;
+    cardBrand?: string;
+    cardLast4?: string;
+    cardExpiryMonth?: string;
+    cardExpiryYear?: string;
+    cardholderName: string;
+}
+
+export interface SkipCashCard { 
+    cardNumber: string, 
+    cardType: number, 
+    cardExpiry: string, 
 }
