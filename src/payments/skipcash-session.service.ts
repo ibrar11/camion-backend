@@ -38,9 +38,21 @@ export class SkipCashSessionService {
         @InjectRepository(Customer)
         private readonly customerRepository: Repository<Customer>,
     ) {
-        // Determine environment
-        this.apiKey = this.configService.get<string>('SKIPCASH_API_KEY') || '';
-        this.webhookUrl = `${this.configService.get('APP_URL')}/v1/payments/skipcash/webhook`;
+        const nodeEnv = this.configService.get<string>('NODE_ENV');
+
+        if (nodeEnv === 'dev' || "local") {
+            this.apiKey = "sdk_test_1IgpI9Bfplxgn2temWNt3V5c4h7pWwSjgyXPExENMKY";
+        } else if (nodeEnv === 'prod') {
+            this.apiKey = "sdk_live_ajc3n5rXFInYl6QIQ7UH3AGm_ejKO4gZVWbDhqOWmuY";
+        }
+        
+        if (nodeEnv === 'dev') {
+            this.webhookUrl = 'https://api.dev.camiontrading.com/v1/payments/skipcash/webhook';
+        } else if (nodeEnv === 'prod') {
+            this.webhookUrl = 'https://api.camion-app.com/v1/payments/skipcash/webhook';
+        } else {
+            this.webhookUrl = `${this.configService.get<string>('APP_URL')}/v1/payments/skipcash/webhook`;
+        }
     }
 
     /**
