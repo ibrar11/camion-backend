@@ -140,12 +140,10 @@ import { DataModule } from './data/data.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { BundlesModule } from './bundles/bundles.module';
-
 import { Campaign } from './campaigns/entities/campaign.entity';
 import { CampaignCategory } from './campaigns/entities/campaign-category.entity';
 import { Bundle } from './bundles/entities/bundle.entity';
 import { BundleItem } from './bundles/entities/bundle-item.entity';
-
 import { SavedCard } from './payments/entities/saved-card.entity';
 
 @Module({
@@ -286,7 +284,6 @@ import { SavedCard } from './payments/entities/saved-card.entity';
           JopWmsOrderLink,
 
           ExportRequest,
-
           Campaign,
           CampaignCategory,
           Bundle,

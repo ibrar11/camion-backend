@@ -37,6 +37,8 @@ import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
 import { Translation } from "../../translation/entities/translation.entity";
 import { ProductAttachment } from "./product-attachment.entity";
 
+import { BundleItem } from "../../bundles/entities/bundle-item.entity";
+
 @ObjectType()
 @Entity({ name: "products", })
 export class Product {
@@ -252,6 +254,9 @@ export class Product {
 
 	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product, { cascade: true, })
 	wishlistItems: Array<WishlistItem>;
+
+	@OneToMany(() => BundleItem, item => item.product, { cascade: true, })
+	bundleItems: Array<BundleItem>;
 
 	@OneToOne(() => Translation, (translation) => translation.product, { cascade: true, })
 	@JoinColumn()

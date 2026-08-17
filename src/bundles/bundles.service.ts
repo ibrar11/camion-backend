@@ -189,10 +189,12 @@ export class BundlesService {
     });
 
     return bundles.filter((bundle) => {
-      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime())
+      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime()) {
         return false;
-      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime())
+      }
+      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime()) {
         return false;
+      }
       const containsProduct = bundle.items.some(
         (item) =>
           item.product?.uuid === productUUID ||
@@ -245,10 +247,12 @@ export class BundlesService {
         order: { id: 'DESC' },
       })
     ).filter((bundle) => {
-      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime())
+      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime()) {
         return false;
-      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime())
+      }
+      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime()) {
         return false;
+      }
       return bundle.items.some((item) => {
         const productId = item.variant?.product?.id ?? item.product?.id;
         return productId !== undefined && productIds.includes(productId);
