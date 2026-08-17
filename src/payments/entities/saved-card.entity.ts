@@ -24,6 +24,7 @@ export class SavedCard {
     @Column({ type: 'uuid', unique: true })
     uuid: string;
 
+    @Field(() => Customer)
     @ManyToOne(() => Customer, (customer) => customer.savedCards, { onDelete: 'CASCADE' })
     @Index()
     customer: Customer;

@@ -451,6 +451,7 @@ type Query {
   getCustomerAddresses(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [CustomerAddress!]!
   getCustomerCart(currency: String! = "qar", language: String! = "en"): [CartItem!]!
   getCustomerCartCount: Float!
+  getCustomerSavedCards(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [SavedCard!]!
   getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
   getFeaturedCampaign(language: String! = "en"): Campaign
@@ -496,6 +497,18 @@ type ReturnRequest {
   refundAmount: Money
   status: String!
   updatedAt: DateTime!
+  uuid: String!
+}
+
+type SavedCard {
+  cardBrand: String!
+  customer: Customer!
+  expiryMonth: String!
+  expiryYear: String!
+  isActive: Boolean!
+  isDefault: Boolean!
+  last4: String!
+  tokenId: String!
   uuid: String!
 }
 

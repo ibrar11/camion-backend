@@ -56,6 +56,8 @@ import { SavedCardsController } from './saved-cards.controller';
 
 import { CustomerAddress } from '../customers/entities/customer-address.entity';
 
+import { SavedCardsResolver } from './saved-cards.resolver';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -91,6 +93,7 @@ import { CustomerAddress } from '../customers/entities/customer-address.entity';
         ExchangeRateService,
         PushNotificationService,
         FirebaseAdminProvider,
+        SavedCardsResolver,
     ],
     controllers: [
         PaymentsController,
