@@ -1,0 +1,759 @@
+import crypto from 'node:crypto';
+
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { generateSlug } from '../common/slug';
+import { getSkipAndTake } from '../common/pagination';
+import { FileService } from '../common/file.service';
+import { S3Service } from '../common/s3.service';
+import {
+  getExchangedPrice,
+  moneyFromFloat,
+  moneyFromMinor,
+  moneyToMinor,
+  subtractMoney,
+} from '../common/currency';
+import { calculateStock } from '../common/calculateStock';
+import { getShippingRate } from '../common/calculateShipping';
+import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
+import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
+import { ProductStatus } from '../inventory/enums/ProductStatus.enum';
+import { Product } from '../inventory/entities/product.entity';
+import { ProductVariant } from '../inventory/entities/product-variant.entity';
+import { CartItem } from '../cart/entities/cart-items.entity';
+
+import { Bundle, BundleDiscountType } from './entities/bundle.entity';
+import { BundleItem } from './entities/bundle-item.entity';
+import { CreateBundleDto, BundleItemInputDto } from './dtos/CreateBundleDto';
+import { UpdateBundleDto } from './dtos/UpdateBundleDto';
+
+type BundleAllocationEntry = {
+  bundleUuid: string;
+  bundleTitle: string;
+  quantity: number;
+  discountMinor: number;
+};
+
+@Injectable()
+export class BundlesService {
+  private readonly logger = new Logger(BundlesService.name);
+
+  constructor(
+    @InjectRepository(Bundle)
+    private readonly bundleRepository: Repository<Bundle>,
+    @InjectRepository(BundleItem)
+    private readonly bundleItemRepository: Repository<BundleItem>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+    @InjectRepository(ProductVariant)
+    private readonly variantRepository: Repository<ProductVariant>,
+    @InjectRepository(ExchangeRate)
+    private readonly exchangeRateRepository: Repository<ExchangeRate>,
+    @Inject(S3Service) private readonly s3Service: S3Service,
+    @Inject(FileService) private readonly fileService: FileService,
+  ) {}
+
+  async createBundle(body: CreateBundleDto): Promise<Bundle> {
+    this.logger.log('Attempting to create a bundle');
+    await this.validateBundlePayload(body);
+
+    const existing = await this.bundleRepository.findOneBy({
+      slug: body.slug.trim().toLowerCase(),
+    });
+    if (existing) {
+      throw new BadRequestException({
+        errors: {
+          slug: 'A bundle using the same slug already exists. Please use a different slug.',
+        },
+      });
+    }
+
+    const bundle = new Bundle();
+    bundle.uuid = crypto.randomUUID();
+    this.assignBundleFields(bundle, body);
+    await this.bundleRepository.save(bundle);
+    await this.syncBundleItems(bundle, body.items);
+    return this.findOne(bundle.uuid);
+  }
+
+  findAll(
+    filters: string,
+    sort: string,
+    pageNumber: number = 1,
+    itemsPerPage: number = 100,
+  ): Promise<Array<Bundle>> {
+    const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
+    return this.bundleRepository.find({
+      relationLoadStrategy: 'query',
+      relations: {
+        items: {
+          product: true,
+          variant: {
+            product: true,
+          },
+        },
+      },
+      order: {
+        id: 'DESC',
+      },
+      skip,
+      take,
+    });
+  }
+
+  async findOne(uuid: string): Promise<Bundle> {
+    const bundle = await this.bundleRepository.findOne({
+      where: { uuid },
+      relations: {
+        items: {
+          product: true,
+          variant: {
+            product: true,
+          },
+        },
+      },
+    });
+    if (!bundle) {
+      throw new NotFoundException({
+        error: 'Failed to find the bundle. Please check and try again.',
+      });
+    }
+    return bundle;
+  }
+
+  async updateBundle(uuid: string, body: UpdateBundleDto): Promise<Bundle> {
+    const bundle = await this.findOne(uuid);
+    await this.validateBundlePayload(body, bundle.uuid);
+    this.assignBundleFields(bundle, body);
+    await this.bundleRepository.save(bundle);
+    await this.syncBundleItems(bundle, body.items);
+    return this.findOne(bundle.uuid);
+  }
+
+  async delete(uuid: string): Promise<void> {
+    await this.bundleRepository.delete({ uuid });
+  }
+
+  async updateImage(uuid: string, file: Express.Multer.File): Promise<Bundle> {
+    const bundle = await this.findOne(uuid);
+    let params: { key: string; url: string } | null = null;
+    try {
+      params = await this.s3Service.uploadFile('bundles', file);
+    } finally {
+      await this.fileService.deleteFile(file);
+    }
+    bundle.imageUrl = params?.url ?? null;
+    await this.bundleRepository.save(bundle);
+    return this.findOne(uuid);
+  }
+
+  async findBundlesForProduct(
+    productUUID: string,
+    currency: string,
+    countryCode?: string,
+  ): Promise<Array<Bundle>> {
+    const product = await this.productRepository.findOneBy({
+      uuid: productUUID,
+    });
+    if (!product) {
+      throw new NotFoundException({
+        error: 'Failed to find the product. Please check and try again.',
+      });
+    }
+
+    const now = new Date();
+    const bundles = await this.bundleRepository.find({
+      where: {
+        isActive: true,
+      },
+      relations: {
+        items: {
+          product: true,
+          variant: {
+            product: true,
+            inventoryItem: {
+              levels: true,
+            },
+          },
+        },
+      },
+      order: { id: 'DESC' },
+    });
+
+    return bundles.filter((bundle) => {
+      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime())
+        return false;
+      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime())
+        return false;
+      const containsProduct = bundle.items.some(
+        (item) =>
+          item.product?.uuid === productUUID ||
+          item.variant?.product?.uuid === productUUID,
+      );
+      if (!containsProduct) return false;
+      return bundle.items.every((item) =>
+        this.isBundleItemEligible(item, countryCode, currency as CurrencyCode),
+      );
+    });
+  }
+
+  async applyBundlesToCartItems(
+    cartItems: Array<CartItem>,
+    currency: CurrencyCode,
+    countryCode?: string,
+  ): Promise<Array<CartItem>> {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const productIds = [
+      ...new Set(
+        cartItems
+          .map((item) => item.product?.id)
+          .filter((id): id is number => id !== undefined),
+      ),
+    ];
+    if (productIds.length === 0) {
+      return cartItems;
+    }
+
+    const bundles = (
+      await this.bundleRepository.find({
+        where: {
+          isActive: true,
+        },
+        relations: {
+          items: {
+            product: true,
+            variant: {
+              product: true,
+              inventoryItem: {
+                levels: true,
+              },
+            },
+          },
+        },
+        order: { id: 'DESC' },
+      })
+    ).filter((bundle) => {
+      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime())
+        return false;
+      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime())
+        return false;
+      return bundle.items.some((item) => {
+        const productId = item.variant?.product?.id ?? item.product?.id;
+        return productId !== undefined && productIds.includes(productId);
+      });
+    });
+
+    const exchangeRates = await this.exchangeRateRepository.find({
+      order: { id: 'DESC' },
+      take: 200,
+    });
+
+    type MutableState = {
+      cartItem: CartItem;
+      remainingQuantity: number;
+      unitMinor: number;
+      allocations: Array<BundleAllocationEntry>;
+    };
+
+    const states: Array<MutableState> = cartItems.map((cartItem) => {
+      const baseSubTotal = cartItem.subTotal;
+      const subTotalMinor = moneyToMinor(baseSubTotal);
+      const unitMinor =
+        cartItem.quantity > 0
+          ? Math.ceil(subTotalMinor / cartItem.quantity)
+          : 0;
+      cartItem.discountPrice = {
+        amount: 0,
+        minorAmount: 0,
+        currencyCode: currency,
+      };
+      cartItem.total = {
+        ...cartItem.subTotal,
+        currencyCode: currency,
+      };
+      cartItem.bundleUuid = null;
+      cartItem.bundleQuantity = 0;
+      cartItem.bundleAllocations = null;
+      return {
+        cartItem,
+        remainingQuantity: cartItem.quantity,
+        unitMinor,
+        allocations: [],
+      };
+    });
+
+    const scoredBundles = bundles
+      .map((bundle) => ({
+        bundle,
+        estimatedSavings: this.estimateBundleSavings(
+          bundle,
+          states,
+          currency,
+          exchangeRates,
+        ),
+      }))
+      .filter((entry) => entry.estimatedSavings > 0)
+      .sort(
+        (lhs, rhs) =>
+          rhs.estimatedSavings - lhs.estimatedSavings ||
+          lhs.bundle.id - rhs.bundle.id,
+      );
+
+    for (const { bundle } of scoredBundles) {
+      while (true) {
+        const match = this.tryAllocateBundle(bundle, states);
+        if (match.length === 0) break;
+
+        const bundleSubtotalMinor = match.reduce(
+          (sum, row) => sum + row.quantity * row.unitMinor,
+          0,
+        );
+        const targetTotalMinor = this.calculateBundleTargetTotalMinor(
+          bundle,
+          bundleSubtotalMinor,
+          currency,
+          exchangeRates,
+        );
+        const totalDiscountMinor = Math.max(
+          0,
+          bundleSubtotalMinor - targetTotalMinor,
+        );
+        if (totalDiscountMinor <= 0) {
+          break;
+        }
+
+        let distributed = 0;
+        for (let index = 0; index < match.length; index += 1) {
+          const row = match[index];
+          const lineSubtotalMinor = row.quantity * row.unitMinor;
+          let lineDiscountMinor =
+            index === match.length - 1
+              ? totalDiscountMinor - distributed
+              : Math.floor(
+                  (totalDiscountMinor * lineSubtotalMinor) /
+                    bundleSubtotalMinor,
+                );
+          if (lineDiscountMinor < 0) lineDiscountMinor = 0;
+          distributed += lineDiscountMinor;
+          (row.state.allocations ??= []).push({
+            bundleUuid: bundle.uuid,
+            bundleTitle: bundle.titleEn,
+            quantity: row.quantity,
+            discountMinor: lineDiscountMinor,
+          });
+        }
+      }
+    }
+
+    for (const state of states) {
+      const totalDiscountMinor = state.allocations.reduce(
+        (sum, entry) => sum + entry.discountMinor,
+        0,
+      );
+      state.cartItem.discountPrice = moneyFromMinor(
+        totalDiscountMinor,
+        currency,
+      );
+      state.cartItem.total = subtractMoney(
+        state.cartItem.subTotal,
+        state.cartItem.discountPrice,
+      );
+      state.cartItem.bundleQuantity = state.allocations.reduce(
+        (sum, entry) => sum + entry.quantity,
+        0,
+      );
+      state.cartItem.bundleUuid = state.allocations[0]?.bundleUuid ?? null;
+      state.cartItem.bundleAllocations =
+        state.allocations.length > 0 ? state.allocations : null;
+    }
+
+    return states.map((state) => state.cartItem);
+  }
+
+  private estimateBundleSavings(
+    bundle: Bundle,
+    states: Array<{
+      remainingQuantity: number;
+      cartItem: CartItem;
+      unitMinor: number;
+    }>,
+    currency: CurrencyCode,
+    exchangeRates: Array<ExchangeRate>,
+  ): number {
+    const clonedStates = states.map((state) => ({ ...state }));
+    const match = this.tryAllocateBundle(bundle, clonedStates);
+    if (match.length === 0) return 0;
+    const subtotalMinor = match.reduce(
+      (sum, row) => sum + row.quantity * row.unitMinor,
+      0,
+    );
+    const targetTotalMinor = this.calculateBundleTargetTotalMinor(
+      bundle,
+      subtotalMinor,
+      currency,
+      exchangeRates,
+    );
+    return Math.max(0, subtotalMinor - targetTotalMinor);
+  }
+
+  private tryAllocateBundle(
+    bundle: Bundle,
+    states: Array<{
+      cartItem: CartItem;
+      remainingQuantity: number;
+      unitMinor: number;
+      allocations?: Array<BundleAllocationEntry>;
+    }>,
+  ): Array<{
+    state: {
+      cartItem: CartItem;
+      remainingQuantity: number;
+      unitMinor: number;
+      allocations?: Array<BundleAllocationEntry>;
+    };
+    quantity: number;
+    unitMinor: number;
+  }> {
+    const allocations: Array<{
+      state: {
+        cartItem: CartItem;
+        remainingQuantity: number;
+        unitMinor: number;
+        allocations?: Array<BundleAllocationEntry>;
+      };
+      quantity: number;
+      unitMinor: number;
+    }> = [];
+
+    for (const item of bundle.items) {
+      let needed = item.quantity;
+      const candidates = states.filter((state) => {
+        if (state.remainingQuantity <= 0) return false;
+        if (item.variant?.uuid) {
+          return state.cartItem.variant?.uuid === item.variant.uuid;
+        }
+        if (item.product?.uuid) {
+          return state.cartItem.product?.uuid === item.product.uuid;
+        }
+        return false;
+      });
+
+      for (const state of candidates) {
+        if (needed <= 0) break;
+        const takeQuantity = Math.min(needed, state.remainingQuantity);
+        if (takeQuantity <= 0) continue;
+        state.remainingQuantity -= takeQuantity;
+        allocations.push({
+          state,
+          quantity: takeQuantity,
+          unitMinor: state.unitMinor,
+        });
+        needed -= takeQuantity;
+      }
+
+      if (needed > 0) {
+        for (const allocation of allocations) {
+          allocation.state.remainingQuantity += allocation.quantity;
+        }
+        return [];
+      }
+    }
+
+    return allocations;
+  }
+
+  private calculateBundleTargetTotalMinor(
+    bundle: Bundle,
+    subtotalMinor: number,
+    currency: CurrencyCode,
+    exchangeRates: Array<ExchangeRate>,
+  ): number {
+    switch (bundle.discountType) {
+      case BundleDiscountType.PERCENTAGE_OFF:
+        return Math.max(
+          0,
+          Math.ceil(
+            subtotalMinor * (1 - (bundle.discountPercentage ?? 0) / 100),
+          ),
+        );
+      case BundleDiscountType.FIXED_AMOUNT_OFF: {
+        const convertedMinor = this.convertNumericAmountToMinor(
+          bundle.discountAmountValue ?? 0,
+          bundle.amountCurrencyCode ?? currency,
+          currency,
+          exchangeRates,
+        );
+        return Math.max(0, subtotalMinor - convertedMinor);
+      }
+      case BundleDiscountType.FLAT_TOTAL: {
+        const convertedMinor = this.convertNumericAmountToMinor(
+          bundle.flatPriceValue ?? 0,
+          bundle.amountCurrencyCode ?? currency,
+          currency,
+          exchangeRates,
+        );
+        return Math.min(subtotalMinor, Math.max(0, convertedMinor));
+      }
+      default:
+        return subtotalMinor;
+    }
+  }
+
+  private convertNumericAmountToMinor(
+    value: number,
+    sourceCurrency: CurrencyCode,
+    targetCurrency: CurrencyCode,
+    exchangeRates: Array<ExchangeRate>,
+  ): number {
+    const normalizedValue = parseFloat(String(value ?? 0));
+    if (!Number.isFinite(normalizedValue) || normalizedValue <= 0) return 0;
+    const sourceMoney = moneyFromFloat(normalizedValue, sourceCurrency);
+    if (sourceCurrency === targetCurrency) {
+      return moneyToMinor(sourceMoney);
+    }
+
+    const exchangeFactor = this.getExchangeFactor(
+      sourceCurrency,
+      targetCurrency,
+      exchangeRates,
+    );
+    return moneyToMinor(
+      getExchangedPrice(sourceMoney, targetCurrency, exchangeFactor),
+    );
+  }
+
+  private getExchangeFactor(
+    sourceCurrency: CurrencyCode,
+    targetCurrency: CurrencyCode,
+    exchangeRates: Array<ExchangeRate>,
+  ): number {
+    if (sourceCurrency === targetCurrency) return 1;
+    const direct = exchangeRates.find(
+      (rate) =>
+        rate.srcCurrencyCode === sourceCurrency &&
+        rate.targetCurrencyCode === targetCurrency,
+    );
+    if (direct) {
+      return parseFloat(String(direct.factor));
+    }
+
+    const cnyToSource =
+      sourceCurrency === CurrencyCode.CNY
+        ? 1
+        : parseFloat(
+            String(
+              exchangeRates.find(
+                (rate) =>
+                  rate.srcCurrencyCode === CurrencyCode.CNY &&
+                  rate.targetCurrencyCode === sourceCurrency,
+              )?.factor ?? 0,
+            ),
+          );
+    const cnyToTarget =
+      targetCurrency === CurrencyCode.CNY
+        ? 1
+        : parseFloat(
+            String(
+              exchangeRates.find(
+                (rate) =>
+                  rate.srcCurrencyCode === CurrencyCode.CNY &&
+                  rate.targetCurrencyCode === targetCurrency,
+              )?.factor ?? 0,
+            ),
+          );
+    if (cnyToSource > 0 && cnyToTarget > 0) {
+      return cnyToTarget / cnyToSource;
+    }
+
+    return 1;
+  }
+
+  private async syncBundleItems(
+    bundle: Bundle,
+    inputs: Array<BundleItemInputDto>,
+  ): Promise<void> {
+    await this.bundleItemRepository.delete({
+      bundle: {
+        id: bundle.id,
+      },
+    });
+
+    for (const input of inputs) {
+      const product = input.productUuid
+        ? await this.productRepository.findOneBy({ uuid: input.productUuid })
+        : null;
+      const variant = input.variantUuid
+        ? await this.variantRepository.findOne({
+            where: { uuid: input.variantUuid },
+            relations: { product: true },
+          })
+        : null;
+
+      const bundleItem = new BundleItem();
+      bundleItem.bundle = bundle;
+      bundleItem.product = variant?.product ?? product;
+      bundleItem.variant = variant;
+      bundleItem.quantity = input.quantity;
+      await this.bundleItemRepository.save(bundleItem);
+    }
+  }
+
+  private assignBundleFields(
+    bundle: Bundle,
+    body: CreateBundleDto | UpdateBundleDto,
+  ): void {
+    bundle.titleEn = body.title.en.trim();
+    bundle.titleAr = body.title.ar.trim();
+    bundle.briefEn = body.brief?.en?.trim() || null;
+    bundle.briefAr = body.brief?.ar?.trim() || null;
+    bundle.slug = generateSlug(body.slug);
+    bundle.discountType = body.discountType;
+    bundle.flatPriceValue = body.flatPriceValue ?? null;
+    bundle.discountPercentage = body.discountPercentage ?? null;
+    bundle.discountAmountValue = body.discountAmountValue ?? null;
+    bundle.amountCurrencyCode = body.amountCurrencyCode ?? null;
+    bundle.isActive = body.isActive;
+    bundle.startsAt = new Date(body.startsAt);
+    bundle.finishesAt = new Date(body.finishesAt);
+  }
+
+  private async validateBundlePayload(
+    body: CreateBundleDto | UpdateBundleDto,
+    bundleUUID?: string,
+  ): Promise<void> {
+    if (!Array.isArray(body.items) || body.items.length < 2) {
+      throw new BadRequestException({
+        errors: {
+          items: 'A bundle must contain at least 2 items.',
+        },
+      });
+    }
+
+    if (
+      new Date(body.startsAt).getTime() >= new Date(body.finishesAt).getTime()
+    ) {
+      throw new BadRequestException({
+        errors: {
+          finishesAt:
+            'Please make sure that the bundle finishes after it starts.',
+        },
+      });
+    }
+
+    const duplicateKeys = new Set<string>();
+    for (const item of body.items) {
+      if (!item.productUuid && !item.variantUuid) {
+        throw new BadRequestException({
+          errors: {
+            items: 'Each bundle item must include a product or variant.',
+          },
+        });
+      }
+      const dedupeKey = `${item.productUuid ?? 'none'}:${item.variantUuid ?? 'none'}`;
+      if (duplicateKeys.has(dedupeKey)) {
+        throw new BadRequestException({
+          errors: {
+            items: 'Duplicate bundle items are not allowed.',
+          },
+        });
+      }
+      duplicateKeys.add(dedupeKey);
+    }
+
+    switch (body.discountType) {
+      case BundleDiscountType.FLAT_TOTAL:
+        if (
+          !body.amountCurrencyCode ||
+          body.flatPriceValue === undefined ||
+          body.flatPriceValue === null
+        ) {
+          throw new BadRequestException({
+            errors: {
+              flatPriceValue: 'Flat bundles require a flat total and currency.',
+            },
+          });
+        }
+        break;
+      case BundleDiscountType.FIXED_AMOUNT_OFF:
+        if (
+          !body.amountCurrencyCode ||
+          body.discountAmountValue === undefined ||
+          body.discountAmountValue === null
+        ) {
+          throw new BadRequestException({
+            errors: {
+              discountAmountValue:
+                'Fixed-amount bundles require an amount and currency.',
+            },
+          });
+        }
+        break;
+      case BundleDiscountType.PERCENTAGE_OFF:
+        if (
+          body.discountPercentage === undefined ||
+          body.discountPercentage === null
+        ) {
+          throw new BadRequestException({
+            errors: {
+              discountPercentage:
+                'Percentage bundles require a discount percentage.',
+            },
+          });
+        }
+        break;
+      default:
+        break;
+    }
+
+    if (bundleUUID) {
+      const existing = await this.bundleRepository.findOneBy({
+        slug: body.slug.trim().toLowerCase(),
+      });
+      if (existing && existing.uuid !== bundleUUID) {
+        throw new BadRequestException({
+          errors: {
+            slug: 'A bundle using the same slug already exists. Please use a different slug.',
+          },
+        });
+      }
+    }
+  }
+
+  private isBundleItemEligible(
+    item: BundleItem,
+    countryCode?: string,
+    currency?: CurrencyCode,
+  ): boolean {
+    const variant = item.variant;
+    const product = variant?.product ?? item.product;
+    if (!product || product.status !== ProductStatus.ACTIVE) {
+      return false;
+    }
+    if (variant) {
+      const stock = calculateStock(variant);
+      if (stock < item.quantity) {
+        return false;
+      }
+      if (countryCode && variant.weight && currency) {
+        try {
+          getShippingRate(countryCode, variant.weight.amount);
+        } catch {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+}

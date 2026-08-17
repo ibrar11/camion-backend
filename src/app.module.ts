@@ -1,28 +1,22 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-import { SnakeNamingStrategy } from "typeorm-naming-strategies";
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { Module } from '@nestjs/common';
 
-import {
-	ConfigModule,
-	ConfigService,
-} from "@nestjs/config";
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { JwtModule } from "@nestjs/jwt";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { CacheModule } from "@nestjs/cache-manager";
-import { GraphQLModule } from "@nestjs/graphql";
+import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheModule } from '@nestjs/cache-manager';
+import { GraphQLModule } from '@nestjs/graphql';
 
-import {
-	ApolloDriver,
-	ApolloDriverConfig,
-} from "@nestjs/apollo";
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 
 import { ScheduleModule } from '@nestjs/schedule';
 
-import KeyvRedis from "@keyv/redis";
+import KeyvRedis from '@keyv/redis';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -32,33 +26,33 @@ import { AuthModule } from './auth/auth.module';
 import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
 
-import { Customer } from "./customers/entities/customer.entity";
-import { CustomerAddress } from "./customers/entities/customer-address.entity";
+import { Customer } from './customers/entities/customer.entity';
+import { CustomerAddress } from './customers/entities/customer-address.entity';
 import { CustomersModule } from './customers/customers.module';
 
-import { LoginRequest } from "./auth/entities/login-request.entity";
+import { LoginRequest } from './auth/entities/login-request.entity';
 
 import { Client } from './clients/entities/client.entity';
-import { ClientsModule } from "./clients/clients.module";
-import { Category } from "./inventory/entities/category.entity";
+import { ClientsModule } from './clients/clients.module';
+import { Category } from './inventory/entities/category.entity';
 
-import { Product } from "./inventory/entities/product.entity";
-import { ProductAttachment } from "./inventory/entities/product-attachment.entity"
-import { ProductCategory } from "./inventory/entities/product-category.entity";
-import { ProductOption } from "./inventory/entities/product-option.entity";
-import { ProductOptionValue } from "./inventory/entities/product-option-value.entity";
-import { ProductReview } from "./inventory/entities/product-review.entity";
-import { ProductReviewImage } from "./inventory/entities/product-review-image.entity";
-import { ProductVariant } from "./inventory/entities/product-variant.entity";
-import { ProductVariantImage } from "./inventory/entities/product-variant-image.entity";
-import { ProductVariantInventoryItem } from "./inventory/entities/product-variant-inventory-item.entity";
-import { ProductVariantOptionValue } from "./inventory/entities/product-variant-option-value.entity";
-import { ProductView } from "./inventory/entities/product-view.entity";
+import { Product } from './inventory/entities/product.entity';
+import { ProductAttachment } from './inventory/entities/product-attachment.entity';
+import { ProductCategory } from './inventory/entities/product-category.entity';
+import { ProductOption } from './inventory/entities/product-option.entity';
+import { ProductOptionValue } from './inventory/entities/product-option-value.entity';
+import { ProductReview } from './inventory/entities/product-review.entity';
+import { ProductReviewImage } from './inventory/entities/product-review-image.entity';
+import { ProductVariant } from './inventory/entities/product-variant.entity';
+import { ProductVariantImage } from './inventory/entities/product-variant-image.entity';
+import { ProductVariantInventoryItem } from './inventory/entities/product-variant-inventory-item.entity';
+import { ProductVariantOptionValue } from './inventory/entities/product-variant-option-value.entity';
+import { ProductView } from './inventory/entities/product-view.entity';
 
-import { InventoryItem } from "./inventory/entities/inventory-item.entity";
-import { InventoryLevel } from "./inventory/entities/inventory-level.entity";
+import { InventoryItem } from './inventory/entities/inventory-item.entity';
+import { InventoryLevel } from './inventory/entities/inventory-level.entity';
 
-import { Warehouse } from "./inventory/entities/warehouse.entity";
+import { Warehouse } from './inventory/entities/warehouse.entity';
 
 import { InventoryModule } from './inventory/inventory.module';
 
@@ -71,72 +65,72 @@ import { OauthModule } from './oauth/oauth.module';
 
 import { ClientRefreshToken } from './oauth/entities/oauth-refresh-token.entity';
 
-import { CartItem } from "./cart/entities/cart-items.entity";
+import { CartItem } from './cart/entities/cart-items.entity';
 import { CartModule } from './cart/cart.module';
 
 import { ProcurementModule } from './procurement/procurement.module';
 
-import { Story } from "./stories/entities/story.entity";
-import { StoryFrame } from "./stories/entities/story-frame.entity";
+import { Story } from './stories/entities/story.entity';
+import { StoryFrame } from './stories/entities/story-frame.entity';
 import { StoriesModule } from './stories/stories.module';
 
-import { Banner } from "./banners/entities/banner.entity";
-import { BannerCategory } from "./banners/entities/banner-category";
+import { Banner } from './banners/entities/banner.entity';
+import { BannerCategory } from './banners/entities/banner-category';
 import { BannersModule } from './banners/banners.module';
 
-import { NewsletterModule } from "./newsletter/newsletter.module";
+import { NewsletterModule } from './newsletter/newsletter.module';
 
-import { PaymentTransaction } from "./payments/entities/payment-transaction.entity";
+import { PaymentTransaction } from './payments/entities/payment-transaction.entity';
 import { PaymentsModule } from './payments/payments.module';
 
-import { Affiliate } from "./referral/entities/affiliate.entity";
-import { BankAccount } from "./referral/entities/bank-account.entity";
-import { Coupon } from "./referral/entities/coupon.entity";
-import { Transaction } from "./referral/entities/transaction.entity";
-import { Wallet } from "./referral/entities/wallet.entity";
+import { Affiliate } from './referral/entities/affiliate.entity';
+import { BankAccount } from './referral/entities/bank-account.entity';
+import { Coupon } from './referral/entities/coupon.entity';
+import { Transaction } from './referral/entities/transaction.entity';
+import { Wallet } from './referral/entities/wallet.entity';
 import { ReferralModule } from './referral/referral.module';
-import { GlobalCoupon } from "./referral/entities/global-coupon.entity";
+import { GlobalCoupon } from './referral/entities/global-coupon.entity';
 
-import { Currency } from "./currencies/entities/currency.entity";
+import { Currency } from './currencies/entities/currency.entity';
 import { CurrenciesModule } from './currencies/currencies.module';
 
-import { Language } from "./languages/entities/language.entity";
+import { Language } from './languages/entities/language.entity';
 import { LanguagesModule } from './languages/languages.module';
 
-import { Order } from "./order/entities/order.entity";
-import { OrderItem } from "./order/entities/order-item.entity";
-import { OrderTrackingEvent } from "./order/entities/order-tracking-event.entity";
+import { Order } from './order/entities/order.entity';
+import { OrderItem } from './order/entities/order-item.entity';
+import { OrderTrackingEvent } from './order/entities/order-tracking-event.entity';
 import { OrderModule } from './order/order.module';
 
-import { ReturnRequest } from "./returns/entities/return-request.entity";
-import { ReturnEvidence } from "./returns/entities/return-evidence.entity";
+import { ReturnRequest } from './returns/entities/return-request.entity';
+import { ReturnEvidence } from './returns/entities/return-evidence.entity';
 import { ReturnsModule } from './returns/returns.module';
 
-import { Notification } from "./notifications/entities/notification.entity";
-import { PushNotification } from "./notifications/entities/push-notification";
-import { PushNotificationImage } from "./notifications/entities/push-notification-image";
+import { Notification } from './notifications/entities/notification.entity';
+import { PushNotification } from './notifications/entities/push-notification';
+import { PushNotificationImage } from './notifications/entities/push-notification-image';
 import { NotificationsModule } from './notifications/notifications.module';
 
-import { WishlistItem } from "./wishlist/entities/wishlist.entity";
+import { WishlistItem } from './wishlist/entities/wishlist.entity';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { PromosModule } from './promos/promos.module';
 
 import { EmailModule } from './email/email.module';
 
-import { ExchangeRate } from "./pricing/entities/exchange-rate.entity";
+import { ExchangeRate } from './pricing/entities/exchange-rate.entity';
 import { PricingModule } from './pricing/pricing.module';
 
-import { KeyValuePair } from "./key-value-pairs/entities/key-value-pair.entity";
+import { KeyValuePair } from './key-value-pairs/entities/key-value-pair.entity';
 import { KeyValuePairsModule } from './key-value-pairs/key-value-pairs.module';
-import { Promo } from "./promos/entities/promo.entity";
+import { Promo } from './promos/entities/promo.entity';
 
-import { QueueModule } from "./queue/queue.module";
+import { QueueModule } from './queue/queue.module';
 
-import { Translation } from "./translation/entities/translation.entity";
-import { TranslationItem } from "./translation/entities/translation-item.entity";
+import { Translation } from './translation/entities/translation.entity';
+import { TranslationItem } from './translation/entities/translation-item.entity';
 import { TranslationModule } from './translation/translation.module';
 
-import { ExportRequest } from "./export-requests/entities/export-request.entity";
+import { ExportRequest } from './export-requests/entities/export-request.entity';
 import { ExportRequestsModule } from './export-requests/export-requests.module';
 
 import { JopWmsModule } from './jop-wms/jop-wms.module';
@@ -145,212 +139,228 @@ import { JopWmsOrderLink } from './jop-wms/entities/jop-wms-order-link.entity';
 import { DataModule } from './data/data.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
+import { BundlesModule } from './bundles/bundles.module';
 
-import { Campaign } from "./campaigns/entities/campaign.entity";
-import { CampaignCategory } from "./campaigns/entities/campaign-category.entity";
+import { Campaign } from './campaigns/entities/campaign.entity';
+import { CampaignCategory } from './campaigns/entities/campaign-category.entity';
+import { Bundle } from './bundles/entities/bundle.entity';
+import { BundleItem } from './bundles/entities/bundle-item.entity';
 
-import { SavedCard } from "./payments/entities/saved-card.entity";
+import { SavedCard } from './payments/entities/saved-card.entity';
 
 @Module({
-	imports: [
-		ScheduleModule.forRoot(),
-		ConfigModule.forRoot({
-			isGlobal: true,
-		}),
-		CacheModule.registerAsync({
-			isGlobal: true,
-			imports: [ConfigModule],
-			inject: [ConfigService],
-			useFactory: (configService: ConfigService) => {
-				return {
-					stores: [
-						// new Keyv({
-						// 	store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
-						// }),
-						new KeyvRedis(configService.get<string>('REDIS_URI')),
-					],
-				};
-			},
-		}),
-		TypeOrmModule.forRootAsync({
-			imports: [ConfigModule],
-			inject: [ConfigService],
-			useFactory: (configService: ConfigService) => ({
-				type: "postgres",
-				ssl: configService.get<string>("NODE_ENV") === "local"
-					? false
-					: {
-						rejectUnauthorized: false,
-						ca: fs.readFileSync(path.join(process.cwd(), "ca/global-bundle.pem"), "utf-8"),
-					},
-				host: configService.get<string>("DB_HOST"),
-				port: configService.get<number>("DB_PORT"),
-				username: configService.get<string>("DB_USERNAME"),
-				password: configService.get<string>("DB_PASSWORD"),
-				database: configService.get<string>("DB_DATABASE"),
-				synchronize: true,
-				namingStrategy: new SnakeNamingStrategy(),
-				logging: false,
-				cache: {
-					type: "ioredis",
-					options: configService.get<string>("REDIS_URI"),
-					duration: 500000,
-				},
-				keepConnectionAlive: true,
-				extra: {
-					max: 20,
-					idleTimeoutMillis: 30000,
-					connectionTimeoutMillis: 5000,
-					keepAlive: true,
-					keepAliveInitialDelayMillis: 10000,
-				},
-				poolSize: 10,
-				entities: [
-					User,
+  imports: [
+    ScheduleModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return {
+          stores: [
+            // new Keyv({
+            // 	store: new CacheableMemory({ ttl: 6000, lruSize: 5000, }),
+            // }),
+            new KeyvRedis(configService.get<string>('REDIS_URI')),
+          ],
+        };
+      },
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        ssl:
+          configService.get<string>('NODE_ENV') === 'local'
+            ? false
+            : {
+                rejectUnauthorized: false,
+                ca: fs.readFileSync(
+                  path.join(process.cwd(), 'ca/global-bundle.pem'),
+                  'utf-8',
+                ),
+              },
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_DATABASE'),
+        synchronize: true,
+        namingStrategy: new SnakeNamingStrategy(),
+        logging: false,
+        cache: {
+          type: 'ioredis',
+          options: configService.get<string>('REDIS_URI'),
+          duration: 500000,
+        },
+        keepConnectionAlive: true,
+        extra: {
+          max: 20,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+          keepAlive: true,
+          keepAliveInitialDelayMillis: 10000,
+        },
+        poolSize: 10,
+        entities: [
+          User,
 
-					Customer,
-					CustomerAddress,
+          Customer,
+          CustomerAddress,
 
-					Client,
+          Client,
 
-					LoginRequest,
+          LoginRequest,
 
-					Category,
+          Category,
 
-					Product,
-					ProductAttachment,
-					ProductCategory,
-					ProductOption,
-					ProductOptionValue,
-					ProductReview,
-					ProductReviewImage,
-					ProductVariant,
-					ProductVariantImage,
-					ProductVariantInventoryItem,
-					ProductVariantOptionValue,
-					ProductView,
+          Product,
+          ProductAttachment,
+          ProductCategory,
+          ProductOption,
+          ProductOptionValue,
+          ProductReview,
+          ProductReviewImage,
+          ProductVariant,
+          ProductVariantImage,
+          ProductVariantInventoryItem,
+          ProductVariantOptionValue,
+          ProductView,
 
-					InventoryItem,
-					InventoryLevel,
+          InventoryItem,
+          InventoryLevel,
 
-					Warehouse,
+          Warehouse,
 
-					Currency,
+          Currency,
 
-					Language,
+          Language,
 
-					Post,
+          Post,
 
-					ClientRefreshToken,
+          ClientRefreshToken,
 
-					CartItem,
+          CartItem,
 
-					Story,
-					StoryFrame,
+          Story,
+          StoryFrame,
 
-					Banner,
-					BannerCategory,
+          Banner,
+          BannerCategory,
 
-					Order,
-					OrderItem,
-					OrderTrackingEvent,
+          Order,
+          OrderItem,
+          OrderTrackingEvent,
 
-					PaymentTransaction,
+          PaymentTransaction,
 
-					Notification,
-					PushNotification,
-					PushNotificationImage,
-					Affiliate,
-					BankAccount,
-					Coupon,
-					Transaction,
-					Wallet,
-					GlobalCoupon,
+          Notification,
+          PushNotification,
+          PushNotificationImage,
+          Affiliate,
+          BankAccount,
+          Coupon,
+          Transaction,
+          Wallet,
+          GlobalCoupon,
 
-					WishlistItem,
+          WishlistItem,
 
-					ExchangeRate,
+          ExchangeRate,
 
-					KeyValuePair,
+          KeyValuePair,
 
-					Promo,
+          Promo,
 
-					ReturnRequest,
-					ReturnEvidence,
+          ReturnRequest,
+          ReturnEvidence,
 
-					Translation,
-					TranslationItem,
+          Translation,
+          TranslationItem,
 
-					JopWmsOrder,
-					JopWmsOrderLink,
+          JopWmsOrder,
+          JopWmsOrderLink,
 
-					ExportRequest,
+          ExportRequest,
 
-					Campaign,
-					CampaignCategory,
+          Campaign,
+          CampaignCategory,
+          Bundle,
+          BundleItem,
 
-					SavedCard,
-				],
-			}),
-		}),
-		JwtModule.registerAsync({
-			global: true,
-			imports: [ConfigModule],
-			inject: [ConfigService],
-			useFactory: (configService: ConfigService) => ({
-				privateKey: fs.readFileSync(path.join(process.cwd(), "certs/private.pem"), "utf-8"),
-				publicKey: fs.readFileSync(path.join(process.cwd(), "certs/public.pem"), "utf-8"),
-				signOptions: {
-					algorithm: "RS256",
-					expiresIn: configService.get<number>('JWT_EXPIRES_IN') ?? 2592000,
-					issuer: configService.get<string>('JWT_ISSUER'),
-				},
-				verifyOptions: {
-					algorithms: ["RS256"],
-				},
-			}),
-		}),
-		GraphQLModule.forRoot<ApolloDriverConfig>({
-			driver: ApolloDriver,
-			graphiql: false,
-			autoSchemaFile: path.join(process.cwd(), "src/graphql/schema.gql"),
-			sortSchema: true,
-			context: ({ req }) => ({ req }),
-		}),
-		AuthModule,
-		UsersModule,
-		CustomersModule,
-		ClientsModule,
-		InventoryModule,
-		PostsModule,
-		HealthModule,
-		OauthModule,
-		CartModule,
-		ProcurementModule,
-		StoriesModule,
-		BannersModule,
-		NewsletterModule,
-		CurrenciesModule,
-		LanguagesModule,
-		NotificationsModule,
-		EmailModule,
-		OrderModule,
-		PaymentsModule,
-		ReferralModule,
-		WishlistModule,
-		PricingModule,
-		KeyValuePairsModule,
-		PromosModule,
-		ReturnsModule,
-		QueueModule,
-		TranslationModule,
-		JopWmsModule,
-		DataModule,
-		FirebaseModule,
-		ExportRequestsModule,
-		CampaignsModule,
-	],
-	controllers: [AppController],
-	providers: [AppService],
+          SavedCard,
+        ],
+      }),
+    }),
+    JwtModule.registerAsync({
+      global: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        privateKey: fs.readFileSync(
+          path.join(process.cwd(), 'certs/private.pem'),
+          'utf-8',
+        ),
+        publicKey: fs.readFileSync(
+          path.join(process.cwd(), 'certs/public.pem'),
+          'utf-8',
+        ),
+        signOptions: {
+          algorithm: 'RS256',
+          expiresIn: configService.get<number>('JWT_EXPIRES_IN') ?? 2592000,
+          issuer: configService.get<string>('JWT_ISSUER'),
+        },
+        verifyOptions: {
+          algorithms: ['RS256'],
+        },
+      }),
+    }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      graphiql: false,
+      autoSchemaFile: path.join(process.cwd(), 'src/graphql/schema.gql'),
+      sortSchema: true,
+      context: ({ req }) => ({ req }),
+    }),
+    AuthModule,
+    UsersModule,
+    CustomersModule,
+    ClientsModule,
+    InventoryModule,
+    PostsModule,
+    HealthModule,
+    OauthModule,
+    CartModule,
+    ProcurementModule,
+    StoriesModule,
+    BannersModule,
+    NewsletterModule,
+    CurrenciesModule,
+    LanguagesModule,
+    NotificationsModule,
+    EmailModule,
+    OrderModule,
+    PaymentsModule,
+    ReferralModule,
+    WishlistModule,
+    PricingModule,
+    KeyValuePairsModule,
+    PromosModule,
+    ReturnsModule,
+    QueueModule,
+    TranslationModule,
+    JopWmsModule,
+    DataModule,
+    FirebaseModule,
+    ExportRequestsModule,
+    CampaignsModule,
+    BundlesModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
