@@ -26,4 +26,8 @@ export class CreateReviewDto {
 	@MinLength(1)
 	@MaxLength(512)
 	comment: string;
+
+	@IsOptional()
+	@IsUUID()
+	variantUuid?: string;
 }

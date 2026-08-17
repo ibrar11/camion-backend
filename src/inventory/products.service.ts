@@ -3653,6 +3653,10 @@ export class ProductsService {
 						levels: true,
 					},
 					images: true,
+					reviews: {
+						customer: true,
+						images: true
+					},
 				},
 				productCategories: {
 					category: true,

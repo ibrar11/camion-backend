@@ -16,6 +16,7 @@ import { Exclude } from "class-transformer";
 import { Product } from "./product.entity";
 import { Customer } from "../../customers/entities/customer.entity";
 import { ProductReviewImage } from "./product-review-image.entity";
+import { ProductVariant } from "./product-variant.entity";
 
 @ObjectType()
 @Entity({ name: "product_reviews" })
@@ -36,6 +37,11 @@ export class ProductReview {
 	@ManyToOne(() => Product, (product) => product.reviews, { onDelete: "CASCADE", })
 	@Index()
 	product: Product;
+
+	@Field(() => ProductVariant, { nullable: true })
+	@ManyToOne(() => ProductVariant, (variant) => variant.reviews, { onDelete: "CASCADE", nullable: true, })
+	@Index()
+	productVariant: ProductVariant | null;
 
 	@Field(() => Int)
 	@Column({ type: "integer", default: 1, })
