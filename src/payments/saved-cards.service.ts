@@ -36,32 +36,38 @@ export class SavedCardsService {
         customer: Customer,
         tokenId: string,
     ): Promise<SavedCard> {
-        this.logger.log(`Saving card token ${tokenId} for customer ${customer.uuid}`);
+        try {
+            this.logger.log(`Saving card token ${tokenId} for customer ${customer.uuid}`);
 
-        // Check if token already exists
-        const existing = await this.savedCardRepository.findOne({
-            where: { tokenId },
-        });
+            // Check if token already exists
+            const existing = await this.savedCardRepository.findOne({
+                where: { tokenId },
+            });
 
-        if (existing) {
-            // Reactivate if soft-deleted
-            existing.isActive = true;
-            return this.savedCardRepository.save(existing);
+            if (existing) {
+                this.logger.log(`card is already saved with token ${tokenId} for customer ${customer.uuid}`);
+                // Reactivate if soft-deleted
+                existing.isActive = true;
+                return this.savedCardRepository.save(existing);
+            }
+
+            // Check if this is the first card for this customer
+            const count = await this.savedCardRepository.count({
+                where: { customer: { id: customer.id }, isActive: true },
+            });
+
+            const savedCard = new SavedCard();
+            savedCard.uuid = crypto.randomUUID();
+            savedCard.customer = customer;
+            savedCard.tokenId = tokenId;
+            savedCard.isActive = true;
+            savedCard.isDefault = count === 0; // First card becomes default
+
+            return this.savedCardRepository.save(savedCard);
+        } catch (error: any) {
+            this.logger.error(`Error saving card: ${error?.response?.data || error.message}`);
+            throw error;
         }
-
-        // Check if this is the first card for this customer
-        const count = await this.savedCardRepository.count({
-            where: { customer: { id: customer.id }, isActive: true },
-        });
-
-        const savedCard = new SavedCard();
-        savedCard.uuid = crypto.randomUUID();
-        savedCard.customer = customer;
-        savedCard.tokenId = tokenId;
-        savedCard.isActive = true;
-        savedCard.isDefault = count === 0; // First card becomes default
-
-        return this.savedCardRepository.save(savedCard);
     }
 
     /**
