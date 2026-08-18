@@ -30,8 +30,8 @@ export class SavedCard {
     customer: Customer;
 
     @Field()
-    @Column({ type: 'varchar', length: 64, unique: true })
-    tokenId: string; // SkipCash token ID
+    @Column({ type: 'varchar', length: 64 })
+    tokenId: string;
 
     @Field()
     cardBrand: string; // visa, mastercard, amex, etc.
