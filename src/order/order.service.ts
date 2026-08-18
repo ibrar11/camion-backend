@@ -120,6 +120,10 @@ import { getOrderReference } from "../common/maskUuid";
 
 import { CreateSkipCashSessionDto } from "../payments/dtos/CreateSkipCashSessionDto";
 
+import { PaymentTransaction } from "../payments/entities/payment-transaction.entity";
+
+import { CreatePaymentDto } from "../payments/dtos/CreatePaymentDto";
+
 @Injectable()
 export class OrderService {
     private readonly logger = new Logger(OrderService.name);
@@ -570,31 +574,44 @@ export class OrderService {
             const customerName: Array<string> = customer.fullName.split(" ");
             const provider = PaymentProvider.SKIPCASH;
             // payment service needs to integrated here
-            const paymentPayload: CreateSkipCashSessionDto = {
-                provider: provider,
-                amount: total,
-                currency: currency,
-                paymentMethod: dto.paymentMethod,
-                order: order,
-                firstName: customerName[0],
-                lastName: customerName[1] ?? customerName[0],
-                emailAddress: customer.emailAddress,
-                phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
-                // street: address.streetAddress,
-                // city: address.city,
-                // state: address.state,
-                // country: address.country,
-                // postalCode: address.zipCode,
-                platform: dto.platform,
-            }
-
-            if(dto.tokenizeCard) {
-                paymentPayload.tokenizeCard = dto.tokenizeCard;
-            }
-
             // External payment call — if this throws, the entire DB transaction rolls back
-            // const payment = await this.paymentService.createPayment(paymentPayload);
-            const payment = await this.paymentService.createSkipCashSession(customer.uuid, paymentPayload);
+            let payment: PaymentTransaction | null = null;
+            if (dto.tokenId) {
+                const paymentPayload: CreatePaymentDto = {
+                    provider: provider,
+                    amount: total,
+                    currency: currency,
+                    orderUUID: order.uuid,
+                    firstName: customerName[0],
+                    lastName: customerName[1] ?? customerName[0],
+                    emailAddress: customer.emailAddress,
+                    phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
+                    street: address.streetAddress,
+                    city: address.city,
+                    state: address.state,
+                    country: address.country,
+                    postalCode: address.zipCode,
+                    tokenId: dto.tokenId,
+                }
+                payment = await this.paymentService.createPayment(paymentPayload);
+            } else {
+                const paymentSessionPayload: CreateSkipCashSessionDto = {
+                    provider: provider,
+                    amount: total,
+                    currency: currency,
+                    paymentMethod: dto.paymentMethod,
+                    order: order,
+                    firstName: customerName[0],
+                    lastName: customerName[1] ?? customerName[0],
+                    emailAddress: customer.emailAddress,
+                    phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
+                    platform: dto.platform,
+                }
+                if (dto.tokenizeCard) {
+                    paymentSessionPayload.tokenizeCard = dto.tokenizeCard;
+                }
+                payment = await this.paymentService.createSkipCashSession(customer.uuid, paymentSessionPayload);
+            }
             order.paymentTransaction = payment;
             if (moneyToMinor(total) === 0) {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;

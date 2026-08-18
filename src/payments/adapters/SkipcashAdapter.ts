@@ -56,6 +56,7 @@ export class SkipCashAdapter {
                 Country: dto.country,
                 PostalCode: dto.postalCode,
                 TransactionId: orderId,
+                tokenId: dto.tokenId,
                 Custom1: "",
             };
 
