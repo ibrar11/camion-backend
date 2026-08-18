@@ -36,32 +36,41 @@ export class SavedCardsService {
         customer: Customer,
         tokenId: string,
     ): Promise<SavedCard> {
-        this.logger.log(`Saving card token ${tokenId} for customer ${customer.uuid}`);
+        try {
+            this.logger.log(`Saving card token ${tokenId} for customer ${customer.uuid}`);
 
-        // Check if token already exists
-        const existing = await this.savedCardRepository.findOne({
-            where: { tokenId },
-        });
+            // Check if token already exists
+            const existing = await this.savedCardRepository.findOne({
+                where: { 
+                    tokenId: tokenId,
+                    customer: {uuid: customer.uuid}
+                },
+            });
 
-        if (existing) {
-            // Reactivate if soft-deleted
-            existing.isActive = true;
-            return this.savedCardRepository.save(existing);
+            if (existing) {
+                this.logger.log(`card is already saved with token ${tokenId} for customer ${customer.uuid}`);
+                // Reactivate if soft-deleted
+                existing.isActive = true;
+                return this.savedCardRepository.save(existing);
+            }
+
+            // Check if this is the first card for this customer
+            const count = await this.savedCardRepository.count({
+                where: { customer: { id: customer.id }, isActive: true },
+            });
+
+            const savedCard = new SavedCard();
+            savedCard.uuid = crypto.randomUUID();
+            savedCard.customer = customer;
+            savedCard.tokenId = tokenId;
+            savedCard.isActive = true;
+            savedCard.isDefault = count === 0; // First card becomes default
+
+            return this.savedCardRepository.save(savedCard);
+        } catch (error: any) {
+            this.logger.error(`Error saving card: ${error?.response?.data || error.message}`);
+            throw error;
         }
-
-        // Check if this is the first card for this customer
-        const count = await this.savedCardRepository.count({
-            where: { customer: { id: customer.id }, isActive: true },
-        });
-
-        const savedCard = new SavedCard();
-        savedCard.uuid = crypto.randomUUID();
-        savedCard.customer = customer;
-        savedCard.tokenId = tokenId;
-        savedCard.isActive = true;
-        savedCard.isDefault = count === 0; // First card becomes default
-
-        return this.savedCardRepository.save(savedCard);
     }
 
     /**
@@ -87,7 +96,6 @@ export class SavedCardsService {
         const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
         const cards = await this.savedCardRepository.find({
-            cache: true,
             where: {
                 isActive: true,
                 customer: {
@@ -105,9 +113,9 @@ export class SavedCardsService {
         });
 
         if (!cards.length) {
-            throw new NotFoundException({
-                error: 'cards not found',
-            });
+            throw new NotFoundException(
+                'Could not found any saved cards',
+            );
         }
 
         let cardsTokenString = '';
@@ -141,20 +149,92 @@ export class SavedCardsService {
         const savedCards: Array<SkipCashCard> = data.resultObj;
 
         if (!savedCards.length) {
-            throw new NotFoundException({
-                error: 'Saved cards not found on skipcash',
-            });
+            throw new NotFoundException(
+                'Saved cards not found on skipcash',
+            );
         }
 
         savedCards.forEach((card, index) => {
             const [expiryMonth, expiryYear] = card.cardExpiry.split("/");
-    
+
             cards[index].cardBrand = card.cardType === 1 ? "Visa Card" : "MasterCard";
             cards[index].last4 = card.cardNumber;
             cards[index].expiryMonth = expiryMonth;
             cards[index].expiryYear = expiryYear;
         })
 
+        return cards;
+    }
+
+    /**
+     * Get all saved cards for a customer
+     *
+     * @param customerUUID
+     * @param pageNumber
+     * @param itemsPerPage
+     * @returns
+     */
+    async getAllSavedCards(): Promise<Array<SavedCard>> {
+        this.logger.log(`Retrieving all saved cards`);
+
+        const cards = await this.savedCardRepository.find({
+            relations: {
+                customer: true,
+            }
+        });
+
+        this.logger.log(`Retrieved all ${cards.length} saved cards`);
+
+        if (!cards.length) {
+            throw new NotFoundException(
+                'Could not found any saved cards',
+            );
+        }
+
+        let cardsTokenString = '';
+
+        cards.forEach((card, index) => {
+            cardsTokenString = (index === cards.length - 1) ? cardsTokenString + card.tokenId : cardsTokenString + card.tokenId + "|";
+        })
+
+        const res = await fetch(`${this.configService.get<string>("SKIPCASH_BASE_URL")}/token/cardDetails/${cardsTokenString}`, {
+            method: "GET",
+        });
+        const data = await res.json();
+        this.logger.log(`After hitting skipcash fetch card detail api ${data}`);
+
+        if (!res.ok || data.hasError) {
+            let message = "Payment creation failed";
+
+            if (data?.error?.message) {
+                message = `SkipCash error: ${data.error.message}`;
+            } else if (data?.errorMessage) {
+                message = `SkipCash error: ${data.errorMessage}`;
+            } else if (res.status === 403) {
+                message = "Forbidden: Signature does not match or invalid credentials";
+            }
+
+            throw new InternalServerErrorException(
+                message,
+            );
+        }
+
+        const savedCards: Array<SkipCashCard> = data.resultObj;
+
+        if (!savedCards.length) {
+            throw new NotFoundException(
+                'Saved cards not found on skipcash',
+            );
+        }
+
+        savedCards.forEach((card, index) => {
+            const [expiryMonth, expiryYear] = card.cardExpiry.split("/");
+
+            cards[index].cardBrand = card.cardType === 1 ? "Visa Card" : "MasterCard";
+            cards[index].last4 = card.cardNumber;
+            cards[index].expiryMonth = expiryMonth;
+            cards[index].expiryYear = expiryYear;
+        })
 
         return cards;
     }
@@ -180,7 +260,7 @@ export class SavedCardsService {
             });
         }
 
-        if(!card.isActive) {
+        if (!card.isActive) {
             throw new BadRequestException({
                 error: 'card has been deleted',
             });

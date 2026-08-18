@@ -42,6 +42,7 @@ currency | Yes | String | target currency code
 couponCode | No | String | coupon code to apply
 platform | Yes | String | platform web | mobile
 tokenizeCard | No | boolean | if want to tokenize the card
+tokenId | Yes/No | string | in case of create session no tokenId is required but in case of payment it is required
 
 ### Request Body
 ```json
@@ -51,7 +52,10 @@ tokenizeCard | No | boolean | if want to tokenize the card
     ],
     "paymentMethod": "default",
     "currency": "qar",
-    "couponCode": "rvse23"
+    "couponCode": "rvse23",
+    "platform": "web",
+    "tokenizeCard": false,
+    "tokenId": "1867e1a4-cb51-4ff4-8753-6414b9a8fe3d",
 }
 ```
 

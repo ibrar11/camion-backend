@@ -166,7 +166,7 @@ export class PaymentsService {
      */
     async paymentResult(
         dto: SkipcashSdkResultDto,
-    ): Promise<void> {
+    ): Promise<PaymentTransaction> {
         try {
             this.logger.log(`Attempting to update payment result for order ${dto.orderUUID}`);
 
@@ -195,6 +195,13 @@ export class PaymentsService {
             const transaction = await this.paymentTransactionRepository.findOne({
                 where: {
                     id: order.paymentTransaction.id
+                },
+                relations: {
+                    order: {
+                        customer: {
+                            savedCards: true
+                        }
+                    }
                 }
             });
 
@@ -210,7 +217,7 @@ export class PaymentsService {
                 this.logger.log(
                     `Transaction already paid, skipping: ${transaction.transactionId}`,
                 );
-                return;
+                return transaction;
             }
 
             transaction.status = newStatus;
@@ -238,10 +245,12 @@ export class PaymentsService {
                 await this.orderRepository.save(order);
 
                 if (dto.tokenId && dto.tokenId !== "NA" && order.customer) {
-                    await this.savedCardsService.saveCardToken(
+                    const savedCard = await this.savedCardsService.saveCardToken(
                         order.customer,
                         dto.tokenId
                     );
+                    this.logger.log(`Card successfully saved: ${savedCard}`);
+                    transaction?.order?.customer?.savedCards?.push(savedCard);
                 }
 
                 const paymentEventExists = await this.trackingEventRepository.findOne({
@@ -406,10 +415,11 @@ export class PaymentsService {
             }
 
             if (notification?.uuid) {
-                this.logger.log(`Attempting to create push notification for payment status: ${JSON.stringify(transaction.order.uuid)}`);
+                this.logger.log(`Attempting to create push notification for payment status: ${JSON.stringify(order.uuid)}`);
                 await this.pushNotificationService.sendToToken(notification?.uuid)
             }
-
+            
+            return transaction;
         } catch (error: any) {
             this.logger.error(`Error updating payment status: ${error?.response?.error || error}`);
             if (error instanceof HttpException) {

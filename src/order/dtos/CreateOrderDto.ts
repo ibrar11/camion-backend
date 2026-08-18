@@ -35,4 +35,8 @@ export class CreateOrderDto {
     @IsOptional()
     @IsBoolean()
     tokenizeCard?: boolean;
+
+    @IsOptional()
+    @IsString()
+    tokenId?: string;
 }
