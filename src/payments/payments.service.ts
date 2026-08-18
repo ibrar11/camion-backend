@@ -406,7 +406,7 @@ export class PaymentsService {
             }
 
             if (notification?.uuid) {
-                this.logger.log(`Attempting to create push notification for payment status: ${JSON.stringify(transaction.order.uuid)}`);
+                this.logger.log(`Attempting to create push notification for payment status: ${JSON.stringify(order.uuid)}`);
                 await this.pushNotificationService.sendToToken(notification?.uuid)
             }
 
