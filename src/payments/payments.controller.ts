@@ -48,7 +48,7 @@ export class PaymentsController {
     @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
     @Post("result")
     @HttpCode(HttpStatus.CREATED)
-    paymentResult(@Body() dto: SkipcashSdkResultDto): Promise<void> {
+    paymentResult(@Body() dto: SkipcashSdkResultDto): Promise<PaymentTransaction> {
         return this.paymentsService.paymentResult(dto);
     }
 
