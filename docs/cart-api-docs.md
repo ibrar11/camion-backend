@@ -21,6 +21,23 @@ When a product belongs to a category that is part of an active campaign, the cam
 
 When a campaign expires, a background scheduler runs within one minute and updates the stored `subTotal` and `total` of every affected cart item back to the standard price. Customers will see the updated (non-discounted) price on their next cart fetch.
 
+Bundle Pricing in the Cart
+---------------------------
+
+When the current cart contents match an active fixed bundle, the cart is repriced automatically. Matching bundle discounts are applied when the item is added to cart, when the cart is updated, and whenever the cart is fetched.
+
+The cart item response now includes the following bundle metadata:
+
+Field | Type | Description
+------|------|------------
+bundleUuid | String \| null | UUID of the first applied bundle affecting this cart row
+bundleQuantity | Number | Total quantity from this cart row consumed by bundle matches
+bundleAllocations | Array<Object> \| null | Detailed bundle discount allocation entries for this cart row
+bundleAllocations[].bundleUuid | String | Bundle UUID
+bundleAllocations[].bundleTitle | String | Bundle English title used for debugging/reporting
+bundleAllocations[].quantity | Number | Quantity from this row allocated to the bundle
+bundleAllocations[].discountMinor | Number | Discount in minor currency units allocated to this row
+
 Cart API
 =============
 
@@ -130,9 +147,22 @@ currency | Yes | CurrencyCode | The desired currency code
     "total": {
         "amount": 6500,
         "currencyCode": "qar"
-    }
+    },
+    "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+    "bundleQuantity": 1,
+    "bundleAllocations": [
+        {
+            "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+            "bundleTitle": "Complete the Look",
+            "quantity": 1,
+            "discountMinor": 1000
+        }
+    ]
 }
 ```
+
+> [!IMPORTANT]
+> If the cart no longer satisfies the bundle requirements, bundle pricing is removed automatically and `bundleUuid`, `bundleQuantity`, and `bundleAllocations` are reset.
 
 Retrieve Cart
 -------------------
@@ -245,6 +275,16 @@ GET /v1/cart-items HTTP/1.1
             "amount": 6500,
             "currencyCode": "qar"
         },
+        "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+        "bundleQuantity": 1,
+        "bundleAllocations": [
+            {
+                "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+                "bundleTitle": "Complete the Look",
+                "quantity": 1,
+                "discountMinor": 1000
+            }
+        ],
         "availableStock": 100,
         "isAvailable": true
     }

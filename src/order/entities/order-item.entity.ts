@@ -69,7 +69,7 @@ export class OrderItem {
   @Column(() => Money)
   total: Money;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'uuid', nullable: true, default: null })
   bundleUuid: string | null;
 

@@ -53,6 +53,30 @@ type Banner {
   uuid: String!
 }
 
+type Bundle {
+  amountCurrencyCode: String
+  brief: String
+  discountAmountValue: Int
+  discountPercentage: Int
+  discountType: String!
+  finishesAt: DateTime!
+  flatPriceValue: Int
+  imageUrl: String
+  isActive: Boolean!
+  items: [BundleItem!]!
+  slug: String!
+  startsAt: DateTime!
+  title: String!
+  uuid: String!
+}
+
+type BundleItem {
+  bundle: Bundle!
+  product: Product
+  quantity: Int!
+  variant: ProductVariant
+}
+
 type Campaign {
   brief(language: String! = "en"): String!
   briefAr: String!
@@ -62,10 +86,10 @@ type Campaign {
   finishesAt: String!
   isActive: Boolean!
   isFeatured: Boolean!
-  urgencyEnabled: Boolean!
   name(language: String! = "en"): String!
   slug: String!
   startsAt: String!
+  urgencyEnabled: Boolean!
   uuid: String!
 }
 
@@ -75,6 +99,8 @@ type CampaignCategory {
 
 type CartItem {
   availableStock: Int!
+  bundleQuantity: Int!
+  bundleUuid: String
   discountPrice: CartMoney!
   isAvailable: Boolean!
   product: Product!
@@ -231,6 +257,8 @@ type Order {
 }
 
 type OrderItem {
+  bundleQuantity: Int!
+  bundleUuid: String
   discountedPrice: Money!
   order: Order!
   price: Money!
@@ -332,9 +360,9 @@ type Product {
   shopId: String
   shopName: String
   sizechartUrl: String!
-  stockCount: Int
   slug: String!
   status: String!
+  stockCount: Int
   title(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!
   titleEn: String!

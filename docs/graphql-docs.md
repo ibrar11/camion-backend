@@ -75,6 +75,19 @@ The following features are currently supported by the GraphQL API.
 - Get Current Customer Orders
 - Get Promos
 
+Bundles in GraphQL
+-------------------
+
+There is currently no dedicated GraphQL bundle query or mutation.
+
+Implemented bundle support in GraphQL is exposed indirectly through existing cart and order types:
+
+1. Cart GraphQL responses can include `bundleUuid` and `bundleQuantity` on `CartItem`.
+2. Order GraphQL responses can include `bundleUuid` and `bundleQuantity` on `OrderItem`.
+3. Bundle discovery for a product currently uses the REST endpoint `GET /v1/bundles/product/<product-uuid>`.
+
+This means storefront clients using GraphQL can read bundle-attributed pricing from cart and order responses, but must use REST if they need fixed bundle suggestions for a product page.
+
 Get Current Customer
 --------------------
 
