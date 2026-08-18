@@ -41,7 +41,10 @@ export class SavedCardsService {
 
             // Check if token already exists
             const existing = await this.savedCardRepository.findOne({
-                where: { tokenId },
+                where: { 
+                    tokenId: tokenId,
+                    customer: {uuid: customer.uuid}
+                },
             });
 
             if (existing) {
