@@ -154,6 +154,78 @@ export class SavedCardsService {
             cards[index].expiryYear = expiryYear;
         })
 
+        return cards;
+    }
+
+    /**
+     * Get all saved cards for a customer
+     *
+     * @param customerUUID
+     * @param pageNumber
+     * @param itemsPerPage
+     * @returns
+     */
+    async getAllSavedCards(): Promise<Array<SavedCard>> {
+        this.logger.log(`Retrieving all saved cards`);
+
+        const cards = await this.savedCardRepository.find({
+            relations: {
+                customer: true,
+            }
+        });
+
+        this.logger.log(`Retrieved all ${cards.length} saved cards`);
+
+        if (!cards.length) {
+            throw new NotFoundException(
+                'Could not found any saved cards',
+            );
+        }
+
+        let cardsTokenString = '';
+
+        cards.forEach((card, index) => {
+            cardsTokenString = (index === cards.length - 1) ? cardsTokenString + card.tokenId : cardsTokenString + card.tokenId + "|";
+        })
+
+        const res = await fetch(`${this.configService.get<string>("SKIPCASH_BASE_URL")}/token/cardDetails/${cardsTokenString}`, {
+            method: "GET",
+        });
+        const data = await res.json();
+        this.logger.log(`After hitting skipcash fetch card detail api ${data}`);
+
+        if (!res.ok || data.hasError) {
+            let message = "Payment creation failed";
+
+            if (data?.error?.message) {
+                message = `SkipCash error: ${data.error.message}`;
+            } else if (data?.errorMessage) {
+                message = `SkipCash error: ${data.errorMessage}`;
+            } else if (res.status === 403) {
+                message = "Forbidden: Signature does not match or invalid credentials";
+            }
+
+            throw new InternalServerErrorException(
+                message,
+            );
+        }
+
+        const savedCards: Array<SkipCashCard> = data.resultObj;
+
+        if (!savedCards.length) {
+            throw new NotFoundException(
+                'Saved cards not found on skipcash',
+            );
+        }
+
+        savedCards.forEach((card, index) => {
+            const [expiryMonth, expiryYear] = card.cardExpiry.split("/");
+
+            cards[index].cardBrand = card.cardType === 1 ? "Visa Card" : "MasterCard";
+            cards[index].last4 = card.cardNumber;
+            cards[index].expiryMonth = expiryMonth;
+            cards[index].expiryYear = expiryYear;
+        })
 
         return cards;
     }

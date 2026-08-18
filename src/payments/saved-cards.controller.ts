@@ -24,6 +24,8 @@ import { Customer } from '../customers/entities/customer.entity';
 import { SavedCard } from './entities/saved-card.entity';
 import { SavedCardsService } from './saved-cards.service';
 
+import { UserRole } from '../users/enums/UserRole';
+
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/customers/me/saved-cards')
 export class SavedCardsController {
@@ -38,6 +40,14 @@ export class SavedCardsController {
         @Query("itemsPerPage") itemsPerPage: number,
     ): Promise<SavedCard[]> {
         return this.savedCardsService.getSavedCards(req.customer.uuid, pageNumber, itemsPerPage);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin)
+    @Get('all')
+    @HttpCode(HttpStatus.OK)
+    async getAllSavedCards(
+    ): Promise<SavedCard[]> {
+        return this.savedCardsService.getAllSavedCards();
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
