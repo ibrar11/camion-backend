@@ -249,7 +249,7 @@ export class PaymentsService {
                         order.customer,
                         dto.tokenId
                     );
-                    this.logger.log(`Card successfully saved: ${savedCard}`);
+                    this.logger.log(`Card successfully saved: ${JSON.stringify(savedCard)}`);
                     transaction?.order?.customer?.savedCards?.push(savedCard);
                 }
 
