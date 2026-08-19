@@ -22,6 +22,7 @@ import {
 } from '../../inventory/entities/product-variant.entity';
 
 import { Warehouse } from '../../inventory/entities/warehouse.entity';
+import { BundleAllocation } from '../../bundles/entities/bundle-allocation.type';
 @ObjectType()
 @Entity('order_items')
 export class OrderItem {
@@ -77,13 +78,9 @@ export class OrderItem {
   @Column({ type: 'int', default: 0 })
   bundleQuantity: number;
 
+  @Field(() => [BundleAllocation], { nullable: true })
   @Column({ type: 'jsonb', nullable: true, default: null })
-  bundleAllocations: Array<{
-    bundleUuid: string;
-    bundleTitle: string;
-    quantity: number;
-    discountMinor: number;
-  }> | null;
+  bundleAllocations: Array<BundleAllocation> | null;
 
   @Column({ type: 'boolean', default: false })
   invalidOrderItem: boolean;
