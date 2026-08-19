@@ -75,6 +75,7 @@ The following features are currently supported by the GraphQL API.
 - Get Current Customer Orders
 - Get Promos
 - Get Bundles For Product
+- Add Bundle To Cart
 
 Bundles in GraphQL
 -------------------
@@ -84,8 +85,9 @@ Bundle support is now available in GraphQL for product-page bundle discovery and
 Currently supported:
 
 1. `getBundlesForProduct` query for fixed bundle suggestions on a product page.
-2. `CartItem.bundleUuid`, `CartItem.bundleQuantity`, and `CartItem.bundleAllocations`.
-3. `OrderItem.bundleUuid`, `OrderItem.bundleQuantity`, and `OrderItem.bundleAllocations`.
+2. `addBundleToCart` mutation for adding a full fixed bundle in one call.
+3. `CartItem.bundleUuid`, `CartItem.bundleQuantity`, and `CartItem.bundleAllocations`.
+4. `OrderItem.bundleUuid`, `OrderItem.bundleQuantity`, and `OrderItem.bundleAllocations`.
 
 Get Bundles For Product
 ------------------------
@@ -123,6 +125,10 @@ query GetBundlesForProduct(
       product {
         uuid
         slug
+        variants {
+          uuid
+          sku
+        }
       }
       variant {
         uuid
@@ -132,6 +138,79 @@ query GetBundlesForProduct(
   }
 }
 ```
+
+### Notes
+
+- `items[].product` follows the storefront product response shape, so pricing and variant data are already present.
+- If admin did not pin a variant for a product-level bundle item, `items[].variant` is populated with the default resolved variant.
+
+Add Bundle To Cart
+------------------
+
+### Request Body
+
+```graphql
+mutation AddBundleToCart(
+  $bundleUuid: String!,
+  $currency: String!,
+  $countryCode: String,
+  $quantity: Int!
+) {
+  addBundleToCart(
+    bundleUuid: $bundleUuid,
+    currency: $currency,
+    countryCode: $countryCode,
+    quantity: $quantity
+  ) {
+    uuid
+    quantity
+    subTotal {
+      amount
+      currencyCode
+    }
+    discountPrice {
+      amount
+      currencyCode
+    }
+    total {
+      amount
+      currencyCode
+    }
+    bundleUuid
+    bundleQuantity
+    bundleAllocations {
+      bundleUuid
+      bundleTitle
+      quantity
+      discountMinor
+    }
+    product {
+      uuid
+      slug
+    }
+    variant {
+      uuid
+      sku
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "bundleUuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
+    "currency": "qar",
+    "countryCode": "QA",
+    "quantity": 1
+}
+```
+
+### Notes
+
+- The mutation adds all fixed bundle items to the cart in one request.
+- The response uses the standard `CartItem` shape, with bundle metadata attached for grouped pricing display.
 
 ### GraphQL Variables
 

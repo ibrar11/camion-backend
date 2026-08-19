@@ -216,6 +216,11 @@ countryCode | No | String | Customer country code used for shipping eligibility 
 ]
 ```
 
+### Notes
+
+- Each `items[].product` is returned using the storefront product response shape, including variants and computed pricing for the requested currency.
+- If the bundle item was configured only at product level and no specific variant was pinned by admin, the API still returns a concrete default variant in `items[].variant` so clients can add the bundle directly to cart.
+
 Retrieve Bundle
 ----------------
 
@@ -346,4 +351,3 @@ Bundle Discount Rules
 5. Each item must include either `productUuid` or `variantUuid`.
 6. Duplicate product/variant combinations are rejected.
 7. `finishesAt` must be later than `startsAt`.
-

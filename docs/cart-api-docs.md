@@ -164,6 +164,69 @@ currency | Yes | CurrencyCode | The desired currency code
 > [!IMPORTANT]
 > If the cart no longer satisfies the bundle requirements, bundle pricing is removed automatically and `bundleUuid`, `bundleQuantity`, and `bundleAllocations` are reset.
 
+Add Bundle to Cart
+------------------
+
+Adds the full fixed bundle to cart in one call. The cart still returns normal cart rows, but bundle pricing metadata is attached so clients can render the grouped discount state.
+
+```http
+POST /v1/cart-items/bundles HTTP/1.1
+```
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+bundleUuid | Yes | UUID | UUID of the fixed bundle to add
+currency | Yes | CurrencyCode | The desired currency code
+countryCode | No | String | Customer country used for shipping eligibility checks
+quantity | No | Number | Number of bundle sets to add. Defaults to `1`
+
+### Request Body
+```json
+{
+    "bundleUuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
+    "currency": "qar",
+    "countryCode": "QA",
+    "quantity": 1
+}
+```
+
+### Response Body
+```json
+[
+    {
+        "uuid": "8c534e15-673f-440e-b548-04424cc92363",
+        "quantity": 1,
+        "bundleUuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
+        "bundleQuantity": 1,
+        "bundleAllocations": [
+            {
+                "bundleUuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
+                "bundleTitle": "Complete the Look",
+                "quantity": 1,
+                "discountMinor": 1200
+            }
+        ],
+        "subTotal": {
+            "amount": 15000,
+            "currencyCode": "qar"
+        },
+        "discountPrice": {
+            "amount": 1200,
+            "currencyCode": "qar"
+        },
+        "total": {
+            "amount": 13800,
+            "currencyCode": "qar"
+        }
+    }
+]
+```
+
+### Notes
+
+- This endpoint adds every bundle item using the configured quantity or the default resolved variant for product-level bundle items.
+- The response uses the standard cart item shape, so clients do not need a separate cart model for bundles.
+
 Retrieve Cart
 -------------------
 

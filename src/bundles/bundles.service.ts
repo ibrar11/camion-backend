@@ -23,7 +23,9 @@ import {
 } from '../common/currency';
 import { calculateStock } from '../common/calculateStock';
 import { getShippingRate } from '../common/calculateShipping';
+import { getBestCampaign } from '../common/bestCampaign';
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
+import { PricingService } from '../pricing/pricing.service';
 import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 import { ProductStatus } from '../inventory/enums/ProductStatus.enum';
 import { Product } from '../inventory/entities/product.entity';
@@ -57,6 +59,7 @@ export class BundlesService {
     private readonly variantRepository: Repository<ProductVariant>,
     @InjectRepository(ExchangeRate)
     private readonly exchangeRateRepository: Repository<ExchangeRate>,
+    @Inject(PricingService) private readonly pricingService: PricingService,
     @Inject(S3Service) private readonly s3Service: S3Service,
     @Inject(FileService) private readonly fileService: FileService,
   ) {}
@@ -170,25 +173,9 @@ export class BundlesService {
     }
 
     const now = new Date();
-    const bundles = await this.bundleRepository.find({
-      where: {
-        isActive: true,
-      },
-      relations: {
-        items: {
-          product: true,
-          variant: {
-            product: true,
-            inventoryItem: {
-              levels: true,
-            },
-          },
-        },
-      },
-      order: { id: 'DESC' },
-    });
+    const bundles = await this.loadActiveBundles();
 
-    return bundles.filter((bundle) => {
+    const matchingBundles = bundles.filter((bundle) => {
       if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime()) {
         return false;
       }
@@ -205,6 +192,65 @@ export class BundlesService {
         this.isBundleItemEligible(item, countryCode, currency as CurrencyCode),
       );
     });
+
+    return Promise.all(
+      matchingBundles.map((bundle) =>
+        this.hydrateBundleForStorefront(bundle, currency as CurrencyCode),
+      ),
+    );
+  }
+
+  async getBundleForCartAdd(
+    bundleUuid: string,
+    currency: CurrencyCode,
+    countryCode?: string,
+  ): Promise<Bundle> {
+    const bundle = await this.bundleRepository.findOne({
+      where: { uuid: bundleUuid, isActive: true },
+      relations: {
+        items: {
+          product: true,
+          variant: {
+            product: true,
+            inventoryItem: {
+              levels: true,
+            },
+          },
+        },
+      },
+    });
+
+    if (!bundle) {
+      throw new NotFoundException({
+        error: 'Failed to find the bundle. Please check and try again.',
+      });
+    }
+
+    const now = new Date();
+    if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime()) {
+      throw new BadRequestException({
+        error: 'Bundle is not active yet.',
+      });
+    }
+    if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime()) {
+      throw new BadRequestException({
+        error: 'Bundle has already expired.',
+      });
+    }
+
+    const hydrated = await this.hydrateBundleForStorefront(bundle, currency);
+    if (
+      !hydrated.items.every((item) =>
+        this.isBundleItemEligible(item, countryCode, currency),
+      )
+    ) {
+      throw new BadRequestException({
+        error:
+          'Bundle is not currently available for the selected customer context.',
+      });
+    }
+
+    return hydrated;
   }
 
   async applyBundlesToCartItems(
@@ -410,6 +456,135 @@ export class BundlesService {
       exchangeRates,
     );
     return Math.max(0, subtotalMinor - targetTotalMinor);
+  }
+
+  private async loadActiveBundles(): Promise<Array<Bundle>> {
+    return this.bundleRepository.find({
+      where: {
+        isActive: true,
+      },
+      relations: {
+        items: {
+          product: true,
+          variant: {
+            product: true,
+            inventoryItem: {
+              levels: true,
+            },
+          },
+        },
+      },
+      order: { id: 'DESC' },
+    });
+  }
+
+  private async hydrateBundleForStorefront(
+    bundle: Bundle,
+    currency: CurrencyCode,
+  ): Promise<Bundle> {
+    bundle.items = await Promise.all(
+      bundle.items.map(async (item) => {
+        const productUuid = item.variant?.product?.uuid ?? item.product?.uuid;
+        if (!productUuid) {
+          return item;
+        }
+
+        const storefrontProduct = await this.loadStorefrontProduct(
+          productUuid,
+          currency,
+        );
+        const selectedVariant = item.variant?.uuid
+          ? storefrontProduct.variants.find(
+              (variant) => variant.uuid === item.variant?.uuid,
+            ) ?? storefrontProduct.variants[0]
+          : storefrontProduct.variants[0];
+
+        item.product = storefrontProduct;
+        item.variant = selectedVariant ?? null;
+        return item;
+      }),
+    );
+
+    return bundle;
+  }
+
+  private async loadStorefrontProduct(
+    productUuid: string,
+    currency: CurrencyCode,
+  ): Promise<Product> {
+    const product = await this.productRepository.findOne({
+      where: {
+        uuid: productUuid,
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        attachments: true,
+        options: {
+          values: true,
+        },
+        variants: {
+          optionValues: {
+            optionValue: {
+              option: true,
+            },
+          },
+          inventoryItem: {
+            levels: true,
+          },
+          images: true,
+        },
+        productCategories: {
+          category: {
+            campaignCategories: {
+              campaign: true,
+            },
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException({
+        error: 'Failed to find the product. Please check and try again.',
+      });
+    }
+
+    const campaign = getBestCampaign(product);
+    if (campaign) {
+      product.campaign = campaign;
+    }
+
+    product.variants = await Promise.all(
+      product.variants.map(async (variant) => {
+        variant.product = product;
+        variant.price = await this.pricingService.applyPriceOnProductVariant(
+          product,
+          variant,
+          campaign,
+          currency,
+          false,
+        );
+        variant.discountedPrice =
+          await this.pricingService.applyPriceOnProductVariant(
+            product,
+            variant,
+            campaign,
+            currency,
+            true,
+          );
+        return variant;
+      }),
+    );
+
+    product.variants.sort((lhs, rhs) => {
+      const lhsPrice =
+        lhs.discountedPrice?.minorAmount ?? lhs.price?.minorAmount ?? 0;
+      const rhsPrice =
+        rhs.discountedPrice?.minorAmount ?? rhs.price?.minorAmount ?? 0;
+      return lhsPrice - rhsPrice;
+    });
+
+    return product;
   }
 
   private tryAllocateBundle(
