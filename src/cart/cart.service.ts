@@ -15,6 +15,7 @@ import { calculateStock } from '../common/calculateStock';
 import { getSkipAndTake } from '../common/pagination';
 
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
+import { AddBundleToCartDto } from './dtos/AddBundleToCartDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
 
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
@@ -209,6 +210,38 @@ export class CartItemsService {
       undefined,
       savedCartItem.uuid,
     );
+  }
+
+  async createBundle(
+    customer: Customer,
+    body: AddBundleToCartDto,
+  ): Promise<Array<CartItem>> {
+    this.logger.log(`Attempting to add bundle to cart: ${body.bundleUuid}`);
+
+    const bundle = await this.bundlesService.getBundleForCartAdd(
+      body.bundleUuid,
+      body.currency,
+      body.countryCode,
+    );
+    const multiplier = Math.max(1, Number(body.quantity || 1));
+
+    for (const item of bundle.items) {
+      if (!item.product?.uuid || !item.variant?.uuid) {
+        throw new BadRequestException({
+          error:
+            'Bundle item is missing a valid product or variant. Please check and try again.',
+        });
+      }
+
+      await this.create(customer, {
+        productUuid: item.product.uuid,
+        variantUuid: item.variant.uuid,
+        quantity: item.quantity * multiplier,
+        currency: body.currency,
+      });
+    }
+
+    return this.findCart(customer, '', body.currency, '');
   }
 
   /**
