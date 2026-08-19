@@ -74,19 +74,122 @@ The following features are currently supported by the GraphQL API.
 - Get Coupons Orders
 - Get Current Customer Orders
 - Get Promos
+- Get Bundles For Product
 
 Bundles in GraphQL
 -------------------
 
-There is currently no dedicated GraphQL bundle query or mutation.
+Bundle support is now available in GraphQL for product-page bundle discovery and for reading bundle-attributed cart/order pricing.
 
-Implemented bundle support in GraphQL is exposed indirectly through existing cart and order types:
+Currently supported:
 
-1. Cart GraphQL responses can include `bundleUuid` and `bundleQuantity` on `CartItem`.
-2. Order GraphQL responses can include `bundleUuid` and `bundleQuantity` on `OrderItem`.
-3. Bundle discovery for a product currently uses the REST endpoint `GET /v1/bundles/product/<product-uuid>`.
+1. `getBundlesForProduct` query for fixed bundle suggestions on a product page.
+2. `CartItem.bundleUuid`, `CartItem.bundleQuantity`, and `CartItem.bundleAllocations`.
+3. `OrderItem.bundleUuid`, `OrderItem.bundleQuantity`, and `OrderItem.bundleAllocations`.
 
-This means storefront clients using GraphQL can read bundle-attributed pricing from cart and order responses, but must use REST if they need fixed bundle suggestions for a product page.
+Get Bundles For Product
+------------------------
+
+### Request Body
+
+```graphql
+query GetBundlesForProduct(
+  $productUUID: String!,
+  $currency: String!,
+  $countryCode: String,
+  $language: String!
+) {
+  getBundlesForProduct(
+    productUUID: $productUUID,
+    currency: $currency,
+    countryCode: $countryCode,
+    language: $language
+  ) {
+    uuid
+    slug
+    title(language: $language)
+    brief(language: $language)
+    imageUrl
+    discountType
+    flatPriceValue
+    discountPercentage
+    discountAmountValue
+    amountCurrencyCode
+    isActive
+    startsAt
+    finishesAt
+    items {
+      quantity
+      product {
+        uuid
+        slug
+      }
+      variant {
+        uuid
+        sku
+      }
+    }
+  }
+}
+```
+
+### GraphQL Variables
+
+```json
+{
+    "productUUID": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
+    "currency": "qar",
+    "countryCode": "QA",
+    "language": "en"
+}
+```
+
+### Response Body
+
+```json
+{
+    "data": {
+        "getBundlesForProduct": [
+            {
+                "uuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
+                "slug": "complete-the-look",
+                "title": "Complete the Look",
+                "brief": "Dress + bag promotional bundle",
+                "imageUrl": "https://assets.example.com/bundles/complete-the-look.jpg",
+                "discountType": "percentage_off",
+                "flatPriceValue": null,
+                "discountPercentage": 10,
+                "discountAmountValue": null,
+                "amountCurrencyCode": null,
+                "isActive": true,
+                "startsAt": "2026-08-18T09:00:00.000Z",
+                "finishesAt": "2026-09-18T23:59:59.000Z",
+                "items": [
+                    {
+                        "quantity": 1,
+                        "product": {
+                            "uuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
+                            "slug": "dress-product"
+                        },
+                        "variant": null
+                    },
+                    {
+                        "quantity": 1,
+                        "product": {
+                            "uuid": "26e7c92d-5158-49a6-a8be-7b0a636f913f",
+                            "slug": "bag-product"
+                        },
+                        "variant": {
+                            "uuid": "a8f94af8-0bc7-440b-a244-d6bdb4f4a2c8",
+                            "sku": "BAG-BLACK-01"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
 
 Get Current Customer
 --------------------

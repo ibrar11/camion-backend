@@ -19,6 +19,7 @@ import { ProductVariant } from '../../inventory/entities/product-variant.entity'
 import { Customer } from '../../customers/entities/customer.entity';
 
 import { CurrencyCode } from '../../inventory/enums/CurrencyCode.enum';
+import { BundleAllocation } from '../../bundles/entities/bundle-allocation.type';
 
 @ObjectType()
 export class CartMoney {
@@ -95,13 +96,9 @@ export class CartItem {
   @Column({ type: 'int', default: 0 })
   bundleQuantity: number;
 
+  @Field(() => [BundleAllocation], { nullable: true })
   @Column({ type: 'jsonb', nullable: true, default: null })
-  bundleAllocations: Array<{
-    bundleUuid: string;
-    bundleTitle: string;
-    quantity: number;
-    discountMinor: number;
-  }> | null;
+  bundleAllocations: Array<BundleAllocation> | null;
 
   // <!--
   // These fields are not part of the schema. Please don't add them to the database.

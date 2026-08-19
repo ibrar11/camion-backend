@@ -6,6 +6,7 @@ import { Bundle } from './entities/bundle.entity';
 import { BundleItem } from './entities/bundle-item.entity';
 import { BundlesService } from './bundles.service';
 import { BundlesController } from './bundles.controller';
+import { BundlesResolver } from './bundles.resolver';
 
 import { Product } from '../inventory/entities/product.entity';
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
@@ -41,6 +42,7 @@ import { FileService } from '../common/file.service';
   exports: [BundlesService],
   providers: [
     BundlesService,
+    BundlesResolver,
     S3Service,
     FileService,
     UsersService,
