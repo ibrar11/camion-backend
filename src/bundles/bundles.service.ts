@@ -313,17 +313,29 @@ export class BundlesService {
     type MutableState = {
       cartItem: CartItem;
       remainingQuantity: number;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
       allocations: Array<BundleAllocationEntry>;
     };
 
     const states: Array<MutableState> = cartItems.map((cartItem) => {
-      const baseSubTotal = cartItem.subTotal;
-      const subTotalMinor = moneyToMinor(baseSubTotal);
-      const unitMinor =
+      const baseUnitMinor =
+        cartItem.variant?.price
+          ? moneyToMinor(cartItem.variant.price)
+          : cartItem.quantity > 0
+            ? Math.ceil(moneyToMinor(cartItem.subTotal) / cartItem.quantity)
+            : 0;
+      const normalUnitMinor =
+        cartItem.variant?.discountedPrice
+          ? moneyToMinor(cartItem.variant.discountedPrice)
+          : cartItem.quantity > 0
+            ? Math.ceil(moneyToMinor(cartItem.subTotal) / cartItem.quantity)
+            : 0;
+      const normalSubTotalMinor =
         cartItem.quantity > 0
-          ? Math.ceil(subTotalMinor / cartItem.quantity)
+          ? normalUnitMinor * cartItem.quantity
           : 0;
+      cartItem.subTotal = moneyFromMinor(normalSubTotalMinor, currency);
       cartItem.discountPrice = {
         amount: 0,
         minorAmount: 0,
@@ -339,7 +351,8 @@ export class BundlesService {
       return {
         cartItem,
         remainingQuantity: cartItem.quantity,
-        unitMinor,
+        baseUnitMinor,
+        normalUnitMinor,
         allocations: [],
       };
     });
@@ -412,18 +425,24 @@ export class BundlesService {
         (sum, entry) => sum + entry.discountMinor,
         0,
       );
+      const bundleQuantity = state.allocations.reduce(
+        (sum, entry) => sum + entry.quantity,
+        0,
+      );
+      const nonBundleQuantity = Math.max(0, state.cartItem.quantity - bundleQuantity);
+      const lineSubTotalMinor =
+        bundleQuantity * state.baseUnitMinor +
+        nonBundleQuantity * state.normalUnitMinor;
+      state.cartItem.subTotal = moneyFromMinor(lineSubTotalMinor, currency);
       state.cartItem.discountPrice = moneyFromMinor(
         totalDiscountMinor,
         currency,
       );
-      state.cartItem.total = subtractMoney(
-        state.cartItem.subTotal,
-        state.cartItem.discountPrice,
+      state.cartItem.total = moneyFromMinor(
+        Math.max(0, lineSubTotalMinor - totalDiscountMinor),
+        currency,
       );
-      state.cartItem.bundleQuantity = state.allocations.reduce(
-        (sum, entry) => sum + entry.quantity,
-        0,
-      );
+      state.cartItem.bundleQuantity = bundleQuantity;
       state.cartItem.bundleUuid = state.allocations[0]?.bundleUuid ?? null;
       state.cartItem.bundleAllocations =
         state.allocations.length > 0 ? state.allocations : null;
@@ -437,7 +456,8 @@ export class BundlesService {
     states: Array<{
       remainingQuantity: number;
       cartItem: CartItem;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
     }>,
     currency: CurrencyCode,
     exchangeRates: Array<ExchangeRate>,
@@ -806,14 +826,16 @@ export class BundlesService {
     states: Array<{
       cartItem: CartItem;
       remainingQuantity: number;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
       allocations?: Array<BundleAllocationEntry>;
     }>,
   ): Array<{
     state: {
       cartItem: CartItem;
       remainingQuantity: number;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
       allocations?: Array<BundleAllocationEntry>;
     };
     quantity: number;
@@ -823,7 +845,8 @@ export class BundlesService {
       state: {
         cartItem: CartItem;
         remainingQuantity: number;
-        unitMinor: number;
+        baseUnitMinor: number;
+        normalUnitMinor: number;
         allocations?: Array<BundleAllocationEntry>;
       };
       quantity: number;
@@ -851,7 +874,7 @@ export class BundlesService {
         allocations.push({
           state,
           quantity: takeQuantity,
-          unitMinor: state.unitMinor,
+          unitMinor: state.baseUnitMinor,
         });
         needed -= takeQuantity;
       }
