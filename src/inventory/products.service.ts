@@ -3876,6 +3876,11 @@ export class ProductsService {
 		const product = await this.productRepository.findOne({
 			relationLoadStrategy: "query",
 			where: { uuid: uuid, },
+			relations: {
+				productCategories: {
+					category: true,
+				},
+			},
 		});
 
 		if (product === null) {
@@ -3906,7 +3911,7 @@ export class ProductsService {
 		const savedProduct = await this.productRepository.save(product);
 
 		if (previousStatus !== savedProduct.status) {
-			const categoryIds = (savedProduct.productCategories ?? [])
+			const categoryIds = (product.productCategories ?? [])
 				.map((productCategory) => productCategory.category?.id)
 				.filter((id): id is number => id !== undefined);
 			await this.recalculateCategoryProductsCount(categoryIds);
