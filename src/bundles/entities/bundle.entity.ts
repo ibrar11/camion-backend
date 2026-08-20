@@ -19,6 +19,12 @@ export enum BundleDiscountType {
   FIXED_AMOUNT_OFF = 'fixed_amount_off',
 }
 
+export enum BundleMode {
+  FIXED = 'fixed',
+  HYBRID = 'hybrid',
+  AUTO = 'auto',
+}
+
 @ObjectType()
 @Entity({ name: 'bundles' })
 export class Bundle {
@@ -60,6 +66,14 @@ export class Bundle {
   @Column({ type: 'enum', enum: BundleDiscountType })
   discountType: BundleDiscountType;
 
+  @Field(() => String)
+  @Column({
+    type: 'enum',
+    enum: BundleMode,
+    default: BundleMode.FIXED,
+  })
+  mode: BundleMode;
+
   @Field(() => Int, { nullable: true })
   @Column({ type: 'numeric', nullable: true, default: null })
   flatPriceValue: number | null;
@@ -80,6 +94,18 @@ export class Bundle {
   @Column({ type: 'boolean', default: true })
   @Index()
   isActive: boolean;
+
+  @Field(() => String, { nullable: true })
+  @Column({ type: 'uuid', nullable: true, default: null })
+  anchorProductUuid: string | null;
+
+  @Field(() => [String], { nullable: true })
+  @Column({ type: 'simple-array', nullable: true, default: null })
+  sourceCategoryUuids: Array<string> | null;
+
+  @Field(() => Int, { nullable: true })
+  @Column({ type: 'int', nullable: true, default: null })
+  autoFillCount: number | null;
 
   @Field()
   @Column({ type: 'timestamptz', nullable: false })
