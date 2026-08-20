@@ -33,6 +33,8 @@ import { CartItem } from "../cart/entities/cart-items.entity";
 import { EmailService } from "../email/email.service";
 import { getOrderReference } from "../common/maskUuid";
 
+import { SavedCardsService } from "./saved-cards.service";
+
 @Injectable()
 export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
@@ -45,6 +47,7 @@ export class PaymentsWebhookService {
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
+        private readonly savedCardsService: SavedCardsService,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -168,6 +171,15 @@ export class PaymentsWebhookService {
 
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
+
+                if (TokenId && TokenId !== "NA" && order.customer) {
+                    const savedCard = await this.savedCardsService.saveCardToken(
+                        order.customer,
+                        TokenId
+                    );
+                    this.logger.log(`Card successfully saved: ${JSON.stringify(savedCard)}`);
+                    transaction?.order?.customer?.savedCards?.push(savedCard);
+                }
 
                 const paymentEventExists = await this.trackingEventRepository.findOne({
                     where: { orderUuid: order.uuid, stage: OrderTrackingStage.PAYMENT_CONFIRMED },
