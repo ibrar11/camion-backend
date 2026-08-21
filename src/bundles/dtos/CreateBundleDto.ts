@@ -1,4 +1,5 @@
 import {
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsEnum,
@@ -15,7 +16,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CurrencyCode } from '../../inventory/enums/CurrencyCode.enum';
-import { BundleDiscountType } from '../entities/bundle.entity';
+import { BundleDiscountType, BundleMode } from '../entities/bundle.entity';
 
 export class TitleField {
   @IsString()
@@ -72,6 +73,10 @@ export class CreateBundleDto {
   discountType: BundleDiscountType;
 
   @IsOptional()
+  @IsEnum(BundleMode)
+  mode?: BundleMode;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   flatPriceValue?: number;
@@ -93,6 +98,21 @@ export class CreateBundleDto {
 
   @IsBoolean()
   isActive: boolean;
+
+  @IsOptional()
+  @IsUUID('4')
+  anchorProductUuid?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  sourceCategoryUuids?: Array<string>;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  autoFillCount?: number;
 
   @IsString()
   @MinLength(1)

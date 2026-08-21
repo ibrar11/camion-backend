@@ -27,14 +27,18 @@ brief.en | No | String | Optional English short description, max 256 chars
 brief.ar | No | String | Optional Arabic short description, max 256 chars
 slug | Yes | String | Unique bundle slug, max 64 chars
 discountType | Yes | String | One of `percentage_off`, `fixed_amount_off`, `flat_total`
+mode | No | String | One of `fixed`, `hybrid`, `auto`. Defaults to `fixed`
 flatPriceValue | Conditional | Number | Required when `discountType = flat_total`
 discountPercentage | Conditional | Number | Required when `discountType = percentage_off`
 discountAmountValue | Conditional | Number | Required when `discountType = fixed_amount_off`
 amountCurrencyCode | Conditional | String | Required for `flat_total` and `fixed_amount_off`
 isActive | Yes | Boolean | Whether the bundle is active
+anchorProductUuid | Conditional | String | Required for `hybrid` and `auto` bundles. Used to target a specific product page
+sourceCategoryUuids | No | Array<String> | Optional category UUIDs used for auto-filled products. If omitted, the anchor product's categories are used
+autoFillCount | Conditional | Number | Required for `hybrid` and `auto`. Number of generated products to append
 startsAt | Yes | String | ISO-style start date/time
 finishesAt | Yes | String | ISO-style finish date/time
-items | Yes | Array<Object> | Bundle items, minimum 2 entries
+items | Yes | Array<Object> | Bundle items. `fixed` requires at least 2 items, `hybrid` requires at least 1 manual item, `auto` can use an empty array
 items[].productUuid | No | String | Product UUID
 items[].variantUuid | No | String | Variant UUID
 items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
@@ -52,6 +56,7 @@ items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
     },
     "slug": "complete-the-look",
     "discountType": "percentage_off",
+    "mode": "fixed",
     "discountPercentage": 10,
     "isActive": true,
     "startsAt": "2026-08-18T09:00:00Z",
@@ -69,6 +74,64 @@ items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
 }
 ```
 
+### Bundle Modes
+
+- `fixed`: current manual bundle behavior. Admin stores the exact products or variants that make up the bundle.
+- `hybrid`: admin stores one or more manual items, plus `anchorProductUuid` and `autoFillCount`. The backend appends deterministic related products from `sourceCategoryUuids` or the anchor product's own categories.
+- `auto`: admin stores the pricing rule and targeting config only. Bundle items are generated at runtime from `sourceCategoryUuids` or the anchor product's own categories.
+
+### Example `hybrid` Request Body
+```json
+{
+    "title": {
+        "en": "Dress with Matching Add-ons",
+        "ar": "فستان مع الإضافات"
+    },
+    "slug": "dress-matching-addons",
+    "discountType": "percentage_off",
+    "mode": "hybrid",
+    "discountPercentage": 10,
+    "isActive": true,
+    "anchorProductUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
+    "sourceCategoryUuids": [
+        "3a6935de-8d59-4d9f-9b6c-2c5d42a4f6ab"
+    ],
+    "autoFillCount": 2,
+    "startsAt": "2026-08-18T09:00:00Z",
+    "finishesAt": "2026-09-18T23:59:59Z",
+    "items": [
+        {
+            "variantUuid": "a8f94af8-0bc7-440b-a244-d6bdb4f4a2c8",
+            "quantity": 1
+        }
+    ]
+}
+```
+
+### Example `auto` Request Body
+```json
+{
+    "title": {
+        "en": "Auto Accessories Bundle",
+        "ar": "باقة إكسسوارات تلقائية"
+    },
+    "slug": "auto-accessories-bundle",
+    "discountType": "flat_total",
+    "mode": "auto",
+    "flatPriceValue": 49,
+    "amountCurrencyCode": "qar",
+    "isActive": true,
+    "anchorProductUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
+    "sourceCategoryUuids": [
+        "3a6935de-8d59-4d9f-9b6c-2c5d42a4f6ab"
+    ],
+    "autoFillCount": 2,
+    "startsAt": "2026-08-18T09:00:00Z",
+    "finishesAt": "2026-09-18T23:59:59Z",
+    "items": []
+}
+```
+
 ### Response Body
 ```json
 {
@@ -80,11 +143,15 @@ items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
     "slug": "complete-the-look",
     "imageUrl": null,
     "discountType": "percentage_off",
+    "mode": "fixed",
     "flatPriceValue": null,
     "discountPercentage": 10,
     "discountAmountValue": null,
     "amountCurrencyCode": null,
     "isActive": true,
+    "anchorProductUuid": null,
+    "sourceCategoryUuids": null,
+    "autoFillCount": null,
     "startsAt": "2026-08-18T09:00:00.000Z",
     "finishesAt": "2026-09-18T23:59:59.000Z",
     "items": [
@@ -141,11 +208,15 @@ itemsPerPage | The number of results to retrieve in the response | `100`
         "slug": "complete-the-look",
         "imageUrl": "https://assets.example.com/bundles/complete-the-look.jpg",
         "discountType": "percentage_off",
+        "mode": "fixed",
         "flatPriceValue": null,
         "discountPercentage": 10,
         "discountAmountValue": null,
         "amountCurrencyCode": null,
         "isActive": true,
+        "anchorProductUuid": null,
+        "sourceCategoryUuids": null,
+        "autoFillCount": null,
         "startsAt": "2026-08-18T09:00:00.000Z",
         "finishesAt": "2026-09-18T23:59:59.000Z",
         "items": [
@@ -187,8 +258,14 @@ countryCode | No | String | Customer country code used for shipping eligibility 
         "titleAr": "اكمل الإطلالة",
         "slug": "complete-the-look",
         "discountType": "percentage_off",
+        "mode": "hybrid",
         "discountPercentage": 10,
         "isActive": true,
+        "anchorProductUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
+        "sourceCategoryUuids": [
+            "3a6935de-8d59-4d9f-9b6c-2c5d42a4f6ab"
+        ],
+        "autoFillCount": 1,
         "startsAt": "2026-08-18T09:00:00.000Z",
         "finishesAt": "2026-09-18T23:59:59.000Z",
         "items": [
@@ -220,6 +297,7 @@ countryCode | No | String | Customer country code used for shipping eligibility 
 
 - Each `items[].product` is returned using the storefront product response shape, including variants and computed pricing for the requested currency.
 - If the bundle item was configured only at product level and no specific variant was pinned by admin, the API still returns a concrete default variant in `items[].variant` so clients can add the bundle directly to cart.
+- `hybrid` and `auto` bundles are resolved dynamically at request time, but the response shape remains the same as fixed bundles.
 
 Retrieve Bundle
 ----------------

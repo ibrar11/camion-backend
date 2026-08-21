@@ -32,7 +32,7 @@ import { Product } from '../inventory/entities/product.entity';
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
 import { CartItem } from '../cart/entities/cart-items.entity';
 
-import { Bundle, BundleDiscountType } from './entities/bundle.entity';
+import { Bundle, BundleDiscountType, BundleMode } from './entities/bundle.entity';
 import { BundleItem } from './entities/bundle-item.entity';
 import { CreateBundleDto, BundleItemInputDto } from './dtos/CreateBundleDto';
 import { UpdateBundleDto } from './dtos/UpdateBundleDto';
@@ -81,7 +81,7 @@ export class BundlesService {
 
     const bundle = new Bundle();
     bundle.uuid = crypto.randomUUID();
-    this.assignBundleFields(bundle, body);
+    await this.assignBundleFields(bundle, body);
     await this.bundleRepository.save(bundle);
     await this.syncBundleItems(bundle, body.items);
     return this.findOne(bundle.uuid);
@@ -135,7 +135,7 @@ export class BundlesService {
   async updateBundle(uuid: string, body: UpdateBundleDto): Promise<Bundle> {
     const bundle = await this.findOne(uuid);
     await this.validateBundlePayload(body, bundle.uuid);
-    this.assignBundleFields(bundle, body);
+    await this.assignBundleFields(bundle, body);
     await this.bundleRepository.save(bundle);
     await this.syncBundleItems(bundle, body.items);
     return this.findOne(bundle.uuid);
@@ -163,8 +163,16 @@ export class BundlesService {
     currency: string,
     countryCode?: string,
   ): Promise<Array<Bundle>> {
-    const product = await this.productRepository.findOneBy({
-      uuid: productUUID,
+    const product = await this.productRepository.findOne({
+      where: {
+        uuid: productUUID,
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        productCategories: {
+          category: true,
+        },
+      },
     });
     if (!product) {
       throw new NotFoundException({
@@ -175,29 +183,23 @@ export class BundlesService {
     const now = new Date();
     const bundles = await this.loadActiveBundles();
 
-    const matchingBundles = bundles.filter((bundle) => {
-      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime()) {
-        return false;
-      }
-      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime()) {
-        return false;
-      }
-      const containsProduct = bundle.items.some(
-        (item) =>
-          item.product?.uuid === productUUID ||
-          item.variant?.product?.uuid === productUUID,
-      );
-      if (!containsProduct) return false;
-      return bundle.items.every((item) =>
-        this.isBundleItemEligible(item, countryCode, currency as CurrencyCode),
-      );
-    });
+    const matchingBundles = bundles.filter(
+      (bundle) =>
+        this.isBundleActiveAt(bundle, now) &&
+        this.matchesBundleContext(bundle, productUUID),
+    );
 
-    return Promise.all(
+    const resolvedBundles = await Promise.all(
       matchingBundles.map((bundle) =>
-        this.hydrateBundleForStorefront(bundle, currency as CurrencyCode),
+        this.resolveBundleForContext(
+          bundle,
+          product,
+          currency as CurrencyCode,
+          countryCode,
+        ),
       ),
     );
+    return resolvedBundles.filter((bundle): bundle is Bundle => bundle !== null);
   }
 
   async getBundleForCartAdd(
@@ -238,12 +240,16 @@ export class BundlesService {
       });
     }
 
-    const hydrated = await this.hydrateBundleForStorefront(bundle, currency);
-    if (
-      !hydrated.items.every((item) =>
-        this.isBundleItemEligible(item, countryCode, currency),
-      )
-    ) {
+    const contextProduct = bundle.anchorProductUuid
+      ? await this.loadContextProduct(bundle.anchorProductUuid)
+      : null;
+    const hydrated = await this.resolveBundleForContext(
+      bundle,
+      contextProduct,
+      currency,
+      countryCode,
+    );
+    if (!hydrated) {
       throw new BadRequestException({
         error:
           'Bundle is not currently available for the selected customer context.',
@@ -274,31 +280,25 @@ export class BundlesService {
       return cartItems;
     }
 
-    const bundles = (
-      await this.bundleRepository.find({
-        where: {
-          isActive: true,
-        },
-        relations: {
-          items: {
-            product: true,
-            variant: {
-              product: true,
-              inventoryItem: {
-                levels: true,
-              },
-            },
-          },
-        },
-        order: { id: 'DESC' },
-      })
-    ).filter((bundle) => {
-      if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime()) {
-        return false;
-      }
-      if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime()) {
-        return false;
-      }
+    const bundles = await this.loadActiveBundles();
+    const resolvedBundles = (
+      await Promise.all(
+        bundles
+          .filter((bundle) => this.isBundleActiveAt(bundle, now))
+          .map(async (bundle) => {
+            const contextProduct = bundle.anchorProductUuid
+              ? await this.loadContextProduct(bundle.anchorProductUuid)
+              : null;
+            return this.resolveBundleForContext(
+              bundle,
+              contextProduct,
+              currency,
+              countryCode,
+            );
+          }),
+      )
+    ).filter((bundle): bundle is Bundle => {
+      if (!bundle) return false;
       return bundle.items.some((item) => {
         const productId = item.variant?.product?.id ?? item.product?.id;
         return productId !== undefined && productIds.includes(productId);
@@ -313,17 +313,29 @@ export class BundlesService {
     type MutableState = {
       cartItem: CartItem;
       remainingQuantity: number;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
       allocations: Array<BundleAllocationEntry>;
     };
 
     const states: Array<MutableState> = cartItems.map((cartItem) => {
-      const baseSubTotal = cartItem.subTotal;
-      const subTotalMinor = moneyToMinor(baseSubTotal);
-      const unitMinor =
+      const baseUnitMinor =
+        cartItem.variant?.price
+          ? moneyToMinor(cartItem.variant.price)
+          : cartItem.quantity > 0
+            ? Math.ceil(moneyToMinor(cartItem.subTotal) / cartItem.quantity)
+            : 0;
+      const normalUnitMinor =
+        cartItem.variant?.discountedPrice
+          ? moneyToMinor(cartItem.variant.discountedPrice)
+          : cartItem.quantity > 0
+            ? Math.ceil(moneyToMinor(cartItem.subTotal) / cartItem.quantity)
+            : 0;
+      const normalSubTotalMinor =
         cartItem.quantity > 0
-          ? Math.ceil(subTotalMinor / cartItem.quantity)
+          ? normalUnitMinor * cartItem.quantity
           : 0;
+      cartItem.subTotal = moneyFromMinor(normalSubTotalMinor, currency);
       cartItem.discountPrice = {
         amount: 0,
         minorAmount: 0,
@@ -339,12 +351,13 @@ export class BundlesService {
       return {
         cartItem,
         remainingQuantity: cartItem.quantity,
-        unitMinor,
+        baseUnitMinor,
+        normalUnitMinor,
         allocations: [],
       };
     });
 
-    const scoredBundles = bundles
+    const scoredBundles = resolvedBundles
       .map((bundle) => ({
         bundle,
         estimatedSavings: this.estimateBundleSavings(
@@ -412,18 +425,24 @@ export class BundlesService {
         (sum, entry) => sum + entry.discountMinor,
         0,
       );
+      const bundleQuantity = state.allocations.reduce(
+        (sum, entry) => sum + entry.quantity,
+        0,
+      );
+      const nonBundleQuantity = Math.max(0, state.cartItem.quantity - bundleQuantity);
+      const lineSubTotalMinor =
+        bundleQuantity * state.baseUnitMinor +
+        nonBundleQuantity * state.normalUnitMinor;
+      state.cartItem.subTotal = moneyFromMinor(lineSubTotalMinor, currency);
       state.cartItem.discountPrice = moneyFromMinor(
         totalDiscountMinor,
         currency,
       );
-      state.cartItem.total = subtractMoney(
-        state.cartItem.subTotal,
-        state.cartItem.discountPrice,
+      state.cartItem.total = moneyFromMinor(
+        Math.max(0, lineSubTotalMinor - totalDiscountMinor),
+        currency,
       );
-      state.cartItem.bundleQuantity = state.allocations.reduce(
-        (sum, entry) => sum + entry.quantity,
-        0,
-      );
+      state.cartItem.bundleQuantity = bundleQuantity;
       state.cartItem.bundleUuid = state.allocations[0]?.bundleUuid ?? null;
       state.cartItem.bundleAllocations =
         state.allocations.length > 0 ? state.allocations : null;
@@ -437,7 +456,8 @@ export class BundlesService {
     states: Array<{
       remainingQuantity: number;
       cartItem: CartItem;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
     }>,
     currency: CurrencyCode,
     exchangeRates: Array<ExchangeRate>,
@@ -506,6 +526,220 @@ export class BundlesService {
     );
 
     return bundle;
+  }
+
+  private async resolveBundleForContext(
+    bundle: Bundle,
+    contextProduct: Product | null,
+    currency: CurrencyCode,
+    countryCode?: string,
+  ): Promise<Bundle | null> {
+    const mode = bundle.mode ?? BundleMode.FIXED;
+    const hydratedBundle = this.cloneBundle(bundle);
+    hydratedBundle.items = await this.hydrateBundleItems(
+      bundle.items ?? [],
+      currency,
+    );
+
+    if (
+      !hydratedBundle.items.every((item) =>
+        this.isBundleItemEligible(item, countryCode, currency),
+      )
+    ) {
+      return null;
+    }
+
+    if (mode === BundleMode.FIXED) {
+      return hydratedBundle;
+    }
+
+    const generatedItems = await this.generateAutomaticItems(
+      bundle,
+      contextProduct,
+      currency,
+      countryCode,
+      new Set(
+        hydratedBundle.items
+          .map((item) => item.variant?.product?.uuid ?? item.product?.uuid)
+          .filter((uuid): uuid is string => Boolean(uuid)),
+      ),
+    );
+    if (!generatedItems) {
+      return null;
+    }
+
+    hydratedBundle.items =
+      mode === BundleMode.AUTO
+        ? generatedItems
+        : [...hydratedBundle.items, ...generatedItems];
+    return hydratedBundle.items.length > 0 ? hydratedBundle : null;
+  }
+
+  private async hydrateBundleItems(
+    items: Array<BundleItem>,
+    currency: CurrencyCode,
+  ): Promise<Array<BundleItem>> {
+    return Promise.all(
+      items.map(async (item) => {
+        const clonedItem = new BundleItem();
+        clonedItem.bundle = item.bundle;
+        clonedItem.quantity = item.quantity;
+
+        const productUuid = item.variant?.product?.uuid ?? item.product?.uuid;
+        if (!productUuid) {
+          clonedItem.product = item.product;
+          clonedItem.variant = item.variant;
+          return clonedItem;
+        }
+
+        const storefrontProduct = await this.loadStorefrontProduct(
+          productUuid,
+          currency,
+        );
+        const selectedVariant = item.variant?.uuid
+          ? storefrontProduct.variants.find(
+              (variant) => variant.uuid === item.variant?.uuid,
+            ) ?? storefrontProduct.variants[0]
+          : storefrontProduct.variants[0];
+
+        clonedItem.product = storefrontProduct;
+        clonedItem.variant = selectedVariant ?? null;
+        return clonedItem;
+      }),
+    );
+  }
+
+  private async generateAutomaticItems(
+    bundle: Bundle,
+    contextProduct: Product | null,
+    currency: CurrencyCode,
+    countryCode: string | undefined,
+    excludedProductUuids: Set<string>,
+  ): Promise<Array<BundleItem> | null> {
+    const requiredCount = bundle.autoFillCount ?? 0;
+    if (requiredCount <= 0) {
+      return [];
+    }
+
+    const anchorProduct =
+      contextProduct ??
+      (bundle.anchorProductUuid
+        ? await this.loadContextProduct(bundle.anchorProductUuid)
+        : null);
+    if (!anchorProduct) {
+      return null;
+    }
+
+    excludedProductUuids.add(anchorProduct.uuid);
+    const categoryUuids =
+      bundle.sourceCategoryUuids?.filter(Boolean) ??
+      anchorProduct.productCategories
+        ?.map((entry) => entry.category?.uuid)
+        .filter((uuid): uuid is string => Boolean(uuid)) ??
+      [];
+    if (categoryUuids.length === 0) {
+      return null;
+    }
+
+    const candidates = await this.productRepository.find({
+      relationLoadStrategy: 'query',
+      where: {
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        productCategories: {
+          category: true,
+        },
+      },
+      order: {
+        salesCount: 'DESC',
+        viewsCount: 'DESC',
+        id: 'DESC',
+      },
+      take: 100,
+    });
+
+    const categorySet = new Set(categoryUuids);
+    const matchedCandidates = candidates.filter((candidate) => {
+      if (excludedProductUuids.has(candidate.uuid)) {
+        return false;
+      }
+      return (candidate.productCategories ?? []).some((entry) =>
+        categorySet.has(entry.category?.uuid ?? ''),
+      );
+    });
+
+    const generatedItems: Array<BundleItem> = [];
+    for (const candidate of matchedCandidates) {
+      if (generatedItems.length >= requiredCount) {
+        break;
+      }
+      const storefrontProduct = await this.loadStorefrontProduct(
+        candidate.uuid,
+        currency,
+      );
+      const selectedVariant = storefrontProduct.variants[0] ?? null;
+
+      const generatedItem = new BundleItem();
+      generatedItem.bundle = bundle;
+      generatedItem.product = storefrontProduct;
+      generatedItem.variant = selectedVariant;
+      generatedItem.quantity = 1;
+
+      if (!this.isBundleItemEligible(generatedItem, countryCode, currency)) {
+        continue;
+      }
+
+      generatedItems.push(generatedItem);
+      excludedProductUuids.add(candidate.uuid);
+    }
+
+    return generatedItems.length === requiredCount ? generatedItems : null;
+  }
+
+  private async loadContextProduct(productUuid: string): Promise<Product | null> {
+    return this.productRepository.findOne({
+      where: {
+        uuid: productUuid,
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        productCategories: {
+          category: true,
+        },
+      },
+    });
+  }
+
+  private cloneBundle(bundle: Bundle): Bundle {
+    const clonedBundle = new Bundle();
+    Object.assign(clonedBundle, bundle);
+    clonedBundle.sourceCategoryUuids = Array.isArray(bundle.sourceCategoryUuids)
+      ? [...bundle.sourceCategoryUuids]
+      : bundle.sourceCategoryUuids;
+    clonedBundle.items = [...(bundle.items ?? [])];
+    return clonedBundle;
+  }
+
+  private isBundleActiveAt(bundle: Bundle, now: Date): boolean {
+    if (bundle.startsAt && bundle.startsAt.getTime() > now.getTime()) {
+      return false;
+    }
+    if (bundle.finishesAt && bundle.finishesAt.getTime() < now.getTime()) {
+      return false;
+    }
+    return true;
+  }
+
+  private matchesBundleContext(bundle: Bundle, productUUID: string): boolean {
+    if (bundle.anchorProductUuid === productUUID) {
+      return true;
+    }
+    return bundle.items.some(
+      (item) =>
+        item.product?.uuid === productUUID ||
+        item.variant?.product?.uuid === productUUID,
+    );
   }
 
   private async loadStorefrontProduct(
@@ -592,14 +826,16 @@ export class BundlesService {
     states: Array<{
       cartItem: CartItem;
       remainingQuantity: number;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
       allocations?: Array<BundleAllocationEntry>;
     }>,
   ): Array<{
     state: {
       cartItem: CartItem;
       remainingQuantity: number;
-      unitMinor: number;
+      baseUnitMinor: number;
+      normalUnitMinor: number;
       allocations?: Array<BundleAllocationEntry>;
     };
     quantity: number;
@@ -609,7 +845,8 @@ export class BundlesService {
       state: {
         cartItem: CartItem;
         remainingQuantity: number;
-        unitMinor: number;
+        baseUnitMinor: number;
+        normalUnitMinor: number;
         allocations?: Array<BundleAllocationEntry>;
       };
       quantity: number;
@@ -637,7 +874,7 @@ export class BundlesService {
         allocations.push({
           state,
           quantity: takeQuantity,
-          unitMinor: state.unitMinor,
+          unitMinor: state.baseUnitMinor,
         });
         needed -= takeQuantity;
       }
@@ -769,7 +1006,7 @@ export class BundlesService {
       },
     });
 
-    for (const input of inputs) {
+    for (const input of inputs ?? []) {
       const product = input.productUuid
         ? await this.productRepository.findOneBy({ uuid: input.productUuid })
         : null;
@@ -789,21 +1026,27 @@ export class BundlesService {
     }
   }
 
-  private assignBundleFields(
+  private async assignBundleFields(
     bundle: Bundle,
     body: CreateBundleDto | UpdateBundleDto,
-  ): void {
+  ): Promise<void> {
     bundle.titleEn = body.title.en.trim();
     bundle.titleAr = body.title.ar.trim();
     bundle.briefEn = body.brief?.en?.trim() || null;
     bundle.briefAr = body.brief?.ar?.trim() || null;
     bundle.slug = generateSlug(body.slug);
     bundle.discountType = body.discountType;
+    bundle.mode = body.mode ?? BundleMode.FIXED;
     bundle.flatPriceValue = body.flatPriceValue ?? null;
     bundle.discountPercentage = body.discountPercentage ?? null;
     bundle.discountAmountValue = body.discountAmountValue ?? null;
     bundle.amountCurrencyCode = body.amountCurrencyCode ?? null;
     bundle.isActive = body.isActive;
+    bundle.anchorProductUuid = body.anchorProductUuid ?? null;
+    bundle.sourceCategoryUuids = body.sourceCategoryUuids?.length
+      ? body.sourceCategoryUuids
+      : null;
+    bundle.autoFillCount = body.autoFillCount ?? null;
     bundle.startsAt = new Date(body.startsAt);
     bundle.finishesAt = new Date(body.finishesAt);
   }
@@ -812,13 +1055,8 @@ export class BundlesService {
     body: CreateBundleDto | UpdateBundleDto,
     bundleUUID?: string,
   ): Promise<void> {
-    if (!Array.isArray(body.items) || body.items.length < 2) {
-      throw new BadRequestException({
-        errors: {
-          items: 'A bundle must contain at least 2 items.',
-        },
-      });
-    }
+    const mode = body.mode ?? BundleMode.FIXED;
+    const items = Array.isArray(body.items) ? body.items : [];
 
     if (
       new Date(body.startsAt).getTime() >= new Date(body.finishesAt).getTime()
@@ -832,7 +1070,7 @@ export class BundlesService {
     }
 
     const duplicateKeys = new Set<string>();
-    for (const item of body.items) {
+    for (const item of items) {
       if (!item.productUuid && !item.variantUuid) {
         throw new BadRequestException({
           errors: {
@@ -849,6 +1087,73 @@ export class BundlesService {
         });
       }
       duplicateKeys.add(dedupeKey);
+    }
+
+    if (mode === BundleMode.FIXED && items.length < 2) {
+      throw new BadRequestException({
+        errors: {
+          items: 'A fixed bundle must contain at least 2 items.',
+        },
+      });
+    }
+
+    if (mode === BundleMode.HYBRID) {
+      if (items.length < 1) {
+        throw new BadRequestException({
+          errors: {
+            items: 'A hybrid bundle must contain at least 1 manual item.',
+          },
+        });
+      }
+      if (!body.anchorProductUuid) {
+        throw new BadRequestException({
+          errors: {
+            anchorProductUuid:
+              'Hybrid bundles must target a specific anchor product.',
+          },
+        });
+      }
+      if (!body.autoFillCount || body.autoFillCount < 1) {
+        throw new BadRequestException({
+          errors: {
+            autoFillCount:
+              'Hybrid bundles must define at least 1 auto-filled product.',
+          },
+        });
+      }
+    }
+
+    if (mode === BundleMode.AUTO) {
+      if (!body.anchorProductUuid) {
+        throw new BadRequestException({
+          errors: {
+            anchorProductUuid:
+              'Automatic bundles must target a specific anchor product.',
+          },
+        });
+      }
+      if (!body.autoFillCount || body.autoFillCount < 1) {
+        throw new BadRequestException({
+          errors: {
+            autoFillCount:
+              'Automatic bundles must define at least 1 generated product.',
+          },
+        });
+      }
+    }
+
+    if (body.anchorProductUuid) {
+      const anchorProduct = await this.productRepository.findOneBy({
+        uuid: body.anchorProductUuid,
+      });
+      if (!anchorProduct) {
+        throw new BadRequestException({
+          errors: {
+            anchorProductUuid:
+              'Failed to find the anchor product. Please check and try again.',
+          },
+        });
+      }
     }
 
     switch (body.discountType) {
