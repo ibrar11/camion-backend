@@ -2324,6 +2324,7 @@ Product Reports
 > Admin endpoints require a valid `Bearer` token and one of the following roles: `SuperAdmin`, `Admin`, `Manager`.
 
 This feature lets customers report a product for review. Reports are stored with a reason, explanation, optional order number, optional attachments, and a review status for internal moderation.
+GraphQL support is also available for creating reports, listing them, and updating their status. Attachment uploads stay on the REST attachment endpoint.
 
 Report Reasons
 --------------

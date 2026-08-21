@@ -54,14 +54,14 @@ export class ProductReportAttachment {
 	@Column({ type: "varchar", length: 128, nullable: true, default: null, })
 	mimeType: string | null;
 
-	@Exclude()
+	@Field()
 	@UpdateDateColumn({
 		name: "updated_at",
 		type: "timestamptz",
 	})
 	updatedAt: Date;
 
-	@Exclude()
+	@Field()
 	@CreateDateColumn({
 		name: "created_at",
 		type: "timestamptz",

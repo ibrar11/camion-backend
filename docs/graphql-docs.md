@@ -76,6 +76,12 @@ The following features are currently supported by the GraphQL API.
 - Get Promos
 - Get Bundles For Product
 - Add Bundle To Cart
+- Get Current Customer Product Reports
+- Get Current Customer Product Report
+- Create Product Report
+- Get Product Reports Admin
+- Get Product Report Admin
+- Update Product Report Status
 
 Bundles in GraphQL
 -------------------
@@ -5376,6 +5382,193 @@ query GetCampaigns($language: String) {
             }
         ]
     }
+}
+```
+
+Product Reports in GraphQL
+--------------------------
+
+GraphQL support is available for the core product report workflow:
+
+- Customers can create reports
+- Customers can list their own reports
+- Customers can read a single report they submitted
+- Admin users can list and inspect reports
+- Admin users can update report status and note
+
+Attachments are still uploaded through the REST endpoints:
+
+- `POST /v1/product-reports`
+- `POST /v1/product-reports/:uuid/attachments`
+
+### Create Product Report
+
+```graphql
+mutation CreateProductReport(
+  $productUuid: String!
+  $reason: String!
+  $details: String!
+  $orderNumber: String
+) {
+  createProductReport(
+    productUuid: $productUuid
+    reason: $reason
+    details: $details
+    orderNumber: $orderNumber
+  ) {
+    uuid
+    reason
+    details
+    orderNumber
+    status
+    priority
+    adminNote
+    createdAt
+    updatedAt
+    customer {
+      uuid
+      fullName
+      emailAddress
+    }
+    product {
+      uuid
+      slug
+      title
+    }
+    attachments {
+      uuid
+      mediaUrl
+      thumbnailUrl
+      mediaType
+    }
+  }
+}
+```
+
+### Customer Queries
+
+```graphql
+query GetCurrentCustomerProductReports($pageNumber: Int!, $itemsPerPage: Int!, $status: String) {
+  getCurrentCustomerProductReports(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage, status: $status) {
+    uuid
+    reason
+    details
+    orderNumber
+    status
+    priority
+    adminNote
+    createdAt
+    updatedAt
+    product {
+      uuid
+      slug
+      title
+    }
+    attachments {
+      uuid
+      mediaUrl
+      thumbnailUrl
+      mediaType
+    }
+  }
+}
+```
+
+```graphql
+query GetCurrentCustomerProductReport($uuid: String!) {
+  getCurrentCustomerProductReport(uuid: $uuid) {
+    uuid
+    reason
+    details
+    orderNumber
+    status
+    priority
+    adminNote
+    createdAt
+    updatedAt
+    product {
+      uuid
+      slug
+      title
+    }
+    attachments {
+      uuid
+      mediaUrl
+      thumbnailUrl
+      mediaType
+    }
+  }
+}
+```
+
+### Admin Queries and Mutation
+
+```graphql
+query GetProductReportsAdmin($pageNumber: Int!, $itemsPerPage: Int!, $status: String, $reason: String) {
+  getProductReportsAdmin(pageNumber: $pageNumber, itemsPerPage: $itemsPerPage, status: $status, reason: $reason) {
+    uuid
+    reason
+    details
+    orderNumber
+    status
+    priority
+    adminNote
+    createdAt
+    updatedAt
+    customer {
+      uuid
+      fullName
+      emailAddress
+    }
+    product {
+      uuid
+      slug
+      title
+    }
+  }
+}
+```
+
+```graphql
+query GetProductReportAdmin($uuid: String!) {
+  getProductReportAdmin(uuid: $uuid) {
+    uuid
+    reason
+    details
+    orderNumber
+    status
+    priority
+    adminNote
+    createdAt
+    updatedAt
+    customer {
+      uuid
+      fullName
+      emailAddress
+    }
+    product {
+      uuid
+      slug
+      title
+    }
+    attachments {
+      uuid
+      mediaUrl
+      thumbnailUrl
+      mediaType
+    }
+  }
+}
+```
+
+```graphql
+mutation UpdateProductReportStatus($uuid: String!, $status: String!, $adminNote: String) {
+  updateProductReportStatus(uuid: $uuid, status: $status, adminNote: $adminNote) {
+    uuid
+    status
+    adminNote
+    updatedAt
+  }
 }
 ```
 

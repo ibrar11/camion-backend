@@ -62,6 +62,10 @@ export class ProductReport {
 	@Column({ type: "varchar", length: 32, nullable: false, default: ProductReportPriority.Normal, })
 	priority: ProductReportPriority;
 
+	@Field(() => String, { nullable: true })
+	@Column({ type: "varchar", length: 1024, nullable: true, default: null, })
+	adminNote: string | null;
+
 	@Exclude()
 	@Column({ type: "varchar", length: 256, nullable: false, unique: true, })
 	duplicateFingerprint: string;
@@ -70,14 +74,14 @@ export class ProductReport {
 	@OneToMany(() => ProductReportAttachment, (attachment) => attachment.report, { cascade: true, })
 	attachments: Array<ProductReportAttachment>;
 
-	@Exclude()
+	@Field()
 	@UpdateDateColumn({
 		name: "updated_at",
 		type: "timestamptz",
 	})
 	updatedAt: Date;
 
-	@Exclude()
+	@Field()
 	@CreateDateColumn({
 		name: "created_at",
 		type: "timestamptz",

@@ -80,6 +80,7 @@ export class ProductReportService {
 		report.orderNumber = dto.orderNumber ?? null;
 		report.status = ProductReportStatus.Pending;
 		report.priority = this.resolvePriority(dto.reason);
+		report.adminNote = null;
 		report.duplicateFingerprint = duplicateFingerprint;
 
 		const savedReport = await this.productReportRepository.save(report);
@@ -138,9 +139,58 @@ export class ProductReportService {
 		return query.getMany();
 	}
 
+	async findAllByCustomer(
+		customerUUID: string,
+		pageNumber = 1,
+		itemsPerPage = 20,
+		status?: ProductReportStatus,
+	): Promise<Array<ProductReport>> {
+		const query = this.productReportRepository.createQueryBuilder("report")
+			.leftJoinAndSelect("report.customer", "customer")
+			.leftJoinAndSelect("report.product", "product")
+			.leftJoinAndSelect("report.attachments", "attachments")
+			.where("customer.uuid = :customerUUID", { customerUUID, });
+
+		if (status) {
+			query.andWhere("report.status = :status", { status, });
+		}
+
+		query.orderBy("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "DESC")
+			.addOrderBy("report.createdAt", "DESC")
+			.setParameter("highPriority", ProductReportPriority.High)
+			.skip((Math.max(1, Number(pageNumber) || 1) - 1) * Math.max(1, Number(itemsPerPage) || 20))
+			.take(Math.max(1, Number(itemsPerPage) || 20));
+
+		return query.getMany();
+	}
+
 	async findOne(uuid: string): Promise<ProductReport> {
 		const report = await this.productReportRepository.findOne({
 			where: { uuid, },
+			relations: {
+				attachments: true,
+				customer: true,
+				product: true,
+			},
+		});
+
+		if (report === null) {
+			throw new NotFoundException({
+				error: "Failed to find the report. Please check and try again.",
+			});
+		}
+
+		return report;
+	}
+
+	async findOneByCustomer(uuid: string, customerUUID: string): Promise<ProductReport> {
+		const report = await this.productReportRepository.findOne({
+			where: {
+				uuid,
+				customer: {
+					uuid: customerUUID,
+				},
+			},
 			relations: {
 				attachments: true,
 				customer: true,
@@ -174,6 +224,7 @@ export class ProductReportService {
 		}
 
 		report.status = dto.status;
+		report.adminNote = dto.adminNote ?? report.adminNote ?? null;
 		return this.productReportRepository.save(report);
 	}
 
