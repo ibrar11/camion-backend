@@ -349,10 +349,25 @@ export class SavedCardsService {
      * Set a card as default
      */
     async setDefaultCard(customerUuid: string, cardUuid: string): Promise<SavedCard> {
+        this.logger.log(`Retrieving customer addresses for customer: ${customerUuid}`);
+
+        // Find the customer
+        const customer = await this.customerRepository.findOneBy({ uuid: customerUuid });
+
+        if (customer === null) {
+            throw new NotFoundException({
+                error: "Failed to find the customer. Please check and try again.",
+            });
+        }
         // Clear all default flags for this customer
         await this.savedCardRepository.update(
-            { customer: { uuid: customerUuid }, isActive: true },
-            { isDefault: false },
+            { 
+                isActive: true,
+                customer: {id: customer.id}
+            },
+            { 
+                isDefault: false 
+            }
         );
 
         // Set the selected card as default
