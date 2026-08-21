@@ -99,9 +99,7 @@ export class BundlesService {
       relations: {
         items: {
           product: true,
-          variant: {
-            product: true,
-          },
+          variant: true,
         },
       },
       order: {
@@ -118,9 +116,7 @@ export class BundlesService {
       relations: {
         items: {
           product: true,
-          variant: {
-            product: true,
-          },
+          variant: true,
         },
       },
     });
@@ -213,7 +209,6 @@ export class BundlesService {
         items: {
           product: true,
           variant: {
-            product: true,
             inventoryItem: {
               levels: true,
             },
@@ -300,7 +295,7 @@ export class BundlesService {
     ).filter((bundle): bundle is Bundle => {
       if (!bundle) return false;
       return bundle.items.some((item) => {
-        const productId = item.variant?.product?.id ?? item.product?.id;
+        const productId = item.product?.id;
         return productId !== undefined && productIds.includes(productId);
       });
     });
@@ -487,7 +482,6 @@ export class BundlesService {
         items: {
           product: true,
           variant: {
-            product: true,
             inventoryItem: {
               levels: true,
             },
@@ -496,36 +490,6 @@ export class BundlesService {
       },
       order: { id: 'DESC' },
     });
-  }
-
-  private async hydrateBundleForStorefront(
-    bundle: Bundle,
-    currency: CurrencyCode,
-  ): Promise<Bundle> {
-    bundle.items = await Promise.all(
-      bundle.items.map(async (item) => {
-        const productUuid = item.variant?.product?.uuid ?? item.product?.uuid;
-        if (!productUuid) {
-          return item;
-        }
-
-        const storefrontProduct = await this.loadStorefrontProduct(
-          productUuid,
-          currency,
-        );
-        const selectedVariant = item.variant?.uuid
-          ? storefrontProduct.variants.find(
-              (variant) => variant.uuid === item.variant?.uuid,
-            ) ?? storefrontProduct.variants[0]
-          : storefrontProduct.variants[0];
-
-        item.product = storefrontProduct;
-        item.variant = selectedVariant ?? null;
-        return item;
-      }),
-    );
-
-    return bundle;
   }
 
   private async resolveBundleForContext(
@@ -560,7 +524,7 @@ export class BundlesService {
       countryCode,
       new Set(
         hydratedBundle.items
-          .map((item) => item.variant?.product?.uuid ?? item.product?.uuid)
+          .map((item) => item.product?.uuid)
           .filter((uuid): uuid is string => Boolean(uuid)),
       ),
     );
@@ -585,7 +549,7 @@ export class BundlesService {
         clonedItem.bundle = item.bundle;
         clonedItem.quantity = item.quantity;
 
-        const productUuid = item.variant?.product?.uuid ?? item.product?.uuid;
+        const productUuid = item.product?.uuid;
         if (!productUuid) {
           clonedItem.product = item.product;
           clonedItem.variant = item.variant;
@@ -602,8 +566,10 @@ export class BundlesService {
             ) ?? storefrontProduct.variants[0]
           : storefrontProduct.variants[0];
 
-        clonedItem.product = storefrontProduct;
-        clonedItem.variant = selectedVariant ?? null;
+        clonedItem.product = this.buildBundleProductPreview(storefrontProduct);
+        clonedItem.variant = selectedVariant
+          ? this.buildBundleVariantPreview(selectedVariant)
+          : null;
         return clonedItem;
       }),
     );
@@ -682,8 +648,10 @@ export class BundlesService {
 
       const generatedItem = new BundleItem();
       generatedItem.bundle = bundle;
-      generatedItem.product = storefrontProduct;
-      generatedItem.variant = selectedVariant;
+      generatedItem.product = this.buildBundleProductPreview(storefrontProduct);
+      generatedItem.variant = selectedVariant
+        ? this.buildBundleVariantPreview(selectedVariant)
+        : null;
       generatedItem.quantity = 1;
 
       if (!this.isBundleItemEligible(generatedItem, countryCode, currency)) {
@@ -735,11 +703,7 @@ export class BundlesService {
     if (bundle.anchorProductUuid === productUUID) {
       return true;
     }
-    return bundle.items.some(
-      (item) =>
-        item.product?.uuid === productUUID ||
-        item.variant?.product?.uuid === productUUID,
-    );
+    return bundle.items.some((item) => item.product?.uuid === productUUID);
   }
 
   private async loadStorefrontProduct(
@@ -790,7 +754,6 @@ export class BundlesService {
 
     product.variants = await Promise.all(
       product.variants.map(async (variant) => {
-        variant.product = product;
         variant.price = await this.pricingService.applyPriceOnProductVariant(
           product,
           variant,
@@ -819,6 +782,30 @@ export class BundlesService {
     });
 
     return product;
+  }
+
+  private buildBundleProductPreview(product: Product): Product {
+    return {
+      ...product,
+      variants: [],
+      bundleItems: [],
+      cartItems: [],
+      wishlistItems: [],
+      orderItems: [],
+      reviews: [],
+      views: [],
+    } as Product;
+  }
+
+  private buildBundleVariantPreview(variant: ProductVariant): ProductVariant {
+    const preview = {
+      ...variant,
+      product: undefined,
+      cartItems: [],
+      wishlistItems: [],
+      orderItems: [],
+    } as unknown as ProductVariant;
+    return preview;
   }
 
   private tryAllocateBundle(

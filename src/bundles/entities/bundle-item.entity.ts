@@ -19,7 +19,6 @@ export class BundleItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Field(() => Bundle)
   @ManyToOne(() => Bundle, (bundle) => bundle.items, { onDelete: 'CASCADE' })
   @Index()
   bundle: Bundle;
