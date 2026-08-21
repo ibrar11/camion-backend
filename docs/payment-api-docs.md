@@ -76,7 +76,7 @@ GET /v1/customers/me/saved-cards HTTP/1.1
 > Requires authenticated customer (Customer, Affiliate or Influencer)
 
 ```http
-PATCH /v1/customers/me/saved-cards/<card-uuid> HTTP/1.1
+PATCH /v1/customers/me/saved-cards/<card-uuid>/default HTTP/1.1
 ```
 
 ---
