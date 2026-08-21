@@ -55,7 +55,9 @@ type Banner {
 
 type Bundle {
   amountCurrencyCode: String
-  brief: String
+  anchorProductUuid: String
+  autoFillCount: Int
+  brief(language: String): String
   discountAmountValue: Int
   discountPercentage: Int
   discountType: String!
@@ -64,10 +66,19 @@ type Bundle {
   imageUrl: String
   isActive: Boolean!
   items: [BundleItem!]!
+  mode: String!
   slug: String!
+  sourceCategoryUuids: [String!]
   startsAt: DateTime!
-  title: String!
+  title(language: String): String!
   uuid: String!
+}
+
+type BundleAllocation {
+  bundleTitle: String!
+  bundleUuid: String!
+  discountMinor: Int!
+  quantity: Int!
 }
 
 type BundleItem {
@@ -99,6 +110,7 @@ type CampaignCategory {
 
 type CartItem {
   availableStock: Int!
+  bundleAllocations: [BundleAllocation!]
   bundleQuantity: Int!
   bundleUuid: String
   discountPrice: CartMoney!
@@ -228,6 +240,10 @@ type Money {
   minorAmount: Int!
 }
 
+type Mutation {
+  addBundleToCart(bundleUuid: String!, countryCode: String, currency: String! = "qar", quantity: Int! = 1): [CartItem!]!
+}
+
 type Notification {
   brief: String!
   createdAt: String!
@@ -257,6 +273,7 @@ type Order {
 }
 
 type OrderItem {
+  bundleAllocations: [BundleAllocation!]
   bundleQuantity: Int!
   bundleUuid: String
   discountedPrice: Money!
@@ -463,6 +480,7 @@ type Query {
   getBanners(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getBannersByCategory(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String! = ""): [Banner!]!
   getBannersByPlacement(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, placement: String! = ""): [Banner!]!
+  getBundlesForProduct(countryCode: String, currency: String! = "qar", language: String! = "en", productUUID: String!): [Bundle!]!
   getCampaigns(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Campaign!]!
   getCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCouponOrders(itemsPerPage: Int! = 24, pageNumber: Int! = 1, uuid: String! = ""): [CouponOrder!]!
