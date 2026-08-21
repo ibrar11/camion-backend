@@ -34,7 +34,7 @@ export class ProductReportAttachment {
 	@Column({ type: "varchar", length: 256, nullable: false, })
 	mediaUrl: string;
 
-	@Field({ nullable: true })
+	@Field(() => String, { nullable: true })
 	@Column({ type: "varchar", length: 256, nullable: true, default: null, })
 	thumbnailUrl: string | null;
 
@@ -46,11 +46,11 @@ export class ProductReportAttachment {
 	})
 	mediaType: ProductReportAttachmentType;
 
-	@Field({ nullable: true })
+	@Field(() => String, { nullable: true })
 	@Column({ type: "varchar", length: 256, nullable: true, default: null, })
 	fileName: string | null;
 
-	@Field({ nullable: true })
+	@Field(() => String, { nullable: true })
 	@Column({ type: "varchar", length: 128, nullable: true, default: null, })
 	mimeType: string | null;
 
