@@ -16,6 +16,7 @@ import { JwtService } from "@nestjs/jwt";
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { CustomersService } from "../customers/customers.service";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class GqlAuthGuard implements CanActivate {
@@ -25,6 +26,7 @@ export class GqlAuthGuard implements CanActivate {
 		@Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 		private readonly jwtService: JwtService,
 		private readonly customersService: CustomersService,
+		private readonly usersService: UsersService,
 	) { }
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -58,6 +60,23 @@ export class GqlAuthGuard implements CanActivate {
 
 				request["jti"] = payload.jti;
 				request["customer"] = customer;
+				return true;
+			}
+
+			if (payload.type === "user") {
+				// Make sure the token exists in the cache
+				const tokenExists = await this.cacheManager.get(`auth:user-session:${payload.jti}`);
+				if (tokenExists === null || tokenExists === undefined) {
+					throw new UnauthorizedException();
+				}
+
+				const user = await this.usersService.findOne(payload.sub);
+				if (user === null || !user.isActive) {
+					throw new UnauthorizedException();
+				}
+
+				request["jti"] = payload.jti;
+				request["user"] = user;
 				return true;
 			}
 

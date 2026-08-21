@@ -54,6 +54,12 @@ import { ProductReviewService } from './product-review.service';
 import { ProductReviewController } from './product-review.controller';
 import { ProductReviewControllerV2 } from './product-review.controller-v2';
 
+import { ProductReport } from './entities/product-report.entity';
+import { ProductReportAttachment } from './entities/product-report-attachment.entity';
+import { ProductReportController } from './product-report.controller';
+import { ProductReportResolver } from './product-report.resolver';
+import { ProductReportService } from './product-report.service';
+
 import { ProductReviewImage } from './entities/product-review-image.entity';
 import { ProductReviewImageService } from './product-review-image.service';
 
@@ -105,6 +111,8 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 			ProductOption,
 			ProductOptionValue,
 			ProductReview,
+			ProductReport,
+			ProductReportAttachment,
 			ProductReviewImage,
 			ProductVariant,
 			ProductVariantImage,
@@ -139,6 +147,8 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 		ProductReviewImageResolver,
 		ProductReviewImageService,
 		ProductReviewService,
+		ProductReportResolver,
+		ProductReportService,
 		ProductsResolver,
 		ProductsService,
 		ProductsService,
@@ -159,6 +169,7 @@ import { Campaign } from 'src/campaigns/entities/campaign.entity';
 		ProductOptionValueController,
 		ProductReviewController,
 		ProductReviewControllerV2,
+		ProductReportController,
 		ProductsController,
 		ProductVariantController,
 		ProductVariantImageController,
