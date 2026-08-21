@@ -43,6 +43,8 @@ import { ProductOption } from './inventory/entities/product-option.entity';
 import { ProductOptionValue } from './inventory/entities/product-option-value.entity';
 import { ProductReview } from './inventory/entities/product-review.entity';
 import { ProductReviewImage } from './inventory/entities/product-review-image.entity';
+import { ProductReport } from './inventory/entities/product-report.entity';
+import { ProductReportAttachment } from './inventory/entities/product-report-attachment.entity';
 import { ProductVariant } from './inventory/entities/product-variant.entity';
 import { ProductVariantImage } from './inventory/entities/product-variant-image.entity';
 import { ProductVariantInventoryItem } from './inventory/entities/product-variant-inventory-item.entity';
@@ -223,6 +225,8 @@ import { SavedCard } from './payments/entities/saved-card.entity';
           ProductOptionValue,
           ProductReview,
           ProductReviewImage,
+          ProductReport,
+          ProductReportAttachment,
           ProductVariant,
           ProductVariantImage,
           ProductVariantInventoryItem,
