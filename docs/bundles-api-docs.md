@@ -295,9 +295,10 @@ countryCode | No | String | Customer country code used for shipping eligibility 
 
 ### Notes
 
-- Each `items[].product` is returned using the storefront product response shape, including variants and computed pricing for the requested currency.
+- Each `items[].product` is returned as a lightweight storefront preview for bundle discovery. Core product fields remain available, but the nested `items[].product.variants` list is intentionally omitted to avoid duplicate payload because the selected bundle variant is already returned in `items[].variant`.
 - If the bundle item was configured only at product level and no specific variant was pinned by admin, the API still returns a concrete default variant in `items[].variant` so clients can add the bundle directly to cart.
 - `hybrid` and `auto` bundles are resolved dynamically at request time, but the response shape remains the same as fixed bundles.
+- Bundle item responses do not expose a nested `items[].bundle` field.
 
 Retrieve Bundle
 ----------------

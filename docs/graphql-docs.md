@@ -125,10 +125,6 @@ query GetBundlesForProduct(
       product {
         uuid
         slug
-        variants {
-          uuid
-          sku
-        }
       }
       variant {
         uuid
@@ -141,8 +137,9 @@ query GetBundlesForProduct(
 
 ### Notes
 
-- `items[].product` follows the storefront product response shape, so pricing and variant data are already present.
+- `items[].product` follows the storefront product shape for bundle discovery, but its nested `variants` list is intentionally omitted in bundle responses because the selected bundle variant is already exposed separately in `items[].variant`.
 - If admin did not pin a variant for a product-level bundle item, `items[].variant` is populated with the default resolved variant.
+- `BundleItem` does not expose a nested `bundle` field in GraphQL, which avoids recursive `bundle -> items -> bundle` selections.
 
 Add Bundle To Cart
 ------------------
