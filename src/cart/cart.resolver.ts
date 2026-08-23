@@ -14,6 +14,7 @@ import {
     Args,
     ResolveField,
     Parent,
+    InputType,
 } from "@nestjs/graphql";
 
 import { Customer } from "../customers/entities/customer.entity";
@@ -25,6 +26,16 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+
+@ArgsType()
+@InputType()
+export class AddBundleToCartSelectionItemInput {
+    @Field(() => String, { nullable: true })
+    productUuid?: string;
+
+    @Field(() => String, { nullable: true })
+    variantUuid?: string;
+}
 
 @ArgsType()
 export class AddBundleToCartArgs {
@@ -39,6 +50,9 @@ export class AddBundleToCartArgs {
 
     @Field(() => Int, { defaultValue: 1 })
     quantity: number;
+
+    @Field(() => [AddBundleToCartSelectionItemInput], { nullable: true })
+    items?: Array<AddBundleToCartSelectionItemInput>;
 }
 
 @ArgsType()
@@ -108,6 +122,7 @@ export class CartResolver {
             currency: args.currency,
             countryCode: args.countryCode,
             quantity: args.quantity,
+            items: args.items,
         });
     }
 }

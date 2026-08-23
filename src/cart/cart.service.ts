@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import { calculateStock } from '../common/calculateStock';
 import { getSkipAndTake } from '../common/pagination';
@@ -36,6 +36,12 @@ import { getBestCampaign } from '../common/bestCampaign';
 import { multiplyMoney } from '../common/currency';
 import { BundlesService } from '../bundles/bundles.service';
 
+type BundleSelectionContext = {
+  bundleSourceUuid: string;
+  bundleSelectionUuid: string;
+  bundleMinimumSelectionCount: number;
+};
+
 @Injectable()
 export class CartItemsService {
   private readonly logger = new Logger(CartItemsService.name);
@@ -58,6 +64,14 @@ export class CartItemsService {
    * @returns
    */
   async create(customer: Customer, body: CreateCartItemDto): Promise<CartItem> {
+    return this.createWithSelectionContext(customer, body);
+  }
+
+  private async createWithSelectionContext(
+    customer: Customer,
+    body: CreateCartItemDto,
+    bundleSelectionContext?: BundleSelectionContext | null,
+  ): Promise<CartItem> {
     this.logger.log(
       `Attempting to add to cart for product: ${body.productUuid}`,
     );
@@ -145,6 +159,10 @@ export class CartItemsService {
         customer: { uuid: customer.uuid },
         product: { uuid: body.productUuid },
         variant: { uuid: body.variantUuid },
+        bundleSourceUuid:
+          bundleSelectionContext?.bundleSourceUuid ?? IsNull(),
+        bundleSelectionUuid:
+          bundleSelectionContext?.bundleSelectionUuid ?? IsNull(),
       },
     });
 
@@ -187,6 +205,11 @@ export class CartItemsService {
     cartItem.product = product;
     cartItem.variant = variant;
     cartItem.quantity = body.quantity;
+    cartItem.bundleSourceUuid = bundleSelectionContext?.bundleSourceUuid ?? null;
+    cartItem.bundleSelectionUuid =
+      bundleSelectionContext?.bundleSelectionUuid ?? null;
+    cartItem.bundleMinimumSelectionCount =
+      bundleSelectionContext?.bundleMinimumSelectionCount ?? 0;
 
     const newItemPrice = multiplyMoney(price, body.quantity);
 
@@ -218,14 +241,18 @@ export class CartItemsService {
   ): Promise<Array<CartItem>> {
     this.logger.log(`Attempting to add bundle to cart: ${body.bundleUuid}`);
 
-    const bundle = await this.bundlesService.getBundleForCartAdd(
+    const bundleSelection = await this.bundlesService.getBundleForCartAdd(
       body.bundleUuid,
       body.currency,
       body.countryCode,
+      body.items,
     );
     const multiplier = Math.max(1, Number(body.quantity || 1));
+    const bundleSelectionUuid = bundleSelection.treatAsBundle
+      ? crypto.randomUUID()
+      : null;
 
-    for (const item of bundle.items) {
+    for (const item of bundleSelection.selectedItems) {
       if (!item.product?.uuid || !item.variant?.uuid) {
         throw new BadRequestException({
           error:
@@ -233,12 +260,23 @@ export class CartItemsService {
         });
       }
 
-      await this.create(customer, {
-        productUuid: item.product.uuid,
-        variantUuid: item.variant.uuid,
-        quantity: item.quantity * multiplier,
-        currency: body.currency,
-      });
+      await this.createWithSelectionContext(
+        customer,
+        {
+          productUuid: item.product.uuid,
+          variantUuid: item.variant.uuid,
+          quantity: item.quantity * multiplier,
+          currency: body.currency,
+        },
+        bundleSelectionUuid
+          ? {
+              bundleSourceUuid: bundleSelection.bundle.uuid,
+              bundleSelectionUuid,
+              bundleMinimumSelectionCount:
+                bundleSelection.minimumSelectionCount,
+            }
+          : null,
+      );
     }
 
     return this.findCart(customer, '', body.currency, '');
@@ -500,6 +538,11 @@ export class CartItemsService {
     }
 
     const campaign = getBestCampaign(product);
+    const preserveBundleSelection =
+      cartItem.product?.uuid === body.productUuid &&
+      cartItem.variant?.uuid === body.variantUuid &&
+      !!cartItem.bundleSourceUuid &&
+      !!cartItem.bundleSelectionUuid;
 
     // Calculate the price of the product/variant
     // const price = await this.pricingService.applyPriceOnProductVariant(cartItem.product, cartItem.variant, null, body.currency, false);
@@ -517,6 +560,12 @@ export class CartItemsService {
         customer: { id: customer.id },
         product: { uuid: body.productUuid },
         variant: { uuid: body.variantUuid },
+        bundleSourceUuid: preserveBundleSelection
+          ? cartItem.bundleSourceUuid!
+          : IsNull(),
+        bundleSelectionUuid: preserveBundleSelection
+          ? cartItem.bundleSelectionUuid!
+          : IsNull(),
       },
       relations: {
         product: {
@@ -569,6 +618,15 @@ export class CartItemsService {
     cartItem.product.variants = [];
     cartItem.variant = variant;
     cartItem.quantity = body.quantity;
+    cartItem.bundleSourceUuid = preserveBundleSelection
+      ? cartItem.bundleSourceUuid
+      : null;
+    cartItem.bundleSelectionUuid = preserveBundleSelection
+      ? cartItem.bundleSelectionUuid
+      : null;
+    cartItem.bundleMinimumSelectionCount = preserveBundleSelection
+      ? cartItem.bundleMinimumSelectionCount
+      : 0;
     cartItem.subTotal = { ...updatedItemPrice, currencyCode: body.currency };
     cartItem.discountPrice = {
       amount: 0,

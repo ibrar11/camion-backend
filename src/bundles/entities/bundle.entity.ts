@@ -107,6 +107,10 @@ export class Bundle {
   @Column({ type: 'int', nullable: true, default: null })
   autoFillCount: number | null;
 
+  @Field(() => Int)
+  @Column({ type: 'int', default: 2 })
+  minimumSelectionCount: number;
+
   @Field()
   @Column({ type: 'timestamptz', nullable: false })
   startsAt: Date;

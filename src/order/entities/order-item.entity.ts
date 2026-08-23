@@ -74,6 +74,15 @@ export class OrderItem {
   @Column({ type: 'uuid', nullable: true, default: null })
   bundleUuid: string | null;
 
+  @Column({ type: 'uuid', nullable: true, default: null })
+  bundleSourceUuid: string | null;
+
+  @Column({ type: 'uuid', nullable: true, default: null })
+  bundleSelectionUuid: string | null;
+
+  @Column({ type: 'int', default: 0 })
+  bundleMinimumSelectionCount: number;
+
   @Field(() => Int)
   @Column({ type: 'int', default: 0 })
   bundleQuantity: number;

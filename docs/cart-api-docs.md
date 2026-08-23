@@ -167,7 +167,7 @@ currency | Yes | CurrencyCode | The desired currency code
 Add Bundle to Cart
 ------------------
 
-Adds the full fixed bundle to cart in one call. The cart still returns normal cart rows, but bundle pricing metadata is attached so clients can render the grouped discount state.
+Adds selected resolved bundle items to cart in one call. The cart still returns normal cart rows, but bundle pricing metadata is attached when the submitted selection reaches the bundle's minimum selection threshold.
 
 ```http
 POST /v1/cart-items/bundles HTTP/1.1
@@ -175,10 +175,13 @@ POST /v1/cart-items/bundles HTTP/1.1
 
 Parameter Name | Required | Type | Description
 ---------------|----------|------|------------
-bundleUuid | Yes | UUID | UUID of the fixed bundle to add
+bundleUuid | Yes | UUID | UUID of the bundle to add
 currency | Yes | CurrencyCode | The desired currency code
 countryCode | No | String | Customer country used for shipping eligibility checks
 quantity | No | Number | Number of bundle sets to add. Defaults to `1`
+items | No | Array<Object> | Optional subset of resolved bundle items to add. If omitted, all resolved bundle items are added
+items[].productUuid | No | UUID | Product UUID of a resolved bundle item
+items[].variantUuid | No | UUID | Variant UUID of a resolved bundle item
 
 ### Request Body
 ```json
@@ -186,7 +189,15 @@ quantity | No | Number | Number of bundle sets to add. Defaults to `1`
     "bundleUuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
     "currency": "qar",
     "countryCode": "QA",
-    "quantity": 1
+    "quantity": 1,
+    "items": [
+        {
+            "productUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77"
+        },
+        {
+            "variantUuid": "a8f94af8-0bc7-440b-a244-d6bdb4f4a2c8"
+        }
+    ]
 }
 ```
 
@@ -224,7 +235,8 @@ quantity | No | Number | Number of bundle sets to add. Defaults to `1`
 
 ### Notes
 
-- This endpoint adds every bundle item using the configured quantity or the default resolved variant for product-level bundle items.
+- This endpoint can add the full resolved bundle or a customer-selected subset of resolved bundle items.
+- If the submitted selection count is below the bundle's `minimumSelectionCount`, the selected items are added as normal products and no bundle pricing metadata is applied.
 - The response uses the standard cart item shape, so clients do not need a separate cart model for bundles.
 
 Retrieve Cart

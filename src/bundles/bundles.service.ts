@@ -44,6 +44,18 @@ type BundleAllocationEntry = {
   discountMinor: number;
 };
 
+type BundleSelectionInput = {
+  productUuid?: string;
+  variantUuid?: string;
+};
+
+type ResolvedBundleCartSelection = {
+  bundle: Bundle;
+  selectedItems: Array<BundleItem>;
+  treatAsBundle: boolean;
+  minimumSelectionCount: number;
+};
+
 @Injectable()
 export class BundlesService {
   private readonly logger = new Logger(BundlesService.name);
@@ -202,7 +214,8 @@ export class BundlesService {
     bundleUuid: string,
     currency: CurrencyCode,
     countryCode?: string,
-  ): Promise<Bundle> {
+    selectedItems?: Array<BundleSelectionInput>,
+  ): Promise<ResolvedBundleCartSelection> {
     const bundle = await this.bundleRepository.findOne({
       where: { uuid: bundleUuid, isActive: true },
       relations: {
@@ -251,7 +264,15 @@ export class BundlesService {
       });
     }
 
-    return hydrated;
+    const normalizedSelectedItems =
+      this.selectBundleItemsForCartAdd(hydrated, selectedItems);
+    return {
+      bundle: hydrated,
+      selectedItems: normalizedSelectedItems,
+      treatAsBundle:
+        normalizedSelectedItems.length >= hydrated.minimumSelectionCount,
+      minimumSelectionCount: hydrated.minimumSelectionCount,
+    };
   }
 
   async applyBundlesToCartItems(
@@ -276,11 +297,15 @@ export class BundlesService {
     }
 
     const bundles = await this.loadActiveBundles();
+    const activeBundles = bundles.filter((bundle) =>
+      this.isBundleActiveAt(bundle, now),
+    );
+    const activeBundleMap = new Map(
+      activeBundles.map((bundle) => [bundle.uuid, bundle] as const),
+    );
     const resolvedBundles = (
       await Promise.all(
-        bundles
-          .filter((bundle) => this.isBundleActiveAt(bundle, now))
-          .map(async (bundle) => {
+        activeBundles.map(async (bundle) => {
             const contextProduct = bundle.anchorProductUuid
               ? await this.loadContextProduct(bundle.anchorProductUuid)
               : null;
@@ -352,12 +377,88 @@ export class BundlesService {
       };
     });
 
+    const groupedSelectionStates = new Map<string, Array<MutableState>>();
+    for (const state of states) {
+      const sourceBundleUuid = state.cartItem.bundleSourceUuid;
+      const selectionUuid = state.cartItem.bundleSelectionUuid;
+      if (!sourceBundleUuid || !selectionUuid) {
+        continue;
+      }
+      const groupKey = `${sourceBundleUuid}:${selectionUuid}`;
+      const groupStates = groupedSelectionStates.get(groupKey) ?? [];
+      groupStates.push(state);
+      groupedSelectionStates.set(groupKey, groupStates);
+    }
+
+    for (const [groupKey, selectionStates] of groupedSelectionStates.entries()) {
+      const [bundleSourceUuid] = groupKey.split(':');
+      const bundle = activeBundleMap.get(bundleSourceUuid);
+      if (!bundle) {
+        continue;
+      }
+
+      const minimumSelectionCount = Math.max(
+        2,
+        selectionStates[0]?.cartItem.bundleMinimumSelectionCount ||
+          bundle.minimumSelectionCount ||
+          2,
+      );
+      if (selectionStates.length < minimumSelectionCount) {
+        continue;
+      }
+
+      const bundleSubtotalMinor = selectionStates.reduce(
+        (sum, state) => sum + state.cartItem.quantity * state.baseUnitMinor,
+        0,
+      );
+      const targetTotalMinor = this.calculateBundleTargetTotalMinor(
+        bundle,
+        bundleSubtotalMinor,
+        currency,
+        exchangeRates,
+      );
+      const totalDiscountMinor = Math.max(
+        0,
+        bundleSubtotalMinor - targetTotalMinor,
+      );
+
+      let distributed = 0;
+      for (let index = 0; index < selectionStates.length; index += 1) {
+        const state = selectionStates[index];
+        const lineSubtotalMinor = state.cartItem.quantity * state.baseUnitMinor;
+        let lineDiscountMinor =
+          index === selectionStates.length - 1
+            ? totalDiscountMinor - distributed
+            : Math.floor(
+                (totalDiscountMinor * lineSubtotalMinor) / bundleSubtotalMinor,
+              );
+        if (lineDiscountMinor < 0) {
+          lineDiscountMinor = 0;
+        }
+        distributed += lineDiscountMinor;
+        if (lineDiscountMinor <= 0 && totalDiscountMinor > 0) {
+          continue;
+        }
+        state.allocations.push({
+          bundleUuid: bundle.uuid,
+          bundleTitle: bundle.titleEn,
+          quantity: state.cartItem.quantity,
+          discountMinor: lineDiscountMinor,
+        });
+      }
+    }
+
+    const legacyStates = states.filter(
+      (state) =>
+        !state.cartItem.bundleSourceUuid && !state.cartItem.bundleSelectionUuid,
+    );
+
     const scoredBundles = resolvedBundles
       .map((bundle) => ({
         bundle,
         estimatedSavings: this.estimateBundleSavings(
           bundle,
-          states,
+          legacyStates,
           currency,
           exchangeRates,
         ),
@@ -371,7 +472,7 @@ export class BundlesService {
 
     for (const { bundle } of scoredBundles) {
       while (true) {
-        const match = this.tryAllocateBundle(bundle, states);
+        const match = this.tryAllocateBundle(bundle, legacyStates);
         if (match.length === 0) break;
 
         const bundleSubtotalMinor = match.reduce(
@@ -424,7 +525,10 @@ export class BundlesService {
         (sum, entry) => sum + entry.quantity,
         0,
       );
-      const nonBundleQuantity = Math.max(0, state.cartItem.quantity - bundleQuantity);
+      const nonBundleQuantity = Math.max(
+        0,
+        state.cartItem.quantity - bundleQuantity,
+      );
       const lineSubTotalMinor =
         bundleQuantity * state.baseUnitMinor +
         nonBundleQuantity * state.normalUnitMinor;
@@ -444,6 +548,53 @@ export class BundlesService {
     }
 
     return states.map((state) => state.cartItem);
+  }
+
+  private selectBundleItemsForCartAdd(
+    bundle: Bundle,
+    selectedItems?: Array<BundleSelectionInput>,
+  ): Array<BundleItem> {
+    if (!Array.isArray(selectedItems) || selectedItems.length === 0) {
+      return bundle.items;
+    }
+
+    const selectedKeys = new Set<string>();
+    const normalizedItems: Array<BundleItem> = [];
+
+    for (const selectedItem of selectedItems) {
+      if (!selectedItem.productUuid && !selectedItem.variantUuid) {
+        throw new BadRequestException({
+          error: 'Each selected bundle item must include a product or variant.',
+        });
+      }
+
+      const dedupeKey = `${selectedItem.productUuid ?? 'none'}:${selectedItem.variantUuid ?? 'none'}`;
+      if (selectedKeys.has(dedupeKey)) {
+        throw new BadRequestException({
+          error: 'Duplicate selected bundle items are not allowed.',
+        });
+      }
+      selectedKeys.add(dedupeKey);
+
+      const matchedItem =
+        bundle.items.find((item) => {
+          if (selectedItem.variantUuid) {
+            return item.variant?.uuid === selectedItem.variantUuid;
+          }
+          return item.product?.uuid === selectedItem.productUuid;
+        }) ?? null;
+
+      if (!matchedItem) {
+        throw new BadRequestException({
+          error:
+            'One or more selected items do not belong to the resolved bundle.',
+        });
+      }
+
+      normalizedItems.push(matchedItem);
+    }
+
+    return normalizedItems;
   }
 
   private estimateBundleSavings(
@@ -1034,6 +1185,7 @@ export class BundlesService {
       ? body.sourceCategoryUuids
       : null;
     bundle.autoFillCount = body.autoFillCount ?? null;
+    bundle.minimumSelectionCount = body.minimumSelectionCount ?? 2;
     bundle.startsAt = new Date(body.startsAt);
     bundle.finishesAt = new Date(body.finishesAt);
   }
@@ -1044,6 +1196,14 @@ export class BundlesService {
   ): Promise<void> {
     const mode = body.mode ?? BundleMode.FIXED;
     const items = Array.isArray(body.items) ? body.items : [];
+    const autoFillCount = body.autoFillCount ?? 0;
+    const resolvedSelectableCount =
+      mode === BundleMode.AUTO
+        ? autoFillCount
+        : mode === BundleMode.HYBRID
+          ? items.length + autoFillCount
+          : items.length;
+    const minimumSelectionCount = body.minimumSelectionCount ?? 2;
 
     if (
       new Date(body.startsAt).getTime() >= new Date(body.finishesAt).getTime()
@@ -1127,6 +1287,15 @@ export class BundlesService {
           },
         });
       }
+    }
+
+    if (minimumSelectionCount > resolvedSelectableCount) {
+      throw new BadRequestException({
+        errors: {
+          minimumSelectionCount:
+            'Minimum selection count cannot exceed the total selectable bundle items.',
+        },
+      });
     }
 
     if (body.anchorProductUuid) {

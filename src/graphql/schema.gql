@@ -66,6 +66,7 @@ type Bundle {
   imageUrl: String
   isActive: Boolean!
   items: [BundleItem!]!
+  minimumSelectionCount: Int!
   mode: String!
   slug: String!
   sourceCategoryUuids: [String!]
@@ -82,10 +83,14 @@ type BundleAllocation {
 }
 
 type BundleItem {
-  bundle: Bundle!
   product: Product
   quantity: Int!
   variant: ProductVariant
+}
+
+input AddBundleToCartSelectionItemInput {
+  productUuid: String
+  variantUuid: String
 }
 
 type Campaign {
@@ -241,7 +246,7 @@ type Money {
 }
 
 type Mutation {
-  addBundleToCart(bundleUuid: String!, countryCode: String, currency: String! = "qar", quantity: Int! = 1): [CartItem!]!
+  addBundleToCart(bundleUuid: String!, countryCode: String, currency: String! = "qar", items: [AddBundleToCartSelectionItemInput!], quantity: Int! = 1): [CartItem!]!
 }
 
 type Notification {
