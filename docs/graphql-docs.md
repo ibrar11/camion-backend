@@ -147,6 +147,7 @@ query GetBundlesForProduct(
 - `items[].product` follows the storefront product shape for bundle discovery, but its nested `variants` list is intentionally omitted in bundle responses because the selected bundle variant is already exposed separately in `items[].variant`.
 - If admin did not pin a variant for a product-level bundle item, `items[].variant` is populated with the default resolved variant.
 - `minimumSelectionCount` tells clients how many resolved items must be submitted to `addBundleToCart` before bundle pricing is applied.
+- Each `items` entry submitted to `addBundleToCart` represents one selected bundle item. If `productUuid` and `variantUuid` are both sent, they must match the same resolved bundle item.
 - `BundleItem` does not expose a nested `bundle` field in GraphQL, which avoids recursive `bundle -> items -> bundle` selections.
 
 Add Bundle To Cart
@@ -225,7 +226,7 @@ mutation AddBundleToCart(
 ### Notes
 
 - The mutation can add the full resolved bundle or a customer-selected subset of resolved bundle items.
-- If the submitted item count is below `minimumSelectionCount`, the selected rows are added as normal cart items and no bundle pricing metadata is applied.
+- If the submitted item count is below `minimumSelectionCount`, the API returns `400 Bad Request`.
 - The response uses the standard `CartItem` shape, with bundle metadata attached for grouped pricing display.
 
 ### GraphQL Variables

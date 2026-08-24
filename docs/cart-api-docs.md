@@ -180,8 +180,8 @@ currency | Yes | CurrencyCode | The desired currency code
 countryCode | No | String | Customer country used for shipping eligibility checks
 quantity | No | Number | Number of bundle sets to add. Defaults to `1`
 items | No | Array<Object> | Optional subset of resolved bundle items to add. If omitted, all resolved bundle items are added
-items[].productUuid | No | UUID | Product UUID of a resolved bundle item
-items[].variantUuid | No | UUID | Variant UUID of a resolved bundle item
+items[].productUuid | No | UUID | Product UUID of one resolved bundle item
+items[].variantUuid | No | UUID | Variant UUID of that same resolved bundle item. If both fields are sent, they must belong to the same bundle item
 
 ### Request Body
 ```json
@@ -236,7 +236,8 @@ items[].variantUuid | No | UUID | Variant UUID of a resolved bundle item
 ### Notes
 
 - This endpoint can add the full resolved bundle or a customer-selected subset of resolved bundle items.
-- If the submitted selection count is below the bundle's `minimumSelectionCount`, the selected items are added as normal products and no bundle pricing metadata is applied.
+- If the submitted selection count is below the bundle's `minimumSelectionCount`, the API returns `400 Bad Request`.
+- `productUuid` and `variantUuid` inside one `items[]` row describe one selected bundle item, not two separate selections.
 - The response uses the standard cart item shape, so clients do not need a separate cart model for bundles.
 
 Retrieve Cart

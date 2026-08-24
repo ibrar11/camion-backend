@@ -266,11 +266,16 @@ export class BundlesService {
 
     const normalizedSelectedItems =
       this.selectBundleItemsForCartAdd(hydrated, selectedItems);
+    if (normalizedSelectedItems.length < hydrated.minimumSelectionCount) {
+      throw new BadRequestException({
+        error: `Please select at least ${hydrated.minimumSelectionCount} bundle items to add this bundle to cart.`,
+      });
+    }
+
     return {
       bundle: hydrated,
       selectedItems: normalizedSelectedItems,
-      treatAsBundle:
-        normalizedSelectedItems.length >= hydrated.minimumSelectionCount,
+      treatAsBundle: true,
       minimumSelectionCount: hydrated.minimumSelectionCount,
     };
   }
@@ -578,6 +583,12 @@ export class BundlesService {
 
       const matchedItem =
         bundle.items.find((item) => {
+          if (selectedItem.productUuid && selectedItem.variantUuid) {
+            return (
+              item.product?.uuid === selectedItem.productUuid &&
+              item.variant?.uuid === selectedItem.variantUuid
+            );
+          }
           if (selectedItem.variantUuid) {
             return item.variant?.uuid === selectedItem.variantUuid;
           }

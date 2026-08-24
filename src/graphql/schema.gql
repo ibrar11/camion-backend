@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AddBundleToCartSelectionItemInput {
+  productUuid: String
+  variantUuid: String
+}
+
 type Affiliate {
   bio: String!
   couponsCreated: Float!
@@ -86,11 +91,6 @@ type BundleItem {
   product: Product
   quantity: Int!
   variant: ProductVariant
-}
-
-input AddBundleToCartSelectionItemInput {
-  productUuid: String
-  variantUuid: String
 }
 
 type Campaign {
@@ -247,6 +247,8 @@ type Money {
 
 type Mutation {
   addBundleToCart(bundleUuid: String!, countryCode: String, currency: String! = "qar", items: [AddBundleToCartSelectionItemInput!], quantity: Int! = 1): [CartItem!]!
+  createProductReport(details: String!, orderNumber: String, productUuid: String!, reason: String!): ProductReport!
+  updateProductReportStatus(adminNote: String, status: String!, uuid: String!): ProductReport!
 }
 
 type Notification {
@@ -421,6 +423,32 @@ type ProductOptionValue {
   valueEn: String!
 }
 
+type ProductReport {
+  adminNote: String
+  attachments: [ProductReportAttachment!]
+  createdAt: DateTime!
+  customer: Customer!
+  details: String!
+  orderNumber: String
+  priority: String!
+  product: Product!
+  reason: String!
+  status: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
+type ProductReportAttachment {
+  createdAt: DateTime!
+  fileName: String
+  mediaType: String!
+  mediaUrl: String!
+  mimeType: String
+  thumbnailUrl: String
+  updatedAt: DateTime!
+  uuid: String!
+}
+
 type ProductReview {
   comment: String!
   customer: Customer!
@@ -499,6 +527,8 @@ type Query {
   getCurrentCustomerOrderPreview(couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
   getCurrentCustomerOrderPreviewV2(cartItemUuids: [String!]! = [], couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
   getCurrentCustomerOrders(currency: String! = "usd", itemsPerPage: Int! = 24, pageNumber: Int! = 1, status: String): [Order!]!
+  getCurrentCustomerProductReport(uuid: String!): ProductReport!
+  getCurrentCustomerProductReports(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ProductReport!]!
   getCurrentCustomerReturnRequest(currency: String! = "usd", uuid: String!): ReturnRequest!
   getCurrentCustomerReturnRequests(currency: String! = "usd", itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!
   getCustomerAddresses(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [CustomerAddress!]!
@@ -519,6 +549,8 @@ type Query {
   getPost(slug: String!): Post!
   getPosts: [Post!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
+  getProductReportAdmin(uuid: String!): ProductReport!
+  getProductReportsAdmin(itemsPerPage: Int! = 20, pageNumber: Int! = 1, reason: String, status: String): [ProductReport!]!
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
   getProductsByCategories(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slugs: [String!]!, sort: String! = "best-match"): [Product!]!
   getProductsByCategory(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String!, sort: String! = "best-match"): [Product!]!
