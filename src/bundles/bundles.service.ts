@@ -56,6 +56,10 @@ type ResolvedBundleCartSelection = {
   minimumSelectionCount: number;
 };
 
+type BundleItemSelectionState = BundleItem & {
+  configuredVariantUuid?: string | null;
+};
+
 @Injectable()
 export class BundlesService {
   private readonly logger = new Logger(BundlesService.name);
@@ -264,8 +268,10 @@ export class BundlesService {
       });
     }
 
-    const normalizedSelectedItems =
-      this.selectBundleItemsForCartAdd(hydrated, selectedItems);
+    const normalizedSelectedItems = await this.selectBundleItemsForCartAdd(
+      hydrated,
+      selectedItems,
+    );
     if (normalizedSelectedItems.length < hydrated.minimumSelectionCount) {
       throw new BadRequestException({
         error: `Please select at least ${hydrated.minimumSelectionCount} bundle items to add this bundle to cart.`,
@@ -555,10 +561,10 @@ export class BundlesService {
     return states.map((state) => state.cartItem);
   }
 
-  private selectBundleItemsForCartAdd(
+  private async selectBundleItemsForCartAdd(
     bundle: Bundle,
     selectedItems?: Array<BundleSelectionInput>,
-  ): Array<BundleItem> {
+  ): Promise<Array<BundleItem>> {
     if (!Array.isArray(selectedItems) || selectedItems.length === 0) {
       return bundle.items;
     }
@@ -581,19 +587,10 @@ export class BundlesService {
       }
       selectedKeys.add(dedupeKey);
 
-      const matchedItem =
-        bundle.items.find((item) => {
-          if (selectedItem.productUuid && selectedItem.variantUuid) {
-            return (
-              item.product?.uuid === selectedItem.productUuid &&
-              item.variant?.uuid === selectedItem.variantUuid
-            );
-          }
-          if (selectedItem.variantUuid) {
-            return item.variant?.uuid === selectedItem.variantUuid;
-          }
-          return item.product?.uuid === selectedItem.productUuid;
-        }) ?? null;
+      const matchedItem = await this.resolveSelectedBundleItem(
+        bundle.items,
+        selectedItem,
+      );
 
       if (!matchedItem) {
         throw new BadRequestException({
@@ -606,6 +603,97 @@ export class BundlesService {
     }
 
     return normalizedItems;
+  }
+
+  private async resolveSelectedBundleItem(
+    items: Array<BundleItem>,
+    selectedItem: BundleSelectionInput,
+  ): Promise<BundleItem | null> {
+    const itemsWithSelectionState = items as Array<BundleItemSelectionState>;
+
+    if (selectedItem.productUuid && selectedItem.variantUuid) {
+      const matchedByProduct =
+        itemsWithSelectionState.find(
+          (item) => item.product?.uuid === selectedItem.productUuid,
+        ) ?? null;
+      if (!matchedByProduct) {
+        return null;
+      }
+
+      if (matchedByProduct.configuredVariantUuid) {
+        return matchedByProduct.configuredVariantUuid === selectedItem.variantUuid
+          ? matchedByProduct
+          : null;
+      }
+
+      return this.resolveProductLevelBundleItemVariant(
+        matchedByProduct,
+        selectedItem.variantUuid,
+      );
+    }
+
+    if (selectedItem.variantUuid) {
+      const exactVariantItem =
+        itemsWithSelectionState.find(
+          (item) => item.variant?.uuid === selectedItem.variantUuid,
+        ) ?? null;
+      if (exactVariantItem && exactVariantItem.configuredVariantUuid) {
+        return exactVariantItem;
+      }
+
+      const selectedVariant = await this.variantRepository.findOne({
+        where: { uuid: selectedItem.variantUuid },
+        relations: { product: true },
+      });
+      if (!selectedVariant?.product?.uuid) {
+        return null;
+      }
+
+      const matchedProductLevelItem =
+        itemsWithSelectionState.find(
+          (item) =>
+            item.product?.uuid === selectedVariant.product.uuid &&
+            !item.configuredVariantUuid,
+        ) ?? null;
+      if (!matchedProductLevelItem) {
+        return null;
+      }
+
+      return this.resolveProductLevelBundleItemVariant(
+        matchedProductLevelItem,
+        selectedItem.variantUuid,
+      );
+    }
+
+    const matchedByProductOnly =
+      itemsWithSelectionState.find(
+        (item) => item.product?.uuid === selectedItem.productUuid,
+      ) ?? null;
+    return matchedByProductOnly;
+  }
+
+  private async resolveProductLevelBundleItemVariant(
+    item: BundleItemSelectionState,
+    variantUuid: string,
+  ): Promise<BundleItem | null> {
+    if (!item.product?.uuid) {
+      return null;
+    }
+
+    const selectedVariant = await this.variantRepository.findOne({
+      where: { uuid: variantUuid },
+      relations: { product: true },
+    });
+    if (selectedVariant?.product?.uuid !== item.product.uuid) {
+      return null;
+    }
+
+    const selectedItem = new BundleItem();
+    selectedItem.bundle = item.bundle;
+    selectedItem.product = item.product;
+    selectedItem.variant = this.buildBundleVariantPreview(selectedVariant);
+    selectedItem.quantity = item.quantity;
+    return selectedItem;
   }
 
   private estimateBundleSavings(
@@ -710,6 +798,8 @@ export class BundlesService {
         const clonedItem = new BundleItem();
         clonedItem.bundle = item.bundle;
         clonedItem.quantity = item.quantity;
+        (clonedItem as BundleItemSelectionState).configuredVariantUuid =
+          item.variant?.uuid ?? null;
 
         const productUuid = item.product?.uuid;
         if (!productUuid) {
@@ -814,6 +904,7 @@ export class BundlesService {
       generatedItem.variant = selectedVariant
         ? this.buildBundleVariantPreview(selectedVariant)
         : null;
+      (generatedItem as BundleItemSelectionState).configuredVariantUuid = null;
       generatedItem.quantity = 1;
 
       if (!this.isBundleItemEligible(generatedItem, countryCode, currency)) {

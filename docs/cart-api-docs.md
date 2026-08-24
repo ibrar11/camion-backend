@@ -181,7 +181,7 @@ countryCode | No | String | Customer country used for shipping eligibility check
 quantity | No | Number | Number of bundle sets to add. Defaults to `1`
 items | No | Array<Object> | Optional subset of resolved bundle items to add. If omitted, all resolved bundle items are added
 items[].productUuid | No | UUID | Product UUID of one resolved bundle item
-items[].variantUuid | No | UUID | Variant UUID of that same resolved bundle item. If both fields are sent, they must belong to the same bundle item
+items[].variantUuid | No | UUID | Variant UUID for that selected bundle item. For product-level bundle items, any variant of the same product is allowed. For admin-preselected bundle variants, the exact variant is required
 
 ### Request Body
 ```json
@@ -238,6 +238,8 @@ items[].variantUuid | No | UUID | Variant UUID of that same resolved bundle item
 - This endpoint can add the full resolved bundle or a customer-selected subset of resolved bundle items.
 - If the submitted selection count is below the bundle's `minimumSelectionCount`, the API returns `400 Bad Request`.
 - `productUuid` and `variantUuid` inside one `items[]` row describe one selected bundle item, not two separate selections.
+- If admin preselected a variant on a bundle item, that item is locked to that exact variant.
+- If admin added only the product, the customer may submit any variant that belongs to that same product.
 - The response uses the standard cart item shape, so clients do not need a separate cart model for bundles.
 
 Retrieve Cart
