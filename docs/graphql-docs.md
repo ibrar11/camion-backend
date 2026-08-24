@@ -215,9 +215,7 @@ mutation AddBundleToCart(
     "countryCode": "QA",
     "items": [
         {
-            "productUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77"
-        },
-        {
+            "productUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
             "variantUuid": "a8f94af8-0bc7-440b-a244-d6bdb4f4a2c8"
         }
     ],

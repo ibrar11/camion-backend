@@ -1,10 +1,10 @@
 Cart REST API
-==================
+=============
 
 This document includes the documentation of the cart module.
 
 Procedure to Use Cart
---------------------------------------
+---------------------
 
 Follow the following steps to use the cart system:
 
@@ -15,31 +15,31 @@ Follow the following steps to use the cart system:
 5. Clear entire cart.
 
 Campaign Pricing in the Cart
------------------------------
+----------------------------
 
 When a product belongs to a category that is part of an active campaign, the campaign's `discountPercentage` is automatically applied when the item is added to cart or when the cart is fetched. The highest available campaign discount wins.
 
 When a campaign expires, a background scheduler runs within one minute and updates the stored `subTotal` and `total` of every affected cart item back to the standard price. Customers will see the updated (non-discounted) price on their next cart fetch.
 
 Bundle Pricing in the Cart
----------------------------
+--------------------------
 
 When the current cart contents match an active fixed bundle, the cart is repriced automatically. Matching bundle discounts are applied when the item is added to cart, when the cart is updated, and whenever the cart is fetched.
 
 The cart item response now includes the following bundle metadata:
 
-Field | Type | Description
-------|------|------------
-bundleUuid | String \| null | UUID of the first applied bundle affecting this cart row
-bundleQuantity | Number | Total quantity from this cart row consumed by bundle matches
-bundleAllocations | Array<Object> \| null | Detailed bundle discount allocation entries for this cart row
-bundleAllocations[].bundleUuid | String | Bundle UUID
-bundleAllocations[].bundleTitle | String | Bundle English title used for debugging/reporting
-bundleAllocations[].quantity | Number | Quantity from this row allocated to the bundle
-bundleAllocations[].discountMinor | Number | Discount in minor currency units allocated to this row
+| Field                             | Type                           | Description                                                   |
+| --------------------------------- | ------------------------------ | ------------------------------------------------------------- |
+| bundleUuid                        | String\| null                  | UUID of the first applied bundle affecting this cart row      |
+| bundleQuantity                    | Number                         | Total quantity from this cart row consumed by bundle matches  |
+| bundleAllocations                 | Array<Object></object> \| null | Detailed bundle discount allocation entries for this cart row |
+| bundleAllocations[].bundleUuid    | String                         | Bundle UUID                                                   |
+| bundleAllocations[].bundleTitle   | String                         | Bundle English title used for debugging/reporting             |
+| bundleAllocations[].quantity      | Number                         | Quantity from this row allocated to the bundle                |
+| bundleAllocations[].discountMinor | Number                         | Discount in minor currency units allocated to this row        |
 
 Cart API
-=============
+========
 
 > [!IMPORTANT]
 > The cart supports both authenticated users and guest users.
@@ -49,21 +49,21 @@ Cart API
 > If no token → x-guest-id header is required.
 
 Add to Cart
-------------------
-
+-----------
 
 ```http
 POST /v1/cart-items HTTP/1.1
 ```
 
-Parameter Name | Required | Type | Description
----------------|----------|------|------------
-productUuid | Yes | UUID | UUID of the product
-variantUuid | Yes | UUID | UUID of the product variant
-quantity | Yes | Number | Quantity to add (minimum 1)
-currency | Yes | CurrencyCode | The desired currency code
+| Parameter Name | Required | Type         | Description                 |
+| -------------- | -------- | ------------ | --------------------------- |
+| productUuid    | Yes      | UUID         | UUID of the product         |
+| variantUuid    | Yes      | UUID         | UUID of the product variant |
+| quantity       | Yes      | Number       | Quantity to add (minimum 1) |
+| currency       | Yes      | CurrencyCode | The desired currency code   |
 
 ### Request Body
+
 ```json
 {
 	"productUuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
@@ -74,6 +74,7 @@ currency | Yes | CurrencyCode | The desired currency code
 ```
 
 ### Response Body
+
 ```json
 {
     "uuid": "8c534e15-673f-440e-b548-04424cc92363",
@@ -173,17 +174,18 @@ Adds selected resolved bundle items to cart in one call. The cart still returns 
 POST /v1/cart-items/bundles HTTP/1.1
 ```
 
-Parameter Name | Required | Type | Description
----------------|----------|------|------------
-bundleUuid | Yes | UUID | UUID of the bundle to add
-currency | Yes | CurrencyCode | The desired currency code
-countryCode | No | String | Customer country used for shipping eligibility checks
-quantity | No | Number | Number of bundle sets to add. Defaults to `1`
-items | No | Array<Object> | Optional subset of resolved bundle items to add. If omitted, all resolved bundle items are added
-items[].productUuid | No | UUID | Product UUID of one resolved bundle item
-items[].variantUuid | No | UUID | Variant UUID for that selected bundle item. For product-level bundle items, any variant of the same product is allowed. For admin-preselected bundle variants, the exact variant is required
+| Parameter Name      | Required | Type                   | Description                                                                                                                                                                                  |
+| ------------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| bundleUuid          | Yes      | UUID                   | UUID of the bundle to add                                                                                                                                                                    |
+| currency            | Yes      | CurrencyCode           | The desired currency code                                                                                                                                                                    |
+| countryCode         | No       | String                 | Customer country used for shipping eligibility checks                                                                                                                                        |
+| quantity            | No       | Number                 | Number of bundle sets to add. Defaults to`1`                                                                                                                                               |
+| items               | No       | Array<Object></object> | Optional subset of resolved bundle items to add. If omitted, all resolved bundle items are added                                                                                             |
+| items[].productUuid | No       | UUID                   | Product UUID of one resolved bundle item                                                                                                                                                     |
+| items[].variantUuid | No       | UUID                   | Variant UUID for that selected bundle item. For product-level bundle items, any variant of the same product is allowed. For admin-preselected bundle variants, the exact variant is required |
 
 ### Request Body
+
 ```json
 {
     "bundleUuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
@@ -192,9 +194,7 @@ items[].variantUuid | No | UUID | Variant UUID for that selected bundle item. Fo
     "quantity": 1,
     "items": [
         {
-            "productUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77"
-        },
-        {
+            "productUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
             "variantUuid": "a8f94af8-0bc7-440b-a244-d6bdb4f4a2c8"
         }
     ]
@@ -202,6 +202,7 @@ items[].variantUuid | No | UUID | Variant UUID for that selected bundle item. Fo
 ```
 
 ### Response Body
+
 ```json
 [
     {
@@ -243,13 +244,14 @@ items[].variantUuid | No | UUID | Variant UUID for that selected bundle item. Fo
 - The response uses the standard cart item shape, so clients do not need a separate cart model for bundles.
 
 Retrieve Cart
--------------------
+-------------
 
 ```http
 GET /v1/cart-items HTTP/1.1
 ```
 
 ### Response Body
+
 ```json
 [
     {
@@ -376,14 +378,15 @@ Update Cart Item
 PATCH /v1/cart-items/<cart-item-uuid> HTTP/1.1
 ```
 
-Parameter Name | Required | Type | Description
----------------|----------|------|------------
-productUuid | Yes | UUID | UUID of the product
-variantUuid | Yes | UUID | New variant UUID
-quantity | Yes | Number | Updated quantity (minimum 1)
-currency | Yes | CurrencyCode | The desired currency code
+| Parameter Name | Required | Type         | Description                  |
+| -------------- | -------- | ------------ | ---------------------------- |
+| productUuid    | Yes      | UUID         | UUID of the product          |
+| variantUuid    | Yes      | UUID         | New variant UUID             |
+| quantity       | Yes      | Number       | Updated quantity (minimum 1) |
+| currency       | Yes      | CurrencyCode | The desired currency code    |
 
 ### Request Body
+
 ```json
 {
 	"productUuid": "28da9466-2e8d-4b09-b6bc-fa429484f9c6",
@@ -394,6 +397,7 @@ currency | Yes | CurrencyCode | The desired currency code
 ```
 
 ### Response Body
+
 ```json
 {
     "uuid": "8c534e15-673f-440e-b548-04424cc92363",
@@ -506,14 +510,14 @@ currency | Yes | CurrencyCode | The desired currency code
 ```
 
 Remove Item from Cart
-----------------
+---------------------
 
 ```http
 DELETE /v1/cart-items/<cart-item-uuid> HTTP/1.1
 ```
 
 Remove Item from Cart
-----------------
+---------------------
 
 ```http
 DELETE /v1/cart-items HTTP/1.1
