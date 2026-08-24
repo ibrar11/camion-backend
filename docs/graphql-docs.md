@@ -86,12 +86,12 @@ The following features are currently supported by the GraphQL API.
 Bundles in GraphQL
 -------------------
 
-Bundle support is now available in GraphQL for product-page bundle discovery and for reading bundle-attributed cart/order pricing.
+Bundle support is now available in GraphQL for product-page bundle discovery, selective bundle add-to-cart, and reading bundle-attributed cart/order pricing.
 
 Currently supported:
 
-1. `getBundlesForProduct` query for fixed bundle suggestions on a product page.
-2. `addBundleToCart` mutation for adding a full fixed bundle in one call.
+1. `getBundlesForProduct` query for resolved bundle suggestions on a product page.
+2. `addBundleToCart` mutation for adding a full bundle or a selected subset in one call.
 3. `CartItem.bundleUuid`, `CartItem.bundleQuantity`, and `CartItem.bundleAllocations`.
 4. `OrderItem.bundleUuid`, `OrderItem.bundleQuantity`, and `OrderItem.bundleAllocations`.
 
@@ -123,6 +123,7 @@ query GetBundlesForProduct(
     discountPercentage
     discountAmountValue
     amountCurrencyCode
+    minimumSelectionCount
     isActive
     startsAt
     finishesAt
@@ -145,6 +146,10 @@ query GetBundlesForProduct(
 
 - `items[].product` follows the storefront product shape for bundle discovery, but its nested `variants` list is intentionally omitted in bundle responses because the selected bundle variant is already exposed separately in `items[].variant`.
 - If admin did not pin a variant for a product-level bundle item, `items[].variant` is populated with the default resolved variant.
+- `minimumSelectionCount` tells clients how many resolved items must be submitted to `addBundleToCart` before bundle pricing is applied.
+- Each `items` entry submitted to `addBundleToCart` represents one selected bundle item.
+- If admin preselected a variant for that bundle item, the submitted variant must match that exact variant.
+- If admin added only the product, the customer may submit any variant that belongs to that same product.
 - `BundleItem` does not expose a nested `bundle` field in GraphQL, which avoids recursive `bundle -> items -> bundle` selections.
 
 Add Bundle To Cart
@@ -157,12 +162,14 @@ mutation AddBundleToCart(
   $bundleUuid: String!,
   $currency: String!,
   $countryCode: String,
+  $items: [AddBundleToCartSelectionItemInput!],
   $quantity: Int!
 ) {
   addBundleToCart(
     bundleUuid: $bundleUuid,
     currency: $currency,
     countryCode: $countryCode,
+    items: $items,
     quantity: $quantity
   ) {
     uuid
@@ -206,13 +213,20 @@ mutation AddBundleToCart(
     "bundleUuid": "8f7ca4c8-7b8a-4600-b1f6-a5a7f8db1f6f",
     "currency": "qar",
     "countryCode": "QA",
+    "items": [
+        {
+            "productUuid": "8d302728-4d16-4fa7-8540-0c2cedd9ea77",
+            "variantUuid": "a8f94af8-0bc7-440b-a244-d6bdb4f4a2c8"
+        }
+    ],
     "quantity": 1
 }
 ```
 
 ### Notes
 
-- The mutation adds all fixed bundle items to the cart in one request.
+- The mutation can add the full resolved bundle or a customer-selected subset of resolved bundle items.
+- If the submitted item count is below `minimumSelectionCount`, the API returns `400 Bad Request`.
 - The response uses the standard `CartItem` shape, with bundle metadata attached for grouped pricing display.
 
 ### GraphQL Variables

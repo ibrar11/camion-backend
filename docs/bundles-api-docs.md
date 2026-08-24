@@ -36,6 +36,7 @@ isActive | Yes | Boolean | Whether the bundle is active
 anchorProductUuid | Conditional | String | Required for `hybrid` and `auto` bundles. Used to target a specific product page
 sourceCategoryUuids | No | Array<String> | Optional category UUIDs used for auto-filled products. If omitted, the anchor product's categories are used
 autoFillCount | Conditional | Number | Required for `hybrid` and `auto`. Number of generated products to append
+minimumSelectionCount | No | Number | Minimum number of resolved bundle items the customer must select for bundle pricing. Defaults to `2`
 startsAt | Yes | String | ISO-style start date/time
 finishesAt | Yes | String | ISO-style finish date/time
 items | Yes | Array<Object> | Bundle items. `fixed` requires at least 2 items, `hybrid` requires at least 1 manual item, `auto` can use an empty array
@@ -58,6 +59,7 @@ items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
     "discountType": "percentage_off",
     "mode": "fixed",
     "discountPercentage": 10,
+    "minimumSelectionCount": 2,
     "isActive": true,
     "startsAt": "2026-08-18T09:00:00Z",
     "finishesAt": "2026-09-18T23:59:59Z",
@@ -79,6 +81,7 @@ items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
 - `fixed`: current manual bundle behavior. Admin stores the exact products or variants that make up the bundle.
 - `hybrid`: admin stores one or more manual items, plus `anchorProductUuid` and `autoFillCount`. The backend appends deterministic related products from `sourceCategoryUuids` or the anchor product's own categories.
 - `auto`: admin stores the pricing rule and targeting config only. Bundle items are generated at runtime from `sourceCategoryUuids` or the anchor product's own categories.
+- `minimumSelectionCount`: applies to customer-side bundle add for all bundle modes. If the customer selects fewer items than this threshold, the items are added as normal cart products without bundle pricing.
 
 ### Example `hybrid` Request Body
 ```json

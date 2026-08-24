@@ -502,6 +502,10 @@ export class OrderService {
         orderItem.quantity = cart.quantity;
         orderItem.total = cart.total;
         orderItem.bundleUuid = cart.bundleUuid;
+        orderItem.bundleSourceUuid = cart.bundleSourceUuid;
+        orderItem.bundleSelectionUuid = cart.bundleSelectionUuid;
+        orderItem.bundleMinimumSelectionCount =
+          cart.bundleMinimumSelectionCount;
         orderItem.bundleQuantity = cart.bundleQuantity;
         orderItem.bundleAllocations = cart.bundleAllocations;
 

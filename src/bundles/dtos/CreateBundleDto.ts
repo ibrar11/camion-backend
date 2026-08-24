@@ -114,6 +114,11 @@ export class CreateBundleDto {
   @Min(1)
   autoFillCount?: number;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(2)
+  minimumSelectionCount?: number;
+
   @IsString()
   @MinLength(1)
   @Matches(
