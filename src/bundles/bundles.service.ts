@@ -848,6 +848,19 @@ export class BundlesService {
       return null;
     }
 
+    const anchorStorefrontProduct = await this.loadStorefrontProduct(
+      anchorProduct.uuid,
+      currency,
+    );
+    const anchorItem = this.buildResolvedBundleItem(
+      bundle,
+      anchorStorefrontProduct,
+      anchorStorefrontProduct.variants[0] ?? null,
+    );
+    if (!this.isBundleItemEligible(anchorItem, countryCode, currency)) {
+      return null;
+    }
+
     excludedProductUuids.add(anchorProduct.uuid);
     const categoryUuids =
       bundle.sourceCategoryUuids?.filter(Boolean) ??
@@ -896,16 +909,11 @@ export class BundlesService {
         candidate.uuid,
         currency,
       );
-      const selectedVariant = storefrontProduct.variants[0] ?? null;
-
-      const generatedItem = new BundleItem();
-      generatedItem.bundle = bundle;
-      generatedItem.product = this.buildBundleProductPreview(storefrontProduct);
-      generatedItem.variant = selectedVariant
-        ? this.buildBundleVariantPreview(selectedVariant)
-        : null;
-      (generatedItem as BundleItemSelectionState).configuredVariantUuid = null;
-      generatedItem.quantity = 1;
+      const generatedItem = this.buildResolvedBundleItem(
+        bundle,
+        storefrontProduct,
+        storefrontProduct.variants[0] ?? null,
+      );
 
       if (!this.isBundleItemEligible(generatedItem, countryCode, currency)) {
         continue;
@@ -915,7 +923,13 @@ export class BundlesService {
       excludedProductUuids.add(candidate.uuid);
     }
 
-    return generatedItems.length === requiredCount ? generatedItems : null;
+    if (generatedItems.length !== requiredCount) {
+      return null;
+    }
+
+    return bundle.mode === BundleMode.AUTO
+      ? [anchorItem, ...generatedItems]
+      : generatedItems;
   }
 
   private async loadContextProduct(productUuid: string): Promise<Product | null> {
@@ -1059,6 +1073,22 @@ export class BundlesService {
       orderItems: [],
     } as unknown as ProductVariant;
     return preview;
+  }
+
+  private buildResolvedBundleItem(
+    bundle: Bundle,
+    storefrontProduct: Product,
+    selectedVariant: ProductVariant | null,
+  ): BundleItem {
+    const bundleItem = new BundleItem();
+    bundleItem.bundle = bundle;
+    bundleItem.product = this.buildBundleProductPreview(storefrontProduct);
+    bundleItem.variant = selectedVariant
+      ? this.buildBundleVariantPreview(selectedVariant)
+      : null;
+    (bundleItem as BundleItemSelectionState).configuredVariantUuid = null;
+    bundleItem.quantity = 1;
+    return bundleItem;
   }
 
   private tryAllocateBundle(
