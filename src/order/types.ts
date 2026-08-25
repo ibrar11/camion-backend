@@ -1,3 +1,5 @@
+import { FindOperator } from "typeorm";
+
 import { CartItem } from "../cart/entities/cart-items.entity";
 
 import { CustomerAddress } from "../customers/entities/customer-address.entity";
@@ -42,8 +44,9 @@ export class OrderPreviewResponse {
 
 export interface OrderFilters {
     status?: OrderStatus
-    customer?: {uuid?: string}
+    customer?: {uuid?: string, fullName?: FindOperator<string>}
     invalidOrder?: boolean
+    uuid?: FindOperator<string>
 }
 
 export interface NotificationPayload {
