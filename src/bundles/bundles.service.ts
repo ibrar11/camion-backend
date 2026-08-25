@@ -60,6 +60,9 @@ type BundleItemSelectionState = BundleItem & {
   configuredVariantUuid?: string | null;
 };
 
+type BundleHydrationMode = 'storefront' | 'cart';
+type BundleHydrationCache = Map<string, Promise<Product>>;
+
 @Injectable()
 export class BundlesService {
   private readonly logger = new Logger(BundlesService.name);
@@ -193,13 +196,30 @@ export class BundlesService {
     }
 
     const now = new Date();
-    const bundles = await this.loadActiveBundles();
-
-    const matchingBundles = bundles.filter(
+    const matchingBundles = (
+      await this.bundleRepository
+        .createQueryBuilder('bundle')
+        .leftJoinAndSelect('bundle.items', 'item')
+        .leftJoinAndSelect('item.product', 'itemProduct')
+        .leftJoinAndSelect(
+          'item.variant',
+          'itemVariant',
+        )
+        .leftJoinAndSelect('itemVariant.inventoryItem', 'itemVariantInventory')
+        .leftJoinAndSelect('itemVariantInventory.levels', 'itemVariantLevels')
+        .where('bundle.isActive = :isActive', { isActive: true })
+        .andWhere(
+          '(bundle.anchorProductUuid = :productUUID OR itemProduct.uuid = :productUUID)',
+          { productUUID },
+        )
+        .orderBy('bundle.id', 'DESC')
+        .getMany()
+    ).filter(
       (bundle) =>
         this.isBundleActiveAt(bundle, now) &&
         this.matchesBundleContext(bundle, productUUID),
     );
+    const hydrationCache: BundleHydrationCache = new Map();
 
     const resolvedBundles = await Promise.all(
       matchingBundles.map((bundle) =>
@@ -208,6 +228,8 @@ export class BundlesService {
           product,
           currency as CurrencyCode,
           countryCode,
+          'storefront',
+          hydrationCache,
         ),
       ),
     );
@@ -260,6 +282,7 @@ export class BundlesService {
       contextProduct,
       currency,
       countryCode,
+      'cart',
     );
     if (!hydrated) {
       throw new BadRequestException({
@@ -311,12 +334,18 @@ export class BundlesService {
     const activeBundles = bundles.filter((bundle) =>
       this.isBundleActiveAt(bundle, now),
     );
+    const candidateBundles = activeBundles.filter((bundle) =>
+      bundle.items.some((item) => {
+        const productId = item.product?.id;
+        return productId !== undefined && productIds.includes(productId);
+      }),
+    );
     const activeBundleMap = new Map(
       activeBundles.map((bundle) => [bundle.uuid, bundle] as const),
     );
     const resolvedBundles = (
       await Promise.all(
-        activeBundles.map(async (bundle) => {
+        candidateBundles.map(async (bundle) => {
             const contextProduct = bundle.anchorProductUuid
               ? await this.loadContextProduct(bundle.anchorProductUuid)
               : null;
@@ -325,6 +354,7 @@ export class BundlesService {
               contextProduct,
               currency,
               countryCode,
+              'cart',
             );
           }),
       )
@@ -747,11 +777,15 @@ export class BundlesService {
     contextProduct: Product | null,
     currency: CurrencyCode,
     countryCode?: string,
+    hydrationMode: BundleHydrationMode = 'storefront',
+    hydrationCache?: BundleHydrationCache,
   ): Promise<Bundle | null> {
     const hydratedBundle = this.cloneBundle(bundle);
     hydratedBundle.items = await this.hydrateBundleItems(
       bundle.items ?? [],
       currency,
+      hydrationMode,
+      hydrationCache,
     );
 
     if (
@@ -768,6 +802,8 @@ export class BundlesService {
   private async hydrateBundleItems(
     items: Array<BundleItem>,
     currency: CurrencyCode,
+    hydrationMode: BundleHydrationMode = 'storefront',
+    hydrationCache?: BundleHydrationCache,
   ): Promise<Array<BundleItem>> {
     return Promise.all(
       items.map(async (item) => {
@@ -784,10 +820,15 @@ export class BundlesService {
           return clonedItem;
         }
 
-        const storefrontProduct = await this.loadStorefrontProduct(
-          productUuid,
-          currency,
-        );
+        const storefrontProduct =
+          hydrationMode === 'storefront'
+            ? await this.loadHydratedBundleProduct(
+                productUuid,
+                currency,
+                hydrationMode,
+                hydrationCache,
+              )
+            : await this.loadCartBundleProduct(productUuid, currency);
         const selectedVariant = item.variant?.uuid
           ? storefrontProduct.variants.find(
               (variant) => variant.uuid === item.variant?.uuid,
@@ -801,6 +842,27 @@ export class BundlesService {
         return clonedItem;
       }),
     );
+  }
+
+  private async loadHydratedBundleProduct(
+    productUuid: string,
+    currency: CurrencyCode,
+    hydrationMode: BundleHydrationMode,
+    hydrationCache?: BundleHydrationCache,
+  ): Promise<Product> {
+    const cacheKey = `${hydrationMode}:${currency}:${productUuid}`;
+    if (!hydrationCache) {
+      return this.loadStorefrontProduct(productUuid, currency);
+    }
+
+    const existing = hydrationCache.get(cacheKey);
+    if (existing) {
+      return existing;
+    }
+
+    const loader = this.loadStorefrontProduct(productUuid, currency);
+    hydrationCache.set(cacheKey, loader);
+    return loader;
   }
 
   private async generateAutomaticBundleItems(
@@ -945,6 +1007,74 @@ export class BundlesService {
             levels: true,
           },
           images: true,
+        },
+        productCategories: {
+          category: {
+            campaignCategories: {
+              campaign: true,
+            },
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException({
+        error: 'Failed to find the product. Please check and try again.',
+      });
+    }
+
+    const campaign = getBestCampaign(product);
+    if (campaign) {
+      product.campaign = campaign;
+    }
+
+    product.variants = await Promise.all(
+      product.variants.map(async (variant) => {
+        variant.price = await this.pricingService.applyPriceOnProductVariant(
+          product,
+          variant,
+          campaign,
+          currency,
+          false,
+        );
+        variant.discountedPrice =
+          await this.pricingService.applyPriceOnProductVariant(
+            product,
+            variant,
+            campaign,
+            currency,
+            true,
+          );
+        return variant;
+      }),
+    );
+
+    product.variants.sort((lhs, rhs) => {
+      const lhsPrice =
+        lhs.discountedPrice?.minorAmount ?? lhs.price?.minorAmount ?? 0;
+      const rhsPrice =
+        rhs.discountedPrice?.minorAmount ?? rhs.price?.minorAmount ?? 0;
+      return lhsPrice - rhsPrice;
+    });
+
+    return product;
+  }
+
+  private async loadCartBundleProduct(
+    productUuid: string,
+    currency: CurrencyCode,
+  ): Promise<Product> {
+    const product = await this.productRepository.findOne({
+      where: {
+        uuid: productUuid,
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        variants: {
+          inventoryItem: {
+            levels: true,
+          },
         },
         productCategories: {
           category: {
