@@ -1554,43 +1554,53 @@ export class OrderService {
             });
         }
 
-        for (const orderItem of order.orderItems) {
-            const inventoryItem = await this.inventoryRepository.findOne({
-                where: { variant: { id: orderItem.variant.id } },
-                relations: { levels: { warehouse: true } },
-            });
-
-            if (!inventoryItem || !inventoryItem.levels.length) {
-                throw new BadRequestException({
-                    error: `No inventory found for ${orderItem.variant.sku}`,
-                });
-            }
-
-            const level = inventoryItem.levels.find(
-                l => l.warehouse.id === orderItem.warehouse.id
-            );
-
-            if (!level) {
-                throw new BadRequestException({
-                    error: `No inventory level found for ${orderItem.variant.sku} in warehouse ${orderItem.warehouse.id}`,
-                });
-            }
-
-            if (level.quantity < orderItem.quantity) {
-                throw new BadRequestException({
-                    error: `Insufficient stock for ${orderItem.variant.sku}. Available: ${level.quantity}, Requested: ${orderItem.quantity}`,
-                });
-            }
-
-            level.quantity -= orderItem.quantity;
-            await this.inventoryLevelRepository.save(level);
-        }
-
         const lastAttempt = order.paymentTransaction?.updatedAt;
         if (lastAttempt) {
             const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
             if (lastAttempt > oneHourAgo) {
                 return order;
+            }
+        }
+
+        // PAYMENT_FAILED/PAYMENT_CANCELLED orders had their stock released back
+        // by the payment webhook, so it must be re-reserved for this new attempt.
+        // PAYMENT_PENDING orders never had a webhook fire (e.g. abandoned checkout
+        // tab), so their original order-creation reservation is still held —
+        // deducting again here would double-reserve the same stock.
+        if (
+            order.status === OrderStatus.PAYMENT_FAILED ||
+            order.status === OrderStatus.PAYMENT_CANCELLED
+        ) {
+            for (const orderItem of order.orderItems) {
+                const inventoryItem = await this.inventoryRepository.findOne({
+                    where: { variant: { id: orderItem.variant.id } },
+                    relations: { levels: { warehouse: true } },
+                });
+
+                if (!inventoryItem || !inventoryItem.levels.length) {
+                    throw new BadRequestException({
+                        error: `No inventory found for ${orderItem.variant.sku}`,
+                    });
+                }
+
+                const level = inventoryItem.levels.find(
+                    l => l.warehouse.id === orderItem.warehouse.id
+                );
+
+                if (!level) {
+                    throw new BadRequestException({
+                        error: `No inventory level found for ${orderItem.variant.sku} in warehouse ${orderItem.warehouse.id}`,
+                    });
+                }
+
+                if (level.quantity < orderItem.quantity) {
+                    throw new BadRequestException({
+                        error: `Insufficient stock for ${orderItem.variant.sku}. Available: ${level.quantity}, Requested: ${orderItem.quantity}`,
+                    });
+                }
+
+                level.quantity -= orderItem.quantity;
+                await this.inventoryLevelRepository.save(level);
             }
         }
 

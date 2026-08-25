@@ -265,7 +265,11 @@ export class PaymentsWebhookService {
             ) {
                 this.logger.log(`Payment FAILED/REJECTED for transaction: ${TransactionId}`);
 
-                for (const item of order.orderItems) {
+                const alreadyHandled = order.status === OrderStatus.PAYMENT_FAILED
+                    || order.status === OrderStatus.CANCELLED;
+
+                if (!alreadyHandled) {
+                    for (const item of order.orderItems) {
                         const inventoryItem = await this.inventoryRepository.findOne({
                             where: { variant: { id: item.variant.id } },
                         });
@@ -282,10 +286,6 @@ export class PaymentsWebhookService {
                         }
                     }
 
-                const alreadyHandled = order.status === OrderStatus.PAYMENT_FAILED
-                    || order.status === OrderStatus.CANCELLED;
-
-                if (!alreadyHandled) {
                     order.status = OrderStatus.PAYMENT_FAILED;
                     await this.orderRepository.save(order);
 
