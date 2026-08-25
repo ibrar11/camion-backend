@@ -48,6 +48,9 @@ import { FirebaseAdminProvider } from '../firebase/provider/firebase.provider';
 
 import { CartItem } from '../cart/entities/cart-items.entity';
 
+import { InventoryItem } from "../inventory/entities/inventory-item.entity";
+import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
+
 import { SkipCashSessionService } from './skipcash-session.service';
 
 import { SavedCard } from './entities/saved-card.entity';
@@ -72,6 +75,8 @@ import { SavedCardsResolver } from './saved-cards.resolver';
             Notification,
             PushNotification,
             CartItem,
+            InventoryItem,
+            InventoryLevel,
             SavedCard,
             CustomerAddress,
         ]),

@@ -32,6 +32,8 @@ import { PushNotificationService } from "../notifications/push-notification.serv
 import { CartItem } from "../cart/entities/cart-items.entity";
 import { EmailService } from "../email/email.service";
 import { getOrderReference } from "../common/maskUuid";
+import { InventoryItem } from "../inventory/entities/inventory-item.entity";
+import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
 
 import { SavedCardsService } from "./saved-cards.service";
 
@@ -47,6 +49,8 @@ export class PaymentsWebhookService {
         @Inject(PushNotificationService) private readonly pushNotificationService: PushNotificationService,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
+        @InjectRepository(InventoryItem) private readonly inventoryRepository: Repository<InventoryItem>,
+        @InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
         private readonly savedCardsService: SavedCardsService,
     ) { }
 
@@ -86,6 +90,7 @@ export class PaymentsWebhookService {
                     orderItems: {
                         product: true,
                         variant: true,
+                        warehouse:true
                     }
                 },
             })
@@ -279,6 +284,23 @@ export class PaymentsWebhookService {
                     || order.status === OrderStatus.CANCELLED;
 
                 if (!alreadyHandled) {
+                    for (const item of order.orderItems) {
+                        const inventoryItem = await this.inventoryRepository.findOne({
+                            where: { variant: { id: item.variant.id } },
+                        });
+                        if (!inventoryItem) continue;
+                        const level = await this.inventoryLevelRepository.findOne({
+                            where: {
+                                inventoryItem: { id: inventoryItem.id },
+                                warehouse: { id: item.warehouse.id },
+                            },
+                        });
+                        if (level) {
+                            level.quantity += item.quantity;
+                            await this.inventoryLevelRepository.save(level);
+                        }
+                    }
+
                     order.status = OrderStatus.PAYMENT_FAILED;
                     await this.orderRepository.save(order);
 
