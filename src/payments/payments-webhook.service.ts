@@ -34,6 +34,9 @@ import { EmailService } from "../email/email.service";
 import { getOrderReference } from "../common/maskUuid";
 import { InventoryItem } from "../inventory/entities/inventory-item.entity";
 import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
+
+import { SavedCardsService } from "./saved-cards.service";
+
 @Injectable()
 export class PaymentsWebhookService {
     private readonly logger = new Logger(PaymentsWebhookService.name);
@@ -48,6 +51,7 @@ export class PaymentsWebhookService {
         private readonly emailService: EmailService,
         @InjectRepository(InventoryItem) private readonly inventoryRepository: Repository<InventoryItem>,
         @InjectRepository(InventoryLevel) private readonly inventoryLevelRepository: Repository<InventoryLevel>,
+        private readonly savedCardsService: SavedCardsService,
     ) { }
 
     async handleSkipcashWebhook(payload: SkipcashWebhookDto, signature: string): Promise<skipcashWebhookResponse> {
@@ -69,6 +73,8 @@ export class PaymentsWebhookService {
                 PaymentId,
                 StatusId,
                 TransactionId,
+                TokenId,
+                Amount,
             } = payload;
 
             if (!TransactionId) {
@@ -171,6 +177,15 @@ export class PaymentsWebhookService {
                 order.status = OrderStatus.PAYMENT_SUCCESSFUL;
                 await this.orderRepository.save(order);
 
+                if (TokenId && TokenId !== "NA" && order.customer) {
+                    const savedCard = await this.savedCardsService.saveCardToken(
+                        order.customer,
+                        TokenId
+                    );
+                    this.logger.log(`Card successfully saved: ${JSON.stringify(savedCard)}`);
+                    transaction?.order?.customer?.savedCards?.push(savedCard);
+                }
+
                 const paymentEventExists = await this.trackingEventRepository.findOne({
                     where: { orderUuid: order.uuid, stage: OrderTrackingStage.PAYMENT_CONFIRMED },
                 });
@@ -217,7 +232,7 @@ export class PaymentsWebhookService {
                     const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
 
                     notification = await this.notificationsService.create({
-                        customerUUID: getOrderReference(order.customer.uuid),
+                        customerUUID: order.customer.uuid,
                         type: NotificationType.PAYMENT_SUCCESSFUL,
                         title: 'Payment Successful',
                         brief: 'Your order has been placed and payment confirmed.',
@@ -291,7 +306,7 @@ export class PaymentsWebhookService {
 
                     if (order.customer) {
                         notification = await this.notificationsService.create({
-                            customerUUID: getOrderReference(order.customer.uuid),
+                            customerUUID: order.customer.uuid,
                             type: NotificationType.PAYMENT_FAILED,
                             title: 'Payment Failed',
                             brief: 'Your payment could not be processed.',
@@ -325,7 +340,7 @@ export class PaymentsWebhookService {
 
                     if (order.customer) {
                         notification = await this.notificationsService.create({
-                            customerUUID: getOrderReference(order.customer.uuid),
+                            customerUUID: order.customer.uuid,
                             type: NotificationType.PAYMENT_FAILED,
                             title: 'Payment Cancelled',
                             brief: 'Your payment was cancelled.',

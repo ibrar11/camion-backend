@@ -1,6 +1,7 @@
 import {
-	ObjectType,
 	Field,
+	Int,
+	ObjectType,
 } from "@nestjs/graphql";
 
 import {
@@ -35,6 +36,8 @@ import { WishlistItem } from "../../wishlist/entities/wishlist.entity";
 
 import { Translation } from "../../translation/entities/translation.entity";
 import { ProductAttachment } from "./product-attachment.entity";
+
+import { BundleItem } from "../../bundles/entities/bundle-item.entity";
 
 @ObjectType()
 @Entity({ name: "products", })
@@ -112,6 +115,9 @@ export class Product {
 	@Field(() => String, { name: "descriptionHtml" })
 	descriptionHtml: string;
 
+	@Field(() => Int, { nullable: true })
+	stockCount: number | null;
+
 	@Field(() => String)
 	@Column({ type: "text", })
 	descriptionHtmlEn: string;
@@ -141,6 +147,14 @@ export class Product {
 	@Index()
 	status: ProductStatus;
 
+	@Column({ type: "boolean", default: true, })
+	@Index()
+	procurementStatus: boolean;
+
+	@Column({ type: "boolean", default: true, })
+	@Index()
+	resyncStatus: boolean;
+
 	@Field(() => String, { nullable: true })
 	@Column({ type: 'varchar', length: 128, nullable: true, default: null })
 	shopId: string | null;
@@ -152,6 +166,12 @@ export class Product {
 	@Field(() => String, { nullable: true })
 	@Column({ type: 'varchar', length: 64, nullable: true, default: null })
 	procurementId: string | null;
+
+	@Column({ type: "boolean", default: false, })
+	urgencyEnabled: boolean;
+
+	@Column({ type: "integer", nullable: true, default: null, })
+	urgencyStockCount: number | null;
 
 	@Field()
 	@Column({ type: "integer", nullable: false, default: 0, })
@@ -234,6 +254,9 @@ export class Product {
 
 	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product, { cascade: true, })
 	wishlistItems: Array<WishlistItem>;
+
+	@OneToMany(() => BundleItem, item => item.product, { cascade: true, })
+	bundleItems: Array<BundleItem>;
 
 	@OneToOne(() => Translation, (translation) => translation.product, { cascade: true, })
 	@JoinColumn()

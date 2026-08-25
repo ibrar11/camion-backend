@@ -59,6 +59,16 @@ export class Campaign {
 	@Column({ type: "numeric", default: 0, nullable: false, })
 	discountPercentage: number;
 
+	@Field(() => Boolean)
+	@Column({ type: "boolean", default: false, })
+	urgencyEnabled: boolean;
+
+	@Column({ type: "integer", nullable: true, default: null, })
+	urgencyMinStockCount: number | null;
+
+	@Column({ type: "integer", nullable: true, default: null, })
+	urgencyMaxStockCount: number | null;
+
 	@Field()
 	@Column({ type: "timestamptz", nullable: false, })
 	startsAt: Date;

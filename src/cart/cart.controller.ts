@@ -25,6 +25,7 @@ import { UserRole } from '../users/enums/UserRole';
 import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 
 import { CreateCartItemDto } from './dtos/CreateCartItemDto';
+import { AddBundleToCartDto } from './dtos/AddBundleToCartDto';
 import { UpdateCartItemDto } from './dtos/UpdateCartItemDto';
 
 import { CartItem } from './entities/cart-items.entity';
@@ -50,6 +51,16 @@ export class CartItemsController {
         @Query("currency") currency: CurrencyCode,
     ): Promise<CartItem> {
         return this.cartService.create(customer, body);
+    }
+
+    @Roles(UserRole.SuperAdmin, UserRole.Admin, CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)
+    @Post('bundles')
+    @HttpCode(HttpStatus.CREATED)
+    addBundleToCart(
+        @Body() body: AddBundleToCartDto,
+        @GetCustomer() customer: Customer,
+    ): Promise<Array<CartItem>> {
+        return this.cartService.createBundle(customer, body);
     }
 
     @Roles(CustomerRole.Customer, CustomerRole.Influencer, CustomerRole.Affiliate, CustomerRole.Guest)

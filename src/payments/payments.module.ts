@@ -51,6 +51,16 @@ import { CartItem } from '../cart/entities/cart-items.entity';
 import { InventoryItem } from "../inventory/entities/inventory-item.entity";
 import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
 
+import { SkipCashSessionService } from './skipcash-session.service';
+
+import { SavedCard } from './entities/saved-card.entity';
+import { SavedCardsService } from './saved-cards.service';
+import { SavedCardsController } from './saved-cards.controller';
+
+import { CustomerAddress } from '../customers/entities/customer-address.entity';
+
+import { SavedCardsResolver } from './saved-cards.resolver';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([
@@ -67,12 +77,16 @@ import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
             CartItem,
             InventoryItem,
             InventoryLevel,
+            SavedCard,
+            CustomerAddress,
         ]),
         NotificationsModule,
         EmailModule,
     ],
     providers: [
         PaymentsService,
+        SkipCashSessionService,
+        SavedCardsService,
         PaymentsWebhookService,
         PaymentStrategyFactory,
         SkipCashStrategy,
@@ -84,10 +98,12 @@ import { InventoryLevel } from "../inventory/entities/inventory-level.entity";
         ExchangeRateService,
         PushNotificationService,
         FirebaseAdminProvider,
+        SavedCardsResolver,
     ],
     controllers: [
         PaymentsController,
-        PaymentsWebhookController
+        PaymentsWebhookController,
+        SavedCardsController,
     ],
     exports: [PaymentStrategyFactory],
 })

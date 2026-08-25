@@ -3,8 +3,9 @@ import {
     IsEnum,
     IsNumber,
     IsString,
-    MinLength, 
-    IsUUID
+    MinLength,
+    IsUUID,
+    IsOptional
 } from "class-validator";
 
 import { PaymentProvider } from "../enums/PaymentProvider";
@@ -65,4 +66,8 @@ export class CreatePaymentDto {
     @IsString()
     @MinLength(1)
     postalCode: string;
+
+    @IsOptional()
+    @IsString()
+    tokenId?: string;
 }

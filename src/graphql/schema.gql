@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AddBundleToCartSelectionItemInput {
+  productUuid: String
+  variantUuid: String
+}
+
 type Affiliate {
   bio: String!
   couponsCreated: Float!
@@ -53,6 +58,41 @@ type Banner {
   uuid: String!
 }
 
+type Bundle {
+  amountCurrencyCode: String
+  anchorProductUuid: String
+  autoFillCount: Int
+  brief(language: String): String
+  discountAmountValue: Int
+  discountPercentage: Int
+  discountType: String!
+  finishesAt: DateTime!
+  flatPriceValue: Int
+  imageUrl: String
+  isActive: Boolean!
+  items: [BundleItem!]!
+  minimumSelectionCount: Int!
+  mode: String!
+  slug: String!
+  sourceCategoryUuids: [String!]
+  startsAt: DateTime!
+  title(language: String): String!
+  uuid: String!
+}
+
+type BundleAllocation {
+  bundleTitle: String!
+  bundleUuid: String!
+  discountMinor: Int!
+  quantity: Int!
+}
+
+type BundleItem {
+  product: Product
+  quantity: Int!
+  variant: ProductVariant
+}
+
 type Campaign {
   brief(language: String! = "en"): String!
   briefAr: String!
@@ -65,6 +105,7 @@ type Campaign {
   name(language: String! = "en"): String!
   slug: String!
   startsAt: String!
+  urgencyEnabled: Boolean!
   uuid: String!
 }
 
@@ -74,6 +115,9 @@ type CampaignCategory {
 
 type CartItem {
   availableStock: Int!
+  bundleAllocations: [BundleAllocation!]
+  bundleQuantity: Int!
+  bundleUuid: String
   discountPrice: CartMoney!
   isAvailable: Boolean!
   product: Product!
@@ -201,6 +245,12 @@ type Money {
   minorAmount: Int!
 }
 
+type Mutation {
+  addBundleToCart(bundleUuid: String!, countryCode: String, currency: String! = "qar", items: [AddBundleToCartSelectionItemInput!], quantity: Int! = 1): [CartItem!]!
+  createProductReport(details: String!, orderNumber: String, productUuid: String!, reason: String!): ProductReport!
+  updateProductReportStatus(adminNote: String, status: String!, uuid: String!): ProductReport!
+}
+
 type Notification {
   brief: String!
   createdAt: String!
@@ -230,6 +280,9 @@ type Order {
 }
 
 type OrderItem {
+  bundleAllocations: [BundleAllocation!]
+  bundleQuantity: Int!
+  bundleUuid: String
   discountedPrice: Money!
   order: Order!
   price: Money!
@@ -333,6 +386,7 @@ type Product {
   sizechartUrl: String!
   slug: String!
   status: String!
+  stockCount: Int
   title(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!
   titleEn: String!
@@ -367,6 +421,32 @@ type ProductOptionValue {
   value(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   valueAr: String!
   valueEn: String!
+}
+
+type ProductReport {
+  adminNote: String
+  attachments: [ProductReportAttachment!]
+  createdAt: DateTime!
+  customer: Customer!
+  details: String!
+  orderNumber: String
+  priority: String!
+  product: Product!
+  reason: String!
+  status: String!
+  updatedAt: DateTime!
+  uuid: String!
+}
+
+type ProductReportAttachment {
+  createdAt: DateTime!
+  fileName: String
+  mediaType: String!
+  mediaUrl: String!
+  mimeType: String
+  thumbnailUrl: String
+  updatedAt: DateTime!
+  uuid: String!
 }
 
 type ProductReview {
@@ -433,6 +513,7 @@ type Query {
   getBanners(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Banner!]!
   getBannersByCategory(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String! = ""): [Banner!]!
   getBannersByPlacement(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, placement: String! = ""): [Banner!]!
+  getBundlesForProduct(countryCode: String, currency: String! = "qar", language: String! = "en", productUUID: String!): [Bundle!]!
   getCampaigns(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Campaign!]!
   getCategories(itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [Category!]!
   getCouponOrders(itemsPerPage: Int! = 24, pageNumber: Int! = 1, uuid: String! = ""): [CouponOrder!]!
@@ -446,11 +527,14 @@ type Query {
   getCurrentCustomerOrderPreview(couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
   getCurrentCustomerOrderPreviewV2(cartItemUuids: [String!]! = [], couponCode: String, currency: String! = "usd", language: String! = "en"): OrderPreviewResponse!
   getCurrentCustomerOrders(currency: String! = "usd", itemsPerPage: Int! = 24, pageNumber: Int! = 1, status: String): [Order!]!
+  getCurrentCustomerProductReport(uuid: String!): ProductReport!
+  getCurrentCustomerProductReports(itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ProductReport!]!
   getCurrentCustomerReturnRequest(currency: String! = "usd", uuid: String!): ReturnRequest!
   getCurrentCustomerReturnRequests(currency: String! = "usd", itemsPerPage: Int! = 20, pageNumber: Int! = 1, status: String): [ReturnRequest!]!
   getCustomerAddresses(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [CustomerAddress!]!
   getCustomerCart(currency: String! = "qar", language: String! = "en"): [CartItem!]!
   getCustomerCartCount: Float!
+  getCustomerSavedCards(itemsPerPage: Int! = 24, pageNumber: Int! = 1): [SavedCard!]!
   getCustomerWishlist(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1): [WishlistItem!]!
   getCustomerWishlistCount: Float!
   getFeaturedCampaign(language: String! = "en"): Campaign
@@ -465,6 +549,8 @@ type Query {
   getPost(slug: String!): Post!
   getPosts: [Post!]!
   getProduct(currency: String! = "usd", language: String! = "en", slug: String! = ""): Product
+  getProductReportAdmin(uuid: String!): ProductReport!
+  getProductReportsAdmin(itemsPerPage: Int! = 20, pageNumber: Int! = 1, reason: String, status: String): [ProductReport!]!
   getProducts(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): [Product!]!
   getProductsByCategories(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slugs: [String!]!, sort: String! = "best-match"): [Product!]!
   getProductsByCategory(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, slug: String!, sort: String! = "best-match"): [Product!]!
@@ -496,6 +582,18 @@ type ReturnRequest {
   refundAmount: Money
   status: String!
   updatedAt: DateTime!
+  uuid: String!
+}
+
+type SavedCard {
+  cardBrand: String!
+  customer: Customer!
+  expiryMonth: String!
+  expiryYear: String!
+  isActive: Boolean!
+  isDefault: Boolean!
+  last4: String!
+  tokenId: String!
   uuid: String!
 }
 

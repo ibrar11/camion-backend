@@ -654,6 +654,8 @@ Get products by a category | `filters={"slug":"sneakers"}`
         "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
         "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
         "status": "DRAFT",
+        "procurementStatus": true, //by default true for products that are available on 1688, will be false for products that are removed from 1688.
+        "resyncStatus": false, //by default false, will be true for products whose variants have been changed on 1688 and need to be resync.
         "options": [],
         "variants": []
     }
@@ -684,6 +686,8 @@ GET /v1/products/<product-uuid> HTTP/1.1
     "descriptionHtmlEn": "<b>Your new iPhone awaits. Make it yours</b>",
     "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
     "status": "DRAFT",
+    "procurementStatus": true, //by default true for products that are available on 1688, will be false for products that are removed from 1688.
+    "resyncStatus": false, //by default false, will be true for products whose variants have been changed on 1688 and need to be resync.
     "options": [],
     "variants": []
 }
@@ -2311,6 +2315,207 @@ Delete Product Attachment
 ```http
 DELETE /v1/products/<product-uuid>/attachments/<product-attachment-uuid> HTTP/1.1
 ```
+
+Product Reports
+===============
+
+> [!IMPORTANT]
+> Customer endpoints require a valid customer token in the `Authorization` header.
+> Admin endpoints require a valid `Bearer` token and one of the following roles: `SuperAdmin`, `Admin`, `Manager`.
+
+This feature lets customers report a product for review. Reports are stored with a reason, explanation, optional order number, optional attachments, and a review status for internal moderation.
+GraphQL support is also available for creating reports, listing them, and updating their status. Attachment uploads stay on the REST attachment endpoint.
+
+Report Reasons
+--------------
+
+| Value | Description |
+|---|---|
+| `incorrect_product_information` | Product details are inaccurate |
+| `product_quality_concerns` | Product quality issues |
+| `safety_concerns` | Safety or compliance concern |
+| `incorrect_pricing` | Incorrect pricing shown |
+| `duplicate_listing` | Duplicate product listing |
+| `inappropriate_offensive_content` | Offensive or inappropriate content |
+| `legal_regulatory_concern` | Legal or regulatory issue |
+| `other` | Any other valid concern |
+
+Report Statuses
+---------------
+
+| Value | Description |
+|---|---|
+| `pending` | Submitted and waiting for review |
+| `under_review` | Being reviewed by the admin team |
+| `resolved` | Issue has been handled |
+| `rejected` | Report was reviewed and rejected |
+
+Report Priority
+--------------
+
+| Value | Description |
+|---|---|
+| `normal` | Standard queue position |
+| `high` | Prioritised report, used automatically for safety concerns |
+
+Create Product Report
+---------------------
+
+```http
+POST /v1/product-reports HTTP/1.1
+```
+
+### Request Body
+
+Use `multipart/form-data` if you want to upload attachments with the report.
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+productUuid | Yes | String (UUID) | UUID of the product being reported
+reason | Yes | Enum | One of the supported report reasons
+details | Yes | String (10–1024 chars) | Customer explanation/details
+orderNumber | No | String | Optional order number related to the report
+attachments | No | File[] | Optional image or document files
+
+### Example Request
+
+```bash
+curl --location --request POST 'http://localhost:8000/v1/product-reports' \
+--header 'Authorization: Bearer <CUSTOMER_TOKEN>' \
+--form 'productUuid="8ba85e9b-ebae-4a5b-9165-55cc438ef0d4"' \
+--form 'reason="safety_concerns"' \
+--form 'details="The item has a sharp edge that could injure customers."' \
+--form 'orderNumber="1042"' \
+--form 'attachments=@"/path/to/photo1.jpg"' \
+--form 'attachments=@"/path/to/receipt.pdf"'
+```
+
+### Response Body
+
+```json
+{
+    "uuid": "b4dbb0f1-8f5c-4f3c-9f35-6d2f66b0f9c1",
+    "reason": "safety_concerns",
+    "details": "The item has a sharp edge that could injure customers.",
+    "orderNumber": "1042",
+    "status": "pending",
+    "priority": "high",
+    "attachments": [
+        {
+            "uuid": "b65f7d1f-0f37-4b2f-8c2c-1cc8ef19d31d",
+            "mediaUrl": "s3://product-reports/...",
+            "thumbnailUrl": "s3://product-reports/...",
+            "mediaType": "image"
+        }
+    ]
+}
+```
+
+Upload Product Report Attachments
+---------------------------------
+
+```http
+POST /v1/product-reports/<report-uuid>/attachments HTTP/1.1
+```
+
+Use this endpoint if you want to upload attachments after the report has already been created.
+
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+attachments | Yes | File[] | One or more image/document files
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "b65f7d1f-0f37-4b2f-8c2c-1cc8ef19d31d",
+        "mediaUrl": "s3://product-reports/...",
+        "thumbnailUrl": "s3://product-reports/...",
+        "mediaType": "image"
+    },
+    {
+        "uuid": "f0c3ed7b-6b4a-4bda-8f1a-dfcd7f2d7655",
+        "mediaUrl": "s3://product-reports/...",
+        "thumbnailUrl": null,
+        "mediaType": "document"
+    }
+]
+```
+
+### Validation / Behavior Notes
+
+- Product must exist
+- Reason must be one of the supported values
+- `details` is required and must be at least 10 characters
+- Safety-related reports are automatically prioritised as `high`
+- Duplicate submissions are blocked using a fingerprint based on customer, product, reason, details, and optional order number
+
+Admin Report APIs
+-----------------
+
+#### List All Product Reports
+
+```http
+GET /v1/product-reports/admin/all?pageNumber=1&itemsPerPage=20&status=pending&reason=safety_concerns HTTP/1.1
+```
+
+### Response Body
+
+```json
+[
+    {
+        "uuid": "b4dbb0f1-8f5c-4f3c-9f35-6d2f66b0f9c1",
+        "reason": "safety_concerns",
+        "details": "The item has a sharp edge that could injure customers.",
+        "orderNumber": "1042",
+        "status": "pending",
+        "priority": "high",
+        "customer": {
+            "uuid": "6c90d8ef-7f9f-4dcb-8db3-9769fa771ae7",
+            "fullName": "Your Name",
+            "emailAddress": "your-name@your-domain.com",
+            "phoneNumber": "+974 12345678",
+            "role": "customer"
+        },
+        "product": {
+            "uuid": "8ba85e9b-ebae-4a5b-9165-55cc438ef0d4",
+            "slug": "triangle-leopard-print-silk-printed-silk-scarf-w-1035742933292",
+            "titleEn": "Triangle Leopard Print Silk Printed Silk Scarf Women's Long Scarf Spring and Summer Shawl"
+        },
+        "attachments": []
+    }
+]
+```
+
+#### Get Single Product Report
+
+```http
+GET /v1/product-reports/admin/<report-uuid> HTTP/1.1
+```
+
+### Response Body
+
+Returns one report object with customer, product, and attachment details.
+
+#### Update Report Status
+
+```http
+PATCH /v1/product-reports/<report-uuid>/status HTTP/1.1
+```
+
+### Request Body
+
+```json
+{
+    "status": "under_review",
+    "adminNote": "Queued for moderation review."
+}
+```
+
+### Response Body
+
+Returns the updated report object.
 
 WMS API
 =======

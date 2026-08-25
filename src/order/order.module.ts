@@ -10,10 +10,7 @@ import { OrderService } from './order.service';
 import { OrderServiceV2 } from './order-v2.service';
 import { OrderController } from './order.controller';
 import { OrderV2Controller } from './order-v2.controller';
-import {
-    OrderItemResolver,
-    OrderResolver
-} from './order.resolver';
+import { OrderItemResolver, OrderResolver } from './order.resolver';
 
 import { ClientsModule } from '../clients/clients.module';
 
@@ -67,62 +64,65 @@ import { QueueName } from '../queue/enums/QueueTypes.enum';
 import { OrderSkuMetaProcessor } from './workers/order-skumeta.processor';
 import { OrderScheduler } from './order.scheduler';
 
+import { SkipCashSessionService } from '../payments/skipcash-session.service';
+
+import { SavedCard } from 'src/payments/entities/saved-card.entity';
+import { SavedCardsService } from '../payments/saved-cards.service';
+import { BundlesModule } from '../bundles/bundles.module';
+
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            Order,
-            OrderItem,
-            OrderTrackingEvent,
-            User,
-            Customer,
-            CustomerAddress,
-            InventoryItem,
-            InventoryLevel,
-            CartItem,
-            CustomerAddress,
-            PaymentTransaction,
-            ExchangeRate,
-            Coupon,
-            GlobalCoupon,
-            Wallet,
-            Affiliate,
-            Transaction,
-            KeyValuePair,
-            JopWmsOrderLink,
-            Notification,
-            PushNotification,
-            Product,
-        ]),
-        BullModule.registerQueue(
-            { name: QueueName.ORDER_SKUMETA_VALIDATION },
-        ),
-        ClientsModule,
-        NotificationsModule,
-        EmailModule,
-    ],
-    exports: [
-        OrderService,
-    ],
-    providers: [
-        OrderService,
-        OrderServiceV2,
-        UsersService,
-        CustomersService,
-        OrderResolver,
-        OrderItemResolver,
-        PaymentsService,
-        PaymentStrategyFactory,
-        ExchangeRateService,
-        TransactionsService,
-        PricingService,
-        PushNotificationService,
-        FirebaseAdminProvider,
-        OrderSkuMetaProcessor,
-        OrderScheduler,
-    ],
-    controllers: [
-        OrderController,
-        OrderV2Controller
-    ]
+  imports: [
+    TypeOrmModule.forFeature([
+      Order,
+      OrderItem,
+      OrderTrackingEvent,
+      User,
+      Customer,
+      CustomerAddress,
+      InventoryItem,
+      InventoryLevel,
+      CartItem,
+      CustomerAddress,
+      PaymentTransaction,
+      ExchangeRate,
+      Coupon,
+      GlobalCoupon,
+      Wallet,
+      Affiliate,
+      Transaction,
+      KeyValuePair,
+      JopWmsOrderLink,
+      Notification,
+      PushNotification,
+      Product,
+      SavedCard,
+    ]),
+    BullModule.registerQueue({ name: QueueName.ORDER_SKUMETA_VALIDATION }),
+    ClientsModule,
+    NotificationsModule,
+    EmailModule,
+    BundlesModule,
+  ],
+  exports: [OrderService],
+  providers: [
+    OrderService,
+    OrderServiceV2,
+    UsersService,
+    CustomersService,
+    OrderResolver,
+    OrderItemResolver,
+    PaymentsService,
+    SkipCashSessionService,
+    SavedCardsService,
+    PaymentStrategyFactory,
+    ExchangeRateService,
+    TransactionsService,
+    PricingService,
+    PushNotificationService,
+    FirebaseAdminProvider,
+    OrderSkuMetaProcessor,
+    OrderScheduler,
+  ],
+  controllers: [OrderController, OrderV2Controller],
 })
-export class OrderModule { }
+export class OrderModule {}

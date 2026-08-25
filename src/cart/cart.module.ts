@@ -20,30 +20,27 @@ import { ClientsModule } from '../clients/clients.module';
 
 import { CartResolver } from './cart.resolver';
 import { PricingModule } from 'src/pricing/pricing.module';
+import { BundlesModule } from '../bundles/bundles.module';
 
 import { ExchangeRate } from '../pricing/entities/exchange-rate.entity';
 import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            CartItem,
-            Customer,
-            ExchangeRate,
-            KeyValuePair,
-            Product,
-            ProductVariant,
-            User,
-        ]),
-        ClientsModule,
-        PricingModule,
-    ],
-    providers: [
-        CartItemsService,
-        CartResolver,
-        CustomersService,
-        UsersService,
-    ],
-    controllers: [CartItemsController]
+  imports: [
+    TypeOrmModule.forFeature([
+      CartItem,
+      Customer,
+      ExchangeRate,
+      KeyValuePair,
+      Product,
+      ProductVariant,
+      User,
+    ]),
+    ClientsModule,
+    PricingModule,
+    BundlesModule,
+  ],
+  providers: [CartItemsService, CartResolver, CustomersService, UsersService],
+  controllers: [CartItemsController],
 })
-export class CartModule { }
+export class CartModule {}

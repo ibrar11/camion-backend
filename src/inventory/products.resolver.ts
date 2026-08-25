@@ -406,6 +406,11 @@ export class ProductsResolver {
 		return "";
 	}
 
+	@ResolveField("stockCount", () => Int, { nullable: true })
+	getStockCount(@Parent() product: Product): number | null {
+		return product?.stockCount ?? null;
+	}
+
 	@ResolveField("variants", () => [ProductVariant])
 	getVariants(@Parent() product: Product, @Args() args: GetProductsArgs): Array<ProductVariant> {
 		return product.variants.map(variant => ({ ...variant, product: product, }))

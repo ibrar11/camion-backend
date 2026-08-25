@@ -9,6 +9,23 @@ Order API
 > [!IMPORTANT]
 > You must include your access token as a `Bearer` token in the Authorization header. Your account must be active while making these requests.
 
+Bundle Pricing During Order Placement
+--------------------------------------
+
+When the submitted cart items satisfy an active fixed bundle, the order service reprices the matched set before persisting the order. The resulting order items keep bundle attribution for auditing and reporting.
+
+The following order item fields may now appear in order and order-preview responses:
+
+Field | Type | Description
+------|------|------------
+bundleUuid | String \| null | UUID of the first applied bundle affecting this order row
+bundleQuantity | Number | Total quantity from this row consumed by bundle matches
+bundleAllocations | Array<Object> \| null | Detailed bundle discount allocation entries for this order row
+bundleAllocations[].bundleUuid | String | Bundle UUID
+bundleAllocations[].bundleTitle | String | Bundle title
+bundleAllocations[].quantity | Number | Quantity matched from this row
+bundleAllocations[].discountMinor | Number | Discount in minor currency units allocated to this row
+
 Create a Order
 ----------------
 
@@ -23,6 +40,9 @@ cartItems | Yes | Array<String> |list of cart items to be ordered
 paymentMethod | Yes | String | The payment method selected by the customer (e.g., COD, CARD, default(skipcash will be used) etc.)
 currency | Yes | String | target currency code
 couponCode | No | String | coupon code to apply
+platform | Yes | String | platform web | mobile
+tokenizeCard | No | boolean | if want to tokenize the card
+tokenId | Yes/No | string | in case of create session no tokenId is required but in case of payment it is required
 
 ### Request Body
 ```json
@@ -32,7 +52,10 @@ couponCode | No | String | coupon code to apply
     ],
     "paymentMethod": "default",
     "currency": "qar",
-    "couponCode": "rvse23"
+    "couponCode": "rvse23",
+    "platform": "web",
+    "tokenizeCard": false,
+    "tokenId": "1867e1a4-cb51-4ff4-8753-6414b9a8fe3d",
 }
 ```
 
@@ -97,6 +120,16 @@ couponCode | No | String | coupon code to apply
                 "amount": 688,
                 "currencyCode": "qar"
             },
+            "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+            "bundleQuantity": 1,
+            "bundleAllocations": [
+                {
+                    "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+                    "bundleTitle": "Complete the Look",
+                    "quantity": 1,
+                    "discountMinor": 1000
+                }
+            ],
             "quantity": 1,
             "total": {
                 "amount": 688,
@@ -191,6 +224,16 @@ itemsPerPage | Results per page | `100`
                     "amount": 688,
                     "currencyCode": "qar"
                 },
+                "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+                "bundleQuantity": 1,
+                "bundleAllocations": [
+                    {
+                        "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+                        "bundleTitle": "Complete the Look",
+                        "quantity": 1,
+                        "discountMinor": 1000
+                    }
+                ],
                 "quantity": 1,
                 "total": {
                     "amount": 688,
@@ -274,10 +317,20 @@ couponCode | coupon code to apply customer promo. | ``
                 "amount": 2000,
                 "currencyCode": "qar"
             },
-            "subTotal": {
+            "total": {
                 "amount": 13000,
                 "currencyCode": "qar"
             },
+            "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+            "bundleQuantity": 1,
+            "bundleAllocations": [
+                {
+                    "bundleUuid": "2aa44389-f5f8-4c57-a344-5127f7fa523f",
+                    "bundleTitle": "Complete the Look",
+                    "quantity": 1,
+                    "discountMinor": 2000
+                }
+            ]
         }
     ],
     "shippingAddress": {
@@ -334,6 +387,9 @@ couponCode | coupon code to apply customer promo. | ``
     "eta": "6-10 working days",
 }
 ```
+
+> [!IMPORTANT]
+> `GET /v1/orders/order-preview` now returns repriced cart rows after bundle application. If the customer removes or changes an item and the bundle no longer matches, these bundle fields disappear and item pricing falls back to the non-bundle result.
 
 Retrieve Order
 ----------------

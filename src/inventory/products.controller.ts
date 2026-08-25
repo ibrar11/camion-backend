@@ -12,6 +12,7 @@ import {
 	Post,
 	Put,
 	Query,
+	Req,
 	UploadedFile,
 	UploadedFiles,
 	UseGuards,
@@ -28,6 +29,7 @@ import { UpdateProductDto } from './dtos/UpdateProductDto';
 import { UpdateProductSlugDto } from './dtos/UpdateProductSlugDto';
 import { UpdateProductStatusDto } from './dtos/UpdateProductStatusDto';
 import { UpdateProductFeaturedImageDto } from './dtos/UpdateProductFeaturedImageDto';
+import { UpdateProductUrgencyDto } from './dtos/UpdateProductUrgencyDto';
 import { ResyncProductCategoriesDto } from './dtos/ResyncProductCategoriesDto';
 
 import { UserRole } from '../users/enums/UserRole';
@@ -45,6 +47,8 @@ import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 import { Roles } from '../auth/roles.decorator';
+
+import { Client } from '../clients/entities/client.entity';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/products')
@@ -83,7 +87,7 @@ export class ProductsController {
 		return this.productsService.getProductCategoriesResyncJob(jobId);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.StockTracker)
 	@Get()
 	@HttpCode(HttpStatus.OK)
 	actionGetProducts(
@@ -91,7 +95,11 @@ export class ProductsController {
 		@Query("sort") sort: ProductSort,
 		@Query("pageNumber") pageNumber: number,
 		@Query("itemsPerPage") itemsPerPage: number,
+		@Req() request: Request & { client: Client }
 	): Promise<Array<Product>> {
+		if (request.client.role === ClientRole.StockTracker) {
+			return this.productsService.findAllUncached(filters, sort, pageNumber, itemsPerPage, request.client);
+		}
 		return this.productsService.findAllUncached(filters, sort, pageNumber, itemsPerPage);
 	}
 
@@ -114,7 +122,7 @@ export class ProductsController {
 		return this.productsService.findProductsWithVariantsMissingSkuMeta(status);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, UserRole.User, CustomerRole.Guest, CustomerRole.Customer, CustomerRole.Affiliate, CustomerRole.Influencer, ClientRole.ImageUploader, ClientRole.StockTracker)
 	@Get(':uuid')
 	@HttpCode(HttpStatus.OK)
 	actionGetProduct(@Param('uuid') uuid: string): Promise<Product> {
@@ -135,11 +143,25 @@ export class ProductsController {
 		return this.productsService.updateProductSlug(uuid, body);
 	}
 
-	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager, ClientRole.StockTracker)
 	@Put(':uuid/status')
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductStatus(@Param('uuid') uuid: string, @Body() body: UpdateProductStatusDto): Promise<Product> {
 		return this.productsService.updateProductStatus(uuid, body);
+	}
+
+	@Roles(ClientRole.StockTracker)
+	@Put(':uuid/procurement-status')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateProcurementStatus(@Param('uuid') uuid: string, @Body() body: { status: boolean }): Promise<Product> {
+		return this.productsService.updateProcurementStatus(uuid, body);
+	}
+
+	@Roles(ClientRole.StockTracker)
+	@Put(':uuid/resync-status')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateResyncStatus(@Param('uuid') uuid: string, @Body() body: { status: boolean }): Promise<Product> {
+		return this.productsService.updateResyncStatus(uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
@@ -147,6 +169,13 @@ export class ProductsController {
 	@HttpCode(HttpStatus.OK)
 	actionUpdateProductFeaturedImage(@Param('uuid') uuid: string, @Body() body: UpdateProductFeaturedImageDto): Promise<Product> {
 		return this.productsService.updateProductFeaturedImage(uuid, body);
+	}
+
+	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)
+	@Put(':uuid/urgency')
+	@HttpCode(HttpStatus.OK)
+	actionUpdateProductUrgency(@Param('uuid') uuid: string, @Body() body: UpdateProductUrgencyDto): Promise<Product> {
+		return this.productsService.updateProductUrgency(uuid, body);
 	}
 
 	@Roles(UserRole.SuperAdmin, UserRole.Admin, UserRole.Manager)

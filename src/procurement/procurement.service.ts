@@ -47,6 +47,7 @@ import {
     importedProduct,
     CreateOrderResponse,
     BulkCreateOrderResponse,
+    PreviewOrderResponse,
     SearchProduct,
 } from './types';
 import { ProductStatus } from 'src/inventory/enums/ProductStatus.enum';
@@ -58,8 +59,9 @@ import { Order } from '../order/entities/order.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
 import { ProductVariant } from '../inventory/entities/product-variant.entity';
 
-import { CreateProcurementOrderDto } from './dtos/CreateProcurementOrderDto';
+import { CreateProcurementOrderDto, OrderAddressDto, OrderSkuDto } from './dtos/CreateProcurementOrderDto';
 import { BulkCreateProcurementOrderDto } from './dtos/BulkCreateProcurementOrderDto';
+import { PreviewOrderDto, PreviewOrderAddressDto, PreviewOrderSkuDto } from './dtos/PreviewOrderDto';
 import { ResyncInventoryVariantsDto } from './dtos/ResyncInventoryVariantsDto';
 import { QueueService } from 'src/queue/queue.service';
 import { QueueName } from 'src/queue/enums/QueueTypes.enum';
@@ -779,6 +781,117 @@ export class ProcurementService {
             warehouseId: warehouse?.gulltransWarehouseId ?? '',
             userId: warehouse?.gulltransUserId ?? '',
         };
+    }
+
+    /**
+     * Builds the Gulltrans ship-to address for the active warehouse — goods are shipped from the
+     * 1688 supplier to Camion's own warehouse, not to the end customer. Single source of truth for
+     * this address, used by both the order-preview and order-create Gulltrans calls.
+     *
+     * @returns
+     */
+    async getWarehouseAddress(): Promise<OrderAddressDto> {
+        const warehouse = await this.warehouseRepository.findOne({ where: { isActive: true } });
+        if (!warehouse) {
+            throw new NotFoundException({ error: 'No active warehouse found' });
+        }
+
+        return {
+            receiver_name: warehouse.contactName ?? '',
+            phone: warehouse.phone ?? '',
+            address: [warehouse.addressLine1, warehouse.addressLine2].filter(Boolean).join(', '),
+            city: warehouse.city,
+            province: warehouse.state,
+            district: warehouse.district ?? '',
+            postcode: warehouse.postcode ?? '',
+            company: warehouse.name,
+            country_name: warehouse.country,
+            country: { country_code: warehouse.countryCode ?? '', name: warehouse.country },
+        };
+    }
+
+    /**
+     * Maps the full Gulltrans order address to the narrower shape the preview-order endpoint expects.
+     *
+     * @param address
+     * @returns
+     */
+    private toPreviewAddress(address: OrderAddressDto): PreviewOrderAddressDto {
+        return {
+            receiver_name: address.receiver_name,
+            postcode: address.postcode ?? '',
+            province: address.province,
+            city: address.city,
+            district: address.district ?? '',
+            street: address.street,
+            address: address.address,
+            phone: address.phone,
+        };
+    }
+
+    /**
+     * Maps create-order SKUs to the shape the preview-order endpoint expects.
+     *
+     * @param skus
+     * @returns
+     */
+    private toPreviewSkus(skus: OrderSkuDto[]): PreviewOrderSkuDto[] {
+        return skus.map((sku) => ({
+            goods_id: sku.goods_id,
+            sku_id: sku.platform_sku,
+            sum: sku.quantity,
+            spec_id: sku.sku_info?.spec_id || '0',
+        }));
+    }
+
+    /**
+     * Previews a Gulltrans order to fetch its real shipping (freight) cost before creating it.
+     *
+     * @param dto
+     * @returns
+     */
+    async previewOrder(dto: PreviewOrderDto): Promise<PreviewOrderResponse> {
+        try {
+            const response = await fetch(
+                `${process.env.GULLTRANS_BASE_URL}/api/client/third-purchase/preview-order`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: process.env.GULLTRANS_AUTHORIZATION || '',
+                        'X-Uuid': process.env.GULLTRANS_UUID || '',
+                        'Content-Type': 'application/json',
+                        Language: 'en',
+                    },
+                    body: JSON.stringify(dto),
+                },
+            );
+
+            const data = await response.json();
+
+            if (data.ret !== 1) {
+                this.logger.error(`Gulltrans: order preview failed — ${data.msg}`);
+                throw new BadRequestException({
+                    error: data.msg,
+                });
+            }
+
+            return {
+                goodsFee: data?.data?.goodsFee,
+                paymentFee: data?.data?.paymentFee,
+                freightFee: data?.data?.freightFee,
+                isFree: data?.data?.isFree,
+            };
+        } catch (error: any) {
+            if (error instanceof BadRequestException) {
+                throw error;
+            }
+
+            this.logger.error(`Gulltrans: order preview threw — ${error?.message}`);
+            throw new InternalServerErrorException({
+                error: 'Failed to preview order shipping cost',
+                details: error.response?.error || error.message,
+            });
+        }
     }
 
     private async markGulltransOrderCreated(orderUuid: string | undefined, gulltransOrderSn: string) {
@@ -1846,6 +1959,7 @@ export class ProcurementService {
 
         const grouped = dto.orders;
         const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
+        const previewAddress = this.toPreviewAddress(dto.address);
 
         const BATCH_SIZE = 3;
 
@@ -1855,7 +1969,15 @@ export class ProcurementService {
             await Promise.all(
                 batch.map(async (order) => {
                     try {
-                        this.logger.log(`Gulltrans: creating order for shop ${order.shop_id} (${order.skus?.length ?? 0} SKU(s), goods amount: ${order.goods_amount})`);
+                        this.logger.log(`Gulltrans: previewing shipping cost for shop ${order.shop_id} (${order.skus?.length ?? 0} SKU(s))`);
+                        const preview = await this.previewOrder({
+                            platform: order.platform,
+                            skus: this.toPreviewSkus(order.skus),
+                            address: previewAddress,
+                        });
+                        const freightFee = String(preview.freightFee ?? 0);
+
+                        this.logger.log(`Gulltrans: creating order for shop ${order.shop_id} (${order.skus?.length ?? 0} SKU(s), goods amount: ${order.goods_amount}, freight fee: ${freightFee})`);
                         const response = await fetch(
                             `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                             {
@@ -1868,6 +1990,7 @@ export class ProcurementService {
                                 },
                                 body: JSON.stringify({
                                     ...order,
+                                    freight_fee: freightFee,
                                     address: dto.address,
                                     warehouse_id: warehouseId,
                                     user_id: userId,
@@ -1897,10 +2020,11 @@ export class ProcurementService {
                             raw: data?.data,
                         });
                     } catch (error: any) {
-                        this.logger.error(`Gulltrans: order creation threw for shop ${order.shop_id} — ${error?.message}`);
+                        const reason = error.response?.error || error?.message || 'Unknown error';
+                        this.logger.error(`Gulltrans: order creation threw for shop ${order.shop_id} — ${reason}`);
                         results.failed.push({
                             shopId: order.shop_id,
-                            reason: error?.message || 'Unknown error',
+                            reason,
                         });
                     }
                 }),
@@ -1918,8 +2042,17 @@ export class ProcurementService {
      */
     async createOrder(dto: CreateProcurementOrderDto): Promise<CreateOrderResponse> {
         const { warehouseId, userId } = await this.getActiveWarehouseGulltransIds();
+
+        this.logger.log(`Gulltrans: previewing shipping cost for shop ${(dto as any).shop_id ?? 'unknown'}`);
+        const preview = await this.previewOrder({
+            platform: dto.platform,
+            skus: this.toPreviewSkus(dto.skus),
+            address: this.toPreviewAddress(dto.address),
+        });
+        const freightFee = String(preview.freightFee ?? 0);
+
         try {
-            this.logger.log(`Gulltrans: creating single order for shop ${(dto as any).shop_id ?? 'unknown'}`);
+            this.logger.log(`Gulltrans: creating single order for shop ${(dto as any).shop_id ?? 'unknown'} (freight fee: ${freightFee})`);
             const response = await fetch(
                 `${process.env.GULLTRANS_BASE_URL}/api/client/daigou-open/create-order`,
                 {
@@ -1932,6 +2065,7 @@ export class ProcurementService {
                     },
                     body: JSON.stringify({
                         ...dto,
+                        freight_fee: freightFee,
                         warehouse_id: warehouseId,
                         user_id: userId,
                     }),

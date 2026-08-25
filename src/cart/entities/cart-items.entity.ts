@@ -1,108 +1,130 @@
-import {
-    Field,
-    Int,
-    ObjectType
-} from "@nestjs/graphql";
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 import {
-    Column,
-    CreateDateColumn,
-    Entity,
-    Index,
-    ManyToOne,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
-} from "typeorm";
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-import { Exclude } from "class-transformer";
+import { Exclude } from 'class-transformer';
 
-import { Product } from "../../inventory/entities/product.entity";
+import { Product } from '../../inventory/entities/product.entity';
 
-import {
-    ProductVariant
-} from "../../inventory/entities/product-variant.entity";
+import { ProductVariant } from '../../inventory/entities/product-variant.entity';
 
-import { Customer } from "../../customers/entities/customer.entity";
+import { Customer } from '../../customers/entities/customer.entity';
 
-import { CurrencyCode } from "../../inventory/enums/CurrencyCode.enum";
+import { CurrencyCode } from '../../inventory/enums/CurrencyCode.enum';
+import { BundleAllocation } from '../../bundles/entities/bundle-allocation.type';
 
 @ObjectType()
 export class CartMoney {
-    @Field(() => Int)
-    @Column({ type: "integer", nullable: true })
-    amount: number;
+  @Field(() => Int)
+  @Column({ type: 'integer', nullable: true })
+  amount: number;
 
-    @Field(() => Int)
-    @Column({ type: "integer", nullable: false, default: 0, })
-    minorAmount: number;
+  @Field(() => Int)
+  @Column({ type: 'integer', nullable: false, default: 0 })
+  minorAmount: number;
 
-    @Field()
-    @Column({
-        type: "enum",
-        enum: CurrencyCode,
-        default: CurrencyCode.USD,
-    })
-    currencyCode: CurrencyCode;
+  @Field()
+  @Column({
+    type: 'enum',
+    enum: CurrencyCode,
+    default: CurrencyCode.USD,
+  })
+  currencyCode: CurrencyCode;
 }
 
 @ObjectType()
-@Entity({ name: "cart_items" })
+@Entity({ name: 'cart_items' })
 export class CartItem {
-    @Exclude()
-    @PrimaryGeneratedColumn()
-    id: number;
+  @Exclude()
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Field()
-    @Column({ type: "uuid", nullable: false, unique: true, })
-    uuid: string;
+  @Field()
+  @Column({ type: 'uuid', nullable: false, unique: true })
+  uuid: string;
 
-    @Exclude()
-    @ManyToOne(() => Customer, (customer) => customer.cartItems, { onDelete: "CASCADE" })
-    @Index()
-    customer: Customer;
+  @Exclude()
+  @ManyToOne(() => Customer, (customer) => customer.cartItems, {
+    onDelete: 'CASCADE',
+  })
+  @Index()
+  customer: Customer;
 
-    @Field(() => Product)
-    @ManyToOne(() => Product, (product) => product.cartItems, { onDelete: "CASCADE", })
-    @Index()
-    product: Product;
+  @Field(() => Product)
+  @ManyToOne(() => Product, (product) => product.cartItems, {
+    onDelete: 'CASCADE',
+  })
+  @Index()
+  product: Product;
 
-    @Field(() => ProductVariant)
-    @ManyToOne(() => ProductVariant, (variant) => variant.cartItems, { onDelete: "CASCADE" })
-    @Index()
-    variant: ProductVariant;
+  @Field(() => ProductVariant)
+  @ManyToOne(() => ProductVariant, (variant) => variant.cartItems, {
+    onDelete: 'CASCADE',
+  })
+  @Index()
+  variant: ProductVariant;
 
-    @Field(() => Int)
-    @Column({ type: "int", default: 1 })
-    quantity: number;
+  @Field(() => Int)
+  @Column({ type: 'int', default: 1 })
+  quantity: number;
 
-    @Field(() => CartMoney)
-    @Column(() => CartMoney)
-    subTotal: CartMoney;
+  @Field(() => CartMoney)
+  @Column(() => CartMoney)
+  subTotal: CartMoney;
 
-    @Field(() => CartMoney)
-    @Column(() => CartMoney)
-    discountPrice: CartMoney;
+  @Field(() => CartMoney)
+  @Column(() => CartMoney)
+  discountPrice: CartMoney;
 
-    @Field(() => CartMoney)
-    @Column(() => CartMoney)
-    total: CartMoney;
+  @Field(() => CartMoney)
+  @Column(() => CartMoney)
+  total: CartMoney;
 
-    // <!--
-    // These fields are not part of the schema. Please don't add them to the database.
+  @Field(() => String, { nullable: true })
+  @Column({ type: 'uuid', nullable: true, default: null })
+  bundleUuid: string | null;
 
-    @Field(() => Int)
-    availableStock: number;
+  @Column({ type: 'uuid', nullable: true, default: null })
+  bundleSourceUuid: string | null;
 
-    @Field()
-    isAvailable: boolean;
+  @Column({ type: 'uuid', nullable: true, default: null })
+  bundleSelectionUuid: string | null;
 
-    // -->
+  @Column({ type: 'int', default: 0 })
+  bundleMinimumSelectionCount: number;
 
-    @Exclude()
-    @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
-    updatedAt: Date;
+  @Field(() => Int)
+  @Column({ type: 'int', default: 0 })
+  bundleQuantity: number;
 
-    @Exclude()
-    @CreateDateColumn({ name: "created_at", type: "timestamptz" })
-    createdAt: Date;
+  @Field(() => [BundleAllocation], { nullable: true })
+  @Column({ type: 'jsonb', nullable: true, default: null })
+  bundleAllocations: Array<BundleAllocation> | null;
+
+  // <!--
+  // These fields are not part of the schema. Please don't add them to the database.
+
+  @Field(() => Int)
+  availableStock: number;
+
+  @Field()
+  isAvailable: boolean;
+
+  // -->
+
+  @Exclude()
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
+
+  @Exclude()
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
 }
