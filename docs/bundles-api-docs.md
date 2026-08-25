@@ -79,8 +79,9 @@ items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
 ### Bundle Modes
 
 - `fixed`: current manual bundle behavior. Admin stores the exact products or variants that make up the bundle.
-- `hybrid`: admin stores one or more manual items, plus `anchorProductUuid` and `autoFillCount`. The backend appends deterministic related products from `sourceCategoryUuids` or the anchor product's own categories.
-- `auto`: admin stores the pricing rule and targeting config only. Bundle items are generated at runtime from `sourceCategoryUuids` or the anchor product's own categories. The resolved bundle includes the anchor product itself plus the generated related products.
+- `hybrid`: admin stores one or more manual items, plus `anchorProductUuid` and `autoFillCount`. On bundle save, the backend persists the manual items and appends deterministic related products from `sourceCategoryUuids` or the anchor product's own categories.
+- `auto`: admin stores the pricing rule and targeting config only. On bundle save, the backend persists the anchor product plus generated related products from `sourceCategoryUuids` or the anchor product's own categories.
+- `autoFillCount` is validated during create/update. If admin requests more generated items than the selected categories can actually provide, the API returns a validation error instead of saving a bundle that later resolves to an empty result.
 - `minimumSelectionCount`: applies to customer-side bundle add for all bundle modes. If the customer selects fewer items than this threshold, the items are added as normal cart products without bundle pricing.
 
 ### Example `hybrid` Request Body
@@ -300,7 +301,7 @@ countryCode | No | String | Customer country code used for shipping eligibility 
 
 - Each `items[].product` is returned as a lightweight storefront preview for bundle discovery. Core product fields remain available, but the nested `items[].product.variants` list is intentionally omitted to avoid duplicate payload because the selected bundle variant is already returned in `items[].variant`.
 - If the bundle item was configured only at product level and no specific variant was pinned by admin, the API still returns a concrete default variant in `items[].variant` so clients can add the bundle directly to cart.
-- `hybrid` and `auto` bundles are resolved dynamically at request time, but the response shape remains the same as fixed bundles.
+- `hybrid` and `auto` bundle membership is materialized on bundle save. At request time, the backend only hydrates current storefront product data, pricing, stock, and shipping eligibility.
 - `auto` bundles include the anchor/source product as the first hydrated item, followed by the generated related products.
 - Bundle item responses do not expose a nested `items[].bundle` field.
 

@@ -99,7 +99,7 @@ export class BundlesService {
     bundle.uuid = crypto.randomUUID();
     await this.assignBundleFields(bundle, body);
     await this.bundleRepository.save(bundle);
-    await this.syncBundleItems(bundle, body.items);
+    await this.materializeBundleItemsForMode(bundle, body);
     return this.findOne(bundle.uuid);
   }
 
@@ -149,7 +149,7 @@ export class BundlesService {
     await this.validateBundlePayload(body, bundle.uuid);
     await this.assignBundleFields(bundle, body);
     await this.bundleRepository.save(bundle);
-    await this.syncBundleItems(bundle, body.items);
+    await this.materializeBundleItemsForMode(bundle, body);
     return this.findOne(bundle.uuid);
   }
 
@@ -748,7 +748,6 @@ export class BundlesService {
     currency: CurrencyCode,
     countryCode?: string,
   ): Promise<Bundle | null> {
-    const mode = bundle.mode ?? BundleMode.FIXED;
     const hydratedBundle = this.cloneBundle(bundle);
     hydratedBundle.items = await this.hydrateBundleItems(
       bundle.items ?? [],
@@ -763,29 +762,6 @@ export class BundlesService {
       return null;
     }
 
-    if (mode === BundleMode.FIXED) {
-      return hydratedBundle;
-    }
-
-    const generatedItems = await this.generateAutomaticItems(
-      bundle,
-      contextProduct,
-      currency,
-      countryCode,
-      new Set(
-        hydratedBundle.items
-          .map((item) => item.product?.uuid)
-          .filter((uuid): uuid is string => Boolean(uuid)),
-      ),
-    );
-    if (!generatedItems) {
-      return null;
-    }
-
-    hydratedBundle.items =
-      mode === BundleMode.AUTO
-        ? generatedItems
-        : [...hydratedBundle.items, ...generatedItems];
     return hydratedBundle.items.length > 0 ? hydratedBundle : null;
   }
 
@@ -827,13 +803,11 @@ export class BundlesService {
     );
   }
 
-  private async generateAutomaticItems(
+  private async generateAutomaticBundleItems(
     bundle: Bundle,
     contextProduct: Product | null,
-    currency: CurrencyCode,
-    countryCode: string | undefined,
     excludedProductUuids: Set<string>,
-  ): Promise<Array<BundleItem> | null> {
+  ): Promise<Array<BundleItemInputDto> | null> {
     const requiredCount = bundle.autoFillCount ?? 0;
     if (requiredCount <= 0) {
       return [];
@@ -845,19 +819,6 @@ export class BundlesService {
         ? await this.loadContextProduct(bundle.anchorProductUuid)
         : null);
     if (!anchorProduct) {
-      return null;
-    }
-
-    const anchorStorefrontProduct = await this.loadStorefrontProduct(
-      anchorProduct.uuid,
-      currency,
-    );
-    const anchorItem = this.buildResolvedBundleItem(
-      bundle,
-      anchorStorefrontProduct,
-      anchorStorefrontProduct.variants[0] ?? null,
-    );
-    if (!this.isBundleItemEligible(anchorItem, countryCode, currency)) {
       return null;
     }
 
@@ -900,26 +861,15 @@ export class BundlesService {
       );
     });
 
-    const generatedItems: Array<BundleItem> = [];
+    const generatedItems: Array<BundleItemInputDto> = [];
     for (const candidate of matchedCandidates) {
       if (generatedItems.length >= requiredCount) {
         break;
       }
-      const storefrontProduct = await this.loadStorefrontProduct(
-        candidate.uuid,
-        currency,
-      );
-      const generatedItem = this.buildResolvedBundleItem(
-        bundle,
-        storefrontProduct,
-        storefrontProduct.variants[0] ?? null,
-      );
-
-      if (!this.isBundleItemEligible(generatedItem, countryCode, currency)) {
-        continue;
-      }
-
-      generatedItems.push(generatedItem);
+      generatedItems.push({
+        productUuid: candidate.uuid,
+        quantity: 1,
+      });
       excludedProductUuids.add(candidate.uuid);
     }
 
@@ -927,9 +877,7 @@ export class BundlesService {
       return null;
     }
 
-    return bundle.mode === BundleMode.AUTO
-      ? [anchorItem, ...generatedItems]
-      : generatedItems;
+    return generatedItems;
   }
 
   private async loadContextProduct(productUuid: string): Promise<Product | null> {
@@ -1073,22 +1021,6 @@ export class BundlesService {
       orderItems: [],
     } as unknown as ProductVariant;
     return preview;
-  }
-
-  private buildResolvedBundleItem(
-    bundle: Bundle,
-    storefrontProduct: Product,
-    selectedVariant: ProductVariant | null,
-  ): BundleItem {
-    const bundleItem = new BundleItem();
-    bundleItem.bundle = bundle;
-    bundleItem.product = this.buildBundleProductPreview(storefrontProduct);
-    bundleItem.variant = selectedVariant
-      ? this.buildBundleVariantPreview(selectedVariant)
-      : null;
-    (bundleItem as BundleItemSelectionState).configuredVariantUuid = null;
-    bundleItem.quantity = 1;
-    return bundleItem;
   }
 
   private tryAllocateBundle(
@@ -1296,6 +1228,54 @@ export class BundlesService {
     }
   }
 
+  private async materializeBundleItemsForMode(
+    bundle: Bundle,
+    body: CreateBundleDto | UpdateBundleDto,
+  ): Promise<void> {
+    const mode = body.mode ?? BundleMode.FIXED;
+    const manualItems = Array.isArray(body.items) ? [...body.items] : [];
+    if (mode === BundleMode.FIXED) {
+      await this.syncBundleItems(bundle, manualItems);
+      return;
+    }
+
+    const materializedItems: Array<BundleItemInputDto> = [];
+    if (mode === BundleMode.HYBRID) {
+      materializedItems.push(...manualItems);
+    }
+    if (mode === BundleMode.AUTO && body.anchorProductUuid) {
+      materializedItems.push({
+        productUuid: body.anchorProductUuid,
+        quantity: 1,
+      });
+    }
+
+    const excludedProductUuids = await this.buildExcludedBundleProductUuidSet(
+      manualItems,
+      body.anchorProductUuid,
+    );
+    const generatedItems = await this.generateAutomaticBundleItems(
+      bundle,
+      body.anchorProductUuid
+        ? await this.loadContextProduct(body.anchorProductUuid)
+        : null,
+      excludedProductUuids,
+    );
+    if (!generatedItems) {
+      throw new BadRequestException({
+        errors: {
+          autoFillCount:
+            mode === BundleMode.AUTO
+              ? 'Failed to materialize the requested auto-generated bundle items.'
+              : 'Failed to materialize the requested hybrid auto-filled bundle items.',
+        },
+      });
+    }
+
+    materializedItems.push(...generatedItems);
+    await this.syncBundleItems(bundle, materializedItems);
+  }
+
   private async assignBundleFields(
     bundle: Bundle,
     body: CreateBundleDto | UpdateBundleDto,
@@ -1331,7 +1311,7 @@ export class BundlesService {
     const autoFillCount = body.autoFillCount ?? 0;
     const resolvedSelectableCount =
       mode === BundleMode.AUTO
-        ? autoFillCount
+        ? autoFillCount + 1
         : mode === BundleMode.HYBRID
           ? items.length + autoFillCount
           : items.length;
@@ -1444,6 +1424,10 @@ export class BundlesService {
       }
     }
 
+    if (mode === BundleMode.HYBRID || mode === BundleMode.AUTO) {
+      await this.validateAutoFillAvailability(body, items, mode);
+    }
+
     switch (body.discountType) {
       case BundleDiscountType.FLAT_TOTAL:
         if (
@@ -1501,6 +1485,98 @@ export class BundlesService {
         });
       }
     }
+  }
+
+  private async validateAutoFillAvailability(
+    body: CreateBundleDto | UpdateBundleDto,
+    items: Array<BundleItemInputDto>,
+    mode: BundleMode,
+  ): Promise<void> {
+    const autoFillCount = body.autoFillCount ?? 0;
+    if (!body.anchorProductUuid || autoFillCount <= 0) {
+      return;
+    }
+
+    const anchorProduct = await this.loadContextProduct(body.anchorProductUuid);
+    if (!anchorProduct) {
+      return;
+    }
+
+    const categoryUuids =
+      body.sourceCategoryUuids?.filter(Boolean) ??
+      anchorProduct.productCategories
+        ?.map((entry) => entry.category?.uuid)
+        .filter((uuid): uuid is string => Boolean(uuid)) ??
+      [];
+
+    if (categoryUuids.length === 0) {
+      throw new BadRequestException({
+        errors: {
+          sourceCategoryUuids:
+            'No source categories are available to resolve auto-filled bundle items.',
+        },
+      });
+    }
+
+    const excludedProductUuids = await this.buildExcludedBundleProductUuidSet(
+      items,
+      anchorProduct.uuid,
+    );
+
+    const candidateRows = await this.productRepository
+      .createQueryBuilder('product')
+      .innerJoin('product.productCategories', 'productCategory')
+      .innerJoin('productCategory.category', 'category')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('category.uuid IN (:...categoryUuids)', { categoryUuids })
+      .andWhere('product.uuid NOT IN (:...excludedProductUuids)', {
+        excludedProductUuids: [...excludedProductUuids],
+      })
+      .select('DISTINCT product.uuid', 'uuid')
+      .getRawMany<{ uuid: string }>();
+
+    const availableGeneratedCount = candidateRows.length;
+    if (availableGeneratedCount < autoFillCount) {
+      throw new BadRequestException({
+        errors: {
+          autoFillCount:
+            mode === BundleMode.AUTO
+              ? `Only ${availableGeneratedCount} auto-generated product(s) are available for this bundle, but ${autoFillCount} were requested.`
+              : `Only ${availableGeneratedCount} auto-filled product(s) are available for this hybrid bundle, but ${autoFillCount} were requested.`,
+        },
+      });
+    }
+  }
+
+  private async buildExcludedBundleProductUuidSet(
+    items: Array<BundleItemInputDto>,
+    anchorProductUuid?: string | null,
+  ): Promise<Set<string>> {
+    const excludedProductUuids = new Set<string>();
+    if (anchorProductUuid) {
+      excludedProductUuids.add(anchorProductUuid);
+    }
+
+    for (const item of items) {
+      if (item.productUuid) {
+        excludedProductUuids.add(item.productUuid);
+        continue;
+      }
+
+      if (!item.variantUuid) {
+        continue;
+      }
+
+      const variant = await this.variantRepository.findOne({
+        where: { uuid: item.variantUuid },
+        relations: { product: true },
+      });
+      if (variant?.product?.uuid) {
+        excludedProductUuids.add(variant.product.uuid);
+      }
+    }
+
+    return excludedProductUuids;
   }
 
   private isBundleItemEligible(
