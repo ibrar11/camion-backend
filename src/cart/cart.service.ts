@@ -71,6 +71,7 @@ export class CartItemsService {
     customer: Customer,
     body: CreateCartItemDto,
     bundleSelectionContext?: BundleSelectionContext | null,
+    shouldRepriceCart: boolean = true,
   ): Promise<CartItem> {
     this.logger.log(
       `Attempting to add to cart for product: ${body.productUuid}`,
@@ -186,6 +187,9 @@ export class CartItemsService {
       };
       existingCartItem.total = updatedPrice;
       const saved = await this.cartRepository.save(existingCartItem);
+      if (!shouldRepriceCart) {
+        return saved;
+      }
       return this.repriceAndPersistCustomerCart(
         customer,
         body.currency,
@@ -226,6 +230,10 @@ export class CartItemsService {
 
     customer.cartItemsCount++;
     await this.customerRepository.save(customer);
+
+    if (!shouldRepriceCart) {
+      return savedCartItem;
+    }
 
     return this.repriceAndPersistCustomerCart(
       customer,
@@ -276,10 +284,16 @@ export class CartItemsService {
                 bundleSelection.minimumSelectionCount,
             }
           : null,
+        false,
       );
     }
 
-    return this.findCart(customer, '', body.currency, '');
+    await this.repriceAndPersistCustomerCart(
+      customer,
+      body.currency,
+      body.countryCode,
+    );
+    return this.findCart(customer, '', body.currency, '', false);
   }
 
   /**
@@ -295,6 +309,7 @@ export class CartItemsService {
     filters: string,
     currency: CurrencyCode = CurrencyCode.QAR,
     sort: string,
+    shouldRepriceCart: boolean = true,
   ): Promise<Array<CartItem>> {
     this.logger.log(`Retrieving cart items for customer: ${customer.uuid}`);
 
@@ -334,6 +349,10 @@ export class CartItemsService {
       },
       order: { id: 'DESC' },
     });
+
+    if (!shouldRepriceCart) {
+      return cartItems;
+    }
 
     // Set price and discounted price on each cart item
     const res: Array<CartItem | null> = await Promise.all(
