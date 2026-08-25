@@ -1444,6 +1444,10 @@ export class BundlesService {
       }
     }
 
+    if (mode === BundleMode.HYBRID || mode === BundleMode.AUTO) {
+      await this.validateAutoFillAvailability(body, items, mode);
+    }
+
     switch (body.discountType) {
       case BundleDiscountType.FLAT_TOTAL:
         if (
@@ -1500,6 +1504,82 @@ export class BundlesService {
           },
         });
       }
+    }
+  }
+
+  private async validateAutoFillAvailability(
+    body: CreateBundleDto | UpdateBundleDto,
+    items: Array<BundleItemInputDto>,
+    mode: BundleMode,
+  ): Promise<void> {
+    const autoFillCount = body.autoFillCount ?? 0;
+    if (!body.anchorProductUuid || autoFillCount <= 0) {
+      return;
+    }
+
+    const anchorProduct = await this.loadContextProduct(body.anchorProductUuid);
+    if (!anchorProduct) {
+      return;
+    }
+
+    const categoryUuids =
+      body.sourceCategoryUuids?.filter(Boolean) ??
+      anchorProduct.productCategories
+        ?.map((entry) => entry.category?.uuid)
+        .filter((uuid): uuid is string => Boolean(uuid)) ??
+      [];
+
+    if (categoryUuids.length === 0) {
+      throw new BadRequestException({
+        errors: {
+          sourceCategoryUuids:
+            'No source categories are available to resolve auto-filled bundle items.',
+        },
+      });
+    }
+
+    const excludedProductUuids = new Set<string>([anchorProduct.uuid]);
+    for (const item of items) {
+      if (item.productUuid) {
+        excludedProductUuids.add(item.productUuid);
+        continue;
+      }
+
+      if (!item.variantUuid) {
+        continue;
+      }
+
+      const variant = await this.variantRepository.findOne({
+        where: { uuid: item.variantUuid },
+        relations: { product: true },
+      });
+      if (variant?.product?.uuid) {
+        excludedProductUuids.add(variant.product.uuid);
+      }
+    }
+
+    const candidateRows = await this.productRepository
+      .createQueryBuilder('product')
+      .innerJoin('product.productCategories', 'productCategory')
+      .innerJoin('productCategory.category', 'category')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('category.uuid IN (:...categoryUuids)', { categoryUuids })
+      .andWhere('product.uuid NOT IN (:...excludedProductUuids)', {
+        excludedProductUuids: [...excludedProductUuids],
+      })
+      .select('DISTINCT product.uuid', 'uuid')
+      .getRawMany<{ uuid: string }>();
+
+    const availableGeneratedCount = candidateRows.length;
+    if (availableGeneratedCount < autoFillCount) {
+      throw new BadRequestException({
+        errors: {
+          autoFillCount:
+            mode === BundleMode.AUTO
+              ? `Only ${availableGeneratedCount} auto-generated product(s) are available for this bundle, but ${autoFillCount} were requested.`
+              : `Only ${availableGeneratedCount} auto-filled product(s) are available for this hybrid bundle, but ${autoFillCount} were requested.`,
+        },
+      });
     }
   }
 

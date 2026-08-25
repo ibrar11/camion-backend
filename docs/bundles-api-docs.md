@@ -81,6 +81,7 @@ items[].quantity | Yes | Number | Quantity for this bundle item, minimum 1
 - `fixed`: current manual bundle behavior. Admin stores the exact products or variants that make up the bundle.
 - `hybrid`: admin stores one or more manual items, plus `anchorProductUuid` and `autoFillCount`. The backend appends deterministic related products from `sourceCategoryUuids` or the anchor product's own categories.
 - `auto`: admin stores the pricing rule and targeting config only. Bundle items are generated at runtime from `sourceCategoryUuids` or the anchor product's own categories. The resolved bundle includes the anchor product itself plus the generated related products.
+- `autoFillCount` is validated during create/update. If admin requests more generated items than the selected categories can actually provide, the API returns a validation error instead of saving a bundle that later resolves to an empty result.
 - `minimumSelectionCount`: applies to customer-side bundle add for all bundle modes. If the customer selects fewer items than this threshold, the items are added as normal cart products without bundle pricing.
 
 ### Example `hybrid` Request Body
