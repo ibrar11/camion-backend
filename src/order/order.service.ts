@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Raw, Repository } from 'typeorm';
+import { DataSource, ILike, In, Raw, Repository } from 'typeorm';
 
 import { OrderStatus } from './enums/OrderStatus';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -1010,8 +1010,9 @@ export class OrderService {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-            let filtersObject: {
-        customerUUID?: string;
+      let filtersObject: {
+        customerName?: string;
+        orderRef?: string;
         invalidOrder?: boolean;
             } = {};
             try {
@@ -1023,11 +1024,18 @@ export class OrderService {
             }
       const filter: OrderFilters = {};
 
-            if (status || filtersObject) {
-                filter.status = status;
-                filter.customer = { uuid: filtersObject?.customerUUID };
-                filter.invalidOrder = filtersObject?.invalidOrder;
-            }
+      if (status || filtersObject) {
+        filter.status = status;
+        if (filtersObject?.customerName) {
+          filter.customer = { fullName: ILike(`%${filtersObject.customerName}%`) };
+        }
+        if (filtersObject?.orderRef) {
+          filter.uuid = Raw((alias) => `RIGHT(${alias}::text, 6) = :ref`, {
+            ref: filtersObject.orderRef,
+          });
+        }
+        filter.invalidOrder = filtersObject?.invalidOrder;
+      }
 
             const orders = await this.orderRepository.find({
         relationLoadStrategy: 'query',
