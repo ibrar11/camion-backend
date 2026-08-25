@@ -31,6 +31,7 @@ import { OrderTrackingEvent } from "../order/entities/order-tracking-event.entit
 import { OrderTrackingStage } from "../order/enums/OrderTrackingStage";
 import { CreateGenuineReviewDto } from "./dtos/CreateGenuineReviewDto";
 import { ProductReviewImage } from "./entities/product-review-image.entity";
+import { ProductVariant } from "./entities/product-variant.entity";
 
 @Injectable()
 export class ProductReviewService {
@@ -43,6 +44,7 @@ export class ProductReviewService {
 		@InjectRepository(Order) private readonly orderRepository: Repository<Order>,
 		@InjectRepository(OrderTrackingEvent) private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
 		@InjectRepository(Customer) private readonly customerRepository: Repository<Customer>,
+		@InjectRepository(ProductVariant) private readonly variantRepository: Repository<ProductVariant>,
 
 		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
 		@Inject(S3Service) private readonly s3Service: S3Service,
@@ -68,6 +70,17 @@ export class ProductReviewService {
 			});
 		}
 
+		// Find variant if provided
+		let productVariant: ProductVariant | null = null;
+		if (body.variantUuid) {
+			productVariant = await this.variantRepository.findOneBy({ uuid: body.variantUuid, productId: product.id });
+			if (productVariant === null) {
+				throw new NotFoundException({
+					error: "Failed to find the product variant. Please check and try again.",
+				});
+			}
+		}
+
 		// Clamp the rating between 1 and 5
 		const rating = Math.trunc(Math.min(Math.max(1, body.rating), 5));
 
@@ -79,11 +92,47 @@ export class ProductReviewService {
 		productReview.rating = rating;
 		productReview.comment = body.comment.trim();
 		productReview.orderUuid = body.orderUuid ?? null;
+		productReview.productVariant = productVariant ?? null;
 		await this.reviewRepository.save(productReview);
 
 		// Update the reviews and rating count
 		product.reviewsCount = Math.max(1, product.reviewsCount + 1);
 		product.ratingCount = Math.max(1, product.ratingCount + 1);
+
+		if (productVariant) {
+			productVariant.reviewsCount = Math.max(1, productVariant.reviewsCount + 1);
+			productVariant.ratingCount = Math.max(1, productVariant.ratingCount + 1);
+
+			switch (rating) {
+				case 1:
+					productVariant.ratingOneStarCount += 1;
+					productVariant.ratingSum += 1;
+					break;
+				case 2:
+					productVariant.ratingTwoStarCount += 1;
+					productVariant.ratingSum += 2;
+					break;
+				case 3:
+					productVariant.ratingThreeStarCount += 1;
+					productVariant.ratingSum += 3;
+					break;
+				case 4:
+					productVariant.ratingFourStarCount += 1;
+					productVariant.ratingSum += 4;
+					break;
+				case 5:
+					productVariant.ratingFiveStarCount += 1;
+					productVariant.ratingSum += 5;
+					break;
+				default:
+					break;
+			}
+
+			if (productVariant.ratingSum !== 0 && productVariant.ratingCount !== 0) {
+				productVariant.ratingAvg = productVariant.ratingSum / productVariant.ratingCount;
+			}
+			await this.variantRepository.save(productVariant);
+		}
 
 		// Update the rating per star base
 		switch (rating) {

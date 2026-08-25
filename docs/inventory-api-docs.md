@@ -1839,12 +1839,14 @@ POST /v1/products/<product-uuid>/reviews HTTP/1.1
 | `rating` | `number` (1–5) | Yes | Star rating |
 | `comment` | `string` (1–512 chars) | Yes | Review text |
 | `orderUuid` | `string (UUID v4)` | No | When provided, automatically stamps the `ORDER_REVIEW` tracking stage on the linked order |
+| `variantUuid` | `string (UUID v4)` | No | When provided, the review is linked to a specific product variant and variant-level rating aggregates are updated |
 
 ```json
 {
     "rating": 5,
     "comment": "Great quality, fast delivery!",
-    "orderUuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9"
+    "orderUuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
+    "variantUuid": "88348084-4014-4bee-9fe7-d3e90245345c"
 }
 ```
 
@@ -1875,6 +1877,7 @@ POST /v1/products/<product-uuid>/reviews HTTP/1.1
         "descriptionHtmlAr": "<b>Your new iPhone awaits. Make it yours</b>",
         "status": "DRAFT"
     },
+    "productVariant": null,      // when the review is product level, not varient level 
     "rating": "5",
     "comment": "Great quality, fast delivery!",
     "orderUuid": "0a791d05-f5cb-4005-aa63-7ba68a8c06b9",
@@ -1895,6 +1898,7 @@ GET /v2/products/<product-uuid>/reviews HTTP/1.1
 | `comment` | `string` (1–512 chars) | Yes | Review text |
 | `orderUuid` | `string (UUID v4)` | No | When provided, automatically stamps the `ORDER_REVIEW` tracking stage on the linked order |
 | `images` | Image[] | No | A list of images in the review. The max number of images per review is 5. |
+| `variantUuid` | `string (UUID v4)` | No | When provided, the review is linked to a specific product variant and variant-level rating aggregates are updated |
 
 ### Request Body
 
@@ -1952,6 +1956,58 @@ curl --location --request POST 'http://localhost:8000/v2/products/b2389dfe-16c6-
         "ratingThreeStarCount": 0,
         "ratingFourStarCount": 0,
         "ratingFiveStarCount": 7
+    },
+    "productVariant": {
+        "uuid": "88348084-4014-4bee-9fe7-d3e90245345c",
+        "productId": 2,
+        "titleEn": "Red / Single size: 90-140cm",
+        "titleAr": "بني / مقاس واحد: 90-140 سم",
+        "sku": "6063095111989",
+        "barcode": "6063095111989",
+        "cost": {
+            "amount": 13,
+            "minorAmount": 92,
+            "currencyCode": "qar"
+        },
+        "weight": {
+            "amount": 1,
+            "unit": "kg"
+        },
+        "dimensions": {
+            "width": 30,
+            "height": 10,
+            "length": 40,
+            "unit": "cm"
+        },
+        "salesCount": 0,
+        "reviewsCount": 13,
+        "ratingCount": 13,
+        "ratingSum": 41,
+        "ratingAvg": 3.1538461538461537,
+        "ratingOneStarCount": 3,
+        "ratingTwoStarCount": 0,
+        "ratingThreeStarCount": 6,
+        "ratingFourStarCount": 0,
+        "ratingFiveStarCount": 4,
+        "skuMeta": {
+            "imgs": [],
+            "specs": [
+                {
+                    "label": "Color",
+                    "value": "Brown"
+                },
+                {
+                    "label": "Size",
+                    "value": "Single size: 90-140cm"
+                }
+            ],
+            "shop_id": "BBByHrSBdD6rcCxxTgxjQEQ6g",
+            "sku_img": "https://...",
+            "spec_id": "1234567890",
+            "shop_name": "南通市飞凡梦纺织品有限公司",
+            "batch_number": "1",
+            "min_order_quantity": "1"
+        }
     },
     "rating": 5,
     "comment": "This is a little bad.",

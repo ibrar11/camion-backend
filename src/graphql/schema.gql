@@ -455,6 +455,7 @@ type ProductReview {
   images: [ProductReviewImage!]!
   isEdited: Boolean!
   orderUuid: String
+  productVariant: ProductVariant
   rating: Int!
   uuid: String!
 }
@@ -473,6 +474,16 @@ type ProductVariant {
   images: [ProductVariantImage!]!
   optionValues: [ProductVariantOptionValue!]!
   price(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): Money!
+  ratingAvg: Float!
+  ratingCount: Float!
+  ratingFiveStarCount: Float!
+  ratingFourStarCount: Float!
+  ratingOneStarCount: Float!
+  ratingSum: Float!
+  ratingThreeStarCount: Float!
+  ratingTwoStarCount: Float!
+  reviews: [ProductReview!]!
+  reviewsCount: Float!
   sku: String!
   title(currency: String! = "usd", itemsPerPage: Int! = 24, language: String! = "en", pageNumber: Int! = 1, sort: String! = "best-match"): String!
   titleAr: String!

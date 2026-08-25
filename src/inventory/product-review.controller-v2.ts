@@ -56,6 +56,6 @@ export class ProductReviewControllerV2 {
 			images: Express.Multer.File[],
 		}
 	): Promise<ProductReview> {
-		return this.reviewService.createProductReviewV2(req.customer, productUUID, body, files.images);
+		return this.reviewService.createProductReviewV2(req.customer, productUUID, body, files?.images);
 	}
 }

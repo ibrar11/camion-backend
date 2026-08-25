@@ -33,6 +33,7 @@ import { CartItem } from "../../cart/entities/cart-items.entity";
 
 import { OrderItem } from "../../order/entities/order-item.entity";
 import { WishlistItem } from "src/wishlist/entities/wishlist.entity";
+import { ProductReview } from "./product-review.entity";
 
 @ObjectType()
 export class Money {
@@ -155,6 +156,42 @@ export class ProductVariant {
 	@Column({ type: "integer", nullable: false, default: 0, })
 	salesCount: number;
 
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	reviewsCount: number;
+
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingCount: number;
+
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingSum: number;
+
+	@Field()
+	@Column({ type: "numeric", nullable: false, default: 0, })
+	ratingAvg: number;
+
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingOneStarCount: number;
+
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingTwoStarCount: number;
+
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingThreeStarCount: number;
+
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingFourStarCount: number;
+
+	@Field()
+	@Column({ type: "integer", nullable: false, default: 0, })
+	ratingFiveStarCount: number;
+
 	@Field(() => [ProductVariantOptionValue])
 	@OneToMany(() => ProductVariantOptionValue, (productVariantOptionValue) => productVariantOptionValue.variant, { cascade: true, })
 	optionValues: Array<ProductVariantOptionValue>;
@@ -174,6 +211,10 @@ export class ProductVariant {
 
 	@OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.variant)
 	wishlistItems: Array<WishlistItem>;
+
+	@Field(() => [ProductReview])
+	@OneToMany(() => ProductReview, (review) => review.productVariant, { cascade: true, })
+	reviews: Array<ProductReview>;
 
 	@Exclude()
 	@UpdateDateColumn({
