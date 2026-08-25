@@ -151,9 +151,21 @@ GET /v1/orders HTTP/1.1
 Name | Description | Default
 -----|-------------|--------
 status | Filter by order status | _(all)_
-filters | A JSON string containing your search term, or any advanced search parameters. | `{}`
+filters | A JSON string containing any of the advanced search parameters below. | `{}`
 pageNumber | Page number | `1`
 itemsPerPage | Results per page | `100`
+
+### `filters` Fields
+Field | Type | Description
+------|------|------------
+customerName | String | Case-insensitive partial match against the customer's full name
+orderRef | String | Matches orders whose UUID ends with these characters (e.g. the last 6 characters shown to customers/support as a short order reference)
+invalidOrder | boolean | Filter by whether the order is marked invalid
+
+#### Example
+```http
+GET /v1/orders?filters={"customerName":"Ahmed","orderRef":"f4ea"}
+```
 
 ### Response Body
 ```json
