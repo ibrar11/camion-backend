@@ -22,6 +22,7 @@ import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
 import { Customer } from '../customers/entities/customer.entity';
 import { WishlistItem } from './entities/wishlist.entity';
 import { Product } from '../inventory/entities/product.entity';
+import { ProductsService } from '../inventory/products.service';
 
 import { getBestCampaign } from "../common/bestCampaign";
 
@@ -33,6 +34,7 @@ export class WishlistService {
 
     constructor(
         @Inject(PricingService) private readonly pricingService: PricingService,
+        @Inject(ProductsService) private readonly productsService: ProductsService,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(WishlistItem) private readonly wishlistRepository: Repository<WishlistItem>,
     ) { }
@@ -169,6 +171,11 @@ export class WishlistService {
                     wishlistItem.product.campaign = campaign;
                 }
 
+                wishlistItem.product = await this.productsService.attachUrgencyStockCount(
+                    wishlistItem.product,
+                    campaign,
+                );
+
                 // Calculate base price on the variant
                 wishlistItem.variant.price = await this.pricingService.applyPriceOnProductVariant(
                     wishlistItem.product,
@@ -220,6 +227,18 @@ export class WishlistService {
             throw new NotFoundException({
                 error: "Wishlist item not found. Please check and try again.",
             });
+        }
+
+        if (wishlistItem.product) {
+            const campaign = getBestCampaign(wishlistItem.product);
+            if (campaign !== null) {
+                wishlistItem.product.campaign = campaign;
+            }
+
+            wishlistItem.product = await this.productsService.attachUrgencyStockCount(
+                wishlistItem.product,
+                campaign,
+            );
         }
 
         return wishlistItem;
