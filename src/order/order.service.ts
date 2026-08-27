@@ -785,20 +785,21 @@ export class OrderService {
             let payment: PaymentTransaction | null = null;
             if (dto.tokenId) {
                 const paymentPayload: CreatePaymentDto = {
-                provider: provider,
-                amount: total,
-                currency: currency,
-                orderUUID: order.uuid,
-                firstName: customerName[0],
-                lastName: customerName[1] ?? customerName[0],
-                emailAddress: customer.emailAddress,
-                phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
-                street: address.streetAddress,
-                city: address.city,
-                state: address.state,
-                country: address.country,
-                postalCode: address.zipCode,
+                    provider: provider,
+                    amount: total,
+                    currency: currency,
+                    orderUUID: order.uuid,
+                    firstName: customerName[0],
+                    lastName: customerName[1] ?? customerName[0],
+                    emailAddress: customer.emailAddress,
+                    phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
+                    street: address.streetAddress,
+                    city: address.city,
+                    state: address.state,
+                    country: address.country,
+                    postalCode: address.zipCode,
                     tokenId: dto.tokenId,
+                    returnUrl: dto.redirectUrl,
                 }
                 payment = await this.paymentService.createPayment(paymentPayload);
             } else {

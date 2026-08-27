@@ -91,6 +91,7 @@ export interface SignaturePayload {
     PostalCode: string;
     TransactionId: string;
     tokenId: string | undefined;
+    ReturnUrl: string | undefined;
     Custom1: string;
 }
 

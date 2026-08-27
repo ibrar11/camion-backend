@@ -39,4 +39,8 @@ export class CreateOrderDto {
     @IsOptional()
     @IsString()
     tokenId?: string;
+
+    @IsOptional()
+    @IsString()
+    redirectUrl?: string;
 }
