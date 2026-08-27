@@ -61,6 +61,22 @@ export class ProductReportService {
 			});
 		}
 
+		const existingCustomerProductReport = await this.productReportRepository.findOne({
+			where: {
+				customer: {
+					id: customer.id,
+				},
+				product: {
+					id: product.id,
+				},
+			},
+		});
+		if (existingCustomerProductReport !== null) {
+			throw new ConflictException({
+				error: "You have already reported this product.",
+			});
+		}
+
 		const duplicateFingerprint = this.generateDuplicateFingerprint(customer.uuid, dto.productUuid, dto.reason, dto.details, dto.orderNumber);
 		const existingReport = await this.productReportRepository.findOne({
 			where: { duplicateFingerprint, },
