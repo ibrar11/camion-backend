@@ -33,6 +33,7 @@ import { Customer } from '../customers/entities/customer.entity';
 import { UserRole } from '../users/enums/UserRole';
 
 import { OrderPreviewResponse, OrderTrackingResponse } from './types';
+import { RetryPaymentDto } from './dtos/RetryPaymentDto';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('v1/orders')
@@ -106,8 +107,9 @@ export class OrderController {
     retryPayment(
         @Param('uuid') uuid: string,
         @GetCustomer() customer: Customer,
+        @Body() dto: RetryPaymentDto,
     ): Promise<Order> {
-        return this.orderService.retryPayment(uuid, customer.uuid);
+        return this.orderService.retryPayment(uuid, dto, customer.uuid);
     }
 
     @Roles(UserRole.SuperAdmin)

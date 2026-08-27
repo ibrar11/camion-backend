@@ -43,6 +43,7 @@ couponCode | No | String | coupon code to apply
 platform | Yes | String | platform web | mobile
 tokenizeCard | No | boolean | if want to tokenize the card
 tokenId | Yes/No | string | in case of create session no tokenId is required but in case of payment it is required
+redirectUrl | Yes/No | string | in case of payment it is required for web
 
 ### Request Body
 ```json
@@ -777,7 +778,13 @@ Customer only (`Customer`, `Affiliate`, or `Influencer` role) — must be the or
 
 Allowed only when the order's current `status` is `payment_pending`, `payment_failed`, or `payment_cancelled`. Called on any other status (e.g. already `payment_successful`, or `payment_expired`) returns `400 Bad Request`. `payment_expired` orders can't be retried — the stock reservation and any coupon usage have already been released, so the customer needs to place a new order.
 
-No request body.
+Parameter Name | Required | Type | Description
+---------------|----------|------|------------
+paymentMethod | Yes | String | The payment method selected by the customer (credit_card, google_pay, apple_pay)
+platform | Yes | String | platform web | mobile
+tokenizeCard | No | boolean | if want to tokenize the card
+tokenId | Yes/No | string | in case of create session no tokenId is required but in case of payment it is required
+redirectUrl | Yes/No | string | in case of payment it is required for web
 
 ### Response Body
 
