@@ -52,8 +52,8 @@ import { Wallet } from '../referral/entities/wallet.entity';
 import { Affiliate } from '../referral/entities/affiliate.entity';
 
 import {
-  Transaction,
-  TransactionMoney,
+    Transaction,
+    TransactionMoney,
 } from '../referral/entities/transaction.entity';
 
 import { PricingService } from '../pricing/pricing.service';
@@ -62,7 +62,7 @@ import { KeyValuePair } from '../key-value-pairs/entities/key-value-pair.entity'
 
 import {
     calculateCartShipping,
-  ShippingCalculationResult,
+    ShippingCalculationResult,
 } from '../common/calculateShipping';
 
 import { getSkipAndTake } from '../common/pagination';
@@ -72,14 +72,14 @@ import { calculateCouponDiscount } from '../common/calculateCouponDiscount';
 import { smartRoundInt } from '../common/smartRound';
 
 import {
-  Money,
-  multiplyMoney,
-  addMoney,
-  subtractMoney,
-  moneyFromMinor,
-  moneyToFloat,
-  moneyToMinor,
-  isLesserThan,
+    Money,
+    multiplyMoney,
+    addMoney,
+    subtractMoney,
+    moneyFromMinor,
+    moneyToFloat,
+    moneyToMinor,
+    isLesserThan,
 } from '../common/currency';
 
 import {
@@ -96,10 +96,10 @@ import { OrderTrackingEvent } from './entities/order-tracking-event.entity';
 import { OrderTrackingStage } from './enums/OrderTrackingStage';
 
 import {
-  JopWmsOrder,
-  JopWmsInboundStatus,
-  JopWmsOrderType,
-  JopWmsOutboundStatus,
+    JopWmsOrder,
+    JopWmsInboundStatus,
+    JopWmsOrderType,
+    JopWmsOutboundStatus,
 } from '../jop-wms/entities/jop-wms-order.entity';
 
 import { ConfigService } from '@nestjs/config';
@@ -134,6 +134,7 @@ import { BundlesService } from '../bundles/bundles.service';
 import { PaymentTransaction } from "../payments/entities/payment-transaction.entity";
 
 import { CreatePaymentDto } from "../payments/dtos/CreatePaymentDto";
+import { RetryPaymentDto } from './dtos/RetryPaymentDto';
 
 @Injectable()
 export class OrderService {
@@ -143,42 +144,42 @@ export class OrderService {
         private readonly configService: ConfigService,
         private readonly dataSource: DataSource,
         @InjectRepository(Order) private orderRepository: Repository<Order>,
-    @InjectRepository(InventoryItem)
-    private inventoryRepository: Repository<InventoryItem>,
-    @InjectRepository(InventoryLevel)
-    private inventoryLevelRepository: Repository<InventoryLevel>,
+        @InjectRepository(InventoryItem)
+        private inventoryRepository: Repository<InventoryItem>,
+        @InjectRepository(InventoryLevel)
+        private inventoryLevelRepository: Repository<InventoryLevel>,
         @InjectRepository(CartItem) private cartRepository: Repository<CartItem>,
-    @InjectRepository(CustomerAddress)
-    private readonly addressRepository: Repository<CustomerAddress>,
-    @InjectRepository(Coupon)
-    private readonly couponRepository: Repository<Coupon>,
-    @InjectRepository(GlobalCoupon)
-    private readonly globalCouponRepository: Repository<GlobalCoupon>,
-    @InjectRepository(Wallet)
-    private readonly walletRepository: Repository<Wallet>,
-    @InjectRepository(Affiliate)
-    private readonly affiliateRepository: Repository<Affiliate>,
-    @InjectRepository(KeyValuePair)
-    private readonly keyValuePairRepository: Repository<KeyValuePair>,
-    @InjectRepository(Product)
-    private readonly productRepository: Repository<Product>,
+        @InjectRepository(CustomerAddress)
+        private readonly addressRepository: Repository<CustomerAddress>,
+        @InjectRepository(Coupon)
+        private readonly couponRepository: Repository<Coupon>,
+        @InjectRepository(GlobalCoupon)
+        private readonly globalCouponRepository: Repository<GlobalCoupon>,
+        @InjectRepository(Wallet)
+        private readonly walletRepository: Repository<Wallet>,
+        @InjectRepository(Affiliate)
+        private readonly affiliateRepository: Repository<Affiliate>,
+        @InjectRepository(KeyValuePair)
+        private readonly keyValuePairRepository: Repository<KeyValuePair>,
+        @InjectRepository(Product)
+        private readonly productRepository: Repository<Product>,
         @Inject(PaymentsService) private readonly paymentService: PaymentsService,
-    @Inject(ExchangeRateService)
-    private readonly exchangeRateService: ExchangeRateService,
+        @Inject(ExchangeRateService)
+        private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
-    @Inject(PushNotificationService)
-    private readonly pushNotificationService: PushNotificationService,
-    @InjectRepository(JopWmsOrderLink)
-    private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
-    @InjectRepository(Customer)
-    private readonly customerRepository: Repository<Customer>,
-    @InjectRepository(OrderTrackingEvent)
-    private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
+        @Inject(PushNotificationService)
+        private readonly pushNotificationService: PushNotificationService,
+        @InjectRepository(JopWmsOrderLink)
+        private readonly wmsOrderLinkRepository: Repository<JopWmsOrderLink>,
+        @InjectRepository(Customer)
+        private readonly customerRepository: Repository<Customer>,
+        @InjectRepository(OrderTrackingEvent)
+        private readonly trackingEventRepository: Repository<OrderTrackingEvent>,
         private readonly notificationsService: NotificationsService,
         private readonly emailService: EmailService,
-    @Inject(BundlesService) private readonly bundlesService: BundlesService,
-    @InjectQueue(QueueName.ORDER_SKUMETA_VALIDATION)
-    private readonly orderSkuMetaQueue: Queue<OrderSkuMetaJobData>,
+        @Inject(BundlesService) private readonly bundlesService: BundlesService,
+        @InjectQueue(QueueName.ORDER_SKUMETA_VALIDATION)
+        private readonly orderSkuMetaQueue: Queue<OrderSkuMetaJobData>,
     ) { }
 
     private static readonly INBOUND_TRACKING_STATUS: Record<string, string> = {
@@ -205,42 +206,42 @@ export class OrderService {
     private async attachTracking(orders: Order[]): Promise<void> {
         if (!orders.length) return;
 
-    const uuids = orders.map((o) => o.uuid);
+        const uuids = orders.map((o) => o.uuid);
 
         const links = await this.wmsOrderLinkRepository.find({
             where: { orderUuid: In(uuids) },
             relations: ['wmsOrder'],
         });
 
-    const wmsOrdersByUuid = new Map<
-      string,
-      { inbound?: JopWmsOrder; outbound?: JopWmsOrder }
-    >();
+        const wmsOrdersByUuid = new Map<
+            string,
+            { inbound?: JopWmsOrder; outbound?: JopWmsOrder }
+        >();
         for (const link of links) {
             if (!link.wmsOrder) continue;
             const entry = wmsOrdersByUuid.get(link.orderUuid) ?? {};
-      if (link.wmsOrder.type === JopWmsOrderType.INBOUND)
-        entry.inbound = link.wmsOrder;
-      if (link.wmsOrder.type === JopWmsOrderType.OUTBOUND)
-        entry.outbound = link.wmsOrder;
+            if (link.wmsOrder.type === JopWmsOrderType.INBOUND)
+                entry.inbound = link.wmsOrder;
+            if (link.wmsOrder.type === JopWmsOrderType.OUTBOUND)
+                entry.outbound = link.wmsOrder;
             wmsOrdersByUuid.set(link.orderUuid, entry);
         }
 
         for (const order of orders) {
-      const { inbound = null, outbound = null } =
-        wmsOrdersByUuid.get(order.uuid) ?? {};
-      const stage: OrderTracking['stage'] = outbound
-        ? 'outbound'
-        : inbound
-          ? 'inbound'
-          : 'order';
+            const { inbound = null, outbound = null } =
+                wmsOrdersByUuid.get(order.uuid) ?? {};
+            const stage: OrderTracking['stage'] = outbound
+                ? 'outbound'
+                : inbound
+                    ? 'inbound'
+                    : 'order';
 
             const status = outbound
-        ? (OrderService.OUTBOUND_TRACKING_STATUS[outbound.status] ??
-          'Shipment in Progress')
+                ? (OrderService.OUTBOUND_TRACKING_STATUS[outbound.status] ??
+                    'Shipment in Progress')
                 : inbound
-          ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ??
-            'Procurement in Progress')
+                    ? (OrderService.INBOUND_TRACKING_STATUS[inbound.status] ??
+                        'Procurement in Progress')
                     : 'Order Confirmed';
 
             const waybillNo = outbound?.waybillNo ?? null;
@@ -248,79 +249,79 @@ export class OrderService {
                 stage,
                 status,
                 waybillNo,
-        trackingUrl: waybillNo
-          ? `https://track.4px.com/#/result/0/${waybillNo}`
-          : null,
+                trackingUrl: waybillNo
+                    ? `https://track.4px.com/#/result/0/${waybillNo}`
+                    : null,
                 canRetryOutbound:
-          (stage === 'inbound' &&
-            inbound?.status === JopWmsInboundStatus.STORED) ||
-          (stage === 'outbound' &&
-            outbound?.status === JopWmsOutboundStatus.PROCESSING_FAILED),
+                    (stage === 'inbound' &&
+                        inbound?.status === JopWmsInboundStatus.STORED) ||
+                    (stage === 'outbound' &&
+                        outbound?.status === JopWmsOutboundStatus.PROCESSING_FAILED),
             };
         }
     }
 
-  private static readonly TRACKING_STAGES: {
-    id: number;
-    stage: OrderTrackingStage;
-    name: string;
-    nameAr: string;
-  }[] = [
-    {
-      id: 1,
-      stage: OrderTrackingStage.ORDER_PLACED,
-      name: 'Order Placed',
-      nameAr: 'تم تقديم الطلب',
-    },
-    {
-      id: 2,
-      stage: OrderTrackingStage.PAYMENT_CONFIRMED,
-      name: 'Payment Confirmed',
-      nameAr: 'تم تأكيد الدفع',
-    },
-    {
-      id: 3,
-      stage: OrderTrackingStage.ORDER_CONFIRMED,
-      name: 'Order Confirmed',
-      nameAr: 'تم تأكيد الطلب',
-    },
-    {
-      id: 4,
-      stage: OrderTrackingStage.PROCESSING,
-      name: 'Processing',
-      nameAr: 'قيد المعالجة',
-    },
-    {
-      id: 5,
-      stage: OrderTrackingStage.PACKING,
-      name: 'Packing',
-      nameAr: 'قيد التغليف',
-    },
-    {
-      id: 6,
-      stage: OrderTrackingStage.DISPATCHING,
-      name: 'Dispatching',
-      nameAr: 'قيد الشحن',
-    },
-    {
-      id: 7,
-      stage: OrderTrackingStage.ORDER_DELIVERED,
-      name: 'Order Delivered',
-      nameAr: 'تم التسليم',
-    },
-    {
-      id: 8,
-      stage: OrderTrackingStage.ORDER_REVIEW,
-      name: 'Order Review',
-      nameAr: 'تقييم الطلب',
-    },
-    ];
+    private static readonly TRACKING_STAGES: {
+        id: number;
+        stage: OrderTrackingStage;
+        name: string;
+        nameAr: string;
+    }[] = [
+            {
+                id: 1,
+                stage: OrderTrackingStage.ORDER_PLACED,
+                name: 'Order Placed',
+                nameAr: 'تم تقديم الطلب',
+            },
+            {
+                id: 2,
+                stage: OrderTrackingStage.PAYMENT_CONFIRMED,
+                name: 'Payment Confirmed',
+                nameAr: 'تم تأكيد الدفع',
+            },
+            {
+                id: 3,
+                stage: OrderTrackingStage.ORDER_CONFIRMED,
+                name: 'Order Confirmed',
+                nameAr: 'تم تأكيد الطلب',
+            },
+            {
+                id: 4,
+                stage: OrderTrackingStage.PROCESSING,
+                name: 'Processing',
+                nameAr: 'قيد المعالجة',
+            },
+            {
+                id: 5,
+                stage: OrderTrackingStage.PACKING,
+                name: 'Packing',
+                nameAr: 'قيد التغليف',
+            },
+            {
+                id: 6,
+                stage: OrderTrackingStage.DISPATCHING,
+                name: 'Dispatching',
+                nameAr: 'قيد الشحن',
+            },
+            {
+                id: 7,
+                stage: OrderTrackingStage.ORDER_DELIVERED,
+                name: 'Order Delivered',
+                nameAr: 'تم التسليم',
+            },
+            {
+                id: 8,
+                stage: OrderTrackingStage.ORDER_REVIEW,
+                name: 'Order Review',
+                nameAr: 'تقييم الطلب',
+            },
+        ];
 
-  private static readonly CANCELLED_STAGE = {
-    id: 9,
-    name: 'Order Cancelled',
-    nameAr: 'تم إلغاء الطلب',
-  };
+    private static readonly CANCELLED_STAGE = {
+        id: 9,
+        name: 'Order Cancelled',
+        nameAr: 'تم إلغاء الطلب',
+    };
 
     /**
      * Creates a new order
@@ -329,15 +330,15 @@ export class OrderService {
      * @param dto
      * @returns
      */
-  async create(customer: Customer, dto: CreateOrderDto): Promise<Order> {
+    async create(customer: Customer, dto: CreateOrderDto): Promise<Order> {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-      this.logger.log(
-        `Attempting to create order for customer: ${customer.fullName}`,
-      );
+            this.logger.log(
+                `Attempting to create order for customer: ${customer.fullName}`,
+            );
             const address = await this.addressRepository.findOne({
                 where: {
                     customer: { id: customer.id },
@@ -347,15 +348,15 @@ export class OrderService {
 
             if (!address) {
                 throw new BadRequestException({
-          error: 'User address cannot be found.',
-        });
+                    error: 'User address cannot be found.',
+                });
             }
             // get cart items
             const cartItems = await this.cartRepository.find({
                 where: {
                     uuid: In(dto.cartItemUuids),
                     customer: { id: customer.id },
-          product: { status: ProductStatus.ACTIVE },
+                    product: { status: ProductStatus.ACTIVE },
                 },
                 relations: {
                     product: {
@@ -368,13 +369,13 @@ export class OrderService {
                         },
                     },
                     variant: true,
-          customer: true,
-        },
+                    customer: true,
+                },
             });
 
             if (cartItems.length !== dto.cartItemUuids.length) {
                 throw new BadRequestException({
-          error: 'Invalid cart items',
+                    error: 'Invalid cart items',
                 });
             }
 
@@ -400,13 +401,13 @@ export class OrderService {
             //     })
             // );
 
-      const currency = dto.currency ?? 'qar';
+            const currency = dto.currency ?? 'qar';
             const orderItems: OrderItem[] = [];
             let campaign: Campaign | null = null;
-      const warehouseByCartUuid = new Map<
-        string,
-        InventoryLevel['warehouse']
-      >();
+            const warehouseByCartUuid = new Map<
+                string,
+                InventoryLevel['warehouse']
+            >();
 
             for (const cart of cartItems) {
                 const variant = cart.variant;
@@ -416,9 +417,9 @@ export class OrderService {
                     where: { variant: { id: variant.id } },
                     relations: {
                         levels: {
-              warehouse: true,
-            },
-          },
+                            warehouse: true,
+                        },
+                    },
                 });
 
                 if (!inventoryItem || !inventoryItem.levels.length) {
@@ -429,138 +430,138 @@ export class OrderService {
 
                 // Find a warehouse with enough stock
                 const level = inventoryItem.levels.find(
-          (l) => l.quantity >= cart.quantity,
+                    (l) => l.quantity >= cart.quantity,
                 );
 
                 if (!level) {
                     throw new BadRequestException({
-            error: `Insufficient stock for ${variant.sku}`,
+                        error: `Insufficient stock for ${variant.sku}`,
                     });
                 }
 
                 // Deduct inventory within transaction
                 level.quantity -= cart.quantity;
                 await queryRunner.manager.save(level);
-        warehouseByCartUuid.set(cart.uuid, level.warehouse);
+                warehouseByCartUuid.set(cart.uuid, level.warehouse);
 
                 campaign = getBestCampaign(cart.product);
 
                 // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
-        const priceAmount =
-          await this.pricingService.applyPriceOnProductVariant(
-            cart.product,
-            cart.variant,
-            campaign,
-            currency,
-            true,
-          );
+                const priceAmount =
+                    await this.pricingService.applyPriceOnProductVariant(
+                        cart.product,
+                        cart.variant,
+                        campaign,
+                        currency,
+                        true,
+                    );
                 const totalAmount = multiplyMoney(priceAmount, cart.quantity);
-        cart.subTotal = totalAmount;
-        cart.discountPrice = {
+                cart.subTotal = totalAmount;
+                cart.discountPrice = {
                     amount: 0,
                     minorAmount: 0,
                     currencyCode: priceAmount.currencyCode,
                 };
-        cart.total = totalAmount;
+                cart.total = totalAmount;
             }
 
-      const repricedCartItems =
-        await this.bundlesService.applyBundlesToCartItems(
-          cartItems,
-          currency as CurrencyCode,
-          address.country,
-        );
-      let subTotal: Money = {
-        amount: 0,
-        minorAmount: 0,
-        currencyCode: currency as CurrencyCode,
-      };
+            const repricedCartItems =
+                await this.bundlesService.applyBundlesToCartItems(
+                    cartItems,
+                    currency as CurrencyCode,
+                    address.country,
+                );
+            let subTotal: Money = {
+                amount: 0,
+                minorAmount: 0,
+                currencyCode: currency as CurrencyCode,
+            };
 
-      for (const cart of repricedCartItems) {
-        subTotal = addMoney(subTotal, cart.total);
+            for (const cart of repricedCartItems) {
+                subTotal = addMoney(subTotal, cart.total);
 
-        const baseLineTotalMinor = moneyToMinor(cart.subTotal);
-        const baseUnitMinor =
-          cart.quantity > 0 ? Math.ceil(baseLineTotalMinor / cart.quantity) : 0;
+                const baseLineTotalMinor = moneyToMinor(cart.subTotal);
+                const baseUnitMinor =
+                    cart.quantity > 0 ? Math.ceil(baseLineTotalMinor / cart.quantity) : 0;
 
-        const orderItem = new OrderItem();
-        orderItem.uuid = crypto.randomUUID();
-        orderItem.product = cart.product;
-        orderItem.variant = cart.variant;
-        const warehouse = warehouseByCartUuid.get(cart.uuid);
-        if (!warehouse) {
-          throw new BadRequestException({
-            error: `No warehouse found for ${cart.variant?.sku || cart.uuid}`,
-          });
-        }
-        orderItem.warehouse = warehouse;
-        orderItem.price = moneyFromMinor(
-          baseUnitMinor,
-          currency as CurrencyCode,
-        );
-        orderItem.discountedPrice = cart.discountPrice;
-        orderItem.quantity = cart.quantity;
-        orderItem.total = cart.total;
-        orderItem.bundleUuid = cart.bundleUuid;
-        orderItem.bundleSourceUuid = cart.bundleSourceUuid;
-        orderItem.bundleSelectionUuid = cart.bundleSelectionUuid;
-        orderItem.bundleMinimumSelectionCount =
-          cart.bundleMinimumSelectionCount;
-        orderItem.bundleQuantity = cart.bundleQuantity;
-        orderItem.bundleAllocations = cart.bundleAllocations;
+                const orderItem = new OrderItem();
+                orderItem.uuid = crypto.randomUUID();
+                orderItem.product = cart.product;
+                orderItem.variant = cart.variant;
+                const warehouse = warehouseByCartUuid.get(cart.uuid);
+                if (!warehouse) {
+                    throw new BadRequestException({
+                        error: `No warehouse found for ${cart.variant?.sku || cart.uuid}`,
+                    });
+                }
+                orderItem.warehouse = warehouse;
+                orderItem.price = moneyFromMinor(
+                    baseUnitMinor,
+                    currency as CurrencyCode,
+                );
+                orderItem.discountedPrice = cart.discountPrice;
+                orderItem.quantity = cart.quantity;
+                orderItem.total = cart.total;
+                orderItem.bundleUuid = cart.bundleUuid;
+                orderItem.bundleSourceUuid = cart.bundleSourceUuid;
+                orderItem.bundleSelectionUuid = cart.bundleSelectionUuid;
+                orderItem.bundleMinimumSelectionCount =
+                    cart.bundleMinimumSelectionCount;
+                orderItem.bundleQuantity = cart.bundleQuantity;
+                orderItem.bundleAllocations = cart.bundleAllocations;
 
-        await queryRunner.manager.save(orderItem);
-        orderItems.push(orderItem);
-      }
+                await queryRunner.manager.save(orderItem);
+                orderItems.push(orderItem);
+            }
 
-      const exchangeRates = await this.exchangeRateService.findAll('', '');
+            const exchangeRates = await this.exchangeRateService.findAll('', '');
 
             // shipping and discount needs to be updated after the implementation of shipping and discounts
             let shippingCost = 0;
-      let eta = '';
+            let eta = '';
 
             // Fetch free shipping threshold once
-      const freeShippingValue =
-        Number(
-          (
-            await this.keyValuePairRepository.findOne({
-              where: {
-                name: `free_shipping_above_${dto.currency}`
-                  .toLowerCase()
-                  .trim(),
-              },
-            })
-          )?.integerValue,
-            ) || 0;
+            const freeShippingValue =
+                Number(
+                    (
+                        await this.keyValuePairRepository.findOne({
+                            where: {
+                                name: `free_shipping_above_${dto.currency}`
+                                    .toLowerCase()
+                                    .trim(),
+                            },
+                        })
+                    )?.integerValue,
+                ) || 0;
 
-      const freeShippingEnabled =
-        Boolean(
-          (
-            await this.keyValuePairRepository.findOne({
-                    where: {
-                name: 'free_shipping_enabled',
-                type: KeyValuePairType.Boolean,
-              },
-            })
-          )?.booleanValue,
-            ) || false;
+            const freeShippingEnabled =
+                Boolean(
+                    (
+                        await this.keyValuePairRepository.findOne({
+                            where: {
+                                name: 'free_shipping_enabled',
+                                type: KeyValuePairType.Boolean,
+                            },
+                        })
+                    )?.booleanValue,
+                ) || false;
 
-      const freeShippingExchangeRate =
-        1 /
-        (exchangeRates.find(
-          (rate) =>
-            rate.srcCurrencyCode === currency &&
-            rate.targetCurrencyCode === 'qar',
-        )?.factor || 1);
+            const freeShippingExchangeRate =
+                1 /
+                (exchangeRates.find(
+                    (rate) =>
+                        rate.srcCurrencyCode === currency &&
+                        rate.targetCurrencyCode === 'qar',
+                )?.factor || 1);
 
             // Decide if we should charge shipping
-      const shouldApplyShipping =
-        !freeShippingEnabled ||
-        freeShippingValue === null ||
-        moneyToFloat(subTotal) < freeShippingValue * freeShippingExchangeRate;
+            const shouldApplyShipping =
+                !freeShippingEnabled ||
+                freeShippingValue === null ||
+                moneyToFloat(subTotal) < freeShippingValue * freeShippingExchangeRate;
 
             if (shouldApplyShipping) {
-        const shippingCartItems = cartItems.map((item) => ({
+                const shippingCartItems = cartItems.map((item) => ({
                     weight: {
                         amount: item.variant.weight.amount,
                         unit: item.variant.weight.unit,
@@ -574,18 +575,18 @@ export class OrderService {
                     address.country,
                     currency, // Todo make currency dynamic
                     exchangeRates,
-          moneyToFloat(subTotal),
+                    moneyToFloat(subTotal),
                 );
                 shippingCost = Math.ceil(shippingCalculation.totalShippingCost);
-        eta = shippingCalculation.transitTime.estimatedRange;
+                eta = shippingCalculation.transitTime.estimatedRange;
             }
 
             // COUPON VALIDATION & DISCOUNT
-      let discount: Money = {
-        amount: 0,
-        minorAmount: 0,
-        currencyCode: currency as CurrencyCode,
-      };
+            let discount: Money = {
+                amount: 0,
+                minorAmount: 0,
+                currencyCode: currency as CurrencyCode,
+            };
             let affiliateCoupon: Coupon | null = null;
             let globalCoupon: GlobalCoupon | null = null;
             if (dto.couponCode) {
@@ -601,8 +602,8 @@ export class OrderService {
 
                 if (campaign && affiliateCoupon) {
                     throw new BadRequestException(
-            'Coupon cannot be applied. Campaign products exists.',
-          );
+                        'Coupon cannot be applied. Campaign products exists.',
+                    );
                 }
 
                 if (!affiliateCoupon) {
@@ -611,15 +612,15 @@ export class OrderService {
                     });
                     if (!globalCoupon) {
                         throw new BadRequestException({
-              error:
-                'Coupon does not exists. Please try again with valid coupon.',
-            });
+                            error:
+                                'Coupon does not exists. Please try again with valid coupon.',
+                        });
                     }
                     if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
                         throw new BadRequestException({
-              error:
-                'Coupon usage limit exceeded. Please try again with valid coupon.',
-            });
+                            error:
+                                'Coupon usage limit exceeded. Please try again with valid coupon.',
+                        });
                     }
                 }
                 const coupon = affiliateCoupon ? affiliateCoupon : globalCoupon;
@@ -629,39 +630,39 @@ export class OrderService {
                 }
             }
 
-      const min_order_amount =
-        Number(
-          (
-            await this.keyValuePairRepository.findOne({
-                    where: {
-                        name: `min_order_amount_${dto.currency}`,
-                type: KeyValuePairType.Integer,
-              },
-            })
-          )?.integerValue,
-            ) || 0;
+            const min_order_amount =
+                Number(
+                    (
+                        await this.keyValuePairRepository.findOne({
+                            where: {
+                                name: `min_order_amount_${dto.currency}`,
+                                type: KeyValuePairType.Integer,
+                            },
+                        })
+                    )?.integerValue,
+                ) || 0;
 
-      if (
-        isLesserThan(subTotal, {
-          amount: min_order_amount,
-          minorAmount: 0,
-          currencyCode: currency as CurrencyCode,
-        })
-      ) {
+            if (
+                isLesserThan(subTotal, {
+                    amount: min_order_amount,
+                    minorAmount: 0,
+                    currencyCode: currency as CurrencyCode,
+                })
+            ) {
                 throw new BadRequestException({
-          error: `Order value should not be less than ${min_order_amount} ${dto.currency}`,
+                    error: `Order value should not be less than ${min_order_amount} ${dto.currency}`,
                 });
             }
 
-      const shippingCostMoney: Money = {
-        amount: shippingCost,
-        minorAmount: 0,
-        currencyCode: currency as CurrencyCode,
-      };
-      const total = subtractMoney(
-        addMoney(subTotal, shippingCostMoney),
-        discount,
-      );
+            const shippingCostMoney: Money = {
+                amount: shippingCost,
+                minorAmount: 0,
+                currencyCode: currency as CurrencyCode,
+            };
+            const total = subtractMoney(
+                addMoney(subTotal, shippingCostMoney),
+                discount,
+            );
 
             // create a order within transaction
             const order = new Order();
@@ -694,17 +695,17 @@ export class OrderService {
             // await queryRunner.manager.delete(CartItem, { uuid: In(dto.cartItemUuids) });
 
             // RECORD AFFILIATE COMMISSION
-      if (
-        affiliateCoupon?.affiliate &&
-        affiliateCoupon.code &&
-        moneyToMinor(discount) >= 0
-      ) {
+            if (
+                affiliateCoupon?.affiliate &&
+                affiliateCoupon.code &&
+                moneyToMinor(discount) >= 0
+            ) {
                 const commissionAmount = discount;
 
-        if (
-          moneyToMinor(commissionAmount) > 0 &&
-          affiliateCoupon.affiliate.wallet?.id
-        ) {
+                if (
+                    moneyToMinor(commissionAmount) > 0 &&
+                    affiliateCoupon.affiliate.wallet?.id
+                ) {
                     const walletId = affiliateCoupon.affiliate.wallet.id;
                     const wallet = await queryRunner.manager.findOne(Wallet, {
                         where: { id: walletId },
@@ -713,7 +714,7 @@ export class OrderService {
 
                     if (!wallet) {
                         throw new BadRequestException({
-              error: `Wallet not found: ${walletId}`,
+                            error: `Wallet not found: ${walletId}`,
                         });
                     }
 
@@ -730,50 +731,50 @@ export class OrderService {
 
                     // Update wallet balance
                     wallet.amount = addMoney(wallet.amount, commissionAmount);
-          wallet.amountAvailable = addMoney(
-            wallet.amountAvailable,
-            commissionAmount,
-          );
+                    wallet.amountAvailable = addMoney(
+                        wallet.amountAvailable,
+                        commissionAmount,
+                    );
                     await queryRunner.manager.save(wallet);
 
                     // Update affiliate's total commission and remaining balance
                     const affiliate = wallet.affiliate;
-          affiliate.totalCommission = addMoney(
-            affiliate.totalCommission,
-            commissionAmount,
-          );
-          affiliate.remainingBalance = addMoney(
-            affiliate.remainingBalance,
-            commissionAmount,
-          );
+                    affiliate.totalCommission = addMoney(
+                        affiliate.totalCommission,
+                        commissionAmount,
+                    );
+                    affiliate.remainingBalance = addMoney(
+                        affiliate.remainingBalance,
+                        commissionAmount,
+                    );
                     affiliate.couponsUsed += 1;
                     await queryRunner.manager.save(affiliate);
 
                     // Update the statistics on the coupon
                     affiliateCoupon.ordersCount += 1;
-          affiliateCoupon.totalSales = addMoney(
-            affiliateCoupon.totalSales,
-            subTotal,
-          );
-          affiliateCoupon.totalCommission = addMoney(
-            affiliateCoupon.totalCommission,
-            commissionAmount,
-          );
+                    affiliateCoupon.totalSales = addMoney(
+                        affiliateCoupon.totalSales,
+                        subTotal,
+                    );
+                    affiliateCoupon.totalCommission = addMoney(
+                        affiliateCoupon.totalCommission,
+                        commissionAmount,
+                    );
                     await queryRunner.manager.save(affiliateCoupon);
                 }
-      } else if (
-        globalCoupon &&
-        globalCoupon.code &&
-        moneyToMinor(discount) >= 0
-      ) {
+            } else if (
+                globalCoupon &&
+                globalCoupon.code &&
+                moneyToMinor(discount) >= 0
+            ) {
                 const commissionAmount = discount;
 
                 globalCoupon.ordersCount += 1;
                 globalCoupon.totalSales = addMoney(globalCoupon.totalSales, subTotal);
-        globalCoupon.totalCommission = addMoney(
-          globalCoupon.totalCommission,
-          commissionAmount,
-        );
+                globalCoupon.totalCommission = addMoney(
+                    globalCoupon.totalCommission,
+                    commissionAmount,
+                );
                 globalCoupon.timesUsed++;
                 await queryRunner.manager.save(globalCoupon);
             }
@@ -839,36 +840,36 @@ export class OrderService {
                 await this.sendOrderConfirmation(order, customer);
             }
 
-      this.emailService
-        .sendAdminNewOrderEmail({
-                orderId: getOrderReference(order.uuid),
-                customerName: customer.fullName,
-                customerEmail: customer.emailAddress ?? '',
-                orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
-        })
-        .catch((err) =>
-          this.logger.error(
-            `[Email] Failed to send admin new-order notification for order ${order.uuid}: ${err?.message}`,
-          ),
-        );
+            this.emailService
+                .sendAdminNewOrderEmail({
+                    orderId: getOrderReference(order.uuid),
+                    customerName: customer.fullName,
+                    customerEmail: customer.emailAddress ?? '',
+                    orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
+                })
+                .catch((err) =>
+                    this.logger.error(
+                        `[Email] Failed to send admin new-order notification for order ${order.uuid}: ${err?.message}`,
+                    ),
+                );
 
-      await this.orderSkuMetaQueue
-        .add(
-                'order-skumeta-check',
-                { orderUuid: order.uuid },
-                { jobId: `order-skumeta-check-${order.uuid}` },
-        )
-        .catch((err) =>
-          this.logger.error(
-            `[Queue] Failed to enqueue order sku meta sync check for order ${order.uuid}: ${err?.message}`,
-          ),
-        );
+            await this.orderSkuMetaQueue
+                .add(
+                    'order-skumeta-check',
+                    { orderUuid: order.uuid },
+                    { jobId: `order-skumeta-check-${order.uuid}` },
+                )
+                .catch((err) =>
+                    this.logger.error(
+                        `[Queue] Failed to enqueue order sku meta sync check for order ${order.uuid}: ${err?.message}`,
+                    ),
+                );
 
             return order;
         } catch (error: any) {
-      this.logger.error(
-        `Error placing order: ${error?.response?.error || error}`,
-      );
+            this.logger.error(
+                `Error placing order: ${error?.response?.error || error}`,
+            );
             await queryRunner.rollbackTransaction();
             if (error instanceof HttpException) {
                 throw error;
@@ -892,62 +893,62 @@ export class OrderService {
      * from the zero-total path in create() (no gateway webhook fires for those)
      * and mirrored in PaymentsWebhookService for the normal paid-order path.
      */
-  private async sendOrderConfirmation(
-    order: Order,
-    customer: Customer,
-  ): Promise<void> {
+    private async sendOrderConfirmation(
+        order: Order,
+        customer: Customer,
+    ): Promise<void> {
         const orderTotal = `${order.total.amount} ${order.total.currencyCode}`;
         const orderId = getOrderReference(order.uuid);
 
-    const notification = await this.notificationsService
-      .create({
-            customerUUID: customer.uuid,
-            type: NotificationType.PAYMENT_SUCCESSFUL,
-            title: 'Payment Successful',
-            brief: 'Your order has been placed and payment confirmed.',
-            message: `Your order #${orderId} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
-            priority: NotificationPriority.HIGH,
-            payload: {
+        const notification = await this.notificationsService
+            .create({
+                customerUUID: customer.uuid,
                 type: NotificationType.PAYMENT_SUCCESSFUL,
+                title: 'Payment Successful',
+                brief: 'Your order has been placed and payment confirmed.',
+                message: `Your order #${orderId} has been placed and payment of ${orderTotal} was received successfully. Your order is now being processed.`,
                 priority: NotificationPriority.HIGH,
-                isRead: String(false),
-            },
-      })
-      .catch((err) =>
-        this.logger.warn(
-          `Failed to send payment-success notification: ${err?.message}`,
-        ),
-      );
+                payload: {
+                    type: NotificationType.PAYMENT_SUCCESSFUL,
+                    priority: NotificationPriority.HIGH,
+                    isRead: String(false),
+                },
+            })
+            .catch((err) =>
+                this.logger.warn(
+                    `Failed to send payment-success notification: ${err?.message}`,
+                ),
+            );
 
         if (notification?.uuid) {
-      this.logger.log(
-        `Attempting to create push notification for payment success: ${JSON.stringify(orderId)}`,
-      );
+            this.logger.log(
+                `Attempting to create push notification for payment success: ${JSON.stringify(orderId)}`,
+            );
             await this.pushNotificationService.sendToToken(notification.uuid);
         }
 
         if (!customer.emailAddress) {
-      this.logger.warn(
-        `[Email] Skipping payment-success email for order ${orderId} — customer has no email address`,
-      );
+            this.logger.warn(
+                `[Email] Skipping payment-success email for order ${orderId} — customer has no email address`,
+            );
             return;
         }
 
-    this.emailService
-      .sendPaymentSuccessEmail(customer.emailAddress, {
-            customerName: customer.fullName,
-            orderId: orderId,
-            orderTotal,
-            paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
-            ...this.buildPaymentSuccessEmailExtras(order),
-        nextSteps:
-          "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
-      })
-      .catch((err) =>
-        this.logger.error(
-          `[Email] Failed to send payment-success email for order ${orderId}: ${err?.message}`,
-        ),
-      );
+        this.emailService
+            .sendPaymentSuccessEmail(customer.emailAddress, {
+                customerName: customer.fullName,
+                orderId: orderId,
+                orderTotal,
+                paymentConfirmation: `Payment of ${orderTotal} received successfully.`,
+                ...this.buildPaymentSuccessEmailExtras(order),
+                nextSteps:
+                    "We're now preparing your order for shipment. You'll receive another email with tracking details once it ships.",
+            })
+            .catch((err) =>
+                this.logger.error(
+                    `[Email] Failed to send payment-success email for order ${orderId}: ${err?.message}`,
+                ),
+            );
     }
 
     /**
@@ -955,25 +956,25 @@ export class OrderService {
      * payment-success email payload — shared with PaymentsWebhookService's
      * mirrored logic for the normal (non-zero-total) paid-order path.
      */
-  private buildPaymentSuccessEmailExtras(order: Order): {
-    items: Array<{
-      name: string;
-      quantity: number;
-      unitPrice: string;
-      lineTotal: string;
-    }>;
-    deliveryDetails: {
-      fullName: string;
-      streetAddress: string;
-      apartment?: string;
-      city: string;
-      state: string;
-      country: string;
-      zipCode: string;
-      phoneNumber: string;
-    };
-  } {
-    const items = order.orderItems.map((item) => ({
+    private buildPaymentSuccessEmailExtras(order: Order): {
+        items: Array<{
+            name: string;
+            quantity: number;
+            unitPrice: string;
+            lineTotal: string;
+        }>;
+        deliveryDetails: {
+            fullName: string;
+            streetAddress: string;
+            apartment?: string;
+            city: string;
+            state: string;
+            country: string;
+            zipCode: string;
+            phoneNumber: string;
+        };
+    } {
+        const items = order.orderItems.map((item) => ({
             name: item.variant?.titleEn || item.product?.titleEn,
             quantity: item.quantity,
             unitPrice: `${item.price.amount} ${item.price.currencyCode}`,
@@ -999,49 +1000,49 @@ export class OrderService {
      *
      * @returns
      */
-  async findAll(
-    filters: string,
-    sort: string,
-    pageNumber: number = 1,
-    itemsPerPage: number = 100,
-    currency: CurrencyCode,
-    status?: OrderStatus,
-  ): Promise<Array<Order>> {
+    async findAll(
+        filters: string,
+        sort: string,
+        pageNumber: number = 1,
+        itemsPerPage: number = 100,
+        currency: CurrencyCode,
+        status?: OrderStatus,
+    ): Promise<Array<Order>> {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
 
-      let filtersObject: {
-        customerName?: string;
-        orderRef?: string;
-        invalidOrder?: boolean;
+            let filtersObject: {
+                customerName?: string;
+                orderRef?: string;
+                invalidOrder?: boolean;
             } = {};
             try {
                 filtersObject = JSON.parse(filters);
             } catch {
-        this.logger.warn(
-          'Unable to parse filters. Please check the documentation and try again.',
-        );
+                this.logger.warn(
+                    'Unable to parse filters. Please check the documentation and try again.',
+                );
             }
-      const filter: OrderFilters = {};
+            const filter: OrderFilters = {};
 
-      if (status || filtersObject) {
-        filter.status = status;
-        if (filtersObject?.customerName) {
-          filter.customer = { fullName: ILike(`%${filtersObject.customerName}%`) };
-        }
-        if (filtersObject?.orderRef) {
-          filter.uuid = Raw((alias) => `RIGHT(${alias}::text, 6) = :ref`, {
-            ref: filtersObject.orderRef,
-          });
-        }
-        filter.invalidOrder = filtersObject?.invalidOrder;
-      }
+            if (status || filtersObject) {
+                filter.status = status;
+                if (filtersObject?.customerName) {
+                    filter.customer = { fullName: ILike(`%${filtersObject.customerName}%`) };
+                }
+                if (filtersObject?.orderRef) {
+                    filter.uuid = Raw((alias) => `RIGHT(${alias}::text, 6) = :ref`, {
+                        ref: filtersObject.orderRef,
+                    });
+                }
+                filter.invalidOrder = filtersObject?.invalidOrder;
+            }
 
             const orders = await this.orderRepository.find({
-        relationLoadStrategy: 'query',
+                relationLoadStrategy: 'query',
                 where: {
-          ...filter,
+                    ...filter,
                 },
                 relations: {
                     orderItems: {
@@ -1054,7 +1055,7 @@ export class OrderService {
                     customer: true,
                 },
                 order: {
-          id: 'DESC',
+                    id: 'DESC',
                 },
                 skip: skip,
                 take: take,
@@ -1101,26 +1102,26 @@ export class OrderService {
      * @param customerUuid
      * @returns
      */
-  async findAllByCustomer(
-    customerUuid: string,
-    filters: string,
-    sort: string,
-    pageNumber: number = 1,
-    itemsPerPage: number = 100,
-    currency: CurrencyCode,
-    status?: OrderStatus,
-  ): Promise<Array<Order>> {
+    async findAllByCustomer(
+        customerUuid: string,
+        filters: string,
+        sort: string,
+        pageNumber: number = 1,
+        itemsPerPage: number = 100,
+        currency: CurrencyCode,
+        status?: OrderStatus,
+    ): Promise<Array<Order>> {
         try {
             // Get pagination params
             const { skip, take } = getSkipAndTake(pageNumber, itemsPerPage);
-      const filter: OrderFilters = {};
+            const filter: OrderFilters = {};
 
             if (status) {
-        filter.status = status;
+                filter.status = status;
             }
 
             const orders = await this.orderRepository.find({
-        relationLoadStrategy: 'query',
+                relationLoadStrategy: 'query',
                 where: {
                     customer: { uuid: customerUuid },
                     ...filter,
@@ -1132,10 +1133,10 @@ export class OrderService {
                             images: true,
                         },
                     },
-          shippingAddress: true,
+                    shippingAddress: true,
                 },
                 order: {
-          id: 'DESC',
+                    id: 'DESC',
                 },
                 skip: skip,
                 take: take,
@@ -1175,13 +1176,13 @@ export class OrderService {
      * @param pageNumber
      * @param itemsPerPage
      */
-  findAllByCoupon(
-    coupon: Coupon,
-    filters: string = '',
-    sort: string = '',
-    pageNumber: number = 1,
-    itemsPerPage: number = 24,
-  ): Promise<Array<Order>> {
+    findAllByCoupon(
+        coupon: Coupon,
+        filters: string = '',
+        sort: string = '',
+        pageNumber: number = 1,
+        itemsPerPage: number = 24,
+    ): Promise<Array<Order>> {
         this.logger.log(`Retrieving orders by coupon`);
 
         // Get pagination params
@@ -1204,51 +1205,51 @@ export class OrderService {
      * @param uuid
      * @returns
      */
-  async findOne(
-    uuid: string,
-    currency: CurrencyCode,
-    maskUuid = true,
-  ): Promise<Order> {
+    async findOne(
+        uuid: string,
+        currency: CurrencyCode,
+        maskUuid = true,
+    ): Promise<Order> {
         try {
             let order: Order | null = null;
             if (uuid.length === 6) {
                 order = await this.orderRepository
-          .createQueryBuilder('order')
-          .leftJoinAndSelect('order.orderItems', 'orderItems')
-          .leftJoinAndSelect('orderItems.product', 'product')
-          .leftJoinAndSelect('product.productCategories', 'productCategories')
-          .leftJoinAndSelect('productCategories.category', 'category')
-          .leftJoinAndSelect('orderItems.variant', 'variant')
-          .leftJoinAndSelect('variant.images', 'images')
-          .leftJoinAndSelect('variant.optionValues', 'optionValues')
-          .leftJoinAndSelect('optionValues.optionValue', 'optionValue')
-          .leftJoinAndSelect('optionValue.option', 'option')
-          .leftJoinAndSelect('order.shippingAddress', 'shippingAddress')
-          .leftJoinAndSelect('order.customer', 'customer')
+                    .createQueryBuilder('order')
+                    .leftJoinAndSelect('order.orderItems', 'orderItems')
+                    .leftJoinAndSelect('orderItems.product', 'product')
+                    .leftJoinAndSelect('product.productCategories', 'productCategories')
+                    .leftJoinAndSelect('productCategories.category', 'category')
+                    .leftJoinAndSelect('orderItems.variant', 'variant')
+                    .leftJoinAndSelect('variant.images', 'images')
+                    .leftJoinAndSelect('variant.optionValues', 'optionValues')
+                    .leftJoinAndSelect('optionValues.optionValue', 'optionValue')
+                    .leftJoinAndSelect('optionValue.option', 'option')
+                    .leftJoinAndSelect('order.shippingAddress', 'shippingAddress')
+                    .leftJoinAndSelect('order.customer', 'customer')
                     .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
                         uuid: uuid,
                     })
                     .getOne();
             } else {
                 order = await this.orderRepository.findOne({
-          relationLoadStrategy: 'query',
+                    relationLoadStrategy: 'query',
                     where: {
-            uuid: uuid,
+                        uuid: uuid,
                     },
                     relations: {
                         orderItems: {
                             product: {
                                 productCategories: {
-                  category: true,
-                },
+                                    category: true,
+                                },
                             },
                             variant: {
                                 images: true,
                                 optionValues: {
                                     optionValue: {
-                    option: true,
-                  },
-                },
+                                        option: true,
+                                    },
+                                },
                             },
                         },
                         shippingAddress: true,
@@ -1257,10 +1258,10 @@ export class OrderService {
                 });
             }
 
-      if (!order)
-        throw new NotFoundException({
-                error: 'Order not found',
-            });
+            if (!order)
+                throw new NotFoundException({
+                    error: 'Order not found',
+                });
 
             order.orderPlacementDate = order.createdAt;
 
@@ -1268,12 +1269,12 @@ export class OrderService {
                 where: { orderUuid: order.uuid },
                 relations: ['wmsOrder'],
             });
-      (order as any).wmsOrders = wmsLinks.map((l) => l.wmsOrder);
+            (order as any).wmsOrders = wmsLinks.map((l) => l.wmsOrder);
             await this.attachTracking([order]);
 
-      if (maskUuid) {
-            order.uuid = getOrderReference(order.uuid);
-      }
+            if (maskUuid) {
+                order.uuid = getOrderReference(order.uuid);
+            }
             order.orderItems = await this.applyPricingToOrderItems(
                 order.orderItems,
                 currency,
@@ -1334,24 +1335,24 @@ export class OrderService {
         );
     }
 
-  async getOrderTracking(
-    orderUuid: string,
-    customerUuid?: string,
-    language: string = 'en',
-  ): Promise<OrderTrackingResponse> {
+    async getOrderTracking(
+        orderUuid: string,
+        customerUuid?: string,
+        language: string = 'en',
+    ): Promise<OrderTrackingResponse> {
         let order: Order | null = null;
 
         if (orderUuid.length === 6) {
             const query = this.orderRepository
-        .createQueryBuilder('order')
+                .createQueryBuilder('order')
                 .where('RIGHT("order"."uuid"::text, 6) = :orderUuid', {
                     orderUuid,
                 });
 
             if (customerUuid) {
                 query
-          .leftJoinAndSelect('order.customer', 'customer')
-          .andWhere('customer.uuid = :customerUuid', {
+                    .leftJoinAndSelect('order.customer', 'customer')
+                    .andWhere('customer.uuid = :customerUuid', {
                         customerUuid,
                     });
             }
@@ -1370,61 +1371,61 @@ export class OrderService {
         }
         if (!order) throw new NotFoundException({ error: 'Order not found' });
 
-    console.log('orderorderorderorder', order);
+        console.log('orderorderorderorder', order);
 
         const events = await this.trackingEventRepository.find({
             where: {
                 orderUuid: order.uuid,
-        active: true,
+                active: true,
             },
             order: { createdAt: 'ASC' },
         });
 
-    const eventMap = new Map(events.map((e) => [e.stage, e]));
+        const eventMap = new Map(events.map((e) => [e.stage, e]));
 
-    const stages: OrderTrackingItem[] = OrderService.TRACKING_STAGES.map(
-      ({ id, stage, name, nameAr }) => {
-            const event = eventMap.get(stage);
-            return {
-                id,
-                name: language === 'ar' ? nameAr : name,
-                checked: !!event,
-                date: event?.date ?? null,
-                metadata: {
-                    trackingId: event?.trackingId ?? null,
-                    cancellationReason: event?.cancellationReason ?? null,
-                    reviewText: event?.reviewText ?? null,
-                    reviewRating: event?.reviewRating ?? null,
-                },
-            };
-      },
-    );
+        const stages: OrderTrackingItem[] = OrderService.TRACKING_STAGES.map(
+            ({ id, stage, name, nameAr }) => {
+                const event = eventMap.get(stage);
+                return {
+                    id,
+                    name: language === 'ar' ? nameAr : name,
+                    checked: !!event,
+                    date: event?.date ?? null,
+                    metadata: {
+                        trackingId: event?.trackingId ?? null,
+                        cancellationReason: event?.cancellationReason ?? null,
+                        reviewText: event?.reviewText ?? null,
+                        reviewRating: event?.reviewRating ?? null,
+                    },
+                };
+            },
+        );
 
         const cancelledEvent = eventMap.get(OrderTrackingStage.ORDER_CANCELLED);
         const { id, name, nameAr } = OrderService.CANCELLED_STAGE;
-    const cancelled: OrderTrackingItem | null = cancelledEvent
-      ? {
-            id,
-            name: language === 'ar' ? nameAr : name,
-            checked: true,
-            date: cancelledEvent.date,
-            metadata: {
-                trackingId: null,
-                cancellationReason: cancelledEvent.cancellationReason ?? null,
-                reviewText: null,
-                reviewRating: null,
-            },
-        }
-      : null;
+        const cancelled: OrderTrackingItem | null = cancelledEvent
+            ? {
+                id,
+                name: language === 'ar' ? nameAr : name,
+                checked: true,
+                date: cancelledEvent.date,
+                metadata: {
+                    trackingId: null,
+                    cancellationReason: cancelledEvent.cancellationReason ?? null,
+                    reviewText: null,
+                    reviewRating: null,
+                },
+            }
+            : null;
 
         return { stages, cancelled };
     }
 
-  async backfillTrackingEvents(): Promise<{
-    processed: number;
-    stamped: number;
-    errors: string[];
-  }> {
+    async backfillTrackingEvents(): Promise<{
+        processed: number;
+        stamped: number;
+        errors: string[];
+    }> {
         const orders = await this.orderRepository.find({
             relations: { paymentTransaction: true },
             order: { createdAt: 'ASC' },
@@ -1451,32 +1452,32 @@ export class OrderService {
                     where: { orderUuid: order.uuid },
                     select: ['stage'],
                 });
-        const alreadyStamped = new Set(existing.map((e) => e.stage));
+                const alreadyStamped = new Set(existing.map((e) => e.stage));
 
                 const toStamp: Array<Partial<OrderTrackingEvent>> = [];
 
-        const maybe = (
-          stage: OrderTrackingStage,
-          event: Partial<OrderTrackingEvent>,
-        ) => {
-          if (!alreadyStamped.has(stage))
-            toStamp.push({
-              stage,
-              active: true,
-              trackingId: null,
-              cancellationReason: null,
-              ...event,
-            });
+                const maybe = (
+                    stage: OrderTrackingStage,
+                    event: Partial<OrderTrackingEvent>,
+                ) => {
+                    if (!alreadyStamped.has(stage))
+                        toStamp.push({
+                            stage,
+                            active: true,
+                            trackingId: null,
+                            cancellationReason: null,
+                            ...event,
+                        });
                 };
 
-        maybe(OrderTrackingStage.ORDER_PLACED, {
-          date: new Date(order.createdAt),
-        });
+                maybe(OrderTrackingStage.ORDER_PLACED, {
+                    date: new Date(order.createdAt),
+                });
 
                 if (order.paymentTransaction?.status === PaymentStatus.PAID) {
-          maybe(OrderTrackingStage.PAYMENT_CONFIRMED, {
-            date: order.paymentTransaction.updatedAt,
-          });
+                    maybe(OrderTrackingStage.PAYMENT_CONFIRMED, {
+                        date: order.paymentTransaction.updatedAt,
+                    });
                 }
 
                 if (confirmedImplied.has(order.status)) {
@@ -1501,26 +1502,26 @@ export class OrderService {
                 });
 
                 const inbounds = links
-          .filter((l) => l.wmsOrder?.type === JopWmsOrderType.INBOUND)
-          .map((l) => l.wmsOrder)
+                    .filter((l) => l.wmsOrder?.type === JopWmsOrderType.INBOUND)
+                    .map((l) => l.wmsOrder)
                     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
                 const outbounds = links
-          .filter((l) => l.wmsOrder?.type === JopWmsOrderType.OUTBOUND)
-          .map((l) => l.wmsOrder);
+                    .filter((l) => l.wmsOrder?.type === JopWmsOrderType.OUTBOUND)
+                    .map((l) => l.wmsOrder);
 
                 if (inbounds.length > 0) {
                     maybe(OrderTrackingStage.PROCESSING, { date: inbounds[0].createdAt });
                 }
 
-        const storedInbound = inbounds.find(
-          (i) => i.status === JopWmsInboundStatus.STORED,
-        );
+                const storedInbound = inbounds.find(
+                    (i) => i.status === JopWmsInboundStatus.STORED,
+                );
                 if (storedInbound) {
                     maybe(OrderTrackingStage.PACKING, { date: storedInbound.updatedAt });
                 }
 
-        const shippedOutbound = outbounds.find((o) => !!o.waybillNo);
+                const shippedOutbound = outbounds.find((o) => !!o.waybillNo);
                 if (shippedOutbound) {
                     maybe(OrderTrackingStage.DISPATCHING, {
                         date: shippedOutbound.updatedAt,
@@ -1530,26 +1531,26 @@ export class OrderService {
 
                 if (toStamp.length > 0) {
                     await this.trackingEventRepository.save(
-            toStamp.map((event) =>
-              this.trackingEventRepository.create({
-                orderUuid: order.uuid,
-                ...event,
-              }),
-            ),
+                        toStamp.map((event) =>
+                            this.trackingEventRepository.create({
+                                orderUuid: order.uuid,
+                                ...event,
+                            }),
+                        ),
                     );
                     stamped += toStamp.length;
                 }
             } catch (err: any) {
-        this.logger.warn(
-          `backfillTrackingEvents: failed for order ${order.uuid}: ${err?.message}`,
-        );
+                this.logger.warn(
+                    `backfillTrackingEvents: failed for order ${order.uuid}: ${err?.message}`,
+                );
                 errors.push(`${order.uuid}: ${err?.message}`);
             }
         }
 
-    this.logger.log(
-      `backfillTrackingEvents: processed=${orders.length} stamped=${stamped} errors=${errors.length}`,
-    );
+        this.logger.log(
+            `backfillTrackingEvents: processed=${orders.length} stamped=${stamped} errors=${errors.length}`,
+        );
         return { processed: orders.length, stamped, errors };
     }
 
@@ -1559,19 +1560,19 @@ export class OrderService {
      * @param status
      * @returns
      */
-  async updateStatus(
-    uuid: string,
-    status: OrderStatus,
-    currency: CurrencyCode,
-    cancellationReason?: string,
-  ): Promise<Order> {
+    async updateStatus(
+        uuid: string,
+        status: OrderStatus,
+        currency: CurrencyCode,
+        cancellationReason?: string,
+    ): Promise<Order> {
         try {
-      const order = await this.findOne(uuid, currency, false);
+            const order = await this.findOne(uuid, currency, false);
 
-      if (
-        status === OrderStatus.CONFIRMED &&
-        order.status !== OrderStatus.PAYMENT_SUCCESSFUL
-      ) {
+            if (
+                status === OrderStatus.CONFIRMED &&
+                order.status !== OrderStatus.PAYMENT_SUCCESSFUL
+            ) {
                 throw new BadRequestException({
                     error: `Cannot confirm order — payment has not succeeded yet (current status: ${order.status})`,
                 });
@@ -1584,15 +1585,15 @@ export class OrderService {
 
             const saved = await this.orderRepository.save(order);
 
-      const trackingEventMap: Partial<
-        Record<OrderStatus, () => Promise<void>>
-      > = {
+            const trackingEventMap: Partial<
+                Record<OrderStatus, () => Promise<void>>
+            > = {
                 [OrderStatus.PAYMENT_SUCCESSFUL]: async () => {
                     const exists = await this.trackingEventRepository.findOne({
-            where: {
-              orderUuid: order.uuid,
-              stage: OrderTrackingStage.PAYMENT_CONFIRMED,
-            },
+                        where: {
+                            orderUuid: order.uuid,
+                            stage: OrderTrackingStage.PAYMENT_CONFIRMED,
+                        },
                     });
                     if (!exists) {
                         await this.trackingEventRepository.save(
@@ -1607,10 +1608,10 @@ export class OrderService {
                 },
                 [OrderStatus.CONFIRMED]: async () => {
                     const exists = await this.trackingEventRepository.findOne({
-            where: {
-              orderUuid: order.uuid,
-              stage: OrderTrackingStage.ORDER_CONFIRMED,
-            },
+                        where: {
+                            orderUuid: order.uuid,
+                            stage: OrderTrackingStage.ORDER_CONFIRMED,
+                        },
                     });
                     if (!exists) {
                         await this.trackingEventRepository.save(
@@ -1625,10 +1626,10 @@ export class OrderService {
                 },
                 [OrderStatus.DELIVERED]: async () => {
                     const exists = await this.trackingEventRepository.findOne({
-            where: {
-              orderUuid: order.uuid,
-              stage: OrderTrackingStage.ORDER_DELIVERED,
-            },
+                        where: {
+                            orderUuid: order.uuid,
+                            stage: OrderTrackingStage.ORDER_DELIVERED,
+                        },
                     });
                     if (!exists) {
                         await this.trackingEventRepository.save(
@@ -1643,11 +1644,11 @@ export class OrderService {
                 },
                 [OrderStatus.CANCELLED]: async () => {
                     await this.trackingEventRepository.update(
-            {
-              orderUuid: order.uuid,
-              stage: OrderTrackingStage.ORDER_CANCELLED,
-              active: true,
-            },
+                        {
+                            orderUuid: order.uuid,
+                            stage: OrderTrackingStage.ORDER_CANCELLED,
+                            active: true,
+                        },
                         { active: false },
                     );
                     await this.trackingEventRepository.save(
@@ -1665,18 +1666,18 @@ export class OrderService {
 
             await trackingEventMap[status]?.();
 
-      const notificationMap: Partial<
-        Record<
-          OrderStatus,
-          {
-            type: NotificationType;
-            title: string;
-            brief: string;
-            message: string;
-            payload: NotificationPayload;
-          }
-        >
-      > = {
+            const notificationMap: Partial<
+                Record<
+                    OrderStatus,
+                    {
+                        type: NotificationType;
+                        title: string;
+                        brief: string;
+                        message: string;
+                        payload: NotificationPayload;
+                    }
+                >
+            > = {
                 [OrderStatus.CONFIRMED]: {
                     type: NotificationType.ORDER_CONFIRMED,
                     title: 'Order Confirmed',
@@ -1758,26 +1759,26 @@ export class OrderService {
 
             const notif = notificationMap[status];
             if (notif && order.customer) {
-        this.logger.log(
-          `Attempting to create notification for order status update: ${JSON.stringify(order.uuid)}`,
-        );
-        const notification = await this.notificationsService
-          .create({
-                    customerUUID: order.customer.uuid,
-                    ...notif,
-                    priority: NotificationPriority.HIGH,
-          })
-          .catch((err) =>
-            this.logger.warn(
-              `Failed to send ${notif.type} notification: ${err?.message}`,
-            ),
-          );
+                this.logger.log(
+                    `Attempting to create notification for order status update: ${JSON.stringify(order.uuid)}`,
+                );
+                const notification = await this.notificationsService
+                    .create({
+                        customerUUID: order.customer.uuid,
+                        ...notif,
+                        priority: NotificationPriority.HIGH,
+                    })
+                    .catch((err) =>
+                        this.logger.warn(
+                            `Failed to send ${notif.type} notification: ${err?.message}`,
+                        ),
+                    );
 
                 if (notification?.uuid) {
-          this.logger.log(
-            `Attempting to create push notification for order status update: ${JSON.stringify(order.uuid)}`,
-          );
-          await this.pushNotificationService.sendToToken(notification?.uuid);
+                    this.logger.log(
+                        `Attempting to create push notification for order status update: ${JSON.stringify(order.uuid)}`,
+                    );
+                    await this.pushNotificationService.sendToToken(notification?.uuid);
                 }
             }
 
@@ -1785,60 +1786,60 @@ export class OrderService {
             if (customerEmail) {
                 const customerName = order.customer.fullName;
                 if (status === OrderStatus.CONFIRMED) {
-          this.logger.log(
-            `[Email] Sending order-confirmed email to ${customerEmail} for order ${order.uuid}`,
-          );
-          this.emailService
-            .sendOrderConfirmedEmail(customerEmail, {
-                        customerName,
-                        orderId: order.uuid,
-                        orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
-            })
-            .catch((err) =>
-              this.logger.error(
-                `[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`,
-              ),
-            );
+                    this.logger.log(
+                        `[Email] Sending order-confirmed email to ${customerEmail} for order ${order.uuid}`,
+                    );
+                    this.emailService
+                        .sendOrderConfirmedEmail(customerEmail, {
+                            customerName,
+                            orderId: order.uuid,
+                            orderTotal: `${order.total.amount} ${order.total.currencyCode}`,
+                        })
+                        .catch((err) =>
+                            this.logger.error(
+                                `[Email] Failed to send order-confirmed email for order ${order.uuid}: ${err?.message}`,
+                            ),
+                        );
                 } else if (status === OrderStatus.DELIVERED) {
-          this.logger.log(
-            `[Email] Sending order-delivered email to ${customerEmail} for order ${order.uuid}`,
-          );
-          this.emailService
-            .sendOrderDeliveredEmail(customerEmail, {
-              customerName,
-              orderId: order.uuid,
-            })
-            .catch((err) =>
-              this.logger.error(
-                `[Email] Failed to send order-delivered email for order ${order.uuid}: ${err?.message}`,
-              ),
-            );
+                    this.logger.log(
+                        `[Email] Sending order-delivered email to ${customerEmail} for order ${order.uuid}`,
+                    );
+                    this.emailService
+                        .sendOrderDeliveredEmail(customerEmail, {
+                            customerName,
+                            orderId: order.uuid,
+                        })
+                        .catch((err) =>
+                            this.logger.error(
+                                `[Email] Failed to send order-delivered email for order ${order.uuid}: ${err?.message}`,
+                            ),
+                        );
                 } else if (status === OrderStatus.CANCELLED) {
-          this.logger.log(
-            `[Email] Sending order-cancelled email to ${customerEmail} for order ${order.uuid}`,
-          );
-          this.emailService
-            .sendOrderCancelledEmail(customerEmail, {
-              customerName,
-              orderId: order.uuid,
-            })
-            .catch((err) =>
-              this.logger.error(
-                `[Email] Failed to send order-cancelled email for order ${order.uuid}: ${err?.message}`,
-              ),
-            );
+                    this.logger.log(
+                        `[Email] Sending order-cancelled email to ${customerEmail} for order ${order.uuid}`,
+                    );
+                    this.emailService
+                        .sendOrderCancelledEmail(customerEmail, {
+                            customerName,
+                            orderId: order.uuid,
+                        })
+                        .catch((err) =>
+                            this.logger.error(
+                                `[Email] Failed to send order-cancelled email for order ${order.uuid}: ${err?.message}`,
+                            ),
+                        );
                 }
             } else {
-        this.logger.warn(
-          `[Email] Skipping email for order ${order.uuid} status=${status} — customer has no email address`,
-        );
+                this.logger.warn(
+                    `[Email] Skipping email for order ${order.uuid} status=${status} — customer has no email address`,
+                );
             }
 
-      saved.uuid = getOrderReference(saved.uuid);
+            saved.uuid = getOrderReference(saved.uuid);
 
             return saved;
         } catch (error: any) {
-      console.log('errorerrorerror', error);
+            console.log('errorerrorerror', error);
 
             this.logger.error(`Error updating order status: ${error}`);
             if (error instanceof HttpException) {
@@ -1860,8 +1861,8 @@ export class OrderService {
         for (const item of order.orderItems) {
             const inventoryItem = await this.inventoryRepository.findOne({
                 where: {
-          variant: { id: item.variant.id },
-        },
+                    variant: { id: item.variant.id },
+                },
             });
 
             if (!inventoryItem) continue;
@@ -1873,7 +1874,7 @@ export class OrderService {
                 },
                 relations: {
                     inventoryItem: true,
-          warehouse: true,
+                    warehouse: true,
                 },
             });
 
@@ -1903,37 +1904,37 @@ export class OrderService {
 
             if (coupon) {
                 coupon.ordersCount = Math.max(0, coupon.ordersCount - 1);
-        coupon.totalSales.amount = Math.max(
-          0,
-          coupon.totalSales.amount - (order.subTotal?.amount ?? 0),
-        );
-        coupon.totalCommission.amount = Math.max(
-          0,
-          coupon.totalCommission.amount - commissionAmount,
-        );
+                coupon.totalSales.amount = Math.max(
+                    0,
+                    coupon.totalSales.amount - (order.subTotal?.amount ?? 0),
+                );
+                coupon.totalCommission.amount = Math.max(
+                    0,
+                    coupon.totalCommission.amount - commissionAmount,
+                );
                 await this.couponRepository.save(coupon);
 
                 if (coupon.affiliate?.wallet && commissionAmount > 0) {
                     const wallet = coupon.affiliate.wallet;
-          wallet.amount.amount = Math.max(
-            0,
-            wallet.amount.amount - commissionAmount,
-          );
-          wallet.amountAvailable.amount = Math.max(
-            0,
-            wallet.amountAvailable.amount - commissionAmount,
-          );
+                    wallet.amount.amount = Math.max(
+                        0,
+                        wallet.amount.amount - commissionAmount,
+                    );
+                    wallet.amountAvailable.amount = Math.max(
+                        0,
+                        wallet.amountAvailable.amount - commissionAmount,
+                    );
                     await this.walletRepository.save(wallet);
 
                     const affiliate = coupon.affiliate;
-          affiliate.totalCommission.amount = Math.max(
-            0,
-            affiliate.totalCommission.amount - commissionAmount,
-          );
-          affiliate.remainingBalance.amount = Math.max(
-            0,
-            affiliate.remainingBalance.amount - commissionAmount,
-          );
+                    affiliate.totalCommission.amount = Math.max(
+                        0,
+                        affiliate.totalCommission.amount - commissionAmount,
+                    );
+                    affiliate.remainingBalance.amount = Math.max(
+                        0,
+                        affiliate.remainingBalance.amount - commissionAmount,
+                    );
                     affiliate.couponsUsed = Math.max(0, affiliate.couponsUsed - 1);
                     await this.affiliateRepository.save(affiliate);
                 }
@@ -1945,14 +1946,14 @@ export class OrderService {
 
             if (globalCoupon) {
                 globalCoupon.ordersCount = Math.max(0, globalCoupon.ordersCount - 1);
-        globalCoupon.totalSales.amount = Math.max(
-          0,
-          globalCoupon.totalSales.amount - (order.subTotal?.amount ?? 0),
-        );
-        globalCoupon.totalCommission.amount = Math.max(
-          0,
-          globalCoupon.totalCommission.amount - commissionAmount,
-        );
+                globalCoupon.totalSales.amount = Math.max(
+                    0,
+                    globalCoupon.totalSales.amount - (order.subTotal?.amount ?? 0),
+                );
+                globalCoupon.totalCommission.amount = Math.max(
+                    0,
+                    globalCoupon.totalCommission.amount - commissionAmount,
+                );
                 globalCoupon.timesUsed = Math.max(0, globalCoupon.timesUsed - 1);
                 await this.globalCouponRepository.save(globalCoupon);
             }
@@ -1967,15 +1968,15 @@ export class OrderService {
      * the checkout tab mid-session (no webhook ever arrives in that case)
      * isn't stuck waiting out the payment-expiry window to try again.
      */
-    async retryPayment(uuid: string, customerUuid?: string): Promise<Order> {
+    async retryPayment(uuid: string, dto: RetryPaymentDto, customerUuid?: string): Promise<Order> {
         let order: Order | null = null;
 
         if (uuid.length === 6) {
             order = await this.orderRepository
-        .createQueryBuilder('order')
-        .leftJoinAndSelect('order.customer', 'customer')
-        .leftJoinAndSelect('order.shippingAddress', 'shippingAddress')
-        .leftJoinAndSelect('order.paymentTransaction', 'paymentTransaction')
+                .createQueryBuilder('order')
+                .leftJoinAndSelect('order.customer', 'customer')
+                .leftJoinAndSelect('order.shippingAddress', 'shippingAddress')
+                .leftJoinAndSelect('order.paymentTransaction', 'paymentTransaction')
                 .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
                     uuid,
                 })
@@ -2071,29 +2072,49 @@ export class OrderService {
         const customerName: Array<string> = order.customer.fullName.split(" ");
         const provider = order.paymentTransaction?.provider ?? PaymentProvider.SKIPCASH;
 
-        const paymentPayload = {
-            provider,
-            amount: order.total,
-            currency: order.total.currencyCode,
-            orderUUID: order.uuid,
-            firstName: customerName[0],
-            lastName: customerName[1] ?? customerName[0],
-            emailAddress: order.customer.emailAddress,
-      phoneNumber: order.shippingAddress.phoneNumber.replace(/\s+/g, ''),
-            street: order.shippingAddress.streetAddress,
-            city: order.shippingAddress.city,
-            state: order.shippingAddress.state,
-            country: order.shippingAddress.country,
-            postalCode: order.shippingAddress.zipCode,
-        };
+        let payment: PaymentTransaction | null = null;
+        if (dto.tokenId) {
+            const paymentPayload: CreatePaymentDto = {
+                provider: provider,
+                amount: order.total,
+                currency: order.total.currencyCode,
+                orderUUID: order.uuid,
+                firstName: customerName[0],
+                lastName: customerName[1] ?? customerName[0],
+                emailAddress: order.customer.emailAddress,
+                phoneNumber: order.shippingAddress.phoneNumber.replace(/\s+/g, ""),
+                street: order.shippingAddress.streetAddress,
+                city: order.shippingAddress.city,
+                state: order.shippingAddress.state,
+                country: order.shippingAddress.country,
+                postalCode: order.shippingAddress.zipCode,
+                tokenId: dto.tokenId,
+                returnUrl: dto.redirectUrl,
+            }
+            payment = await this.paymentService.createPayment(paymentPayload);
+        } else {
+            const paymentSessionPayload: CreateSkipCashSessionDto = {
+                provider: provider,
+                amount: order.total,
+                currency: order.total.currencyCode,
+                paymentMethod: dto.paymentMethod,
+                order: order,
+                firstName: customerName[0],
+                lastName: customerName[1] ?? customerName[0],
+                emailAddress: order.customer.emailAddress,
+                phoneNumber: order.shippingAddress.phoneNumber.replace(/\s+/g, ""),
+                platform: dto.platform,
+            }
+            if (dto.tokenizeCard) {
+                paymentSessionPayload.tokenizeCard = dto.tokenizeCard;
+            }
+            payment = await this.paymentService.createSkipCashSession(order.customer.uuid, paymentSessionPayload);
+        }
+            order.paymentTransaction = payment;
+            order.status = OrderStatus.PAYMENT_PENDING;
 
-        const payment = await this.paymentService.createPayment(paymentPayload);
-
-        order.paymentTransaction = payment;
-        order.status = OrderStatus.PAYMENT_PENDING;
-
-        return this.orderRepository.save(order);
-    }
+            return this.orderRepository.save(order);
+        }
 
     /**
      * Force-expires a single stale, never-completed payment order — called
@@ -2101,10 +2122,10 @@ export class OrderService {
      * the stock and coupon usage held since order creation, since a customer
      * who never retries has no further claim on either.
      */
-    async expireStalePayment(uuid: string): Promise<void> {
-        let order: Order | null = null;
+    async expireStalePayment(uuid: string): Promise < void> {
+            let order: Order | null = null;
 
-        if (uuid.length === 6) {
+            if(uuid.length === 6) {
             order = await this.orderRepository.findOne({
                 where: {
                     uuid: Raw((alias) => `RIGHT(${alias}::text, 6) = '${uuid}'`),
@@ -2150,34 +2171,34 @@ export class OrderService {
         await this.orderRepository.save(order);
 
         if (order.customer) {
-      this.notificationsService
-        .create({
-                customerUUID: order.customer.uuid,
-                type: NotificationType.PAYMENT_FAILED,
-                title: 'Payment Expired',
-                brief: 'Your payment window has expired.',
-                message: `Payment for order #${order.uuid} expired before it was completed. Please place a new order to try again.`,
-                priority: NotificationPriority.HIGH,
-        })
-        .catch((err) =>
-          this.logger.warn(
-            `Failed to send PAYMENT_EXPIRED notification: ${err?.message}`,
-          ),
-        );
+            this.notificationsService
+                .create({
+                    customerUUID: order.customer.uuid,
+                    type: NotificationType.PAYMENT_FAILED,
+                    title: 'Payment Expired',
+                    brief: 'Your payment window has expired.',
+                    message: `Payment for order #${order.uuid} expired before it was completed. Please place a new order to try again.`,
+                    priority: NotificationPriority.HIGH,
+                })
+                .catch((err) =>
+                    this.logger.warn(
+                        `Failed to send PAYMENT_EXPIRED notification: ${err?.message}`,
+                    ),
+                );
 
             if (order.customer.emailAddress) {
-        this.emailService
-          .sendOrderCancelledEmail(order.customer.emailAddress, {
-                    customerName: order.customer.fullName,
-                    orderId: order.uuid,
-            reason:
-              'Your payment window expired before it was completed. Please place a new order to try again.',
-          })
-          .catch((err) =>
-            this.logger.error(
-              `[Email] Failed to send payment-expired email for order ${order.uuid}: ${err?.message}`,
-            ),
-          );
+                this.emailService
+                    .sendOrderCancelledEmail(order.customer.emailAddress, {
+                        customerName: order.customer.fullName,
+                        orderId: order.uuid,
+                        reason:
+                            'Your payment window expired before it was completed. Please place a new order to try again.',
+                    })
+                    .catch((err) =>
+                        this.logger.error(
+                            `[Email] Failed to send payment-expired email for order ${order.uuid}: ${err?.message}`,
+                        ),
+                    );
             }
         }
     }
@@ -2194,11 +2215,11 @@ export class OrderService {
 
             if (uuid.length === 6) {
                 order = await this.orderRepository
-          .createQueryBuilder('order')
-          .leftJoinAndSelect('order.orderItems', 'orderItems')
-          .leftJoinAndSelect('orderItems.variant', 'variant')
-          .leftJoinAndSelect('orderItems.warehouse', 'warehouse')
-          .leftJoinAndSelect('order.customer', 'customer')
+                    .createQueryBuilder('order')
+                    .leftJoinAndSelect('order.orderItems', 'orderItems')
+                    .leftJoinAndSelect('orderItems.variant', 'variant')
+                    .leftJoinAndSelect('orderItems.warehouse', 'warehouse')
+                    .leftJoinAndSelect('order.customer', 'customer')
                     .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
                         uuid,
                     })
@@ -2235,10 +2256,10 @@ export class OrderService {
             await this.orderRepository.save(order);
 
             const cancelledExists = await this.trackingEventRepository.findOne({
-        where: {
-          orderUuid: order.uuid,
-          stage: OrderTrackingStage.ORDER_CANCELLED,
-        },
+                where: {
+                    orderUuid: order.uuid,
+                    stage: OrderTrackingStage.ORDER_CANCELLED,
+                },
             });
             if (!cancelledExists) {
                 await this.trackingEventRepository.save(
@@ -2253,39 +2274,39 @@ export class OrderService {
             }
 
             if (order.customer) {
-        this.notificationsService
-          .create({
-                    customerUUID: order.customer.uuid,
-                    type: NotificationType.ORDER_CANCELLED,
-                    title: 'Order Cancelled',
-                    brief: 'Your order has been cancelled.',
-                    message: `Your order #${order.uuid} has been cancelled and your stock has been restored.`,
-                    priority: NotificationPriority.HIGH,
-          })
-          .catch((err) =>
-            this.logger.warn(
-              `Failed to send ORDER_CANCELLED notification: ${err?.message}`,
-            ),
-          );
+                this.notificationsService
+                    .create({
+                        customerUUID: order.customer.uuid,
+                        type: NotificationType.ORDER_CANCELLED,
+                        title: 'Order Cancelled',
+                        brief: 'Your order has been cancelled.',
+                        message: `Your order #${order.uuid} has been cancelled and your stock has been restored.`,
+                        priority: NotificationPriority.HIGH,
+                    })
+                    .catch((err) =>
+                        this.logger.warn(
+                            `Failed to send ORDER_CANCELLED notification: ${err?.message}`,
+                        ),
+                    );
 
                 if (order.customer.emailAddress) {
-          this.logger.log(
-            `[Email] Sending order-cancelled email to ${order.customer.emailAddress} for order ${order.uuid}`,
-          );
-          this.emailService
-            .sendOrderCancelledEmail(order.customer.emailAddress, {
-                        customerName: order.customer.fullName,
-                        orderId: order.uuid,
-            })
-            .catch((err) =>
-              this.logger.error(
-                `[Email] Failed to send order-cancelled email for order ${order.uuid}: ${err?.message}`,
-              ),
-            );
+                    this.logger.log(
+                        `[Email] Sending order-cancelled email to ${order.customer.emailAddress} for order ${order.uuid}`,
+                    );
+                    this.emailService
+                        .sendOrderCancelledEmail(order.customer.emailAddress, {
+                            customerName: order.customer.fullName,
+                            orderId: order.uuid,
+                        })
+                        .catch((err) =>
+                            this.logger.error(
+                                `[Email] Failed to send order-cancelled email for order ${order.uuid}: ${err?.message}`,
+                            ),
+                        );
                 } else {
-          this.logger.warn(
-            `[Email] Skipping order-cancelled email for order ${order.uuid} — customer has no email address`,
-          );
+                    this.logger.warn(
+                        `[Email] Skipping order-cancelled email for order ${order.uuid} — customer has no email address`,
+                    );
                 }
             }
         } catch (error: any) {
@@ -2308,117 +2329,117 @@ export class OrderService {
    * shipped (a SHIPPED WMS outbound exists) — in that case inventory/coupon are left
    * untouched since the physical goods already left the warehouse.
    */
-  async hardDeleteOrder(uuid: string): Promise<{ message: string }> {
-    let order: Order | null = null;
+    async hardDeleteOrder(uuid: string): Promise<{ message: string }> {
+        let order: Order | null = null;
 
-    if (uuid.length === 6) {
-      order = await this.orderRepository
-        .createQueryBuilder('order')
-        .leftJoinAndSelect('order.orderItems', 'orderItems')
-        .leftJoinAndSelect('orderItems.variant', 'variant')
-        .leftJoinAndSelect('orderItems.warehouse', 'warehouse')
-        .leftJoinAndSelect('order.paymentTransaction', 'paymentTransaction')
-        .leftJoinAndSelect('order.coupon', 'coupon')
-        .leftJoinAndSelect('order.globalCoupon', 'globalCoupon')
-        .where('RIGHT("order"."uuid"::text, 6) = :uuid', { uuid })
-        .getOne();
-    } else {
-      order = await this.orderRepository.findOne({
-        where: { uuid },
-        relations: {
-          orderItems: { variant: true, warehouse: true },
-          paymentTransaction: true,
-          coupon: true,
-          globalCoupon: true,
-        },
-      });
+        if (uuid.length === 6) {
+            order = await this.orderRepository
+                .createQueryBuilder('order')
+                .leftJoinAndSelect('order.orderItems', 'orderItems')
+                .leftJoinAndSelect('orderItems.variant', 'variant')
+                .leftJoinAndSelect('orderItems.warehouse', 'warehouse')
+                .leftJoinAndSelect('order.paymentTransaction', 'paymentTransaction')
+                .leftJoinAndSelect('order.coupon', 'coupon')
+                .leftJoinAndSelect('order.globalCoupon', 'globalCoupon')
+                .where('RIGHT("order"."uuid"::text, 6) = :uuid', { uuid })
+                .getOne();
+        } else {
+            order = await this.orderRepository.findOne({
+                where: { uuid },
+                relations: {
+                    orderItems: { variant: true, warehouse: true },
+                    paymentTransaction: true,
+                    coupon: true,
+                    globalCoupon: true,
+                },
+            });
+        }
+
+        if (!order) {
+            throw new NotFoundException({ error: 'Order not found' });
+        }
+
+        const orderUuid = order.uuid;
+
+        const shippedOutboundLink = await this.wmsOrderLinkRepository
+            .createQueryBuilder('link')
+            .innerJoin(
+                'link.wmsOrder',
+                'wmsOrder',
+                'wmsOrder.type = :type AND wmsOrder.status = :status',
+                {
+                    type: JopWmsOrderType.OUTBOUND,
+                    status: JopWmsOutboundStatus.SHIPPED,
+                },
+            )
+            .where('link.orderUuid = :uuid', { uuid: orderUuid })
+            .getOne();
+
+        if (shippedOutboundLink) {
+            this.logger.warn(
+                `hardDeleteOrder ${orderUuid}: goods already shipped — skipping inventory restore and coupon release`,
+            );
+        } else {
+            await this.restoreInventory(order);
+            await this.releaseCouponUsage(order);
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // ReturnRequest has no onDelete: 'CASCADE' toward Order, so it must be removed
+            // before the order row itself or the delete would fail on the FK constraint.
+            // ReturnEvidence cascades from ReturnRequest at the DB level (onDelete: CASCADE).
+            await queryRunner.manager.delete(ReturnRequest, {
+                order: { id: order.id },
+            });
+
+            // Plain orderUuid columns, not enforced FKs — clear rather than fail on them.
+            await queryRunner.manager.delete(OrderTrackingEvent, { orderUuid });
+            await queryRunner.manager.update(
+                ProductReview,
+                { orderUuid },
+                { orderUuid: null },
+            );
+
+            // JopWmsOrderLink cascades automatically (onDelete: 'CASCADE' on its Order FK).
+            // orderItems/paymentTransaction cascade via Order's own relation config
+            // (cascade: true), since both are loaded on `order`.
+            await queryRunner.manager.remove(Order, order);
+
+            await queryRunner.commitTransaction();
+        } catch (error: any) {
+            await queryRunner.rollbackTransaction();
+            this.logger.error(
+                `hardDeleteOrder ${orderUuid}: failed — ${error?.message}`,
+            );
+            throw new InternalServerErrorException({
+                error: 'Failed to delete order',
+                details: error?.message || error,
+            });
+        } finally {
+            await queryRunner.release();
+        }
+
+        this.logger.warn(
+            `Order ${orderUuid} HARD DELETED — items, payment record, WMS links, tracking events, and return requests removed`,
+        );
+
+        return { message: `Order ${orderUuid} permanently deleted` };
     }
 
-    if (!order) {
-      throw new NotFoundException({ error: 'Order not found' });
-    }
-
-    const orderUuid = order.uuid;
-
-    const shippedOutboundLink = await this.wmsOrderLinkRepository
-      .createQueryBuilder('link')
-      .innerJoin(
-        'link.wmsOrder',
-        'wmsOrder',
-        'wmsOrder.type = :type AND wmsOrder.status = :status',
-        {
-          type: JopWmsOrderType.OUTBOUND,
-          status: JopWmsOutboundStatus.SHIPPED,
-        },
-      )
-      .where('link.orderUuid = :uuid', { uuid: orderUuid })
-      .getOne();
-
-    if (shippedOutboundLink) {
-      this.logger.warn(
-        `hardDeleteOrder ${orderUuid}: goods already shipped — skipping inventory restore and coupon release`,
-      );
-    } else {
-      await this.restoreInventory(order);
-      await this.releaseCouponUsage(order);
-    }
-
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      // ReturnRequest has no onDelete: 'CASCADE' toward Order, so it must be removed
-      // before the order row itself or the delete would fail on the FK constraint.
-      // ReturnEvidence cascades from ReturnRequest at the DB level (onDelete: CASCADE).
-      await queryRunner.manager.delete(ReturnRequest, {
-        order: { id: order.id },
-      });
-
-      // Plain orderUuid columns, not enforced FKs — clear rather than fail on them.
-      await queryRunner.manager.delete(OrderTrackingEvent, { orderUuid });
-      await queryRunner.manager.update(
-        ProductReview,
-        { orderUuid },
-        { orderUuid: null },
-      );
-
-      // JopWmsOrderLink cascades automatically (onDelete: 'CASCADE' on its Order FK).
-      // orderItems/paymentTransaction cascade via Order's own relation config
-      // (cascade: true), since both are loaded on `order`.
-      await queryRunner.manager.remove(Order, order);
-
-      await queryRunner.commitTransaction();
-    } catch (error: any) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error(
-        `hardDeleteOrder ${orderUuid}: failed — ${error?.message}`,
-      );
-      throw new InternalServerErrorException({
-        error: 'Failed to delete order',
-        details: error?.message || error,
-      });
-    } finally {
-      await queryRunner.release();
-    }
-
-    this.logger.warn(
-      `Order ${orderUuid} HARD DELETED — items, payment record, WMS links, tracking events, and return requests removed`,
-    );
-
-    return { message: `Order ${orderUuid} permanently deleted` };
-  }
-
-  /**
-    * order preview
-    * @param customer
-    * @returns
-    */
-  async orderPreview(
-    customer: Customer,
-    currencyCode: CurrencyCode = CurrencyCode.QAR,
-    couponCode?: string,
-  ): Promise<OrderPreviewResponse> {
+    /**
+      * order preview
+      * @param customer
+      * @returns
+      */
+    async orderPreview(
+        customer: Customer,
+        currencyCode: CurrencyCode = CurrencyCode.QAR,
+        couponCode?: string,
+    ): Promise<OrderPreviewResponse> {
         try {
             // Get cart items with relations
             const cartItems = await this.cartRepository.find({
@@ -2440,20 +2461,20 @@ export class OrderService {
                     },
                     variant: {
                         inventoryItem: {
-              levels: true,
+                            levels: true,
                         },
                         images: true,
                         optionValues: {
                             optionValue: {
-                option: true,
-              },
-            },
-          },
-        },
+                                option: true,
+                            },
+                        },
+                    },
+                },
             });
 
             if (!cartItems || cartItems.length === 0) {
-        throw new BadRequestException('Cart is empty');
+                throw new BadRequestException('Cart is empty');
             }
 
             // await Promise.all(
@@ -2486,16 +2507,16 @@ export class OrderService {
             });
 
             if (!address) {
-        throw new BadRequestException('User address cannot be found.');
+                throw new BadRequestException('User address cannot be found.');
             }
 
             // Validate cart items and prepare for shipping calculation
             const validatedItems: CartItem[] = [];
-      let subTotal: Money = {
-        amount: 0,
-        minorAmount: 0,
-        currencyCode: currencyCode,
-      };
+            let subTotal: Money = {
+                amount: 0,
+                minorAmount: 0,
+                currencyCode: currencyCode,
+            };
 
             let campaign: Campaign | null = null;
 
@@ -2505,7 +2526,7 @@ export class OrderService {
 
                 if (stock < item.quantity) {
                     throw new BadRequestException(
-            `Insufficient stock for ${item.product.titleEn} - ${item.variant.titleEn}`,
+                        `Insufficient stock for ${item.product.titleEn} - ${item.variant.titleEn}`,
                     );
                 }
 
@@ -2521,14 +2542,14 @@ export class OrderService {
                 );
 
                 // Calculate discounted price on the variant
-        const priceDiscount =
-          await this.pricingService.applyPriceOnProductVariant(
-                    item.product,
-                    item.variant,
-                    campaign,
-                    currencyCode,
-                    true,
-                );
+                const priceDiscount =
+                    await this.pricingService.applyPriceOnProductVariant(
+                        item.product,
+                        item.variant,
+                        campaign,
+                        currencyCode,
+                        true,
+                    );
 
                 // Apply base and discounted price on the variant
                 item.variant.price = price;
@@ -2550,70 +2571,70 @@ export class OrderService {
                 validatedItems.push(item);
             }
 
-      const repricedCartItems =
-        await this.bundlesService.applyBundlesToCartItems(
-          validatedItems,
-          currencyCode,
-          address.country,
-        );
-      subTotal = repricedCartItems.reduce(
-        (sum, item) => addMoney(sum, item.total),
-        {
-          amount: 0,
-          minorAmount: 0,
-          currencyCode,
-        },
-      );
+            const repricedCartItems =
+                await this.bundlesService.applyBundlesToCartItems(
+                    validatedItems,
+                    currencyCode,
+                    address.country,
+                );
+            subTotal = repricedCartItems.reduce(
+                (sum, item) => addMoney(sum, item.total),
+                {
+                    amount: 0,
+                    minorAmount: 0,
+                    currencyCode,
+                },
+            );
 
             const [exchangeRates] = await Promise.all([
-        this.exchangeRateService.findAll('', ''),
+                this.exchangeRateService.findAll('', ''),
             ]);
             const currency = cartItems[0]?.subTotal.currencyCode;
 
-      const freeShippingExchangeRate =
-        1 /
-        (exchangeRates.find(
-          (rate) =>
-            rate.srcCurrencyCode === currency &&
-            rate.targetCurrencyCode === 'qar',
-        )?.factor || 1);
+            const freeShippingExchangeRate =
+                1 /
+                (exchangeRates.find(
+                    (rate) =>
+                        rate.srcCurrencyCode === currency &&
+                        rate.targetCurrencyCode === 'qar',
+                )?.factor || 1);
 
             let shippingCost = 0;
-      let eta = '';
+            let eta = '';
             let shippingCalculation: ShippingCalculationResult | null = null;
 
             // Fetch free shipping threshold once
-      const freeShippingValue =
-        Number(
-          (
-            await this.keyValuePairRepository.findOne({
-              where: {
-                name: `free_shipping_above_${currency}`.toLowerCase().trim(),
-              },
-            })
-          )?.integerValue,
-            ) || 0;
+            const freeShippingValue =
+                Number(
+                    (
+                        await this.keyValuePairRepository.findOne({
+                            where: {
+                                name: `free_shipping_above_${currency}`.toLowerCase().trim(),
+                            },
+                        })
+                    )?.integerValue,
+                ) || 0;
 
-      const freeShippingEnabled =
-        Boolean(
-          (
-            await this.keyValuePairRepository.findOne({
-                    where: {
-                name: 'free_shipping_enabled',
-                type: KeyValuePairType.Boolean,
-              },
-            })
-          )?.booleanValue,
-            ) || false;
+            const freeShippingEnabled =
+                Boolean(
+                    (
+                        await this.keyValuePairRepository.findOne({
+                            where: {
+                                name: 'free_shipping_enabled',
+                                type: KeyValuePairType.Boolean,
+                            },
+                        })
+                    )?.booleanValue,
+                ) || false;
 
             // Decide if we should charge shipping
-      const shouldApplyShipping =
-        !freeShippingEnabled ||
-        freeShippingValue === null ||
-        moneyToFloat(subTotal) < freeShippingValue * freeShippingExchangeRate;
+            const shouldApplyShipping =
+                !freeShippingEnabled ||
+                freeShippingValue === null ||
+                moneyToFloat(subTotal) < freeShippingValue * freeShippingExchangeRate;
 
             if (shouldApplyShipping) {
-        const shippingCartItems = cartItems.map((item) => ({
+                const shippingCartItems = cartItems.map((item) => ({
                     weight: item.variant.weight,
                     quantity: item.quantity,
                 }));
@@ -2623,7 +2644,7 @@ export class OrderService {
                     address.country,
                     currencyCode,
                     exchangeRates,
-          moneyToFloat(subTotal),
+                    moneyToFloat(subTotal),
                 );
 
                 shippingCost = Math.ceil(shippingCalculation.totalShippingCost);
@@ -2631,11 +2652,11 @@ export class OrderService {
             }
 
             // COUPON VALIDATION & DISCOUNT
-      let discount: Money = {
-        amount: 0,
-        minorAmount: 0,
-        currencyCode: currencyCode,
-      };
+            let discount: Money = {
+                amount: 0,
+                minorAmount: 0,
+                currencyCode: currencyCode,
+            };
             if (couponCode) {
                 let coupon: Coupon | GlobalCoupon | null = null;
                 const affiliateCoupon = await this.couponRepository.findOne({
@@ -2650,8 +2671,8 @@ export class OrderService {
 
                 if (campaign && affiliateCoupon) {
                     throw new BadRequestException(
-            'Coupon cannot be applied. Campaign products exists.',
-          );
+                        'Coupon cannot be applied. Campaign products exists.',
+                    );
                 }
 
                 coupon = affiliateCoupon;
@@ -2662,13 +2683,13 @@ export class OrderService {
                     });
                     if (!globalCoupon) {
                         throw new BadRequestException(
-              'Coupon does not exists. Please try again with valid coupon.',
-            );
+                            'Coupon does not exists. Please try again with valid coupon.',
+                        );
                     }
                     if (globalCoupon.timesUsed === globalCoupon.usageLimit) {
                         throw new BadRequestException(
-              'Coupon usage limit exceeded. Please try again with valid coupon.',
-            );
+                            'Coupon usage limit exceeded. Please try again with valid coupon.',
+                        );
                     }
                     coupon = globalCoupon;
                 }
@@ -2695,19 +2716,19 @@ export class OrderService {
             // }
 
             // Calculate total order amount
-      const shippingCostMoney: Money = {
-        amount: shippingCost,
-        minorAmount: 0,
-        currencyCode: currencyCode,
-      };
-      const totalAmount = subtractMoney(
-        addMoney(subTotal, shippingCostMoney),
-        discount,
-      );
+            const shippingCostMoney: Money = {
+                amount: shippingCost,
+                minorAmount: 0,
+                currencyCode: currencyCode,
+            };
+            const totalAmount = subtractMoney(
+                addMoney(subTotal, shippingCostMoney),
+                discount,
+            );
 
             // Return complete order preview
             const orderPreview: OrderPreviewResponse = {
-        items: repricedCartItems,
+                items: repricedCartItems,
                 shippingAddress: address,
                 cart_total: moneyToFloat(subTotal),
                 discount: moneyToFloat(discount),
@@ -2717,34 +2738,34 @@ export class OrderService {
                 eta: eta,
             };
 
-      const min_order_amount =
-        Number(
-          (
-            await this.keyValuePairRepository.findOne({
-                    where: {
-                        name: `min_order_amount_${currency}`,
-                type: KeyValuePairType.Integer,
-              },
-            })
-          )?.integerValue,
-            ) || 0;
+            const min_order_amount =
+                Number(
+                    (
+                        await this.keyValuePairRepository.findOne({
+                            where: {
+                                name: `min_order_amount_${currency}`,
+                                type: KeyValuePairType.Integer,
+                            },
+                        })
+                    )?.integerValue,
+                ) || 0;
 
-      if (
-        isLesserThan(subTotal, {
-          amount: min_order_amount,
-          minorAmount: 0,
-          currencyCode: currencyCode,
-        })
-      ) {
-        orderPreview.orderTotalWarning =
-          'Order value should not be less than 250 QAR';
+            if (
+                isLesserThan(subTotal, {
+                    amount: min_order_amount,
+                    minorAmount: 0,
+                    currencyCode: currencyCode,
+                })
+            ) {
+                orderPreview.orderTotalWarning =
+                    'Order value should not be less than 250 QAR';
             }
 
             return orderPreview;
         } catch (error: any) {
-      this.logger.error(
-        `Error getting order preview: ${error?.response?.error || error}`,
-      );
+            this.logger.error(
+                `Error getting order preview: ${error?.response?.error || error}`,
+            );
             if (error instanceof HttpException) {
                 throw error;
             } else {
