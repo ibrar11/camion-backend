@@ -223,6 +223,10 @@ export class ProductsService {
 		return Promise.all(products.map((product) => this.__attachUrgencyStockCount(product, campaign)));
 	}
 
+	async attachUrgencyStockCount(product: Product, campaign: Campaign | null = null): Promise<Product> {
+		return this.__attachUrgencyStockCount(product, campaign);
+	}
+
 	private async recalculateCategoryProductsCount(categoryIds: number[]): Promise<void> {
 		if (categoryIds.length === 0) return;
 		await this.categoryRepository

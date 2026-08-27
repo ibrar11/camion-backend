@@ -17,6 +17,7 @@ import { ClientsModule } from '../clients/clients.module';
 import { CustomersModule } from '../customers/customers.module';
 
 import { PricingModule } from '../pricing/pricing.module';
+import { InventoryModule } from '../inventory/inventory.module';
 
 import { WishListResolver } from './wishlist.resolver';
 
@@ -29,6 +30,7 @@ import { WishListResolver } from './wishlist.resolver';
         AuthModule,
         ClientsModule,
         CustomersModule,
+        InventoryModule,
         PricingModule,
         UsersModule,
     ],
