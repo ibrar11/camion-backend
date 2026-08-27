@@ -70,4 +70,8 @@ export class CreatePaymentDto {
     @IsOptional()
     @IsString()
     tokenId?: string;
+
+    @IsOptional()
+    @IsString()
+    returnUrl?: string;
 }
