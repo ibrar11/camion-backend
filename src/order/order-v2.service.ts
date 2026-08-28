@@ -51,6 +51,7 @@ import { getBestCampaign } from "../common/bestCampaign";
 
 import { Campaign } from "../campaigns/entities/campaign.entity";
 import { OrderPreviewV2Dto } from './dtos/OrderPreviewV2Dto';
+import { BundlesService } from '../bundles/bundles.service';
 
 import { Money, multiplyMoney, addMoney, subtractMoney, moneyToFloat, isLesserThan } from '../common/currency';
 
@@ -66,6 +67,7 @@ export class OrderServiceV2 {
         @InjectRepository(KeyValuePair) private readonly keyValuePairRepository: Repository<KeyValuePair>,
         @Inject(ExchangeRateService) private readonly exchangeRateService: ExchangeRateService,
         @Inject(PricingService) private readonly pricingService: PricingService,
+        @Inject(BundlesService) private readonly bundlesService: BundlesService,
     ) { }
 
     /**
@@ -151,8 +153,6 @@ export class OrderServiceV2 {
 
             // Validate cart items and prepare for shipping calculation
             const validatedItems: CartItem[] = [];
-            let subTotal: Money = { amount: 0, minorAmount: 0, currencyCode: body.currency };
-
             let campaign: Campaign | null = null;
 
             for (const item of cartItems) {
@@ -190,7 +190,6 @@ export class OrderServiceV2 {
                 item.variant.discountedPrice = priceDiscount;
 
                 const itemTotal = multiplyMoney(priceDiscount, item.quantity);
-                subTotal = addMoney(subTotal, itemTotal);
 
                 item.availableStock = stock;
                 item.isAvailable = stock > 0;
@@ -205,6 +204,21 @@ export class OrderServiceV2 {
 
                 validatedItems.push(item);
             }
+
+            const repricedCartItems =
+                await this.bundlesService.applyBundlesToCartItems(
+                    validatedItems,
+                    body.currency,
+                    address.country,
+                );
+            const subTotal = repricedCartItems.reduce(
+                (sum, item) => addMoney(sum, item.total),
+                {
+                    amount: 0,
+                    minorAmount: 0,
+                    currencyCode: body.currency,
+                },
+            );
 
             const [exchangeRates] = await Promise.all([
                 this.exchangeRateService.findAll("", "")
@@ -321,7 +335,7 @@ export class OrderServiceV2 {
 
             // Return complete order preview
             const orderPreview: OrderPreviewResponse = {
-                items: validatedItems,
+                items: repricedCartItems,
                 shippingAddress: address,
                 cart_total: moneyToFloat(subTotal),
                 discount: moneyToFloat(discount),
