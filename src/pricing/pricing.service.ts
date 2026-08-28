@@ -78,6 +78,11 @@ export class PricingService {
 	private _lastSyncAt: Date | null = null;
 
 	/**
+	 * Reused while a sync is already in flight so callers do not stampede the DB.
+	 */
+	private _syncExchangeRatesPromise: Promise<void> | null = null;
+
+	/**
 	 * A list of exchange rates that will be used to calculate the price of product variants
 	 */
 	private _exchangeRates: Array<ExchangeRate> = [];
@@ -88,7 +93,7 @@ export class PricingService {
 	 * @param exchangeRateRepository
 	 */
 	constructor(@InjectRepository(ExchangeRate) private readonly exchangeRateRepository: Repository<ExchangeRate>) {
-		this.syncExchangeRates();
+		void this.syncExchangeRates();
 	}
 
 	/**
@@ -100,20 +105,30 @@ export class PricingService {
 			return;
 		}
 
-		// Populate the exchange rates
-		this._exchangeRates = await this.exchangeRateRepository.find({
-			where: {
-				srcCurrencyCode: CurrencyCode.CNY
-			},
-			order: {
-				id: "DESC",
-			},
-			skip: 0,
-			take: 10,
+		if (this._syncExchangeRatesPromise !== null) {
+			return this._syncExchangeRatesPromise;
+		}
+
+		this._syncExchangeRatesPromise = (async () => {
+			// Populate the exchange rates
+			this._exchangeRates = await this.exchangeRateRepository.find({
+				where: {
+					srcCurrencyCode: CurrencyCode.CNY
+				},
+				order: {
+					id: "DESC",
+				},
+				skip: 0,
+				take: 10,
+			});
+
+			// Keep a track of the last sync time to keep exchange rates and key value pairs updated
+			this._lastSyncAt = new Date();
+		})().finally(() => {
+			this._syncExchangeRatesPromise = null;
 		});
 
-		// Keep a track of the last sync time to keep exchange rates and key value pairs updated
-		this._lastSyncAt = now;
+		return this._syncExchangeRatesPromise;
 	}
 
 	/**
@@ -130,7 +145,7 @@ export class PricingService {
 		this.logger.log(`Calculating the price of product: ${product.uuid}, variant: ${variant.uuid}, currencyCode: ${currency}`);
 
 		// Resync the exchange rates after every 5 minutes
-		this.syncExchangeRates();
+		await this.syncExchangeRates();
 
 		// The pricing factor applied on each product variant
 		const pricingFactor = this.__getPricingFactor(product, campaign);
