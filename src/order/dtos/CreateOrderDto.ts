@@ -2,6 +2,7 @@ import {
     IsArray,
     IsBoolean,
     IsEnum,
+    IsIn,
     IsOptional,
     IsString,
     IsUUID,
@@ -13,8 +14,9 @@ import { PaymentMethod } from '../../payments/enums/PaymentMethod';
 
 export class CreateOrderDto {
     @IsString()
+    @IsOptional()
     @IsEnum(PaymentMethod)
-    paymentMethod: PaymentMethod;
+    paymentMethod: PaymentMethod = PaymentMethod.DEFAULT;
 
     @IsArray()
     @IsUUID("all", { each: true })
@@ -28,9 +30,10 @@ export class CreateOrderDto {
     @IsString()
     couponCode?: string;
 
+    @IsOptional()
     @IsString()
-    @MinLength(1)
-    platform: "web" | "mobile" = "mobile"
+    @IsIn(['web', 'mobile'])
+    platform?: 'web' | 'mobile';
 
     @IsOptional()
     @IsBoolean()
@@ -43,4 +46,6 @@ export class CreateOrderDto {
     @IsOptional()
     @IsString()
     redirectUrl?: string;
+
+    apiVersion?: 'v1' | 'v2';
 }
