@@ -783,43 +783,17 @@ export class OrderService {
             const provider = PaymentProvider.SKIPCASH;
             // payment service needs to integrated here
             // External payment call — if this throws, the entire DB transaction rolls back
+            const clientVersion = this.detectClientVersion(dto);
+            dto.apiVersion = clientVersion;
+
             let payment: PaymentTransaction | null = null;
-            if (dto.tokenId) {
-                const paymentPayload: CreatePaymentDto = {
-                    provider: provider,
-                    amount: total,
-                    currency: currency,
-                    orderUUID: order.uuid,
-                    firstName: customerName[0],
-                    lastName: customerName[1] ?? customerName[0],
-                    emailAddress: customer.emailAddress,
-                    phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
-                    street: address.streetAddress,
-                    city: address.city,
-                    state: address.state,
-                    country: address.country,
-                    postalCode: address.zipCode,
-                    tokenId: dto.tokenId,
-                    returnUrl: dto.redirectUrl,
-                }
-                payment = await this.paymentService.createPayment(paymentPayload);
+            // Determine payment flow based on client version
+            if (this.shouldUseNewPaymentFlow(dto, clientVersion)) {
+                // NEW FLOW: SDK Session
+                payment = await this.initiateNewPaymentFlow(customer, order, dto, address);
             } else {
-                const paymentSessionPayload: CreateSkipCashSessionDto = {
-                    provider: provider,
-                    amount: total,
-                    currency: currency,
-                    paymentMethod: dto.paymentMethod,
-                    order: order,
-                    firstName: customerName[0],
-                    lastName: customerName[1] ?? customerName[0],
-                    emailAddress: customer.emailAddress,
-                    phoneNumber: address.phoneNumber.replace(/\s+/g, ""),
-                    platform: dto.platform,
-                }
-                if (dto.tokenizeCard) {
-                    paymentSessionPayload.tokenizeCard = dto.tokenizeCard;
-                }
-                payment = await this.paymentService.createSkipCashSession(customer.uuid, paymentSessionPayload);
+                // OLD FLOW: Direct Payment (backward compatible)
+                payment = await this.initiateLegacyPaymentFlow(customer, order, dto, address);
             }
             order.paymentTransaction = payment;
             if (moneyToMinor(total) === 0) {
@@ -882,6 +856,126 @@ export class OrderService {
         } finally {
             await queryRunner.release();
         }
+    }
+
+    /**
+     * Detect client version from request
+     */
+    private detectClientVersion(dto: CreateOrderDto | RetryPaymentDto): 'v1' | 'v2' {
+        // Strategy 1: Check for new fields
+        if (dto.tokenizeCard !== undefined || dto.platform) {
+            return 'v2';
+        }
+
+        // Strategy 2: Check payment method value
+        if (['credit_card', 'apple_pay', 'google_pay'].includes(dto.paymentMethod)) {
+            return 'v2';
+        }
+
+        // Strategy 3: Check for tokenId (v2 feature)
+        if (dto.tokenId) {
+            return 'v2';
+        }
+
+        // Default to v1 for backward compatibility
+        return 'v1';
+    }
+
+    /**
+     * Determine if new payment flow should be used
+     */
+    private shouldUseNewPaymentFlow(dto: CreateOrderDto | RetryPaymentDto, version: 'v1' | 'v2'): boolean {
+        if (version === 'v2') return true;
+
+        // Even v1 clients can use new flow if they explicitly request features
+        if (dto.tokenizeCard || dto.platform) return true;
+        if (dto.tokenId) return true;
+
+        return false;
+    }
+
+    /**
+     * Initiate new SDK-based payment flow
+     */
+    private async initiateNewPaymentFlow(
+        customer: Customer,
+        order: Order,
+        dto: CreateOrderDto | RetryPaymentDto,
+        address: CustomerAddress,
+    ): Promise<PaymentTransaction> {
+        const customerName = customer.fullName.split(' ');
+
+        // If tokenId provided, use direct payment
+        if (dto.tokenId) {
+            const paymentPayload: CreatePaymentDto = {
+                provider: PaymentProvider.SKIPCASH,
+                amount: order.total,
+                currency:  order.total.currencyCode,
+                orderUUID: order.uuid,
+                firstName: customerName[0],
+                lastName: customerName[1] ?? customerName[0],
+                emailAddress: customer.emailAddress,
+                phoneNumber: address.phoneNumber.replace(/\s+/g, ''),
+                street: address.streetAddress,
+                city: address.city,
+                state: address.state,
+                country: address.country,
+                postalCode: address.zipCode,
+                tokenId: dto.tokenId,
+            };
+            return this.paymentService.createPayment(paymentPayload);
+        }
+
+        // Otherwise create SDK session
+        const paymentSessionPayload: CreateSkipCashSessionDto = {
+            provider: PaymentProvider.SKIPCASH,
+            amount: order.total,
+            currency: order.total.currencyCode,
+            paymentMethod: dto.paymentMethod,
+            order: order,
+            firstName: customerName[0],
+            lastName: customerName[1] ?? customerName[0],
+            emailAddress: customer.emailAddress,
+            phoneNumber: address.phoneNumber.replace(/\s+/g, ''),
+            platform: dto.platform || 'mobile',
+        };
+
+        if (dto.tokenizeCard) {
+            paymentSessionPayload.tokenizeCard = dto.tokenizeCard;
+        }
+
+        return this.paymentService.createSkipCashSession(customer.uuid, paymentSessionPayload);
+    }
+
+    /**
+     * Initiate legacy direct payment flow (backward compatible)
+     */
+    private async initiateLegacyPaymentFlow(
+        customer: Customer,
+        order: Order,
+        dto: CreateOrderDto | RetryPaymentDto,
+        address: CustomerAddress,
+    ): Promise<PaymentTransaction> {
+        const customerName = customer.fullName.split(' ');
+
+        const provider = PaymentProvider.SKIPCASH;
+        const paymentPayload: CreatePaymentDto = {
+            provider: provider,
+            amount: order.total,
+            currency: order.total.currencyCode,
+            orderUUID: order.uuid,
+            firstName: customerName[0],
+            lastName: customerName[1] ?? customerName[0],
+            emailAddress: customer.emailAddress,
+            phoneNumber: address.phoneNumber.replace(/\s+/g, ''),
+            street: address.streetAddress,
+            city: address.city,
+            state: address.state,
+            country: address.country,
+            postalCode: address.zipCode,
+        };
+
+        return this.paymentService.createPayment(paymentPayload);
     }
 
     /**
@@ -1839,8 +1933,6 @@ export class OrderService {
 
             return saved;
         } catch (error: any) {
-            console.log('errorerrorerror', error);
-
             this.logger.error(`Error updating order status: ${error}`);
             if (error instanceof HttpException) {
                 throw error;
@@ -2072,49 +2164,25 @@ export class OrderService {
         const customerName: Array<string> = order.customer.fullName.split(" ");
         const provider = order.paymentTransaction?.provider ?? PaymentProvider.SKIPCASH;
 
-        let payment: PaymentTransaction | null = null;
-        if (dto.tokenId) {
-            const paymentPayload: CreatePaymentDto = {
-                provider: provider,
-                amount: order.total,
-                currency: order.total.currencyCode,
-                orderUUID: order.uuid,
-                firstName: customerName[0],
-                lastName: customerName[1] ?? customerName[0],
-                emailAddress: order.customer.emailAddress,
-                phoneNumber: order.shippingAddress.phoneNumber.replace(/\s+/g, ""),
-                street: order.shippingAddress.streetAddress,
-                city: order.shippingAddress.city,
-                state: order.shippingAddress.state,
-                country: order.shippingAddress.country,
-                postalCode: order.shippingAddress.zipCode,
-                tokenId: dto.tokenId,
-                returnUrl: dto.redirectUrl,
-            }
-            payment = await this.paymentService.createPayment(paymentPayload);
-        } else {
-            const paymentSessionPayload: CreateSkipCashSessionDto = {
-                provider: provider,
-                amount: order.total,
-                currency: order.total.currencyCode,
-                paymentMethod: dto.paymentMethod,
-                order: order,
-                firstName: customerName[0],
-                lastName: customerName[1] ?? customerName[0],
-                emailAddress: order.customer.emailAddress,
-                phoneNumber: order.shippingAddress.phoneNumber.replace(/\s+/g, ""),
-                platform: dto.platform,
-            }
-            if (dto.tokenizeCard) {
-                paymentSessionPayload.tokenizeCard = dto.tokenizeCard;
-            }
-            payment = await this.paymentService.createSkipCashSession(order.customer.uuid, paymentSessionPayload);
-        }
-            order.paymentTransaction = payment;
-            order.status = OrderStatus.PAYMENT_PENDING;
+        const clientVersion = this.detectClientVersion(dto);
+        dto.apiVersion = clientVersion;
 
-            return this.orderRepository.save(order);
+        let payment: PaymentTransaction | null = null;
+        // Determine payment flow based on client version
+        if (this.shouldUseNewPaymentFlow(dto, clientVersion)) {
+            // NEW FLOW: SDK Session
+            payment = await this.initiateNewPaymentFlow(order.customer, order, dto, order.shippingAddress);
+        } else {
+            // OLD FLOW: Direct Payment (backward compatible)
+            payment = await this.initiateLegacyPaymentFlow(order.customer, order, dto, order.shippingAddress);
         }
+        order.paymentTransaction = payment;
+
+        order.paymentTransaction = payment;
+        order.status = OrderStatus.PAYMENT_PENDING;
+
+        return this.orderRepository.save(order);
+    }
 
     /**
      * Force-expires a single stale, never-completed payment order — called
@@ -2122,10 +2190,10 @@ export class OrderService {
      * the stock and coupon usage held since order creation, since a customer
      * who never retries has no further claim on either.
      */
-    async expireStalePayment(uuid: string): Promise < void> {
-            let order: Order | null = null;
+    async expireStalePayment(uuid: string): Promise<void> {
+        let order: Order | null = null;
 
-            if(uuid.length === 6) {
+        if (uuid.length === 6) {
             order = await this.orderRepository.findOne({
                 where: {
                     uuid: Raw((alias) => `RIGHT(${alias}::text, 6) = '${uuid}'`),
