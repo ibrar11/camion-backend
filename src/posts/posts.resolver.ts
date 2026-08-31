@@ -1,5 +1,5 @@
 import { Inject, UseGuards } from '@nestjs/common';
-import { Args, Field, ObjectType, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Field, ObjectType, Parent, Query, ResolveField, Resolver, ArgsType} from '@nestjs/graphql';
 
 import { Post } from './entities/post.entity';
 import { PostsService } from './posts.service';
@@ -26,6 +26,27 @@ export class PostsResolver {
             uuid: post.createdBy.uuid,
             fullName: post.createdBy.fullName,
         };
+    }
+
+    @ResolveField('title', () => String)
+    resolveTitle(@Parent() post: Post,
+        @Args('language', { defaultValue: 'en' }) language: string,
+    ): string {
+        return language.toLowerCase() === 'ar' ? post.titleAr : post.title;
+    }
+
+    @ResolveField('brief', () => String, { nullable: true })
+    resolveBrief(@Parent() post: Post,
+        @Args('language', { defaultValue: 'en' }) language: string,
+    ): string | undefined {
+        return language.toLowerCase() === 'ar' ? post.briefAr : post.brief;
+    }
+
+    @ResolveField('content', () => String)
+    resolveContent(@Parent() post: Post,
+        @Args('language', { defaultValue: 'en' }) language: string,
+    ): string {
+        return language.toLowerCase() === 'ar' ? post.contentAr : post.content;
     }
 
     @Query(() => [Post])

@@ -33,7 +33,6 @@ export class Post {
     @Column({ type: 'varchar', length: 255, nullable: false })
     title: string;
 
-    @Field()
     @Column({ name: 'title_ar', type: 'varchar', length: 255, nullable: false })
     titleAr: string;
 
@@ -41,7 +40,6 @@ export class Post {
     @Column({ type: 'text', nullable: true })
     brief: string;
 
-    @Field(() => String, { nullable: true })
     @Column({ name: 'brief_ar', type: 'text', nullable: true })
     briefAr: string;
 
@@ -49,7 +47,6 @@ export class Post {
     @Column({ type: 'text', nullable: false })
     content: string;
 
-    @Field()
     @Column({ name: 'content_ar', type: 'text', nullable: false })
     contentAr: string;
 

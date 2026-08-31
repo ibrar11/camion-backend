@@ -340,16 +340,13 @@ type PollOptionElement {
 }
 
 type Post {
-  brief: String
-  briefAr: String
-  content: String!
-  contentAr: String!
+  brief(language: String! = "en"): String
+  content(language: String! = "en"): String!
   createdBy: PostAuthor!
   enabled: Boolean!
   images: [String!]
   slug: String!
-  title: String!
-  titleAr: String!
+  title(language: String! = "en"): String!
   uuid: String!
 }
 
