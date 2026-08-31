@@ -259,6 +259,7 @@ export class CartItemsService {
     const bundleSelectionUuid = bundleSelection.treatAsBundle
       ? crypto.randomUUID()
       : null;
+    const selectedCartItemUuids: string[] = [];
 
     for (const item of bundleSelection.selectedItems) {
       if (!item.product?.uuid || !item.variant?.uuid) {
@@ -268,7 +269,7 @@ export class CartItemsService {
         });
       }
 
-      await this.createWithSelectionContext(
+      const cartItem = await this.createWithSelectionContext(
         customer,
         {
           productUuid: item.product.uuid,
@@ -286,14 +287,17 @@ export class CartItemsService {
           : null,
         false,
       );
+      selectedCartItemUuids.push(cartItem.uuid);
     }
 
-    await this.repriceAndPersistCustomerCart(
+    const repricedItems = await this.repriceAndPersistCustomerCartItems(
       customer,
       body.currency,
       body.countryCode,
     );
-    return this.findCart(customer, '', body.currency, '', false);
+    return repricedItems.filter((item) =>
+      selectedCartItemUuids.includes(item.uuid),
+    );
   }
 
   /**
@@ -749,6 +753,28 @@ export class CartItemsService {
     countryCode?: string,
     targetCartItemUUID?: string,
   ): Promise<CartItem> {
+    const repricedItems = await this.repriceAndPersistCustomerCartItems(
+      customer,
+      currency,
+      countryCode,
+    );
+
+    const matchedItem =
+      repricedItems.find((item) => item.uuid === targetCartItemUUID) ??
+      repricedItems[0];
+    if (!matchedItem) {
+      throw new NotFoundException({
+        error: 'Cart item not found. Please check and try again.',
+      });
+    }
+    return matchedItem;
+  }
+
+  private async repriceAndPersistCustomerCartItems(
+    customer: Customer,
+    currency: CurrencyCode,
+    countryCode?: string,
+  ): Promise<Array<CartItem>> {
     const cartItems = await this.cartRepository.find({
       where: {
         customer: { id: customer.id },
@@ -782,9 +808,19 @@ export class CartItemsService {
           cartItem.variant,
           campaign,
           currency,
-          true,
+          false,
         );
-        const itemPrice = multiplyMoney(price, cartItem.quantity);
+        const discountedPrice =
+          await this.pricingService.applyPriceOnProductVariant(
+            cartItem.product,
+            cartItem.variant,
+            campaign,
+            currency,
+            true,
+          );
+        cartItem.variant.price = price;
+        cartItem.variant.discountedPrice = discountedPrice;
+        const itemPrice = multiplyMoney(discountedPrice, cartItem.quantity);
         cartItem.subTotal = itemPrice;
         cartItem.discountPrice = {
           amount: 0,
@@ -803,14 +839,6 @@ export class CartItemsService {
     );
     await this.cartRepository.save(repricedItems);
 
-    const matchedItem =
-      repricedItems.find((item) => item.uuid === targetCartItemUUID) ??
-      repricedItems[0];
-    if (!matchedItem) {
-      throw new NotFoundException({
-        error: 'Cart item not found. Please check and try again.',
-      });
-    }
-    return matchedItem;
+    return repricedItems;
   }
 }

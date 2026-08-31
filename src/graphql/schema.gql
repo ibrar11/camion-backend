@@ -84,6 +84,7 @@ type BundleAllocation {
   bundleTitle: String!
   bundleUuid: String!
   discountMinor: Int!
+  discountPercentage: Int
   quantity: Int!
 }
 

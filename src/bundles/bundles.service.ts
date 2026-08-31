@@ -42,6 +42,7 @@ type BundleAllocationEntry = {
   bundleTitle: string;
   quantity: number;
   discountMinor: number;
+  discountPercentage?: number | null;
 };
 
 type BundleSelectionInput = {
@@ -518,6 +519,7 @@ export class BundlesService {
           bundleTitle: bundle.titleEn,
           quantity: state.cartItem.quantity,
           discountMinor: lineDiscountMinor,
+          discountPercentage: this.getBundleDisplayDiscountPercentage(bundle),
         });
       }
     }
@@ -585,6 +587,7 @@ export class BundlesService {
             bundleTitle: bundle.titleEn,
             quantity: row.quantity,
             discountMinor: lineDiscountMinor,
+            discountPercentage: this.getBundleDisplayDiscountPercentage(bundle),
           });
         }
       }
@@ -611,10 +614,23 @@ export class BundlesService {
         totalDiscountMinor,
         currency,
       );
-      state.cartItem.total = moneyFromMinor(
-        Math.max(0, lineSubTotalMinor - totalDiscountMinor),
-        currency,
+      const lineTotalMinor = Math.max(
+        0,
+        lineSubTotalMinor - totalDiscountMinor,
       );
+      state.cartItem.total = moneyFromMinor(lineTotalMinor, currency);
+      if (state.cartItem.variant) {
+        state.cartItem.variant.price = moneyFromMinor(
+          state.baseUnitMinor,
+          currency,
+        );
+        state.cartItem.variant.discountedPrice = moneyFromMinor(
+          state.cartItem.quantity > 0
+            ? Math.ceil(lineTotalMinor / state.cartItem.quantity)
+            : lineTotalMinor,
+          currency,
+        );
+      }
       state.cartItem.bundleQuantity = bundleQuantity;
       state.cartItem.bundleUuid = state.allocations[0]?.bundleUuid ?? null;
       state.cartItem.bundleAllocations =
@@ -622,6 +638,19 @@ export class BundlesService {
     }
 
     return states.map((state) => state.cartItem);
+  }
+
+  private getBundleDisplayDiscountPercentage(bundle: Bundle): number | null {
+    if (
+      bundle.discountType !== BundleDiscountType.PERCENTAGE_OFF ||
+      bundle.discountPercentage === null ||
+      bundle.discountPercentage === undefined
+    ) {
+      return null;
+    }
+
+    const discountPercentage = Number(bundle.discountPercentage);
+    return Number.isFinite(discountPercentage) ? discountPercentage : null;
   }
 
   private async selectBundleItemsForCartAdd(

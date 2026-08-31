@@ -476,9 +476,15 @@ export class OrderService {
                 minorAmount: 0,
                 currencyCode: currency as CurrencyCode,
             };
+            let preBundleSubTotal: Money = {
+                amount: 0,
+                minorAmount: 0,
+                currencyCode: currency as CurrencyCode,
+            };
 
             for (const cart of repricedCartItems) {
                 subTotal = addMoney(subTotal, cart.total);
+                preBundleSubTotal = addMoney(preBundleSubTotal, cart.subTotal);
 
                 const baseLineTotalMinor = moneyToMinor(cart.subTotal);
                 const baseUnitMinor =
@@ -513,6 +519,13 @@ export class OrderService {
                 await queryRunner.manager.save(orderItem);
                 orderItems.push(orderItem);
             }
+            const bundleDiscount = moneyFromMinor(
+                Math.max(
+                    0,
+                    moneyToMinor(preBundleSubTotal) - moneyToMinor(subTotal),
+                ),
+                currency as CurrencyCode,
+            );
 
             const exchangeRates = await this.exchangeRateService.findAll('', '');
 
@@ -629,6 +642,7 @@ export class OrderService {
                     // discount = Math.ceil(discount);
                 }
             }
+            const totalDiscount = addMoney(bundleDiscount, discount);
 
             const min_order_amount =
                 Number(
@@ -672,9 +686,9 @@ export class OrderService {
             order.globalCoupon = globalCoupon;
             order.status = OrderStatus.PAYMENT_PENDING;
 
-            order.subTotal = subTotal;
+            order.subTotal = preBundleSubTotal;
             order.shippingCost = shippingCostMoney;
-            order.discount = discount;
+            order.discount = totalDiscount;
             order.total = total;
             order.eta = eta;
             order.orderItems = orderItems;
@@ -1894,7 +1908,23 @@ export class OrderService {
      * keeps its coupon held for the retry attempt.
      */
     private async releaseCouponUsage(order: Order): Promise<void> {
-        const commissionAmount = order.discount?.amount ?? 0;
+        const bundleDiscountMinor = (order.orderItems ?? []).reduce(
+            (sum, item) => {
+                if (!item.bundleUuid) {
+                    return sum;
+                }
+
+                const lineSubTotalMinor =
+                    moneyToMinor(item.price) * item.quantity;
+                return sum + Math.max(0, lineSubTotalMinor - moneyToMinor(item.total));
+            },
+            0,
+        );
+        const couponDiscount = moneyFromMinor(
+            Math.max(0, moneyToMinor(order.discount) - bundleDiscountMinor),
+            order.discount?.currencyCode ?? order.total.currencyCode,
+        );
+        const commissionAmount = couponDiscount.amount;
 
         if (order.coupon) {
             const coupon = await this.couponRepository.findOne({
@@ -2585,6 +2615,21 @@ export class OrderService {
                     currencyCode,
                 },
             );
+            const preBundleSubTotal = repricedCartItems.reduce(
+                (sum, item) => addMoney(sum, item.subTotal),
+                {
+                    amount: 0,
+                    minorAmount: 0,
+                    currencyCode,
+                },
+            );
+            const bundleDiscount = moneyFromMinor(
+                Math.max(
+                    0,
+                    moneyToMinor(preBundleSubTotal) - moneyToMinor(subTotal),
+                ),
+                currencyCode,
+            );
 
             const [exchangeRates] = await Promise.all([
                 this.exchangeRateService.findAll('', ''),
@@ -2698,6 +2743,7 @@ export class OrderService {
                     // discount = Math.ceil(discount);
                 }
             }
+            const totalDiscount = addMoney(bundleDiscount, discount);
 
             // let subTotalInQar = subTotal;
             // if (currency.toLowerCase().trim() !== "qar") {
@@ -2730,8 +2776,8 @@ export class OrderService {
             const orderPreview: OrderPreviewResponse = {
                 items: repricedCartItems,
                 shippingAddress: address,
-                cart_total: moneyToFloat(subTotal),
-                discount: moneyToFloat(discount),
+                cart_total: moneyToFloat(preBundleSubTotal),
+                discount: moneyToFloat(totalDiscount),
                 shipping: shippingCalculation,
                 shippingTotal: shippingCost,
                 grand_total: moneyToFloat(totalAmount),

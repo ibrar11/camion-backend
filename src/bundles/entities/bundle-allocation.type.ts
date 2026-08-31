@@ -13,4 +13,7 @@ export class BundleAllocation {
 
   @Field(() => Int)
   discountMinor: number;
+
+  @Field(() => Int, { nullable: true })
+  discountPercentage?: number | null;
 }
