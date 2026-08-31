@@ -38,8 +38,11 @@ POST /v1/posts HTTP/1.1
 {
     "slug": "privacy-policy",
     "title": "Privacy Policy",
+    "titleAr": "سياسة الخصوصية",
     "brief": "Short summary of the page",
+    "briefAr": "ملخص قصير للصفحة",
     "content": "Full content of the page",
+    "contentAr": "المحتوى الكامل للصفحة",
     "enabled": true
 }
 ```
@@ -53,8 +56,11 @@ POST /v1/posts HTTP/1.1
     "uuid": "post-uuid",
     "slug": "privacy-policy",
     "title": "Privacy Policy",
+    "titleAr": "سياسة الخصوصية",
     "brief": "Short summary of the page",
+    "briefAr": "ملخص قصير للصفحة",
     "content": "Full content of the page",
+    "contentAr": "المحتوى الكامل للصفحة",
     "enabled": true,
     "createdBy": {
         "uuid": "user-uuid",
@@ -89,8 +95,11 @@ GET /v1/posts HTTP/1.1
         "uuid": "post-uuid",
         "slug": "privacy-policy",
         "title": "Privacy Policy",
+        "titleAr": "سياسة الخصوصية",
         "brief": "Short summary",
+        "briefAr": "ملخص قصير",
         "content": "Full content",
+        "contentAr": "المحتوى الكامل",
         "enabled": true,
         "createdBy": {
             "uuid": "user-uuid",
@@ -125,8 +134,11 @@ GET /v1/posts/<post-uuid> HTTP/1.1
     "uuid": "post-uuid",
     "slug": "privacy-policy",
     "title": "Privacy Policy",
+    "titleAr": "سياسة الخصوصية",
     "brief": "Short summary",
+    "briefAr": "ملخص قصير",
     "content": "Full content",
+    "contentAr": "المحتوى الكامل",
     "enabled": true,
     "createdBy": {
         "uuid": "user-uuid",
@@ -162,8 +174,11 @@ PUT /v1/posts/<post-uuid> HTTP/1.1
 {
     "slug": "updated-slug",
     "title": "Updated Title",
+    "titleAr": "العنوان المحدث",
     "brief": "Updated summary",
+    "briefAr": "الملخص المحدث",
     "content": "Updated content",
+    "contentAr": "المحتوى المحدث",
     "enabled": true
 }
 ```
@@ -177,8 +192,11 @@ PUT /v1/posts/<post-uuid> HTTP/1.1
     "uuid": "post-uuid",
     "slug": "updated-slug",
     "title": "Updated Title",
+    "titleAr": "العنوان المحدث",
     "brief": "Updated summary",
+    "briefAr": "الملخص المحدث",
     "content": "Updated content",
+    "contentAr": "المحتوى المحدث",
     "enabled": true,
     "createdBy": {
         "uuid": "user-uuid",
@@ -237,8 +255,11 @@ query {
         uuid
         slug
         title
+        titleAr
         brief
+        briefAr
         content
+        contentAr
         enabled
         images
         createdBy {
@@ -268,8 +289,11 @@ query {
         uuid
         slug
         title
+        titleAr
         brief
+        briefAr
         content
+        contentAr
         enabled
         images
         createdBy {

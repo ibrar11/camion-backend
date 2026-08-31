@@ -20,12 +20,28 @@ export class UpdatePostDto {
     @IsOptional()
     @IsString()
     @MinLength(1)
+    @MaxLength(255)
+    titleAr?: string;
+
+    @IsOptional()
+    @IsString()
+    @MinLength(1)
     brief?: string;
 
     @IsOptional()
     @IsString()
     @MinLength(1)
+    briefAr?: string;
+
+    @IsOptional()
+    @IsString()
+    @MinLength(1)
     content?: string;
+
+    @IsOptional()
+    @IsString()
+    @MinLength(1)
+    contentAr?: string;
 
     @IsOptional()
     @IsBoolean()
