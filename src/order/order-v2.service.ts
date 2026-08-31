@@ -53,7 +53,16 @@ import { Campaign } from "../campaigns/entities/campaign.entity";
 import { OrderPreviewV2Dto } from './dtos/OrderPreviewV2Dto';
 import { BundlesService } from '../bundles/bundles.service';
 
-import { Money, multiplyMoney, addMoney, subtractMoney, moneyToFloat, isLesserThan } from '../common/currency';
+import {
+    Money,
+    multiplyMoney,
+    addMoney,
+    subtractMoney,
+    moneyFromMinor,
+    moneyToFloat,
+    moneyToMinor,
+    isLesserThan,
+} from '../common/currency';
 
 @Injectable()
 export class OrderServiceV2 {
@@ -78,7 +87,29 @@ export class OrderServiceV2 {
     async orderPreviewV2(customer: Customer, body: OrderPreviewV2Dto): Promise<OrderPreviewResponse> {
         try {
             // Get cart items with relations
-            const cartItems = await this.cartRepository.find({
+            const cartItemRelations = {
+                product: {
+                    productCategories: {
+                        category: {
+                            campaignCategories: {
+                                campaign: true,
+                            },
+                        },
+                    },
+                },
+                variant: {
+                    inventoryItem: {
+                        levels: true
+                    },
+                    images: true,
+                    optionValues: {
+                        optionValue: {
+                            option: true
+                        }
+                    }
+                }
+            };
+            let cartItems = await this.cartRepository.find({
                 where: {
                     customer: { id: customer.id },
                     uuid: In(body.cartItemUuids),
@@ -86,33 +117,40 @@ export class OrderServiceV2 {
                         status: ProductStatus.ACTIVE,
                     }
                 },
-                relations: {
-                    product: {
-                        productCategories: {
-                            category: {
-                                campaignCategories: {
-                                    campaign: true,
-                                },
-                            },
-                        },
-                    },
-                    variant: {
-                        inventoryItem: {
-                            levels: true
-                        },
-                        images: true,
-                        optionValues: {
-                            optionValue: {
-                                option: true
-                            }
-                        }
-                    }
-                }
+                relations: cartItemRelations
             });
 
             if (!cartItems || cartItems.length === 0) {
                 throw new BadRequestException(
                     'Cart is empty'
+                );
+            }
+
+            const bundleSelectionUuids = [
+                ...new Set(
+                    cartItems
+                        .map((item) => item.bundleSelectionUuid)
+                        .filter((uuid): uuid is string => Boolean(uuid)),
+                ),
+            ];
+            if (bundleSelectionUuids.length > 0) {
+                const bundledCartItems = await this.cartRepository.find({
+                    where: {
+                        customer: { id: customer.id },
+                        bundleSelectionUuid: In(bundleSelectionUuids),
+                        product: {
+                            status: ProductStatus.ACTIVE,
+                        },
+                    },
+                    relations: cartItemRelations,
+                });
+                cartItems = Array.from(
+                    new Map(
+                        [...cartItems, ...bundledCartItems].map((item) => [
+                            item.uuid,
+                            item,
+                        ]),
+                    ).values(),
                 );
             }
 
@@ -219,6 +257,21 @@ export class OrderServiceV2 {
                     currencyCode: body.currency,
                 },
             );
+            const preBundleSubTotal = repricedCartItems.reduce(
+                (sum, item) => addMoney(sum, item.subTotal),
+                {
+                    amount: 0,
+                    minorAmount: 0,
+                    currencyCode: body.currency,
+                },
+            );
+            const bundleDiscount = moneyFromMinor(
+                Math.max(
+                    0,
+                    moneyToMinor(preBundleSubTotal) - moneyToMinor(subTotal),
+                ),
+                body.currency,
+            );
 
             const [exchangeRates] = await Promise.all([
                 this.exchangeRateService.findAll("", "")
@@ -312,6 +365,7 @@ export class OrderServiceV2 {
                     // discount = Math.ceil(discount);
                 }
             }
+            const totalDiscount = addMoney(bundleDiscount, discount);
 
             // let subTotalInQar = subTotal;
             // if (currency.toLowerCase().trim() !== "qar") {
@@ -337,8 +391,8 @@ export class OrderServiceV2 {
             const orderPreview: OrderPreviewResponse = {
                 items: repricedCartItems,
                 shippingAddress: address,
-                cart_total: moneyToFloat(subTotal),
-                discount: moneyToFloat(discount),
+                cart_total: moneyToFloat(preBundleSubTotal),
+                discount: moneyToFloat(totalDiscount),
                 shipping: shippingCalculation,
                 shippingTotal: shippingCost,
                 grand_total: moneyToFloat(totalAmount),
