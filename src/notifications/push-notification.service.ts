@@ -242,10 +242,15 @@ export class PushNotificationService {
                     const staleCustomers = new Map<number, Customer>();
                     response.responses.forEach((res, idx) => {
                         if (!res.success) {
-                            const code = (res.error as any)?.errorInfo?.code || (res.error as any)?.code;
+                            const error = res.error as any;
+                            const code = error?.errorInfo?.code || error?.code;
+                            const message = error?.message || 'Unknown FCM error';
+
+                            this.logger.error(`FCM token failed. code=${code}, message=${message}`);
                             if (
                                 code === 'messaging/registration-token-not-registered' ||
-                                code === 'messaging/invalid-registration-token'
+                                code === 'messaging/invalid-registration-token' ||
+                                message.toLowerCase().includes('apns device token is disabled')
                             ) {
                                 const token = batch[idx];
                                 const customer = tokenToCustomer.get(token);
@@ -268,7 +273,8 @@ export class PushNotificationService {
             }
 
         } catch (err: any) {
-            this.logger.error(`FCM error: ${err?.message || err}`);
+            this.logger.error(`FCM error: ${err?.message || err}`, err?.stack);
+            throw err;
         }
     }
 
@@ -278,7 +284,7 @@ export class PushNotificationService {
      * @param body
      * @returns
      */
-async create(body: CreateCustomizePushNotificationDto): Promise<PushNotification> {
+    async create(body: CreateCustomizePushNotificationDto): Promise<PushNotification> {
 
         const customizeNotification = new PushNotification();
         customizeNotification.uuid = crypto.randomUUID();
