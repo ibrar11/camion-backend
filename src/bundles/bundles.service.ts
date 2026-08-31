@@ -8,7 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { generateSlug } from '../common/slug';
 import { getSkipAndTake } from '../common/pagination';
@@ -220,6 +220,16 @@ export class BundlesService {
         this.matchesBundleContext(bundle, productUUID),
     );
     const hydrationCache: BundleHydrationCache = new Map();
+    await this.primeStorefrontBundleHydrationCache(
+      [...new Set(
+        matchingBundles
+          .flatMap((bundle) => bundle.items ?? [])
+          .map((item) => item.product?.uuid)
+          .filter((uuid): uuid is string => Boolean(uuid)),
+      )],
+      currency as CurrencyCode,
+      hydrationCache,
+    );
 
     const resolvedBundles = await Promise.all(
       matchingBundles.map((bundle) =>
@@ -291,13 +301,36 @@ export class BundlesService {
       });
     }
 
+    const selectableItems = await this.buildSelectableBundleItemsForCartAdd(
+      hydrated,
+    );
+    const sourceProductRequired =
+      this.requiresSourceProductSelection(hydrated);
     const normalizedSelectedItems = await this.selectBundleItemsForCartAdd(
       hydrated,
+      selectableItems,
       selectedItems,
     );
+    if (
+      sourceProductRequired &&
+      !normalizedSelectedItems.some(
+        (item) => item.product?.uuid === hydrated.anchorProductUuid,
+      )
+    ) {
+      throw new BadRequestException({
+        error: this.buildBundleSelectionRequirementError(
+          hydrated.minimumSelectionCount,
+          sourceProductRequired,
+        ),
+      });
+    }
+
     if (normalizedSelectedItems.length < hydrated.minimumSelectionCount) {
       throw new BadRequestException({
-        error: `Please select at least ${hydrated.minimumSelectionCount} bundle items to add this bundle to cart.`,
+        error: this.buildBundleSelectionRequirementError(
+          hydrated.minimumSelectionCount,
+          sourceProductRequired,
+        ),
       });
     }
 
@@ -593,10 +626,11 @@ export class BundlesService {
 
   private async selectBundleItemsForCartAdd(
     bundle: Bundle,
+    selectableItems: Array<BundleItem>,
     selectedItems?: Array<BundleSelectionInput>,
   ): Promise<Array<BundleItem>> {
     if (!Array.isArray(selectedItems) || selectedItems.length === 0) {
-      return bundle.items;
+      return selectableItems;
     }
 
     const selectedKeys = new Set<string>();
@@ -618,7 +652,7 @@ export class BundlesService {
       selectedKeys.add(dedupeKey);
 
       const matchedItem = await this.resolveSelectedBundleItem(
-        bundle.items,
+        selectableItems,
         selectedItem,
       );
 
@@ -633,6 +667,79 @@ export class BundlesService {
     }
 
     return normalizedItems;
+  }
+
+  private async buildSelectableBundleItemsForCartAdd(
+    bundle: Bundle,
+  ): Promise<Array<BundleItem>> {
+    const selectableItems = [...(bundle.items ?? [])];
+    if (!this.requiresSourceProductSelection(bundle, selectableItems)) {
+      return selectableItems;
+    }
+
+    const anchorItem = await this.buildAnchorBundleSelectionItem(bundle);
+    if (anchorItem) {
+      selectableItems.unshift(anchorItem);
+    }
+
+    return selectableItems;
+  }
+
+  private requiresSourceProductSelection(
+    bundle: Bundle,
+    selectableItems: Array<BundleItem> = bundle.items ?? [],
+  ): boolean {
+    if (!bundle.anchorProductUuid) {
+      return false;
+    }
+
+    return !selectableItems.some(
+      (item) => item.product?.uuid === bundle.anchorProductUuid,
+    );
+  }
+
+  private buildBundleSelectionRequirementError(
+    minimumSelectionCount: number,
+    sourceProductRequired: boolean,
+  ): string {
+    if (sourceProductRequired) {
+      return `Please include the source product and select at least ${minimumSelectionCount} bundle items to add this bundle to cart.`;
+    }
+
+    return `Please select at least ${minimumSelectionCount} bundle items to add this bundle to cart.`;
+  }
+
+  private async buildAnchorBundleSelectionItem(
+    bundle: Bundle,
+  ): Promise<BundleItem | null> {
+    if (!bundle.anchorProductUuid) {
+      return null;
+    }
+
+    const anchorProduct = await this.productRepository.findOne({
+      where: {
+        uuid: bundle.anchorProductUuid,
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        variants: {
+          inventoryItem: {
+            levels: true,
+          },
+        },
+      },
+    });
+    const defaultVariant = anchorProduct?.variants?.[0];
+    if (!anchorProduct || !defaultVariant) {
+      return null;
+    }
+
+    const anchorItem = new BundleItem();
+    anchorItem.bundle = bundle;
+    anchorItem.product = this.buildBundleProductPreview(anchorProduct);
+    anchorItem.variant = this.buildBundleVariantPreview(defaultVariant);
+    anchorItem.quantity = 1;
+    return anchorItem;
   }
 
   private async resolveSelectedBundleItem(
@@ -829,6 +936,13 @@ export class BundlesService {
                 hydrationCache,
               )
             : await this.loadCartBundleProduct(productUuid, currency);
+        if (hydrationMode === 'storefront') {
+          await this.ensureBundleDiscoveryVariantPricing(
+            storefrontProduct,
+            currency,
+            item.variant?.uuid,
+          );
+        }
         const selectedVariant = item.variant?.uuid
           ? storefrontProduct.variants.find(
               (variant) => variant.uuid === item.variant?.uuid,
@@ -1029,36 +1143,118 @@ export class BundlesService {
       product.campaign = campaign;
     }
 
-    product.variants = await Promise.all(
-      product.variants.map(async (variant) => {
-        variant.price = await this.pricingService.applyPriceOnProductVariant(
-          product,
-          variant,
-          campaign,
-          currency,
-          false,
-        );
-        variant.discountedPrice =
-          await this.pricingService.applyPriceOnProductVariant(
-            product,
-            variant,
-            campaign,
-            currency,
-            true,
-          );
-        return variant;
-      }),
-    );
+    return product;
+  }
 
-    product.variants.sort((lhs, rhs) => {
-      const lhsPrice =
-        lhs.discountedPrice?.minorAmount ?? lhs.price?.minorAmount ?? 0;
-      const rhsPrice =
-        rhs.discountedPrice?.minorAmount ?? rhs.price?.minorAmount ?? 0;
-      return lhsPrice - rhsPrice;
+  private async primeStorefrontBundleHydrationCache(
+    productUuids: string[],
+    currency: CurrencyCode,
+    hydrationCache: BundleHydrationCache,
+  ): Promise<void> {
+    if (productUuids.length === 0) {
+      return;
+    }
+
+    const uncachedProductUuids = productUuids.filter(
+      (productUuid) =>
+        !hydrationCache.has(`storefront:${currency}:${productUuid}`),
+    );
+    if (uncachedProductUuids.length === 0) {
+      return;
+    }
+
+    const products = await this.productRepository.find({
+      relationLoadStrategy: 'query',
+      where: {
+        uuid: In(uncachedProductUuids),
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        attachments: true,
+        options: {
+          values: true,
+        },
+        variants: {
+          optionValues: {
+            optionValue: {
+              option: true,
+            },
+          },
+          inventoryItem: {
+            levels: true,
+          },
+          images: true,
+        },
+        productCategories: {
+          category: {
+            campaignCategories: {
+              campaign: true,
+            },
+          },
+        },
+      },
     });
 
-    return product;
+    await Promise.all(
+      products.map(async (product) => {
+        const campaign = getBestCampaign(product);
+        if (campaign) {
+          product.campaign = campaign;
+        }
+
+        hydrationCache.set(
+          `storefront:${currency}:${product.uuid}`,
+          Promise.resolve(product),
+        );
+      }),
+    );
+  }
+
+  private async ensureBundleDiscoveryVariantPricing(
+    product: Product,
+    currency: CurrencyCode,
+    preferredVariantUuid?: string,
+  ): Promise<void> {
+    if (!Array.isArray(product.variants) || product.variants.length === 0) {
+      return;
+    }
+
+    const campaign = product.campaign ?? getBestCampaign(product);
+    if (campaign) {
+      product.campaign = campaign;
+    }
+
+    const targetVariant =
+      (preferredVariantUuid
+        ? product.variants.find((variant) => variant.uuid === preferredVariantUuid)
+        : null) ?? product.variants[0];
+    if (!targetVariant) {
+      return;
+    }
+
+    if (!targetVariant.price || targetVariant.price.currencyCode !== currency) {
+      targetVariant.price = await this.pricingService.applyPriceOnProductVariant(
+        product,
+        targetVariant,
+        campaign,
+        currency,
+        false,
+      );
+    }
+
+    if (
+      !targetVariant.discountedPrice ||
+      targetVariant.discountedPrice.currencyCode !== currency
+    ) {
+      targetVariant.discountedPrice =
+        await this.pricingService.applyPriceOnProductVariant(
+          product,
+          targetVariant,
+          campaign,
+          currency,
+          true,
+        );
+    }
   }
 
   private async loadCartBundleProduct(
