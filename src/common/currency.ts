@@ -23,6 +23,14 @@ export class Money {
 	readonly currencyCode: CurrencyCode;
 }
 
+export const normalizeCurrencyCode = (
+	currencyCode: CurrencyCode | string | null | undefined,
+	fallback: CurrencyCode = CurrencyCode.QAR,
+): CurrencyCode => {
+	const normalized = String(currencyCode ?? fallback).trim().toLowerCase();
+	return (normalized || fallback) as CurrencyCode;
+};
+
 /**
  * Converts money to floats
  *
