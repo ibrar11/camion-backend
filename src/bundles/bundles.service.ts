@@ -932,7 +932,68 @@ export class BundlesService {
       return null;
     }
 
+    if (hydrationMode === 'storefront') {
+      await this.applyBundlePresentationPricing(hydratedBundle, currency);
+    }
+
     return hydratedBundle.items.length > 0 ? hydratedBundle : null;
+  }
+
+  private async applyBundlePresentationPricing(
+    bundle: Bundle,
+    currency: CurrencyCode,
+  ): Promise<void> {
+    const pricedItems = (bundle.items ?? []).filter(
+      (item) => item.variant?.price,
+    );
+    if (pricedItems.length === 0) {
+      return;
+    }
+
+    const bundleSubtotalMinor = pricedItems.reduce(
+      (sum, item) =>
+        sum + moneyToMinor(item.variant!.price) * Math.max(1, item.quantity),
+      0,
+    );
+    if (bundleSubtotalMinor <= 0) {
+      return;
+    }
+
+    const exchangeRates = await this.exchangeRateRepository.find({
+      order: { id: 'DESC' },
+      take: 200,
+    });
+    const targetTotalMinor = this.calculateBundleTargetTotalMinor(
+      bundle,
+      bundleSubtotalMinor,
+      currency,
+      exchangeRates,
+    );
+    const totalDiscountMinor = Math.max(
+      0,
+      bundleSubtotalMinor - targetTotalMinor,
+    );
+    if (totalDiscountMinor <= 0) {
+      return;
+    }
+
+    let distributedDiscountMinor = 0;
+    pricedItems.forEach((item, index) => {
+      const quantity = Math.max(1, item.quantity);
+      const lineSubTotalMinor = moneyToMinor(item.variant!.price) * quantity;
+      const lineDiscountMinor =
+        index === pricedItems.length - 1
+          ? totalDiscountMinor - distributedDiscountMinor
+          : Math.floor(
+              (totalDiscountMinor * lineSubTotalMinor) / bundleSubtotalMinor,
+            );
+      distributedDiscountMinor += lineDiscountMinor;
+      const lineTotalMinor = Math.max(0, lineSubTotalMinor - lineDiscountMinor);
+      item.variant!.discountedPrice = moneyFromMinor(
+        Math.ceil(lineTotalMinor / quantity),
+        currency,
+      );
+    });
   }
 
   private async hydrateBundleItems(

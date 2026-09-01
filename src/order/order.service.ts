@@ -505,7 +505,12 @@ export class OrderService {
                     baseUnitMinor,
                     currency as CurrencyCode,
                 );
-                orderItem.discountedPrice = cart.discountPrice;
+                orderItem.discountedPrice = moneyFromMinor(
+                    cart.quantity > 0
+                        ? Math.ceil(moneyToMinor(cart.total) / cart.quantity)
+                        : moneyToMinor(cart.total),
+                    currency as CurrencyCode,
+                );
                 orderItem.quantity = cart.quantity;
                 orderItem.total = cart.total;
                 orderItem.bundleUuid = cart.bundleUuid;
@@ -1436,7 +1441,9 @@ export class OrderService {
                 ]);
 
                 orderItem.variant.price = price;
-                orderItem.variant.discountedPrice = discountedPrice;
+                orderItem.variant.discountedPrice = orderItem.bundleUuid
+                    ? orderItem.discountedPrice
+                    : discountedPrice;
 
                 return orderItem;
             }),
