@@ -30,6 +30,7 @@ import { OrderStatus } from "./enums/OrderStatus";
 import { OrderPreviewResponse, OrderTrackingItem } from "./types";
 
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+import { normalizeCurrencyCode } from "../common/currency";
 
 @ArgsType()
 export class GetCustomerOrdersArgs {
@@ -123,7 +124,7 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer orders. Please check and try again.",
             });
         }
-        return this.orderService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage, args.currency,  args.status);
+        return this.orderService.findAllByCustomer(context.req.customer.uuid, "", "", args.pageNumber, args.itemsPerPage, normalizeCurrencyCode(args.currency),  args.status);
     }
 
     @Query(() => Order)
@@ -133,7 +134,7 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer order. Please check and try again.",
             });
         }
-        return this.orderService.findOne(args.uuid, args.currency);
+        return this.orderService.findOne(args.uuid, normalizeCurrencyCode(args.currency));
     }
 
     @Query(() => [OrderTrackingItem])
@@ -153,7 +154,7 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer order. Please check and try again.",
             });
         }
-        return this.orderService.orderPreview(context.req.customer, args.currency, args.couponCode);
+        return this.orderService.orderPreview(context.req.customer, normalizeCurrencyCode(args.currency), args.couponCode);
     }
 
     @Query(() => OrderPreviewResponse)
@@ -163,7 +164,10 @@ export class OrderResolver {
                 error: "You're not allowed to retrieve customer order. Please check and try again.",
             });
         }
-        return this.orderServiceV2.orderPreviewV2(context.req.customer, args);
+        return this.orderServiceV2.orderPreviewV2(context.req.customer, {
+            ...args,
+            currency: normalizeCurrencyCode(args.currency),
+        });
     }
 }
 

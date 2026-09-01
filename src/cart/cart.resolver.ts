@@ -26,6 +26,7 @@ import { GqlAuthGuard } from "../auth/gql.guard";
 import { ProductVariant } from "../inventory/entities/product-variant.entity";
 
 import { CurrencyCode } from "../inventory/enums/CurrencyCode.enum";
+import { normalizeCurrencyCode } from "../common/currency";
 
 @ArgsType()
 @InputType()
@@ -88,8 +89,9 @@ export class CartResolver {
                 error: "Failed to find the customer. Please check and try again",
             });
         }
-        console.log(`Attempting to fetch cart for customer ${customer.uuid} with currency ${args.currency}`);
-        return this.cartService.findCart(customer, "", args.currency, "");
+        const currency = normalizeCurrencyCode(args.currency);
+        console.log(`Attempting to fetch cart for customer ${customer.uuid} with currency ${currency}`);
+        return this.cartService.findCart(customer, "", currency, "");
     }
 
     @Query(() => Number)
@@ -119,7 +121,7 @@ export class CartResolver {
 
         return this.cartService.createBundle(customer, {
             bundleUuid: args.bundleUuid,
-            currency: args.currency,
+            currency: normalizeCurrencyCode(args.currency),
             countryCode: args.countryCode,
             quantity: args.quantity,
             items: args.items,
