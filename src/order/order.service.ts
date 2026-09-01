@@ -933,8 +933,11 @@ export class OrderService {
     ): Promise<PaymentTransaction> {
         const customerName = customer.fullName.split(' ');
 
+        this.logger.log(`customer saved card tokenId: ${dto.tokenId}`);
+
         // If tokenId provided, use direct payment
         if (dto.tokenId) {
+            this.logger.log(`performing tokenization payment with tokenId: ${dto.tokenId}`);
             const paymentPayload: CreatePaymentDto = {
                 provider: PaymentProvider.SKIPCASH,
                 amount: order.total,
@@ -954,6 +957,7 @@ export class OrderService {
             return this.paymentService.createPayment(paymentPayload);
         }
 
+        this.logger.log(`creating payment session`);
         // Otherwise create SDK session
         const paymentSessionPayload: CreateSkipCashSessionDto = {
             provider: PaymentProvider.SKIPCASH,
@@ -2216,9 +2220,11 @@ export class OrderService {
         let payment: PaymentTransaction | null = null;
         // Determine payment flow based on client version
         if (this.shouldUseNewPaymentFlow(dto, clientVersion)) {
+            this.logger.log(`using new sdk payment flow: v2`);
             // NEW FLOW: SDK Session
             payment = await this.initiateNewPaymentFlow(order.customer, order, dto, order.shippingAddress);
         } else {
+            this.logger.log(`using old payment flow: v1`);
             // OLD FLOW: Direct Payment (backward compatible)
             payment = await this.initiateLegacyPaymentFlow(order.customer, order, dto, order.shippingAddress);
         }
