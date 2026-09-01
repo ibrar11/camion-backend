@@ -867,6 +867,8 @@ export class OrderService {
                     ),
                 );
 
+            order.uuid = getOrderReference(order.uuid);
+
             return order;
         } catch (error: any) {
             this.logger.error(
@@ -2233,7 +2235,11 @@ export class OrderService {
         order.paymentTransaction = payment;
         order.status = OrderStatus.PAYMENT_PENDING;
 
-        return this.orderRepository.save(order);
+        const savedOrder = await this.orderRepository.save(order);
+
+        savedOrder.uuid = getOrderReference(savedOrder.uuid);
+
+        return savedOrder;
     }
 
     /**
