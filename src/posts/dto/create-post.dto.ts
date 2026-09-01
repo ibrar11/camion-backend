@@ -17,14 +17,28 @@ export class CreatePostDto {
     @MaxLength(255)
     title: string;
 
+    @IsString()
+    @MinLength(1)
+    @MaxLength(255)
+    titleAr: string;
+
     @IsOptional()
     @IsString()
     @MinLength(1)
     brief?: string;
 
+    @IsOptional()
+    @IsString()
+    @MinLength(1)
+    briefAr?: string;
+
     @IsString()
     @MinLength(1)
     content: string;
+
+    @IsString()
+    @MinLength(1)
+    contentAr: string;
 
     @IsOptional()
     @IsBoolean()

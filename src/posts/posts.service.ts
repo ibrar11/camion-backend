@@ -30,6 +30,9 @@ export class PostsService {
             title: body.title,
             brief: body.brief,
             content: body.content,
+            titleAr: body.titleAr,
+            briefAr: body.briefAr,
+            contentAr: body.contentAr,
             enabled: body.enabled ?? true,
             createdBy: createdBy,
         });
@@ -100,6 +103,15 @@ export class PostsService {
      */
     async update(uuid: string, body: UpdatePostDto): Promise<Post> {
         const post: Post = await this.findOne(uuid);
+
+        post.slug = body.slug ?? post.slug;
+        post.title = body.title ?? post.title;
+        post.titleAr = body.titleAr ?? post.titleAr;
+        post.brief = body.brief ?? post.brief;
+        post.briefAr = body.briefAr ?? post.briefAr;
+        post.content = body.content ?? post.content;
+        post.contentAr = body.contentAr ?? post.contentAr;
+        post.enabled = body.enabled ?? post.enabled;
 
         return this.postRepository.save(post);
     }
