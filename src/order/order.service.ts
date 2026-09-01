@@ -446,21 +446,30 @@ export class OrderService {
 
                 campaign = getBestCampaign(cart.product);
 
-                // const priceAmount = await this.pricingService.applyPriceOnProductVariant(cart.product, cart.variant, null, currency, false);
-                const priceAmount =
-                    await this.pricingService.applyPriceOnProductVariant(
+                const [priceAmount, discountedPriceAmount] = await Promise.all([
+                    this.pricingService.applyPriceOnProductVariant(
+                        cart.product,
+                        cart.variant,
+                        campaign,
+                        currency,
+                        false,
+                    ),
+                    this.pricingService.applyPriceOnProductVariant(
                         cart.product,
                         cart.variant,
                         campaign,
                         currency,
                         true,
-                    );
-                const totalAmount = multiplyMoney(priceAmount, cart.quantity);
+                    ),
+                ]);
+                cart.variant.price = priceAmount;
+                cart.variant.discountedPrice = discountedPriceAmount;
+                const totalAmount = multiplyMoney(discountedPriceAmount, cart.quantity);
                 cart.subTotal = totalAmount;
                 cart.discountPrice = {
                     amount: 0,
                     minorAmount: 0,
-                    currencyCode: priceAmount.currencyCode,
+                    currencyCode: discountedPriceAmount.currencyCode,
                 };
                 cart.total = totalAmount;
             }
@@ -505,7 +514,12 @@ export class OrderService {
                     baseUnitMinor,
                     currency as CurrencyCode,
                 );
-                orderItem.discountedPrice = cart.discountPrice;
+                orderItem.discountedPrice = moneyFromMinor(
+                    cart.quantity > 0
+                        ? Math.ceil(moneyToMinor(cart.total) / cart.quantity)
+                        : moneyToMinor(cart.total),
+                    currency as CurrencyCode,
+                );
                 orderItem.quantity = cart.quantity;
                 orderItem.total = cart.total;
                 orderItem.bundleUuid = cart.bundleUuid;
@@ -1436,7 +1450,9 @@ export class OrderService {
                 ]);
 
                 orderItem.variant.price = price;
-                orderItem.variant.discountedPrice = discountedPrice;
+                orderItem.variant.discountedPrice = orderItem.bundleUuid
+                    ? orderItem.discountedPrice
+                    : discountedPrice;
 
                 return orderItem;
             }),
