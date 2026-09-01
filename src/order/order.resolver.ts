@@ -84,7 +84,7 @@ export class GetCustomerOrderPreviewArgs {
     @Field({ defaultValue: "en", })
     language: string;
 
-    @Field({ defaultValue: "usd", })
+    @Field({ defaultValue: CurrencyCode.QAR, })
     currency: CurrencyCode;
 
     @Field(() => String, { nullable: true })
@@ -97,7 +97,7 @@ export class GetCustomerOrderPreviewV2Args {
     @Field({ defaultValue: "en", })
     language: string;
 
-    @Field({ defaultValue: "usd", })
+    @Field({ defaultValue: CurrencyCode.QAR, })
     currency: CurrencyCode;
 
     @Field(() => String, { nullable: true })
