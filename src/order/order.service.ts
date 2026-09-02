@@ -955,6 +955,7 @@ export class OrderService {
                 country: address.country,
                 postalCode: address.zipCode,
                 tokenId: dto.tokenId,
+                returnUrl: dto.redirectUrl
             };
             return this.paymentService.createPayment(paymentPayload);
         }
