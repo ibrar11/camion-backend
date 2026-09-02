@@ -12,7 +12,7 @@ import {
 import { Job } from "bullmq";
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import { S3Service } from "../common/s3.service";
 import { FileService } from "../common/file.service";
@@ -71,6 +71,7 @@ export class ProductsService {
 	};
 
 	constructor(
+		private readonly dataSource: DataSource,
 		@Inject(FileService) private readonly fileService: FileService,
 		@Inject(ImageThumbnailService) private readonly imageThumbnailService: ImageThumbnailService,
 		@Inject(PricingService) private readonly pricingService: PricingService,
@@ -245,6 +246,15 @@ export class ProductsService {
 			.execute();
 	}
 
+	private async clearProductCategoryQueryCache(): Promise<void> {
+		try {
+			await this.dataSource.queryResultCache?.clear();
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			this.logger.warn(`Failed to clear product/category query cache: ${message}`);
+		}
+	}
+
 	private async syncProductCategories(
 		product: Product,
 		categoryUuids: string[],
@@ -286,6 +296,7 @@ export class ProductsService {
 
 		const allAffectedCategoryIds = [...new Set([...oldCategoryIds, ...newCategoryIds])];
 		await this.recalculateCategoryProductsCount(allAffectedCategoryIds);
+		await this.clearProductCategoryQueryCache();
 	}
 
 	async enqueueProductCategoriesResync(body: {
@@ -3923,6 +3934,7 @@ export class ProductsService {
 				.map((productCategory) => productCategory.category?.id)
 				.filter((id): id is number => id !== undefined);
 			await this.recalculateCategoryProductsCount(categoryIds);
+			await this.clearProductCategoryQueryCache();
 		}
 
 		return savedProduct;
@@ -4250,5 +4262,6 @@ export class ProductsService {
 		await this.productRepository.delete({ uuid });
 
 		await this.recalculateCategoryProductsCount(categoryIds);
+		await this.clearProductCategoryQueryCache();
 	}
 }
