@@ -33,7 +33,7 @@ export class Post {
     @Column({ type: 'varchar', length: 255, nullable: false })
     title: string;
 
-    @Column({ name: 'title_ar', type: 'varchar', length: 255, nullable: false })
+    @Column({ name: 'title_ar', type: 'varchar', length: 255, nullable: true })
     titleAr: string;
 
     @Field(() => String, { nullable: true })
@@ -47,7 +47,7 @@ export class Post {
     @Column({ type: 'text', nullable: false })
     content: string;
 
-    @Column({ name: 'content_ar', type: 'text', nullable: false })
+    @Column({ name: 'content_ar', type: 'text', nullable: true })
     contentAr: string;
 
     @Field()
