@@ -11,6 +11,7 @@ import {
 } from '@nestjs/graphql';
 
 import { GqlAuthGuard } from '../auth/gql.guard';
+import { normalizeCurrencyCode } from '../common/currency';
 import { CurrencyCode } from '../inventory/enums/CurrencyCode.enum';
 
 import { Bundle } from './entities/bundle.entity';
@@ -49,7 +50,7 @@ export class BundlesResolver {
 
     return this.bundlesService.findBundlesForProduct(
       args.productUUID,
-      args.currency,
+      normalizeCurrencyCode(args.currency),
       args.countryCode,
     );
   }
