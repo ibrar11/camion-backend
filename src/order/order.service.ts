@@ -2164,11 +2164,21 @@ export class OrderService {
             });
         }
 
-        const lastAttempt = order.paymentTransaction?.updatedAt;
+        const clientVersion = this.detectClientVersion(dto);        
+        const lastAttempt = order.paymentTransaction?.updatedAt;      
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);  
         if (lastAttempt) {
-            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-            if (lastAttempt > oneHourAgo) {
-                return order;
+            // session reuse for new payment version
+            if (clientVersion === 'v2') {                
+                const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);                
+                if (lastAttempt > thirtyMinutesAgo && !dto.tokenId && order?.paymentTransaction?.rawResponse?.sessionId) {
+                    return order;
+                }
+
+            } else if (clientVersion === 'v1') { // session reuse for old payment version
+                if (lastAttempt > oneHourAgo) {
+                    return order;
+                }
             }
         }
 
@@ -2217,7 +2227,6 @@ export class OrderService {
         const customerName: Array<string> = order.customer.fullName.split(" ");
         const provider = order.paymentTransaction?.provider ?? PaymentProvider.SKIPCASH;
 
-        const clientVersion = this.detectClientVersion(dto);
         dto.apiVersion = clientVersion;
 
         let payment: PaymentTransaction | null = null;
@@ -2231,7 +2240,6 @@ export class OrderService {
             // OLD FLOW: Direct Payment (backward compatible)
             payment = await this.initiateLegacyPaymentFlow(order.customer, order, dto, order.shippingAddress);
         }
-        order.paymentTransaction = payment;
 
         order.paymentTransaction = payment;
         order.status = OrderStatus.PAYMENT_PENDING;
