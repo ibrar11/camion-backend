@@ -66,10 +66,6 @@ export class ProductReport {
 	@Column({ type: "varchar", length: 1024, nullable: true, default: null, })
 	adminNote: string | null;
 
-	@Exclude()
-	@Column({ type: "varchar", length: 256, nullable: false, unique: true, })
-	duplicateFingerprint: string;
-
 	@Field(() => [ProductReportAttachment], { nullable: true })
 	@OneToMany(() => ProductReportAttachment, (attachment) => attachment.report, { cascade: true, })
 	attachments: Array<ProductReportAttachment>;
