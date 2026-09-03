@@ -120,6 +120,8 @@ export interface CustomFeeResponse {
 const SHIPPING_RATES = shippingRatesData.rates as CountryShippingRate[];
 const HANDLING_FEES = shippingRatesData.handlingFees as HandlingFeeRange[];
 const USD_TO_CNY = shippingRatesData.usdToCny;
+const VENDOR_SHIPPING_DAYS = shippingRatesData.vendorShippingDays;
+const CONSOLIDATION_DAYS = shippingRatesData.consolidationDays;
 
 /**
 * Calculate shipping for a customer's cart
@@ -287,9 +289,9 @@ export function calculateShipping(input: ShippingCalculationInput): ShippingCalc
                 currency,
             },
             transitTime: {
-                minDays: countryData.transitDays.min,
-                maxDays: countryData.transitDays.max,
-                estimatedRange: `${countryData.transitDays.min}-${countryData.transitDays.max} working days`,
+                minDays: countryData.transitDays.min + VENDOR_SHIPPING_DAYS + CONSOLIDATION_DAYS,
+                maxDays: countryData.transitDays.max + VENDOR_SHIPPING_DAYS + CONSOLIDATION_DAYS,
+                estimatedRange: `${countryData.transitDays.min + VENDOR_SHIPPING_DAYS + CONSOLIDATION_DAYS}-${countryData.transitDays.max + VENDOR_SHIPPING_DAYS + CONSOLIDATION_DAYS} working days`,
             },
             taxesAndFees: {
                 ...(vat && { vat }),
