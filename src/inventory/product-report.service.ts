@@ -77,16 +77,6 @@ export class ProductReportService {
 			});
 		}
 
-		const duplicateFingerprint = this.generateDuplicateFingerprint(customer.uuid, dto.productUuid, dto.reason, dto.details, dto.orderNumber);
-		const existingReport = await this.productReportRepository.findOne({
-			where: { duplicateFingerprint, },
-		});
-		if (existingReport !== null) {
-			throw new ConflictException({
-				error: "This report was already submitted. Please avoid duplicate submissions.",
-			});
-		}
-
 		const report = new ProductReport();
 		report.uuid = crypto.randomUUID();
 		report.customer = customer;
@@ -97,7 +87,6 @@ export class ProductReportService {
 		report.status = ProductReportStatus.Pending;
 		report.priority = this.resolvePriority(dto.reason);
 		report.adminNote = null;
-		report.duplicateFingerprint = duplicateFingerprint;
 
 		const savedReport = await this.productReportRepository.save(report);
 
@@ -302,21 +291,4 @@ export class ProductReportService {
 		return ProductReportPriority.Normal;
 	}
 
-	private generateDuplicateFingerprint(
-		customerUUID: string,
-		productUUID: string,
-		reason: ProductReportReason,
-		details: string,
-		orderNumber?: string,
-	): string {
-		const normalized = [
-			customerUUID.trim().toLowerCase(),
-			productUUID.trim().toLowerCase(),
-			reason.trim().toLowerCase(),
-			details.trim().toLowerCase().replace(/\s+/g, " "),
-			(orderNumber ?? "").trim().toLowerCase(),
-		].join("|");
-
-		return crypto.createHash("sha256").update(normalized).digest("hex");
-	}
 }
