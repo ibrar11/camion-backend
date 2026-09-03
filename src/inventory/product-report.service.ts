@@ -125,7 +125,8 @@ export class ProductReportService {
 		const query = this.productReportRepository.createQueryBuilder("report")
 			.leftJoinAndSelect("report.customer", "customer")
 			.leftJoinAndSelect("report.product", "product")
-			.leftJoinAndSelect("report.attachments", "attachments");
+			.leftJoinAndSelect("report.attachments", "attachments")
+			.addSelect("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "priorityOrder");
 
 		if (status) {
 			query.andWhere("report.status = :status", { status, });
@@ -135,7 +136,7 @@ export class ProductReportService {
 			query.andWhere("report.reason = :reason", { reason, });
 		}
 
-		query.orderBy("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "DESC")
+		query.orderBy("priorityOrder", "DESC")
 			.addOrderBy("report.createdAt", "DESC")
 			.setParameter("highPriority", ProductReportPriority.High)
 			.skip((Math.max(1, Number(pageNumber) || 1) - 1) * Math.max(1, Number(itemsPerPage) || 20))
@@ -154,13 +155,14 @@ export class ProductReportService {
 			.leftJoinAndSelect("report.customer", "customer")
 			.leftJoinAndSelect("report.product", "product")
 			.leftJoinAndSelect("report.attachments", "attachments")
+			.addSelect("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "priorityOrder")
 			.where("customer.uuid = :customerUUID", { customerUUID, });
 
 		if (status) {
 			query.andWhere("report.status = :status", { status, });
 		}
 
-		query.orderBy("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "DESC")
+		query.orderBy("priorityOrder", "DESC")
 			.addOrderBy("report.createdAt", "DESC")
 			.setParameter("highPriority", ProductReportPriority.High)
 			.skip((Math.max(1, Number(pageNumber) || 1) - 1) * Math.max(1, Number(itemsPerPage) || 20))
