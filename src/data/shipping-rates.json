@@ -1,4 +1,6 @@
 {
+    "vendorShippingDays":3,
+    "consolidationDays": 1,
     "rates": [
         {
             "country": "Saudi Arabia",
