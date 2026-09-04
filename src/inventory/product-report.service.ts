@@ -126,7 +126,7 @@ export class ProductReportService {
 			.leftJoinAndSelect("report.customer", "customer")
 			.leftJoinAndSelect("report.product", "product")
 			.leftJoinAndSelect("report.attachments", "attachments")
-			.addSelect("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "priorityOrder");
+			.addSelect("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "priority_order");
 
 		if (status) {
 			query.andWhere("report.status = :status", { status, });
@@ -136,7 +136,7 @@ export class ProductReportService {
 			query.andWhere("report.reason = :reason", { reason, });
 		}
 
-		query.orderBy("priorityOrder", "DESC")
+		query.orderBy("priority_order", "DESC")
 			.addOrderBy("report.createdAt", "DESC")
 			.setParameter("highPriority", ProductReportPriority.High)
 			.skip((Math.max(1, Number(pageNumber) || 1) - 1) * Math.max(1, Number(itemsPerPage) || 20))
@@ -155,14 +155,14 @@ export class ProductReportService {
 			.leftJoinAndSelect("report.customer", "customer")
 			.leftJoinAndSelect("report.product", "product")
 			.leftJoinAndSelect("report.attachments", "attachments")
-			.addSelect("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "priorityOrder")
+			.addSelect("CASE WHEN report.priority = :highPriority THEN 1 ELSE 0 END", "priority_order")
 			.where("customer.uuid = :customerUUID", { customerUUID, });
 
 		if (status) {
 			query.andWhere("report.status = :status", { status, });
 		}
 
-		query.orderBy("priorityOrder", "DESC")
+		query.orderBy("priority_order", "DESC")
 			.addOrderBy("report.createdAt", "DESC")
 			.setParameter("highPriority", ProductReportPriority.High)
 			.skip((Math.max(1, Number(pageNumber) || 1) - 1) * Math.max(1, Number(itemsPerPage) || 20))
