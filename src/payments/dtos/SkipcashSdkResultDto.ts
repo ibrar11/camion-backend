@@ -20,7 +20,6 @@ export class SkipcashSdkResultDto {
     currency: CurrencyCode;
 
     @IsString()
-    @IsUUID()
     @MinLength(1)
     orderUUID: string;
 

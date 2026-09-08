@@ -170,20 +170,38 @@ export class PaymentsService {
         try {
             this.logger.log(`Attempting to update payment result for order ${dto.orderUUID}`);
 
-            const order = await this.orderRepository.findOne({
-                where: {
-                    uuid: dto.orderUUID
-                },
-                relations: {
-                    paymentTransaction: true,
-                    customer: true,
-                    shippingAddress: true,
-                    orderItems: {
-                        product: true,
-                        variant: true,
-                    }
-                }
-            });
+            let order: Order | null = null;
+            const uuid = dto.orderUUID;
+
+            console.log("uuiduuiduuiduuiduuid", uuid)
+
+            if (uuid.length === 6) {
+                order = await this.orderRepository
+                    .createQueryBuilder('order')
+                    .leftJoinAndSelect('order.customer', 'customer')
+                    .leftJoinAndSelect('order.shippingAddress', 'shippingAddress')
+                    .leftJoinAndSelect('order.paymentTransaction', 'paymentTransaction')
+                    .leftJoinAndSelect('order.orderItems', 'orderItems')
+                    .leftJoinAndSelect('orderItems.product', 'product')
+                    .leftJoinAndSelect('orderItems.variant', 'variant')
+                    .where('RIGHT("order"."uuid"::text, 6) = :uuid', {
+                        uuid,
+                    })
+                    .getOne();
+            } else {
+                order = await this.orderRepository.findOne({
+                    where: { uuid },
+                    relations: {
+                        customer: true,
+                        shippingAddress: true,
+                        paymentTransaction: true,
+                        orderItems: {
+                            product: true,
+                            variant: true,
+                        },
+                    },
+                });
+            }
 
             if (!order) {
                 throw new NotFoundException({
